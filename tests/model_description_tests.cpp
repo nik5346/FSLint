@@ -44,12 +44,12 @@ bool has_warning_with_text(const Certificate& cert, const std::string& text) {
     return false;
 }
 
-TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fails]") {
+TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]") {
     Fmi2ModelDescriptionChecker checker;
 
     auto validate_fail = [&](const std::string& path, const std::string& expected_error) {
         Certificate cert;
-        checker.validate("tests/data/fmi2/fails/" + path, cert);
+        checker.validate("tests/data/fmi2/fail/" + path, cert);
         INFO("Checking path: " << path);
         if (!has_error_with_text(cert, expected_error)) {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -138,12 +138,12 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fails]") {
     }
 }
 
-TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warnings]") {
+TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]") {
     Fmi2ModelDescriptionChecker checker;
 
     auto validate_warning = [&](const std::string& path, const std::string& expected_warning) {
         Certificate cert;
-        checker.validate("tests/data/fmi2/warnings/" + path, cert);
+        checker.validate("tests/data/fmi2/warn/" + path, cert);
         INFO("Checking path: " << path);
         if (!has_warning_with_text(cert, expected_warning)) {
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
@@ -191,12 +191,12 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warnings]") {
     }
 }
 
-TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fails]") {
+TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]") {
     Fmi3ModelDescriptionChecker checker;
 
     auto validate_fail = [&](const std::string& path, const std::string& expected_error) {
         Certificate cert;
-        checker.validate("tests/data/fmi3/fails/" + path, cert);
+        checker.validate("tests/data/fmi3/fail/" + path, cert);
         INFO("Checking path: " << path);
         if (!has_error_with_text(cert, expected_error)) {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -324,12 +324,12 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fails]") {
     }
 }
 
-TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warnings]") {
+TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]") {
     Fmi3ModelDescriptionChecker checker;
 
     auto validate_warning = [&](const std::string& path, const std::string& expected_warning) {
         Certificate cert;
-        checker.validate("tests/data/fmi3/warnings/" + path, cert);
+        checker.validate("tests/data/fmi3/warn/" + path, cert);
         INFO("Checking path: " << path);
         if (!has_warning_with_text(cert, expected_warning)) {
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
@@ -375,13 +375,13 @@ TEST_CASE("Valid FMI Models", "[valid]") {
 
     SECTION("FMI 2.0 Valid") {
         Fmi2ModelDescriptionChecker checker;
-        checker.validate("tests/data/fmi2/valid", cert);
+        checker.validate("tests/data/fmi2/pass", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("FMI 3.0 Valid") {
         Fmi3ModelDescriptionChecker checker;
-        checker.validate("tests/data/fmi3/valid", cert);
+        checker.validate("tests/data/fmi3/pass", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }
