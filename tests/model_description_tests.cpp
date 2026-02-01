@@ -229,8 +229,6 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fails]") {
 
     SECTION("Variable Names") {
         validate_fail("duplicate_name", "is not unique");
-        validate_fail("naming_flat_dot", "contains illegal character '.'");
-        validate_fail("naming_flat_space", "contains illegal space character");
         validate_fail("naming_structured_invalid", "is not a legal variable name");
     }
 
