@@ -5,7 +5,9 @@
 class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
 {
   protected:
-    void performVersionSpecificChecks(const std::filesystem::path& xml_path, Certificate& cert) override;
+    void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                      const std::map<std::string, TypeDefinition>& type_definitions,
+                                      const std::map<std::string, UnitDefinition>& units, Certificate& cert) override;
     std::string getFmiVersion() const override
     {
         return "3.0";
@@ -24,7 +26,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
 
   private:
     // FMI3-specific variable extraction (different XML structure than FMI2)
-    std::vector<Variable> extractVariablesFmi3(xmlDocPtr doc);
+    std::vector<Variable> extractVariables(xmlDocPtr doc) override;
     std::string getVariableType(xmlNodePtr node);
 
     // Extract dimension information from variable node

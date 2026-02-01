@@ -27,8 +27,54 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         return;
     }
 
+    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (!doc)
+    {
+        TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml"}};
+        cert.printTestResult(test);
+        cert.printSubsectionSummary(false);
+        return;
+    }
+
+    // Extract common data
+    xmlNodePtr root = xmlDocGetRootElement(doc);
+    auto metadata = extractMetadata(root);
+    auto variables = extractVariables(doc);
+    applyDefaultInitialValues(variables);
+    auto type_definitions = extractTypeDefinitions(doc);
+    auto units = extractUnitDefinitions(doc);
+
+    // Run common validation checks
+    checkFmiVersion(metadata.fmiVersion, cert);
+    checkGuid(metadata.guid, metadata.fmiVersion, cert);
+
+    checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
+    checkModelVersion(metadata.version, cert);
+    checkCopyright(metadata.copyright, cert);
+    checkLicense(metadata.license, cert);
+    checkAuthor(metadata.author, cert);
+    checkGenerationTool(metadata.generationTool, cert);
+
+    checkDefaultExperiment(doc, cert);
+
+    checkUniqueVariableNames(variables, cert);
+    checkLegalVariability(variables, cert);
+    checkRequiredStartValues(variables, cert);
+    checkCausalityVariabilityInitialCombinations(variables, cert);
+    checkIllegalStartValues(variables, cert);
+    checkTypeAndUnitReferences(variables, type_definitions, units, cert);
+
+    checkUnusedDefinitions(type_definitions, units, cert);
+    checkMinMaxStartValues(variables, type_definitions, cert);
+    checkUnits(units, cert);
+    checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
+    checkDerivativeReferences(variables, cert);
+
     // Perform version-specific validation
-    performVersionSpecificChecks(model_desc_path, cert);
+    performVersionSpecificChecks(doc, variables, type_definitions, units, cert);
+
+    xmlFreeDoc(doc);
+    xmlCleanupParser();
 
     cert.printSubsectionSummary(true);
 }
@@ -41,7 +87,7 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
 
     for (const auto& var : variables)
     {
-        if (seen_names.count(var.name))
+        if (seen_names.contains(var.name))
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable name \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -61,7 +107,7 @@ void ModelDescriptionCheckerBase::checkUnits(const std::map<std::string, UnitDef
     std::set<std::string> unit_names;
     for (const auto& [name, def] : units)
     {
-        if (unit_names.count(name))
+        if (unit_names.contains(name))
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Unit \"" + name + "\" is defined multiple times");
@@ -129,12 +175,22 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
     if (!generation_date_time.has_value())
     {
-        // Optional attribute, so passing if not present
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'generationDateAndTime' is missing. Providing a generation timestamp is "
+                                "highly recommended for traceability.");
         cert.printTestResult(test);
         return;
     }
 
     const std::string& dt = *generation_date_time;
+
+    if (dt.empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'generationDateAndTime' is empty.");
+        cert.printTestResult(test);
+        return;
+    }
 
     // ISO 8601 formats supported:
     // Basic format: YYYY-MM-DDThh:mm:ssZ
@@ -315,18 +371,22 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::string& fmi_version
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkGuid(const std::string& guid, const std::string& attribute_name,
+void ModelDescriptionCheckerBase::checkGuid(const std::optional<std::string>& guid_opt, const std::string& fmi_version,
                                             Certificate& cert)
 {
-    TestResult test{"GUID/Instantiation Token Format", TestStatus::PASS, {}};
+    bool is_fmi3 = fmi_version.starts_with("3.");
+    std::string attribute_name = is_fmi3 ? "instantiationToken" : "guid";
+    TestResult test{is_fmi3 ? "Instantiation Token Format" : "GUID Format", TestStatus::PASS, {}};
 
-    if (guid.empty())
+    if (!guid_opt.has_value() || guid_opt->empty())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back(attribute_name + " attribute is empty");
+        test.messages.push_back(attribute_name + " attribute is missing or empty");
         cert.printTestResult(test);
         return;
     }
+
+    const std::string& guid = *guid_opt;
 
     // GUID format variations:
     // Standard: {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
@@ -335,9 +395,19 @@ void ModelDescriptionCheckerBase::checkGuid(const std::string& guid, const std::
 
     if (!std::regex_match(guid, guid_pattern))
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back(attribute_name + " \"" + guid +
-                                "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
+        if (is_fmi3)
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back(attribute_name + " \"" + guid +
+                                    "\" does not match GUID format. While allowed in FMI 3.0, using a GUID is "
+                                    "recommended for uniqueness.");
+        }
+        else
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back(attribute_name + " \"" + guid +
+                                    "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
+        }
     }
 
     cert.printTestResult(test);
@@ -347,22 +417,16 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
 {
     TestResult test{"Model Version Format", TestStatus::PASS, {}};
 
-    if (!version.has_value())
+    if (!version.has_value() || version->empty())
     {
-        // Optional attribute, so passing if not present
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Model version attribute is missing or empty. It is recommended to provide a version "
+                                "number for the model.");
         cert.printTestResult(test);
         return;
     }
 
     const std::string& ver = *version;
-
-    if (ver.empty())
-    {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Model version attribute is empty");
-        cert.printTestResult(test);
-        return;
-    }
 
     // Semantic versioning format: MAJOR.MINOR.PATCH or simpler versions like MAJOR.MINOR
     // Also allow optional pre-release and build metadata (e.g., 1.0.0-alpha+001)
@@ -384,7 +448,8 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
 
     if (!copyright.has_value())
     {
-        // Optional attribute, so passing if not present
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'copyright' is missing.");
         cert.printTestResult(test);
         return;
     }
@@ -465,10 +530,51 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     }
 
     // Provide an informational note about proper format if warnings were issued
-    if (test.status == TestStatus::WARNING && test.messages.size() > 0)
+    if (test.status == TestStatus::WARNING && !test.messages.empty())
     {
         test.messages.push_back(
             "Recommended format: © [Year] [Copyright Holder Name] or Copyright [Year] [Copyright Holder Name]");
+    }
+
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>& license, Certificate& cert)
+{
+    TestResult test{"License Information", TestStatus::PASS, {}};
+
+    if (!license || license->empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back(
+            "Attribute 'license' is missing or empty. It is recommended to specify a license (e.g., 'BSD', 'MIT', "
+            "'Proprietary').");
+    }
+
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& author, Certificate& cert)
+{
+    TestResult test{"Author Information", TestStatus::PASS, {}};
+
+    if (!author || author->empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'author' is missing or empty.");
+    }
+
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert)
+{
+    TestResult test{"Generation Tool Information", TestStatus::PASS, {}};
+
+    if (!tool || tool->empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'generationTool' is missing or empty.");
     }
 
     cert.printTestResult(test);
@@ -629,8 +735,66 @@ ModelDescriptionCheckerBase::getEffectiveBounds(const Variable& var,
     return bounds;
 }
 
+std::map<std::string, std::string>
+ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::vector<std::string>& interface_elements)
+{
+    std::map<std::string, std::string> model_identifiers;
+
+    for (const auto& elem : interface_elements)
+    {
+        xmlXPathObjectPtr xpath = getXPathNodes(doc, "//" + elem);
+        if (xpath && xpath->nodesetval && xpath->nodesetval->nodeNr > 0)
+        {
+            auto model_id = getXmlAttribute(xpath->nodesetval->nodeTab[0], "modelIdentifier");
+            if (model_id.has_value())
+                model_identifiers[elem] = *model_id;
+        }
+        if (xpath)
+            xmlXPathFreeObject(xpath);
+    }
+
+    return model_identifiers;
+}
+
+ModelMetadata ModelDescriptionCheckerBase::extractMetadata(xmlNodePtr root)
+{
+    ModelMetadata metadata;
+    metadata.fmiVersion = getXmlAttribute(root, "fmiVersion").value_or("");
+    metadata.modelName = getXmlAttribute(root, "modelName").value_or("");
+
+    // Unified GUID/Instantiation Token
+    if (metadata.fmiVersion.starts_with("3."))
+        metadata.guid = getXmlAttribute(root, "instantiationToken");
+    else
+        metadata.guid = getXmlAttribute(root, "guid");
+
+    metadata.version = getXmlAttribute(root, "version");
+    metadata.author = getXmlAttribute(root, "author");
+    metadata.copyright = getXmlAttribute(root, "copyright");
+    metadata.license = getXmlAttribute(root, "license");
+    metadata.generationTool = getXmlAttribute(root, "generationTool");
+    metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
+    metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
+
+    auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
+    if (num_event_ind)
+    {
+        try
+        {
+            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
+        }
+        catch (...)
+        {
+        }
+    }
+
+    return metadata;
+}
+
 std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
+    if (!node)
+        return std::nullopt;
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
     if (!attr)
         return std::nullopt;
@@ -832,7 +996,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
         // 1. Check declaredType
         if (var.declared_type.has_value())
         {
-            if (type_definitions.find(*var.declared_type) == type_definitions.end())
+            if (!type_definitions.contains(*var.declared_type))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -855,7 +1019,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
 
         if (unit_to_check.has_value())
         {
-            if (units.find(*unit_to_check) == units.end())
+            if (!units.contains(*unit_to_check))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -871,7 +1035,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                 if (var.display_unit.has_value())
                 {
                     const auto& unit_def = units.at(*unit_to_check);
-                    if (unit_def.display_units.find(*var.display_unit) == unit_def.display_units.end())
+                    if (!unit_def.display_units.contains(*var.display_unit))
                     {
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("DisplayUnit \"" + *var.display_unit + "\" of variable \"" + var.name +
@@ -888,7 +1052,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
     {
         if (type_def.unit.has_value())
         {
-            if (units.find(*type_def.unit) == units.end())
+            if (!units.contains(*type_def.unit))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Type definition \"" + name + "\" (line " +
@@ -897,14 +1061,14 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             }
             else
             {
-                if (used_type_definitions.count(name))
+                if (used_type_definitions.contains(name))
                     used_units.insert(*type_def.unit);
 
                 // Check displayUnit if it exists on the type definition
                 if (type_def.display_unit.has_value())
                 {
                     const auto& unit_def = units.at(*type_def.unit);
-                    if (unit_def.display_units.find(*type_def.display_unit) == unit_def.display_units.end())
+                    if (!unit_def.display_units.contains(*type_def.display_unit))
                     {
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("DisplayUnit \"" + *type_def.display_unit + "\" of type definition \"" +
@@ -927,7 +1091,7 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
 
     for (const auto& [name, type_def] : type_definitions)
     {
-        if (used_type_definitions.find(name) == used_type_definitions.end())
+        if (!used_type_definitions.contains(name))
         {
             if (test.status == TestStatus::PASS)
                 test.status = TestStatus::WARNING;
@@ -938,7 +1102,7 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
 
     for (const auto& [name, unit_def] : units)
     {
-        if (used_units.find(name) == used_units.end())
+        if (!used_units.contains(name))
         {
             if (test.status == TestStatus::PASS)
                 test.status = TestStatus::WARNING;

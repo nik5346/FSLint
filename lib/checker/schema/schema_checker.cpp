@@ -335,7 +335,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     if (length > 0 && length < MAX_PATH)
         bin_dir = std::filesystem::path(path.data()).parent_path();
 
-#elifdef(__linux__)
+#elif defined(__linux__)
     std::array<char, PATH_MAX> path{};
     ssize_t len = readlink("/proc/self/exe", path.data(), path.size() - 1);
     if (len != -1)
@@ -479,7 +479,7 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
 
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
-    va_list args = nullptr; // NOLINT(cppcoreguidelines-pro-type-vararg)
+    va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg)
     va_start(args, msg);
     std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
     va_end(args);
@@ -506,7 +506,7 @@ void SchemaCheckerBase::warningCallback(void* ctx, const char* msg, ...)
 
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
-    va_list args = nullptr; // NOLINT(cppcoreguidelines-pro-type-vararg)
+    va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg)
     va_start(args, msg);
     std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
     va_end(args);
