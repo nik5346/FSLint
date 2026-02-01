@@ -1,0 +1,26 @@
+{
+    "files.associations": {
+        "*.h": "cpp",
+        "*.cpp": "cpp"
+    },
+    "cmake.configureOnOpen": true,
+    "cmake.useCMakePresets": "always",
+    "cmake.configureSettings": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+    },
+    "cmake.buildArgs": ["-j", "4"],
+    "cmake.parallelJobs": 4,
+    "cmake.preferredGenerators": [
+        "Ninja"
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "editor.formatOnSave": false,
+    "files.exclude": {
+        "**/.git": true,
+        "**/build": false
+    },
+    "search.exclude": {
+        "**/build": true,
+        "**/.vscode": true
+    }
+}

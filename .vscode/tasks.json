@@ -1,0 +1,21 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Current Project",
+            "type": "cmake",
+            "command": "build",
+            "targets": [
+                "FSLint-cli"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ]
+        }
+    ]
+}

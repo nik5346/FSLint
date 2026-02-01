@@ -1,0 +1,112 @@
+#include "checker_factory.h"
+
+#include "fmi2_schema_checker.h"
+#include "fmi3_schema_checker.h"
+#include "schema_checker.h"
+#include "ssp1_schema_checker.h"
+#include "ssp2_schema_checker.h"
+
+#include "fmi2_model_description_checker.h"
+#include "fmi3_model_description_checker.h"
+#include "model_description_checker.h"
+
+#include <fstream>
+#include <iostream>
+
+ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
+{
+    ModelInfo info;
+    info.root_path = extract_dir;
+    info.standard = ModelStandard::UNKNOWN;
+
+    // Check for FMI
+    const auto model_desc_path = extract_dir / "modelDescription.xml";
+    if (std::filesystem::exists(model_desc_path))
+    {
+        // Try to extract FMI version
+        auto version = SchemaCheckerBase::extractVersionFromXml(model_desc_path, "fmiModelDescription", "fmiVersion");
+        if (version)
+        {
+            info.version = *version;
+
+            // Determine FMI2 vs FMI3 based on version
+            if (version->starts_with("2."))
+                info.standard = ModelStandard::FMI2;
+            else if (version->starts_with("3."))
+                info.standard = ModelStandard::FMI3;
+        }
+        return info;
+    }
+
+    // Check for SSP
+    const auto system_structure_path = extract_dir / "SystemStructure.ssd";
+    if (std::filesystem::exists(system_structure_path))
+    {
+        auto version =
+            SchemaCheckerBase::extractVersionFromXml(system_structure_path, "SystemStructureDescription", "version");
+        if (version->starts_with("1."))
+        {
+            info.version = *version;
+            info.standard = ModelStandard::SSP1;
+        }
+        else if (version->starts_with("2."))
+        {
+            info.version = *version;
+            info.standard = ModelStandard::SSP2;
+        }
+        return info;
+    }
+
+    return info;
+}
+
+std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const ModelInfo& info)
+{
+    std::vector<std::unique_ptr<Checker>> checkers;
+
+    // Create schema checker
+    auto schema_checker = createSchemaChecker(info);
+    if (schema_checker)
+        checkers.push_back(std::move(schema_checker));
+
+    // Create model description checker (FMI only)
+    auto model_desc_checker = createModelDescriptionChecker(info);
+    if (model_desc_checker)
+        checkers.push_back(std::move(model_desc_checker));
+
+    return checkers;
+}
+
+std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI2:
+        return std::make_unique<Fmi2ModelDescriptionChecker>();
+    case ModelStandard::FMI3:
+        return std::make_unique<Fmi3ModelDescriptionChecker>();
+    case ModelStandard::SSP1:
+        [[fallthrough]]; // No model description checker for SSP
+    case ModelStandard::SSP2:
+        [[fallthrough]]; // No model description checker for SSP
+    default:
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Checker> CheckerFactory::createSchemaChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI2:
+        return std::make_unique<Fmi2SchemaChecker>();
+    case ModelStandard::FMI3:
+        return std::make_unique<Fmi3SchemaChecker>();
+    case ModelStandard::SSP1:
+        return std::make_unique<Ssp1SchemaChecker>();
+    case ModelStandard::SSP2:
+        return std::make_unique<Ssp2SchemaChecker>();
+    default:
+        return nullptr;
+    }
+}

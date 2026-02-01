@@ -1,0 +1,5 @@
+---
+Checks: 'cert-*,cppcoreguidelines-*,-clang-analyzer-*'
+WarningsAsErrors: ''
+HeaderFilterRegex: '(lib|cli)/.*'
+SystemHeaders: false
