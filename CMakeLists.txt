@@ -30,6 +30,7 @@ if(CLANG_TIDY_EXE)
         ${CMAKE_SOURCE_DIR}/lib/*.cpp
         ${CMAKE_SOURCE_DIR}/lib/*.h
         ${CMAKE_SOURCE_DIR}/cli/*.cpp
+        ${CMAKE_SOURCE_DIR}/tests/*.cpp
     )
 
     # Add custom target to run clang-tidy
@@ -62,6 +63,7 @@ if(CLANG_FORMAT_EXE)
         ${CMAKE_SOURCE_DIR}/lib/*.cpp
         ${CMAKE_SOURCE_DIR}/lib/*.h
         ${CMAKE_SOURCE_DIR}/cli/*.cpp
+        ${CMAKE_SOURCE_DIR}/tests/*.cpp
     )
 
     # Add format target
