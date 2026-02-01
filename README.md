@@ -12,7 +12,7 @@ FSLint is a comprehensive linting and validation tool for Functional Mock-up Uni
 - **SSP Validation**: Supports SSP 1.0 and 2.0 standards.
   - XML Schema validation for SystemStructure.ssd.
 - **Detailed Reporting**: Generates a clear "Certificate" of validation with passed tests, warnings, and detailed error messages including line numbers.
-- **Cross-Platform**: Built using CMake, supporting Linux and Windows.
+- **Cross-Platform**: Built using CMake, supporting Linux, Windows, and macOS.
 
 ## Getting Started
 
