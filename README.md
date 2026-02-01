@@ -20,8 +20,8 @@ FSLint is a comprehensive linting and validation tool for Functional Mock-up Uni
 
 - C++23 compatible compiler (e.g., GCC 13+, Clang 16+, MSVC 2022+)
 - CMake 3.15 or higher
-- libxml2
-- zlib
+
+Dependencies such as `libxml2` and `zlib` are automatically downloaded and built by CMake during the configuration process.
 
 ### Building from Source
 

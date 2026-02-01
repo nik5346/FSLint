@@ -33,13 +33,12 @@ FSLint is a cross-platform project that supports Linux, Windows, and macOS.
 
 ### Building on macOS
 
-You can build FSLint on macOS using CMake and Clang:
+You can build FSLint on macOS using CMake and Clang. All dependencies are handled automatically by CMake:
 
 ```bash
-brew install libxml2 zlib
 mkdir build
 cd build
-cmake -DLIBXML2_INCLUDE_DIR=$(brew --prefix libxml2)/include/libxml2 -DLIBXML2_LIBRARY=$(brew --prefix libxml2)/lib/libxml2.dylib ..
+cmake ..
 make
 ```
 
