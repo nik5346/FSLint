@@ -123,13 +123,16 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
 {
     TestResult test{"Variable Naming Convention", TestStatus::PASS, {}};
 
+    bool is_fmi3 = getFmiVersion().starts_with("3.");
+
     for (const auto& var : variables)
     {
         bool is_valid = true;
 
         if (convention == "flat")
         {
-            // Check specific illegal characters for flat names
+            // FMI 3.0: flat names must not contain '.', ' ', '\t', '\n', '\r'
+            // FMI 2.0: "any name is allowed", but we still check for control characters as they are highly problematic
             if (var.name.find('\r') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
@@ -150,6 +153,24 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal tab character (U+0009)");
                 is_valid = false;
+            }
+
+            if (is_fmi3)
+            {
+                if (var.name.find('.') != std::string::npos)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                            ") contains illegal character '.' for naming convention \"flat\"");
+                    is_valid = false;
+                }
+                if (var.name.find(' ') != std::string::npos)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                            ") contains illegal space character for naming convention \"flat\"");
+                    is_valid = false;
+                }
             }
         }
         else if (convention == "structured")
@@ -774,6 +795,7 @@ ModelMetadata ModelDescriptionCheckerBase::extractMetadata(xmlNodePtr root)
     metadata.license = getXmlAttribute(root, "license");
     metadata.generationTool = getXmlAttribute(root, "generationTool");
     metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
+
     metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
 
     auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");

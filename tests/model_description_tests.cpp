@@ -4,6 +4,7 @@
 #include "certificate.h"
 #include <filesystem>
 #include <algorithm>
+#include <iostream>
 
 bool has_fail(const Certificate& cert) {
     const auto& results = cert.getResults();
@@ -12,74 +13,377 @@ bool has_fail(const Certificate& cert) {
     });
 }
 
-TEST_CASE("FMI 2.0 Model Description Validation", "[fmi2]") {
+bool has_warning(const Certificate& cert) {
+    const auto& results = cert.getResults();
+    return std::any_of(results.begin(), results.end(), [](const TestResult& r) {
+        return r.status == TestStatus::WARNING;
+    });
+}
+
+bool has_error_with_text(const Certificate& cert, const std::string& text) {
+    const auto& results = cert.getResults();
+    for (const auto& r : results) {
+        if (r.status != TestStatus::FAIL) continue;
+        if (r.test_name.find(text) != std::string::npos) return true;
+        for (const auto& msg : r.messages) {
+            if (msg.find(text) != std::string::npos) return true;
+        }
+    }
+    return false;
+}
+
+bool has_warning_with_text(const Certificate& cert, const std::string& text) {
+    const auto& results = cert.getResults();
+    for (const auto& r : results) {
+        if (r.status != TestStatus::WARNING) continue;
+        if (r.test_name.find(text) != std::string::npos) return true;
+        for (const auto& msg : r.messages) {
+            if (msg.find(text) != std::string::npos) return true;
+        }
+    }
+    return false;
+}
+
+TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fails]") {
     Fmi2ModelDescriptionChecker checker;
-    Certificate cert;
 
-    SECTION("Valid FMI 2.0") {
-        std::filesystem::path path = "tests/data/fmi2/valid";
-        checker.validate(path, cert);
-
-        REQUIRE_FALSE(has_fail(cert));
-    }
-
-    SECTION("Invalid GUID FMI 2.0") {
-        std::filesystem::path path = "tests/data/fmi2/invalid_guid";
-        checker.validate(path, cert);
-
-        REQUIRE(has_fail(cert));
-
-        bool found_guid_error = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.test_name == "GUID Format" && res.status == TestStatus::FAIL) {
-                found_guid_error = true;
-                break;
+    auto validate_fail = [&](const std::string& path, const std::string& expected_error) {
+        Certificate cert;
+        checker.validate("tests/data/fmi2/fails/" + path, cert);
+        INFO("Checking path: " << path);
+        if (!has_error_with_text(cert, expected_error)) {
+            UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
+            for (const auto& res : cert.getResults()) {
+                if (res.status == TestStatus::FAIL) {
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages) {
+                        UNSCOPED_INFO("    - " << msg);
+                    }
+                }
             }
         }
-        CHECK(found_guid_error);
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, expected_error));
+    };
+
+    SECTION("File") {
+        validate_fail("malformed_xml", "Failed to parse modelDescription.xml");
+
+        Certificate cert;
+        checker.validate("tests/data/common/missing_file", cert);
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, "modelDescription.xml not found"));
     }
 
-    SECTION("Duplicate Variable Names FMI 2.0") {
-        std::filesystem::path path = "tests/data/fmi2/duplicate_variables";
-        checker.validate(path, cert);
+    SECTION("Version") {
+        validate_fail("version_empty", "FMI version attribute is empty");
+        validate_fail("version_invalid", "does not match expected format");
+    }
 
-        REQUIRE(has_fail(cert));
+    SECTION("GUID") {
+        validate_fail("guid_missing", "guid attribute is missing or empty");
+        validate_fail("guid_empty", "guid attribute is missing or empty");
+        validate_fail("guid_invalid", "does not match expected GUID format");
+    }
 
-        bool found_duplicate_error = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.test_name == "Unique Variable Names" && res.status == TestStatus::FAIL) {
-                found_duplicate_error = true;
-                break;
-            }
-        }
-        CHECK(found_duplicate_error);
+    SECTION("Variable Names") {
+        validate_fail("duplicate_name", "is not unique");
+        validate_fail("naming_flat_tab", "contains illegal tab character");
+        validate_fail("naming_flat_cr", "contains illegal carriage return");
+        validate_fail("naming_flat_lf", "contains illegal line feed");
+    }
+
+    SECTION("Metadata") {
+        validate_fail("date_invalid", "is out of range");
+        validate_fail("date_future", "is in the future");
+        validate_fail("date_format", "does not match ISO 8601 format");
+    }
+
+    SECTION("DefaultExperiment") {
+        validate_fail("exp_start_nan", "startTime is NaN");
+        validate_fail("exp_stop_less_start", "must be greater than startTime");
+    }
+
+    SECTION("Variability") {
+        validate_fail("variability_continuous_non_real", "must have variability != \"continuous\"");
+    }
+
+    SECTION("Initial/Start Values") {
+        validate_fail("start_illegal_calculated", "has initial=\"calculated\" but provides a start value");
+        validate_fail("start_illegal_independent", "has causality=\"independent\" but provides a start value");
+        validate_fail("start_missing", "must have a start value");
+        validate_fail("combination_illegal", "has illegal combination");
+    }
+
+    SECTION("References") {
+        validate_fail("ref_type_undef", "references undefined type");
+        validate_fail("ref_unit_undef", "references undefined unit");
+        validate_fail("ref_display_unit_undef", "is not defined for unit");
+    }
+
+    SECTION("Bounds") {
+        validate_fail("bounds_max_min", "max (5) must be >= min (10)");
+        validate_fail("bounds_start_min", "start (5) must be >= min (10)");
+        validate_fail("bounds_invalid_numeric", "Failed to parse numeric value");
+    }
+
+    SECTION("Interfaces") {
+        validate_fail("interface_none", "At least one interface must be implemented");
+        validate_fail("interface_id_digit", "cannot start with a digit");
+    }
+
+    SECTION("Structure") {
+        validate_fail("structure_output_missing", "ModelStructure/Outputs must have exactly one entry");
+        validate_fail("structure_derivative_no_attr", "must have the \"derivative\" attribute");
     }
 }
 
-TEST_CASE("FMI 3.0 Model Description Validation", "[fmi3]") {
-    Fmi3ModelDescriptionChecker checker;
-    Certificate cert;
+TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warnings]") {
+    Fmi2ModelDescriptionChecker checker;
 
-    SECTION("Valid FMI 3.0") {
-        std::filesystem::path path = "tests/data/fmi3/valid";
-        checker.validate(path, cert);
-
-        REQUIRE_FALSE(has_fail(cert));
-    }
-
-    SECTION("Invalid Instantiation Token FMI 3.0") {
-        std::filesystem::path path = "tests/data/fmi3/invalid_token";
-        checker.validate(path, cert);
-
-        REQUIRE(has_fail(cert));
-
-        bool found_token_error = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.test_name == "Instantiation Token Format" && res.status == TestStatus::FAIL) {
-                found_token_error = true;
-                break;
+    auto validate_warning = [&](const std::string& path, const std::string& expected_warning) {
+        Certificate cert;
+        checker.validate("tests/data/fmi2/warnings/" + path, cert);
+        INFO("Checking path: " << path);
+        if (!has_warning_with_text(cert, expected_warning)) {
+            UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
+            for (const auto& res : cert.getResults()) {
+                if (res.status == TestStatus::WARNING) {
+                    UNSCOPED_INFO("  WARN: " << res.test_name);
+                    for (const auto& msg : res.messages) {
+                        UNSCOPED_INFO("    - " << msg);
+                    }
+                }
             }
         }
-        CHECK(found_token_error);
+        REQUIRE(has_warning(cert));
+        CHECK(has_warning_with_text(cert, expected_warning));
+    };
+
+    SECTION("Metadata") {
+        validate_warning("meta_missing", "Attribute 'author' is missing");
+        validate_warning("meta_missing", "Attribute 'license' is missing");
+        validate_warning("meta_missing", "Model version attribute is missing");
+    }
+
+    SECTION("Copyright") {
+        validate_warning("copyright_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
+        validate_warning("copyright_no_year", "should include the year of publication");
+        validate_warning("copyright_no_holder", "should include the name of the copyright holder");
+    }
+
+    SECTION("Date") {
+        validate_warning("date_old", "is before the first FMI standard release");
+    }
+
+    SECTION("Identifiers") {
+        validate_warning("id_long", "longer than recommended");
+    }
+
+    SECTION("Unused") {
+        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 4) is unused");
+        validate_warning("unused_definitions", "Unit \"s\" is unused");
+    }
+
+    SECTION("Structure") {
+        validate_warning("structure_initial_unknowns_mismatch", "ModelStructure/InitialUnknowns does not contain the expected set of variables");
+        validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
+    }
+}
+
+TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fails]") {
+    Fmi3ModelDescriptionChecker checker;
+
+    auto validate_fail = [&](const std::string& path, const std::string& expected_error) {
+        Certificate cert;
+        checker.validate("tests/data/fmi3/fails/" + path, cert);
+        INFO("Checking path: " << path);
+        if (!has_error_with_text(cert, expected_error)) {
+            UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
+            for (const auto& res : cert.getResults()) {
+                if (res.status == TestStatus::FAIL) {
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages) {
+                        UNSCOPED_INFO("    - " << msg);
+                    }
+                }
+            }
+        }
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, expected_error));
+    };
+
+    SECTION("File") {
+        validate_fail("malformed_xml", "Failed to parse modelDescription.xml");
+
+        Certificate cert;
+        checker.validate("tests/data/common/missing_file", cert);
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, "modelDescription.xml not found"));
+    }
+
+    SECTION("Version") {
+        validate_fail("version_empty", "FMI version attribute is empty");
+        validate_fail("version_invalid", "does not match expected format");
+    }
+
+    SECTION("Variable Names") {
+        validate_fail("duplicate_name", "is not unique");
+        validate_fail("naming_flat_dot", "contains illegal character '.'");
+        validate_fail("naming_flat_space", "contains illegal space character");
+        validate_fail("naming_structured_invalid", "is not a legal variable name");
+    }
+
+    SECTION("Independent Variable") {
+        validate_fail("independent_none", "Exactly one independent variable must be defined, found 0");
+        validate_fail("independent_multiple", "Exactly one independent variable must be defined, found 2");
+        validate_fail("independent_type", "must be of floating point type");
+        validate_fail("independent_initial", "must not have an initial attribute");
+        validate_fail("independent_start", "must not have a start attribute");
+        validate_fail("clocked_independent", "Independent variable cannot have a clocks attribute");
+    }
+
+    SECTION("Value References") {
+        validate_fail("vr_duplicate", "Value reference 0 is used by both");
+    }
+
+    SECTION("Dimensions") {
+        validate_fail("dim_sp_zero", "must be > 0");
+        validate_fail("dim_both_start_vr", "must have either 'start' OR 'valueReference', not both");
+        validate_fail("dim_none", "must have either 'start' or 'valueReference' attribute");
+        validate_fail("dim_vr_undef", "references value reference 999 which is not a structural parameter");
+    }
+
+    SECTION("Clocks") {
+        validate_fail("clock_self", "Clock cannot reference itself");
+        validate_fail("clock_ref_undef", "References non-existent clock");
+        validate_fail("clock_ref_not_clock", "which is a Float64, not a Clock");
+        validate_fail("clock_ref_invalid_vr", "Invalid clock reference 'abc'");
+    }
+
+    SECTION("Clocked Variables") {
+        validate_fail("clocked_var_parameter", "Parameters (causality='parameter') cannot have a clocks attribute");
+        validate_fail("clocked_var_causality", "Clocked variables must have causality 'input', 'output', or 'local'");
+        validate_fail("clocked_var_variability", "Continuous variables cannot have a clocks attribute");
+    }
+
+    SECTION("Arrays") {
+        validate_fail("array_start_count", "Expected either 3 values or 1 scalar value");
+    }
+
+    SECTION("Illegal Start") {
+        validate_fail("start_illegal_calculated", "has initial=\"calculated\" but provides a start value");
+    }
+
+    SECTION("Required Start") {
+        validate_fail("start_missing", "must have a start value");
+    }
+
+    SECTION("Bounds") {
+        validate_fail("bounds_int8", "start (10) must be <= max (5)");
+        validate_fail("bounds_max_min", "max (5) must be >= min (10)");
+        validate_fail("bounds_start_min", "start (5) must be >= min (10)");
+        validate_fail("bounds_invalid_numeric", "Failed to parse numeric value");
+    }
+
+    SECTION("Variability") {
+        validate_fail("variability_continuous_non_float", "must have variability != \"continuous\"");
+    }
+
+    SECTION("Combinations") {
+        validate_fail("combination_illegal", "has illegal combination");
+    }
+
+    SECTION("Structure") {
+        validate_fail("structure_output_missing", "ModelStructure/Output must have exactly one entry");
+        validate_fail("structure_derivative_invalid", "references a variable that does not have the \"derivative\" attribute");
+    }
+
+    SECTION("Structural Parameters") {
+        validate_fail("sp_type_invalid", "must be of type UInt64");
+    }
+
+    SECTION("Metadata") {
+        validate_fail("date_invalid", "is out of range");
+        validate_fail("date_future", "is in the future");
+        validate_fail("date_format", "does not match ISO 8601 format");
+    }
+
+    SECTION("DefaultExperiment") {
+        validate_fail("exp_start_nan", "startTime is NaN");
+        validate_fail("exp_stop_less_start", "must be greater than startTime");
+    }
+
+    SECTION("References") {
+        validate_fail("ref_type_undef", "references undefined type");
+        validate_fail("ref_unit_undef", "references undefined unit");
+        validate_fail("ref_display_unit_undef", "is not defined for unit");
+    }
+
+    SECTION("Interfaces") {
+        validate_fail("interface_none", "At least one interface must be implemented");
+        validate_fail("interface_id_digit", "cannot start with a digit");
+    }
+}
+
+TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warnings]") {
+    Fmi3ModelDescriptionChecker checker;
+
+    auto validate_warning = [&](const std::string& path, const std::string& expected_warning) {
+        Certificate cert;
+        checker.validate("tests/data/fmi3/warnings/" + path, cert);
+        INFO("Checking path: " << path);
+        if (!has_warning_with_text(cert, expected_warning)) {
+            UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
+            for (const auto& res : cert.getResults()) {
+                if (res.status == TestStatus::WARNING) {
+                    UNSCOPED_INFO("  WARN: " << res.test_name);
+                    for (const auto& msg : res.messages) {
+                        UNSCOPED_INFO("    - " << msg);
+                    }
+                }
+            }
+        }
+        REQUIRE(has_warning(cert));
+        CHECK(has_warning_with_text(cert, expected_warning));
+    };
+
+    SECTION("Metadata") {
+        validate_warning("meta_missing", "Attribute 'author' is missing");
+        validate_warning("meta_missing", "Attribute 'license' is missing");
+        validate_warning("meta_missing", "Model version attribute is missing");
+    }
+
+    SECTION("Copyright") {
+        validate_warning("copyright_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
+    }
+
+    SECTION("Token") {
+        validate_warning("token_no_guid", "does not match GUID format");
+    }
+
+    SECTION("Unused") {
+        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 4) is unused");
+        validate_warning("unused_definitions", "Unit \"s\" is unused");
+    }
+
+    SECTION("Structure") {
+        validate_warning("structure_initial_unknowns_mismatch", "ModelStructure/InitialUnknowns does not contain the expected set of variables");
+    }
+}
+
+TEST_CASE("Valid FMI Models", "[valid]") {
+    Certificate cert;
+
+    SECTION("FMI 2.0 Valid") {
+        Fmi2ModelDescriptionChecker checker;
+        checker.validate("tests/data/fmi2/valid", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("FMI 3.0 Valid") {
+        Fmi3ModelDescriptionChecker checker;
+        checker.validate("tests/data/fmi3/valid", cert);
+        CHECK_FALSE(has_fail(cert));
     }
 }
