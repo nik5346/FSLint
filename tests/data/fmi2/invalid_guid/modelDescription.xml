@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+  fmiVersion="2.0"
+  modelName="InvalidGuidFMI2"
+  guid="not-a-guid"
+  generationTool="Handwritten">
+  <ModelExchange modelIdentifier="InvalidGuidFMI2"/>
+  <ModelVariables>
+    <ScalarVariable name="v1" valueReference="1" variability="continuous" causality="input">
+      <Real start="0.0"/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+  fmiVersion="2.0"
+  modelName="ValidFMI2"
+  guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}"
+  generationTool="Handwritten"
+  variableNamingConvention="flat">
+  <ModelExchange modelIdentifier="ValidFMI2"/>
+  <ModelVariables>
+    <ScalarVariable name="v1" valueReference="1" variability="continuous" causality="input">
+      <Real start="0.0"/>
+    </ScalarVariable>
+    <ScalarVariable name="v2" valueReference="2" variability="continuous" causality="output">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="2"/>
+    </Outputs>
+  </ModelStructure>
+</fmiModelDescription>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+  fmiVersion="3.0"
+  modelName="InvalidTokenFMI3"
+  generationTool="Handwritten">
+  <ModelExchange modelIdentifier="InvalidTokenFMI3"/>
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <Float64 name="v1" valueReference="1" causality="input" variability="continuous" start="0.0"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>
