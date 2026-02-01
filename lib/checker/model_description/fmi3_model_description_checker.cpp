@@ -7,92 +7,16 @@
 #include <iostream>
 #include <tuple>
 
-void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(const std::filesystem::path& xml_path, Certificate& cert)
+void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
+    xmlDocPtr doc, const std::vector<Variable>& variables,
+    [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
+    [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
 {
-    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
-    if (!doc)
-    {
-        TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml"}};
-        cert.printTestResult(test);
-        return;
-    }
-
-    // Extract variables and units using FMI3-specific extraction
-    auto variables = extractVariablesFmi3(doc);
-    applyDefaultInitialValues(variables);
-    auto type_definitions = extractTypeDefinitions(doc);
-    auto units = extractUnitDefinitions(doc);
-
-    // Get meta data
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    std::string naming_convention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
-    std::string fmi_version = getXmlAttribute(root, "fmiVersion").value_or("");
-    std::string generation_date_time = getXmlAttribute(root, "generationDateAndTime").value_or("");
-    std::string guid = getXmlAttribute(root, "instantiationToken").value_or("");
-    std::string model_version = getXmlAttribute(root, "version").value_or("");
-    std::string copyright = getXmlAttribute(root, "copyright").value_or("");
-
-    // Extract modelIdentifier from CoSimulation, ModelExchange, and ScheduledExecution elements
-    std::map<std::string, std::string> model_identifiers;
-
-    // Check CoSimulation element
-    xmlXPathObjectPtr cs_xpath = getXPathNodes(doc, "//CoSimulation");
-    if (cs_xpath && cs_xpath->nodesetval && cs_xpath->nodesetval->nodeNr > 0)
-    {
-        auto model_id = getXmlAttribute(cs_xpath->nodesetval->nodeTab[0], "modelIdentifier");
-        if (model_id.has_value())
-            model_identifiers["CoSimulation"] = *model_id;
-    }
-    if (cs_xpath)
-        xmlXPathFreeObject(cs_xpath);
-
-    // Check ModelExchange element
-    xmlXPathObjectPtr me_xpath = getXPathNodes(doc, "//ModelExchange");
-    if (me_xpath && me_xpath->nodesetval && me_xpath->nodesetval->nodeNr > 0)
-    {
-        auto model_id = getXmlAttribute(me_xpath->nodesetval->nodeTab[0], "modelIdentifier");
-        if (model_id.has_value())
-            model_identifiers["ModelExchange"] = *model_id;
-    }
-    if (me_xpath)
-        xmlXPathFreeObject(me_xpath);
-
-    // Check ScheduledExecution element (FMI3 only)
-    xmlXPathObjectPtr se_xpath = getXPathNodes(doc, "//ScheduledExecution");
-    if (se_xpath && se_xpath->nodesetval && se_xpath->nodesetval->nodeNr > 0)
-    {
-        auto model_id = getXmlAttribute(se_xpath->nodesetval->nodeTab[0], "modelIdentifier");
-        if (model_id.has_value())
-            model_identifiers["ScheduledExecution"] = *model_id;
-    }
-    if (se_xpath)
-        xmlXPathFreeObject(se_xpath);
-
-    // Run validation checks
-    checkFmiVersion(fmi_version, cert);
-    checkGuid(guid, "instantiationToken", cert);
-    checkGenerationDateAndTime(generation_date_time, cert);
-    checkModelVersion(model_version, cert);
-    checkCopyright(copyright, cert);
-
+    // Extract and check model identifiers for FMI3
+    auto model_identifiers = extractModelIdentifiers(doc, {"CoSimulation", "ModelExchange", "ScheduledExecution"});
     checkNumberOfImplementedInterfaces(model_identifiers, cert);
-    for (const auto& [interace_name, model_id] : model_identifiers)
-        checkModelIdentifier(model_id, interace_name, cert);
-
-    checkDefaultExperiment(doc, cert);
-
-    checkUniqueVariableNames(variables, cert);
-    checkLegalVariability(variables, cert);
-    checkRequiredStartValues(variables, cert);
-    checkCausalityVariabilityInitialCombinations(variables, cert);
-    checkIllegalStartValues(variables, cert);
-    checkTypeAndUnitReferences(variables, type_definitions, units, cert);
-    checkUnusedDefinitions(type_definitions, units, cert);
-    checkMinMaxStartValues(variables, type_definitions, cert);
-    checkUnits(units, cert);
-    checkVariableNamingConvention(variables, naming_convention, cert);
-    checkDerivativeReferences(variables, cert);
-    checkDerivativeDimensions(variables, cert);
+    for (const auto& [interface_name, model_id] : model_identifiers)
+        checkModelIdentifier(model_id, interface_name, cert);
 
     // FMI3-specific checks
     checkIndependentVariable(variables, cert);
@@ -102,13 +26,11 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(const std::filesy
     checkClockedVariables(variables, cert);
     checkUniqueValueReferences(variables, cert);
     checkStructuralParameter(variables, cert);
+    checkDerivativeDimensions(variables, cert);
     checkModelStructure(doc, variables, cert);
-
-    xmlFreeDoc(doc);
-    xmlCleanupParser();
 }
 
-std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariablesFmi3(xmlDocPtr doc)
+std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
 {
     std::vector<Variable> variables;
 
@@ -321,7 +243,7 @@ void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
     TestResult test{"Causality/Variability/Initial Combinations (FMI3)", TestStatus::PASS, {}};
 
     // Legal combinations for FMI 3.0
-    std::set<std::tuple<std::string, std::string, std::string>> legal_combinations = {
+    const std::set<std::tuple<std::string, std::string, std::string>> legal_combinations = {
         // FMI3: structuralParameter
         {"structuralParameter", "fixed", "exact"},
         {"structuralParameter", "tunable", "exact"},
@@ -367,7 +289,7 @@ void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
         std::string initial = var.initial.empty() ? "" : var.initial;
         auto combination = std::make_tuple(var.causality, var.variability, initial);
 
-        if (legal_combinations.find(combination) == legal_combinations.end())
+        if (!legal_combinations.contains(combination))
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -547,7 +469,7 @@ void Fmi3ModelDescriptionChecker::checkUniqueValueReferences(const std::vector<V
         {
             uint32_t vr = *var.value_reference;
 
-            if (value_references.count(vr))
+            if (value_references.contains(vr))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Value reference " + std::to_string(vr) + " is used by both \"" +
@@ -594,7 +516,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
             for (const auto& dim_ref : var.dimension_refs)
             {
                 // Check if the dimension reference points to a structural parameter
-                if (structural_params.find(dim_ref) == structural_params.end())
+                if (!structural_params.contains(dim_ref))
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -728,7 +650,7 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     continue;
                 }
 
-                if (derivative_vars.find(vr_num) == derivative_vars.end())
+                if (!derivative_vars.contains(vr_num))
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("ContinuousStateDerivative " + std::to_string(i + 1) +
@@ -877,8 +799,6 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
     return type_definitions;
 }
 
-// Add this method to fmi3_model_description_checker.cpp
-
 void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& var)
 {
     // Look for Dimension child elements
@@ -924,8 +844,6 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
         }
     }
 }
-
-// Add this method to fmi3_model_description_checker.cpp
 
 void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Variable>& variables, Certificate& cert)
 {
@@ -1056,8 +974,6 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
     cert.printTestResult(test);
 }
 
-// Add this method to fmi3_model_description_checker.cpp
-
 void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
     TestResult test{"Array Start Values (FMI3)", TestStatus::PASS, {}};
@@ -1078,10 +994,8 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
             bool size_determinable = true;
             std::vector<std::string> dimension_info;
 
-            for (size_t i = 0; i < var.dimensions.size(); ++i)
+            for (const auto& dim : var.dimensions)
             {
-                const auto& dim = var.dimensions[i];
-
                 if (dim.start.has_value())
                 {
                     // Fixed dimension size
@@ -1158,18 +1072,6 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
 
                     if (!start_str.empty())
                     {
-                        // Count values - they can be separated by spaces or commas
-                        num_start_values = 1; // At least one value if not empty
-                        for (char c : start_str)
-                        {
-                            if (c == ' ' || c == ',' || c == '\t' || c == '\n' || c == '\r')
-                            {
-                                // Check if next non-whitespace char exists
-                                // This is a simple heuristic - proper parsing would be better
-                                num_start_values++;
-                            }
-                        }
-
                         // Better approach: actually split and count non-empty tokens
                         num_start_values = 0;
                         std::stringstream ss(start_str);
@@ -1217,17 +1119,10 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
 
     // Build a map of value references to variables for efficient lookup
     std::map<uint32_t, const Variable*> vr_to_var;
-    std::map<uint32_t, const Variable*> clock_vrs;
 
     for (const auto& var : variables)
-    {
         if (var.value_reference.has_value())
-        {
             vr_to_var[*var.value_reference] = &var;
-            if (var.type == "Clock")
-                clock_vrs[*var.value_reference] = &var;
-        }
-    }
 
     // Check each variable that has a clocks attribute
     for (const auto& var : variables)

@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <string>
+#include <string_view>
 
 /**
  * Parser for FMI structured naming convention.
@@ -15,7 +16,7 @@ class StructuredNameParser
      * @param name The name to validate
      * @return true if the name is valid, false otherwise
      */
-    static bool isValid(const std::string& name)
+    static bool isValid(std::string_view name)
     {
         if (name.empty())
             return false;
@@ -25,7 +26,7 @@ class StructuredNameParser
     }
 
   private:
-    StructuredNameParser(const std::string& input)
+    explicit StructuredNameParser(std::string_view input)
         : input_(input)
         , pos_(0)
     {
@@ -300,6 +301,6 @@ class StructuredNameParser
         }
     }
 
-    const std::string& input_;
+    std::string_view input_;
     size_t pos_;
 };
