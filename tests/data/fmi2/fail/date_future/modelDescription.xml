@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription
-  fmiVersion="2.0"
-  modelName="Test"
-  guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}"
-  generationTool="Handwritten" generationDateAndTime="9999-01-01T00:00:00Z"
-  variableNamingConvention="flat">
+<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" generationTool="Handwritten" generationDateAndTime="2099-01-01T00:00:00Z" variableNamingConvention="flat">
   <ModelExchange modelIdentifier="Test"/>
   <ModelVariables>
     <ScalarVariable name="v" valueReference="1" causality="output" variability="continuous">
@@ -12,6 +7,8 @@
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
-    <Outputs><Unknown index="1"/></Outputs>
+    <Outputs>
+      <Unknown index="1"/>
+    </Outputs>
   </ModelStructure>
 </fmiModelDescription>
