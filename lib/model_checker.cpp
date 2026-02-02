@@ -11,7 +11,7 @@
 #include <iostream>
 #include <sstream>
 
-void ModelChecker::validate(const std::filesystem::path& path)
+void ModelChecker::validate(const std::filesystem::path& path) const
 {
     Certificate cert;
 
@@ -66,7 +66,7 @@ void ModelChecker::validate(const std::filesystem::path& path)
         std::filesystem::remove_all(extract_dir);
 }
 
-bool ModelChecker::addCertificate(const std::filesystem::path& path)
+bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 {
     Certificate cert;
 
@@ -150,7 +150,7 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path)
     return true;
 }
 
-bool ModelChecker::updateCertificate(const std::filesystem::path& path)
+bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
 {
     std::cout << "Re-validating model and updating certificate...\n\n";
 

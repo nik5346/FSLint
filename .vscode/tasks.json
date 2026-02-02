@@ -6,7 +6,8 @@
             "type": "cmake",
             "command": "build",
             "targets": [
-                "FSLint-cli"
+                "FSLint-cli",
+                "FSLint-tests"
             ],
             "group": {
                 "kind": "build",
