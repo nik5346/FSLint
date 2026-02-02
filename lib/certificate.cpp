@@ -90,6 +90,8 @@ void Certificate::printSubsectionHeader(const std::string& name)
 
 void Certificate::printTestResult(const TestResult& test)
 {
+    m_results.push_back(test);
+
     std::stringstream ss;
     if (test.status == TestStatus::PASS)
     {

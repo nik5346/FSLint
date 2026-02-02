@@ -25,6 +25,7 @@ class Certificate
 {
   private:
     std::stringstream report_buffer;
+    std::vector<TestResult> m_results;
 
     // Subsection tracking
     size_t current_subsection_passed = 0;
@@ -43,5 +44,10 @@ class Certificate
     std::string getFullReport() const
     {
         return report_buffer.str();
+    }
+
+    const std::vector<TestResult>& getResults() const
+    {
+        return m_results;
     }
 };

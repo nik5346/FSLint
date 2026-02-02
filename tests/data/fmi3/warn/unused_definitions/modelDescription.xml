@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <UnitDefinitions><Unit name="m"/><Unit name="s"/></UnitDefinitions>
+  <TypeDefinitions><Float64Type name="MyType" unit="m"/><Float64Type name="UnusedType" unit="s"/></TypeDefinitions>
+  <ModelExchange modelIdentifier="Test"/>
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent"/>
+    <Float64 name="v" valueReference="1" declaredType="MyType"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>
