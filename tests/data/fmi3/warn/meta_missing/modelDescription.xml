@@ -5,5 +5,8 @@
     <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
     <Float64 name="v" valueReference="1" causality="output" variability="continuous" initial="calculated"/>
   </ModelVariables>
-  <ModelStructure><Output valueReference="1"/><InitialUnknown valueReference="1"/></ModelStructure>
+  <ModelStructure>
+    <Output valueReference="1"/>
+    <InitialUnknown valueReference="1"/>
+  </ModelStructure>
 </fmiModelDescription>

@@ -2,7 +2,9 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" variableNamingConvention="flat">
   <ModelExchange modelIdentifier="Test"/>
   <ModelVariables>
-    <ScalarVariable name="v&#13;with_cr" valueReference="1"><Real/></ScalarVariable>
+    <ScalarVariable name="v&#13;with_cr" valueReference="1">
+      <Real/>
+    </ScalarVariable>
   </ModelVariables>
   <ModelStructure/>
 </fmiModelDescription>

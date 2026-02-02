@@ -4,10 +4,10 @@
   <ModelVariables>
     <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
     <Float64 name="x" valueReference="1" causality="local" variability="continuous">
-        <Dimension start="2"/>
+      <Dimension start="2"/>
     </Float64>
     <Float64 name="der_x" valueReference="2" causality="local" variability="continuous" derivative="1">
-        <Dimension start="3"/>
+      <Dimension start="3"/>
     </Float64>
   </ModelVariables>
   <ModelStructure>
