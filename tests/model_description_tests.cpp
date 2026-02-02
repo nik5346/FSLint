@@ -271,7 +271,16 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     SECTION("Variable Names")
     {
         validate_fail("duplicate_name", "is not unique");
+        validate_fail("naming_flat_tab", "contains illegal tab character");
+        validate_fail("naming_flat_cr", "contains illegal carriage return");
+        validate_fail("naming_flat_lf", "contains illegal line feed");
         validate_fail("naming_structured_invalid", "is not a legal variable name");
+    }
+
+    SECTION("Token")
+    {
+        validate_fail("token_missing", "instantiationToken attribute is missing or empty");
+        validate_fail("token_empty", "instantiationToken attribute is missing or empty");
     }
 
     SECTION("Independent Variable")
@@ -350,6 +359,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("structure_output_missing", "ModelStructure/Output must have exactly one entry");
         validate_fail("structure_derivative_invalid",
                       "references a variable that does not have the \"derivative\" attribute");
+        validate_fail("derivative_dimension_mismatch", "but has different dimensions");
     }
 
     SECTION("Structural Parameters")
@@ -420,6 +430,18 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
     SECTION("Copyright")
     {
         validate_warning("copyright_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
+        validate_warning("copyright_no_year", "should include the year of publication");
+        validate_warning("copyright_no_holder", "should include the name of the copyright holder");
+    }
+
+    SECTION("Date")
+    {
+        validate_warning("date_old", "is before the first FMI standard release");
+    }
+
+    SECTION("Identifiers")
+    {
+        validate_warning("id_long", "longer than recommended");
     }
 
     SECTION("Token")
@@ -437,6 +459,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
     {
         validate_warning("structure_initial_unknowns_mismatch",
                          "ModelStructure/InitialUnknowns does not contain the expected set of variables");
+        validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
     }
 }
 
