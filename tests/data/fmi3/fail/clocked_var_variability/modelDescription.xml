@@ -5,5 +5,7 @@
     <Clock name="c" valueReference="1" causality="input"/>
     <Float64 name="v" valueReference="2" causality="output" variability="continuous" clocks="1"/>
   </ModelVariables>
-  <ModelStructure><Output valueReference="2"/></ModelStructure>
+  <ModelStructure>
+    <Output valueReference="2"/>
+  </ModelStructure>
 </fmiModelDescription>

@@ -27,21 +27,6 @@ Thank you for your interest in contributing to FSLint! We welcome contributions 
 - We use `clang-tidy` for static analysis. Ensure your changes do not introduce new warnings.
 - Follow modern C++ practices (C++23).
 
-## Development Environment
-
-FSLint is a cross-platform project that supports Linux, Windows, and macOS.
-
-### Building on macOS
-
-You can build FSLint on macOS using CMake and Clang. All dependencies are handled automatically by CMake:
-
-```bash
-mkdir build
-cd build
-cmake ..
-make
-```
-
 ## Testing
 
 Please run any existing tests and add new ones for your changes. We strive for high test coverage for the core validation logic.

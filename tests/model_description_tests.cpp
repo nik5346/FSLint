@@ -81,17 +81,13 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     SECTION("File")
     {
         validate_fail("malformed_xml", "Failed to parse modelDescription.xml");
-
-        Certificate cert;
-        checker.validate("tests/data/common/missing_file", cert);
-        REQUIRE(has_fail(cert));
-        CHECK(has_error_with_text(cert, "modelDescription.xml not found"));
+        validate_fail("missing_file", "modelDescription.xml not found");
     }
 
     SECTION("Version")
     {
-        validate_fail("version_empty", "FMI version attribute is empty");
-        validate_fail("version_invalid", "does not match expected format");
+        validate_fail("fmi_version_empty", "FMI version attribute is empty");
+        validate_fail("fmi_version_invalid", "does not match expected format");
     }
 
     SECTION("GUID")
@@ -214,7 +210,7 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
     SECTION("Unused")
     {
-        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 4) is unused");
+        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 11) is unused");
         validate_warning("unused_definitions", "Unit \"s\" is unused");
     }
 
@@ -223,6 +219,18 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning("structure_initial_unknowns_mismatch",
                          "ModelStructure/InitialUnknowns does not contain the expected set of variables");
         validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
+    }
+}
+
+TEST_CASE("FMI 2.0 Model Description Passing Cases", "[fmi2][pass]")
+{
+    Certificate cert;
+
+    SECTION("FMI 2.0 Valid")
+    {
+        Fmi2ModelDescriptionChecker checker;
+        checker.validate("tests/data/fmi2/pass", cert);
+        CHECK_FALSE(has_fail(cert));
     }
 }
 
@@ -255,17 +263,13 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     SECTION("File")
     {
         validate_fail("malformed_xml", "Failed to parse modelDescription.xml");
-
-        Certificate cert;
-        checker.validate("tests/data/common/missing_file", cert);
-        REQUIRE(has_fail(cert));
-        CHECK(has_error_with_text(cert, "modelDescription.xml not found"));
+        validate_fail("missing_file", "modelDescription.xml not found");
     }
 
     SECTION("Version")
     {
-        validate_fail("version_empty", "FMI version attribute is empty");
-        validate_fail("version_invalid", "does not match expected format");
+        validate_fail("fmi_version_empty", "FMI version attribute is empty");
+        validate_fail("fmi_version_invalid", "does not match expected format");
     }
 
     SECTION("Variable Names")
@@ -451,7 +455,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("Unused")
     {
-        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 4) is unused");
+        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 9) is unused");
         validate_warning("unused_definitions", "Unit \"s\" is unused");
     }
 
@@ -463,16 +467,9 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
     }
 }
 
-TEST_CASE("Valid FMI Models", "[valid]")
+TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
 {
     Certificate cert;
-
-    SECTION("FMI 2.0 Valid")
-    {
-        Fmi2ModelDescriptionChecker checker;
-        checker.validate("tests/data/fmi2/pass", cert);
-        CHECK_FALSE(has_fail(cert));
-    }
 
     SECTION("FMI 3.0 Valid")
     {

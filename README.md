@@ -21,8 +21,6 @@ FSLint is a comprehensive linting and validation tool for Functional Mock-up Uni
 - C++23 compatible compiler (e.g., GCC 13+, Clang 16+, MSVC 2022+)
 - CMake 3.15 or higher
 
-Dependencies such as `libxml2` and `zlib` are automatically downloaded and built by CMake during the configuration process.
-
 ### Building from Source
 
 ```bash
@@ -42,19 +40,27 @@ Run the `FSLint-cli` tool on an FMU file or an extracted directory:
 
 Example output:
 ```text
---------------------------------------------------------------------------------
-FSLint - FMU/SSP VALIDATION REPORT
---------------------------------------------------------------------------------
-Model: path/to/your_model.fmu
-Standard: FMI 2.0
---------------------------------------------------------------------------------
+╔════════════════════════════════════════════════════════════╗
+║ MODEL VALIDATION REPORT                                    ║
+╚════════════════════════════════════════════════════════════╝
+Tool:       FSLint 0.0.1
+Timestamp:  2026-02-01 17:22:28 UTC
+Model Path: /path/to/your_model/model.fmu
+SHA256:     0ad0a8b1ac49c7808aad524b171c1534c3ace783cdc1f2681dd13b0b54b8e889
 
-[PASS] Parse Model Description
-[PASS] FMI Version Format
-[PASS] GUID Format
-[WARN] Generation Date and Time Format: Attribute 'generationDateAndTime' is missing.
-[PASS] Unique Variable Names
+┌────────────────────────────────────────┐
+│ ARCHIVE VALIDATION                     │
+└────────────────────────────────────────┘
+
+  [✓ PASS] File Extension Check
+  [✓ PASS] Disk Spanning Check
+  [✓ PASS] Compression Method Check
+
 ...
+
+╔════════════════════════════════════════════════════════════╗
+║ ✓ MODEL VALIDATION PASSED                                  ║
+╚════════════════════════════════════════════════════════════╝
 ```
 
 ## Project Structure
@@ -66,7 +72,7 @@ Standard: FMI 2.0
 
 ## Contributing
 
-Contributions are welcome! Please ensure your code follows the project's `.clang-format` style and passes `clang-tidy` checks.
+Contributions are welcome! See the [CONTRIBUTING](CONTRIBUTING) file for details.
 
 ## License
 

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" copyright="© MyCompany">
   <ModelExchange modelIdentifier="Test"/>
-  <ModelVariables><ScalarVariable name="v" valueReference="1"><Real/></ScalarVariable></ModelVariables>
+  <ModelVariables>
+    <ScalarVariable name="v" valueReference="1">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
   <ModelStructure/>
 </fmiModelDescription>

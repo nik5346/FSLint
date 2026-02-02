@@ -2,7 +2,13 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" generationDateAndTime="invalid-date">
   <ModelExchange modelIdentifier="Test"/>
   <ModelVariables>
-    <ScalarVariable name="v" valueReference="1" causality="output"><Real/></ScalarVariable>
+    <ScalarVariable name="v" valueReference="1" causality="output">
+      <Real/>
+    </ScalarVariable>
   </ModelVariables>
-  <ModelStructure><Outputs><Unknown index="1"/></Outputs></ModelStructure>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="1"/>
+    </Outputs>
+  </ModelStructure>
 </fmiModelDescription>
