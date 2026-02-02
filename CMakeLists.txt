@@ -327,17 +327,17 @@ add_executable(FSLint-cli
 # ============================================================================
 enable_testing()
 
-add_executable(fslint_tests
+add_executable(FSLint-tests
     tests/model_description_tests.cpp
 )
 
-target_link_libraries(fslint_tests PRIVATE
+target_link_libraries(FSLint-tests PRIVATE
     FSLint-lib
     Catch2::Catch2WithMain
 )
 
 # Add test to CTest
-add_test(NAME ModelDescriptionTests COMMAND fslint_tests)
+add_test(NAME ModelDescriptionTests COMMAND FSLint-tests)
 
 # Copy test data to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
@@ -370,6 +370,42 @@ if(WIN32)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 $<TARGET_FILE:zlib>
                 $<TARGET_FILE_DIR:FSLint-cli>
+            COMMENT "Copying zlib DLL to output directory"
+        )
+    endif()
+
+    if(TARGET Catch2)
+        add_custom_command(TARGET FSLint-tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:Catch2>
+                $<TARGET_FILE_DIR:FSLint-tests>
+            COMMENT "Copying Catch2 DLL to output directory"
+        )
+    endif()
+
+    if(TARGET Catch2::Catch2WithMain)
+        add_custom_command(TARGET FSLint-tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:Catch2::Catch2WithMain>
+                $<TARGET_FILE_DIR:FSLint-tests>
+            COMMENT "Copying Catch2Main DLL to output directory"
+        )
+    endif()
+
+    if(TARGET LibXml2::LibXml2)
+        add_custom_command(TARGET FSLint-tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:LibXml2::LibXml2>
+                $<TARGET_FILE_DIR:FSLint-tests>
+            COMMENT "Copying libxml2 DLL to output directory"
+        )
+    endif()
+
+    if(TARGET zlib)
+        add_custom_command(TARGET FSLint-tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:zlib>
+                $<TARGET_FILE_DIR:FSLint-tests>
             COMMENT "Copying zlib DLL to output directory"
         )
     endif()
