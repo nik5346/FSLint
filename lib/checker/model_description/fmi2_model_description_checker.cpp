@@ -7,90 +7,22 @@
 #include <iostream>
 #include <tuple>
 
-void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(const std::filesystem::path& xml_path, Certificate& cert)
+void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
+    xmlDocPtr doc, const std::vector<Variable>& variables,
+    [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
+    [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
 {
-    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
-    if (!doc)
-    {
-        TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml"}};
-        cert.printTestResult(test);
-        return;
-    }
-
-    // Extract variables and units using FMI2-specific extraction
-    auto variables = extractVariablesFmi2(doc);
-    applyDefaultInitialValues(variables);
-    auto type_definitions = extractTypeDefinitions(doc);
-    auto units = extractUnitDefinitions(doc);
-
-    // Get meta data
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    std::string naming_convention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
-    std::string fmi_version = getXmlAttribute(root, "fmiVersion").value_or("");
-    std::string generation_date_time = getXmlAttribute(root, "generationDateAndTime").value_or("");
-    std::string guid = getXmlAttribute(root, "guid").value_or("");
-    std::string model_version = getXmlAttribute(root, "version").value_or("");
-    std::string copyright = getXmlAttribute(root, "copyright").value_or("");
-
-    // Extract modelIdentifier from CoSimulation and ModelExchange elements
-    std::map<std::string, std::string> model_identifiers;
-
-    // Check CoSimulation element
-    xmlXPathObjectPtr cs_xpath = getXPathNodes(doc, "//CoSimulation");
-    if (cs_xpath && cs_xpath->nodesetval && cs_xpath->nodesetval->nodeNr > 0)
-    {
-        auto model_id = getXmlAttribute(cs_xpath->nodesetval->nodeTab[0], "modelIdentifier");
-        if (model_id.has_value())
-            model_identifiers["CoSimulation"] = *model_id;
-    }
-    if (cs_xpath)
-        xmlXPathFreeObject(cs_xpath);
-
-    // Check ModelExchange element
-    xmlXPathObjectPtr me_xpath = getXPathNodes(doc, "//ModelExchange");
-    if (me_xpath && me_xpath->nodesetval && me_xpath->nodesetval->nodeNr > 0)
-    {
-        auto model_id = getXmlAttribute(me_xpath->nodesetval->nodeTab[0], "modelIdentifier");
-        if (model_id.has_value())
-            model_identifiers["ModelExchange"] = *model_id;
-    }
-    if (me_xpath)
-        xmlXPathFreeObject(me_xpath);
-
-    // Run validation checks
-    checkFmiVersion(fmi_version, cert);
-    checkGuid(guid, "guid", cert);
-    checkGenerationDateAndTime(generation_date_time, cert);
-    checkModelVersion(model_version, cert);
-    checkCopyright(copyright, cert);
-
+    // Extract and check model identifiers for FMI2
+    auto model_identifiers = extractModelIdentifiers(doc, {"CoSimulation", "ModelExchange"});
     checkNumberOfImplementedInterfaces(model_identifiers, cert);
-    for (const auto& [interace_name, model_id] : model_identifiers)
-        checkModelIdentifier(model_id, interace_name, cert);
+    for (const auto& [interface_name, model_id] : model_identifiers)
+        checkModelIdentifier(model_id, interface_name, cert);
 
-    checkDefaultExperiment(doc, cert);
-
-    checkUniqueVariableNames(variables, cert);
-    checkLegalVariability(variables, cert);
-    checkRequiredStartValues(variables, cert);
-    checkCausalityVariabilityInitialCombinations(variables, cert);
-    checkIllegalStartValues(variables, cert);
-    checkTypeAndUnitReferences(variables, type_definitions, units, cert);
-
-    checkUnusedDefinitions(type_definitions, units, cert);
-    checkMinMaxStartValues(variables, type_definitions, cert);
-    checkUnits(units, cert);
-    checkVariableNamingConvention(variables, naming_convention, cert);
-    checkDerivativeReferences(variables, cert);
-
-    // FMI2-specific checks
+    // Run FMI2-specific model structure checks
     checkModelStructure(doc, variables, cert);
-
-    xmlFreeDoc(doc);
-    xmlCleanupParser();
 }
 
-std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariablesFmi2(xmlDocPtr doc)
+std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
 {
     std::vector<Variable> variables;
 
@@ -290,7 +222,7 @@ void Fmi2ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
     TestResult test{"Causality/Variability/Initial Combinations (FMI2)", TestStatus::PASS, {}};
 
     // Legal combinations for FMI 2.0
-    std::set<std::tuple<std::string, std::string, std::string>> legal_combinations = {
+    const std::set<std::tuple<std::string, std::string, std::string>> legal_combinations = {
         {"parameter", "fixed", "exact"},
         {"parameter", "tunable", "exact"},
 
@@ -332,7 +264,7 @@ void Fmi2ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
         std::string initial = var.initial.empty() ? "" : var.initial;
         auto combination = std::make_tuple(var.causality, var.variability, initial);
 
-        if (legal_combinations.find(combination) == legal_combinations.end())
+        if (!legal_combinations.contains(combination))
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -515,7 +447,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     {
                         const auto& var = variables[index - 1];
 
-                        if (has_derivative_attr.find(var.name) == has_derivative_attr.end())
+                        if (!has_derivative_attr.contains(var.name))
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Variable \"" + var.name + "\" (line " +

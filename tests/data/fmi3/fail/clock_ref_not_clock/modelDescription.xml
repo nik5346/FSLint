@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <Float64 name="p" valueReference="1" causality="parameter" start="1.0"/>
+    <Float64 name="v" valueReference="2" clocks="1"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

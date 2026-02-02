@@ -66,6 +66,22 @@ struct TypeDefinition
     size_t sourceline = 0;
 };
 
+// Common metadata from the root element of modelDescription.xml
+struct ModelMetadata
+{
+    std::string fmiVersion;
+    std::string modelName;
+    std::optional<std::string> guid; // Unified guid (FMI2) / instantiationToken (FMI3)
+    std::optional<std::string> version;
+    std::optional<std::string> author;
+    std::optional<std::string> copyright;
+    std::optional<std::string> license;
+    std::optional<std::string> generationTool;
+    std::optional<std::string> generationDateAndTime;
+    std::string variableNamingConvention = "flat";
+    std::optional<uint32_t> numberOfEventIndicators;
+};
+
 class ModelDescriptionCheckerBase : public Checker
 {
   public:
@@ -73,7 +89,10 @@ class ModelDescriptionCheckerBase : public Checker
 
   protected:
     // Each derived class implements version-specific validation
-    virtual void performVersionSpecificChecks(const std::filesystem::path& xml_path, Certificate& cert) = 0;
+    virtual void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                              const std::map<std::string, TypeDefinition>& type_definitions,
+                                              const std::map<std::string, UnitDefinition>& units,
+                                              Certificate& cert) = 0;
 
     virtual std::string getFmiVersion() const = 0;
 
@@ -84,9 +103,12 @@ class ModelDescriptionCheckerBase : public Checker
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
     void checkFmiVersion(const std::string& fmi_version, Certificate& cert);
-    void checkGuid(const std::string& guid, const std::string& attribute_name, Certificate& cert);
+    void checkGuid(const std::optional<std::string>& guid, const std::string& fmi_version, Certificate& cert);
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
     void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert);
+    void checkLicense(const std::optional<std::string>& license, Certificate& cert);
+    void checkAuthor(const std::optional<std::string>& author, Certificate& cert);
+    void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert);
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
                                             Certificate& cert);
     void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
@@ -118,8 +140,12 @@ class ModelDescriptionCheckerBase : public Checker
                                         Certificate& cert) = 0;
 
     // XML parsing helpers
+    ModelMetadata extractMetadata(xmlNodePtr root);
+    std::map<std::string, std::string> extractModelIdentifiers(xmlDocPtr doc,
+                                                               const std::vector<std::string>& interface_elements);
     std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc);
     virtual std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) = 0;
+    virtual std::vector<Variable> extractVariables(xmlDocPtr doc) = 0;
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
     xmlXPathObjectPtr getXPathNodes(xmlDocPtr doc, const std::string& xpath);
 

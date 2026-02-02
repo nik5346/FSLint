@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <ModelVariables>
+    <Int32 name="time" valueReference="1" causality="independent"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>
