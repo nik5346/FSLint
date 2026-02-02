@@ -48,6 +48,44 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "Debug Tests (Windows)",
+            "request": "launch",
+            "program": "${workspaceFolder}\\build\\windows-clang-debug\\fslint_tests.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "type": "cppvsdbg",
+            "preLaunchTask": "Build Current Project"
+        },
+        {
+            "name": "Debug Tests (macOS)",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/macos-clang-debug/fslint_tests",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build Current Project",
+            "console": "integratedTerminal",
+            "type": "lldb"
+        },
+        {
+            "name": "Debug Tests (Linux)",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux-clang-debug/fslint_tests",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build Current Project",
+            "type": "cppdbg",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ],
     "inputs": [
