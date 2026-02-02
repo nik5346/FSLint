@@ -129,7 +129,8 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
 
         if (convention == "flat")
         {
-            // Check specific illegal characters for flat names
+            // For "flat" convention, "any name is allowed".
+            // However, we still check for control characters as they are highly problematic for tools and reporting.
             if (var.name.find('\r') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
@@ -774,6 +775,7 @@ ModelMetadata ModelDescriptionCheckerBase::extractMetadata(xmlNodePtr root)
     metadata.license = getXmlAttribute(root, "license");
     metadata.generationTool = getXmlAttribute(root, "generationTool");
     metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
+
     metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
 
     auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");

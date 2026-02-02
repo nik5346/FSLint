@@ -30,6 +30,7 @@ if(CLANG_TIDY_EXE)
         ${CMAKE_SOURCE_DIR}/lib/*.cpp
         ${CMAKE_SOURCE_DIR}/lib/*.h
         ${CMAKE_SOURCE_DIR}/cli/*.cpp
+        ${CMAKE_SOURCE_DIR}/tests/*.cpp
     )
 
     # Add custom target to run clang-tidy
@@ -62,6 +63,7 @@ if(CLANG_FORMAT_EXE)
         ${CMAKE_SOURCE_DIR}/lib/*.cpp
         ${CMAKE_SOURCE_DIR}/lib/*.h
         ${CMAKE_SOURCE_DIR}/cli/*.cpp
+        ${CMAKE_SOURCE_DIR}/tests/*.cpp
     )
 
     # Add format target
@@ -232,7 +234,14 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/okdshin/PicoSHA2.git
     GIT_TAG        b699e6c900be6e00152db5a3d123c1db42ea13d0  # Latest commit
 )
-FetchContent_MakeAvailable(picosha2)
+
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.4.0
+)
+
+FetchContent_MakeAvailable(picosha2 Catch2)
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
@@ -312,6 +321,26 @@ endif()
 add_executable(FSLint-cli
     cli/main.cpp
 )
+
+# ============================================================================
+# Tests
+# ============================================================================
+enable_testing()
+
+add_executable(fslint_tests
+    tests/model_description_tests.cpp
+)
+
+target_link_libraries(fslint_tests PRIVATE
+    FSLint-lib
+    Catch2::Catch2WithMain
+)
+
+# Add test to CTest
+add_test(NAME ModelDescriptionTests COMMAND fslint_tests)
+
+# Copy test data to build directory
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT FSLint-cli)
 

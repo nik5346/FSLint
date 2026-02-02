@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+  fmiVersion="2.0"
+  modelName="Test"
+  guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}"
+  generationTool="Handwritten"
+  variableNamingConvention="flat">
+  <ModelExchange modelIdentifier="Test"/>
+  <ModelVariables>
+    <ScalarVariable name="x" valueReference="1" causality="local" variability="continuous"><Real/></ScalarVariable><ScalarVariable name="dx" valueReference="2" causality="local" variability="continuous"><Real derivative="1"/></ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Derivatives></Derivatives>
+  </ModelStructure>
+</fmiModelDescription>
