@@ -1,5 +1,5 @@
 ---
 Checks: 'cert-*,cppcoreguidelines-*,-clang-analyzer-*'
 WarningsAsErrors: ''
-HeaderFilterRegex: '(lib|cli|tests)/.*'
+HeaderFilterRegex: '^(?!.*(_deps|build)).*/(lib|cli|tests)/.*'
 SystemHeaders: false
