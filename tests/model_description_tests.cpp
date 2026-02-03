@@ -86,8 +86,10 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
     SECTION("Version")
     {
-        validate_fail("fmi_version_empty", "FMI version attribute is empty");
+        validate_fail("fmi_version_missing", "attribute is missing");
+        validate_fail("fmi_version_empty", "attribute is empty");
         validate_fail("fmi_version_invalid", "does not match expected format");
+        validate_fail("fmi_version_patch", "does not match expected format");
     }
 
     SECTION("GUID")
@@ -103,6 +105,11 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("naming_flat_tab", "contains illegal tab character");
         validate_fail("naming_flat_cr", "contains illegal carriage return");
         validate_fail("naming_flat_lf", "contains illegal line feed");
+        validate_fail("naming_structured_invalid_der", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_qname", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_indices", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_char", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_start", "is not a legal variable name");
     }
 
     SECTION("Metadata")
@@ -187,9 +194,13 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
     SECTION("Metadata")
     {
-        validate_warning("meta_missing", "Attribute 'author' is missing");
-        validate_warning("meta_missing", "Attribute 'license' is missing");
-        validate_warning("meta_missing", "Model version attribute is missing");
+        validate_warning("meta_missing", "Attribute 'author' is missing or empty");
+        validate_warning("meta_missing", "Attribute 'generationTool' is missing or empty");
+        validate_warning("meta_missing", "Attribute 'license' is missing or empty");
+        validate_warning("meta_missing", "Attribute 'copyright' is missing");
+        validate_warning("model_version_missing", "Model version attribute is missing or empty");
+        validate_warning("model_version_empty", "Model version attribute is missing or empty");
+        validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
     }
 
     SECTION("Copyright")
@@ -435,9 +446,11 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("Metadata")
     {
-        validate_warning("meta_missing", "Attribute 'author' is missing");
-        validate_warning("meta_missing", "Attribute 'license' is missing");
-        validate_warning("meta_missing", "Model version attribute is missing");
+        validate_warning("meta_missing", "Attribute 'author' is missing or empty");
+        validate_warning("meta_missing", "Attribute 'generationTool' is missing or empty");
+        validate_warning("meta_missing", "Attribute 'license' is missing or empty");
+        validate_warning("meta_missing", "Attribute 'copyright' is missing");
+        validate_warning("meta_missing", "Model version attribute is missing or empty");
     }
 
     SECTION("Copyright")

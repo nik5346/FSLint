@@ -51,7 +51,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkGuid(metadata.guid, metadata.fmiVersion, cert);
 
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
-    checkModelVersion(metadata.version, cert);
+    checkModelVersion(metadata.modelVersion, cert);
     checkCopyright(metadata.copyright, cert);
     checkLicense(metadata.license, cert);
     checkAuthor(metadata.author, cert);
@@ -136,21 +136,24 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             if (var.name.find('\r') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                std::string escaped_name = std::regex_replace(var.name, std::regex("\r"), "\\r");
+                test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal carriage return character (U+000D)");
                 is_valid = false;
             }
             if (var.name.find('\n') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                std::string escaped_name = std::regex_replace(var.name, std::regex("\n"), "\\n");
+                test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal line feed character (U+000A)");
                 is_valid = false;
             }
             if (var.name.find('\t') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                std::string escaped_name = std::regex_replace(var.name, std::regex("\t"), "\\t");
+                test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal tab character (U+0009)");
                 is_valid = false;
             }
@@ -369,11 +372,19 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkFmiVersion(const std::string& fmi_version, Certificate& cert)
+void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert)
 {
     TestResult test{"FMI Version Format", TestStatus::PASS, {}};
 
-    if (fmi_version.empty())
+    if (!fmi_version.has_value())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("FMI version attribute is missing");
+        cert.printTestResult(test);
+        return;
+    }
+
+    if (fmi_version->empty())
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("FMI version attribute is empty");
@@ -385,21 +396,21 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::string& fmi_version
     // Note: Patch versions (X.Y.Z) should NOT be used - all patch releases use X.Y for compatibility
     std::regex version_pattern(R"(^(\d+)\.(\d+)(?:-([a-zA-Z0-9.-]+))?$)");
 
-    if (!std::regex_match(fmi_version, version_pattern))
+    if (!std::regex_match(*fmi_version, version_pattern))
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back(
-            "FMI version \"" + fmi_version +
+            "FMI version \"" + *fmi_version +
             "\" does not match expected format (X.Y or X.Y-suffix, patch versions should be omitted)");
     }
 
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkGuid(const std::optional<std::string>& guid_opt, const std::string& fmi_version,
-                                            Certificate& cert)
+void ModelDescriptionCheckerBase::checkGuid(const std::optional<std::string>& guid_opt,
+                                            const std::optional<std::string>& fmi_version, Certificate& cert)
 {
-    bool is_fmi3 = fmi_version.starts_with("3.");
+    bool is_fmi3 = fmi_version && fmi_version->starts_with("3.");
     std::string attribute_name = is_fmi3 ? "instantiationToken" : "guid";
     TestResult test{is_fmi3 ? "Instantiation Token Format" : "GUID Format", TestStatus::PASS, {}};
 
@@ -787,16 +798,16 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::v
 ModelMetadata ModelDescriptionCheckerBase::extractMetadata(xmlNodePtr root)
 {
     ModelMetadata metadata;
-    metadata.fmiVersion = getXmlAttribute(root, "fmiVersion").value_or("");
+    metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
     metadata.modelName = getXmlAttribute(root, "modelName").value_or("");
 
     // Unified GUID/Instantiation Token
-    if (metadata.fmiVersion.starts_with("3."))
+    if (metadata.fmiVersion && metadata.fmiVersion->starts_with("3."))
         metadata.guid = getXmlAttribute(root, "instantiationToken");
     else
         metadata.guid = getXmlAttribute(root, "guid");
 
-    metadata.version = getXmlAttribute(root, "version");
+    metadata.modelVersion = getXmlAttribute(root, "version");
     metadata.author = getXmlAttribute(root, "author");
     metadata.copyright = getXmlAttribute(root, "copyright");
     metadata.license = getXmlAttribute(root, "license");
