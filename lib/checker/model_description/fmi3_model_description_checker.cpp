@@ -164,8 +164,8 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
         }
         else if (var.causality == "input")
         {
-            // FMI3: initial NOT ALLOWED for input - keep empty
-            var.initial = "";
+            if (var.variability == "discrete" || var.variability == "continuous")
+                var.initial = "exact";
         }
         else if (var.causality == "output")
         {
@@ -258,9 +258,8 @@ void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
         {"calculatedParameter", "tunable", "calculated"},
         {"calculatedParameter", "tunable", "approx"},
 
-        // FMI3: inputs must NOT have initial attribute (empty string)
-        {"input", "discrete", ""},
-        {"input", "continuous", ""},
+        {"input", "discrete", "exact"},
+        {"input", "continuous", "exact"},
 
         {"output", "constant", "exact"},
         {"output", "discrete", "calculated"},
