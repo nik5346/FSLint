@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" generationTool="Handwritten" variableNamingConvention="flat">
+<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" version="1.0" variableNamingConvention="structured">
   <ModelExchange modelIdentifier="Test"/>
   <ModelVariables>
-    <ScalarVariable name="v" valueReference="1" causality="output" variability="continuous">
+    <ScalarVariable name="a[]" valueReference="1" causality="output" variability="continuous">
       <Real/>
     </ScalarVariable>
   </ModelVariables>

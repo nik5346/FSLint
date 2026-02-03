@@ -69,10 +69,10 @@ struct TypeDefinition
 // Common metadata from the root element of modelDescription.xml
 struct ModelMetadata
 {
-    std::string fmiVersion;
+    std::optional<std::string> fmiVersion;
     std::string modelName;
     std::optional<std::string> guid; // Unified guid (FMI2) / instantiationToken (FMI3)
-    std::optional<std::string> version;
+    std::optional<std::string> modelVersion;
     std::optional<std::string> author;
     std::optional<std::string> copyright;
     std::optional<std::string> license;
@@ -102,8 +102,9 @@ class ModelDescriptionCheckerBase : public Checker
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
-    void checkFmiVersion(const std::string& fmi_version, Certificate& cert);
-    void checkGuid(const std::optional<std::string>& guid, const std::string& fmi_version, Certificate& cert);
+    void checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert);
+    void checkGuid(const std::optional<std::string>& guid, const std::optional<std::string>& fmi_version,
+                   Certificate& cert);
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
     void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert);
     void checkLicense(const std::optional<std::string>& license, Certificate& cert);
