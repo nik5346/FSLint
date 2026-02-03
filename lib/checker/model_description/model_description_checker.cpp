@@ -42,7 +42,8 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     auto variables = extractVariables(doc);
     applyDefaultInitialValues(variables);
     auto type_definitions = extractTypeDefinitions(doc);
-    auto units = extractUnitDefinitions(doc);
+    auto units_vec = extractUnitDefinitions(doc);
+    auto units = checkUnits(units_vec, cert);
 
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
@@ -66,7 +67,6 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     checkUnusedDefinitions(type_definitions, units, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
-    checkUnits(units, cert);
     checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
     checkDerivativeReferences(variables, cert);
 
@@ -99,23 +99,24 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkUnits(const std::map<std::string, UnitDefinition>& units, Certificate& cert)
+std::map<std::string, UnitDefinition>
+ModelDescriptionCheckerBase::checkUnits(const std::vector<UnitDefinition>& units, Certificate& cert)
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
+    std::map<std::string, UnitDefinition> units_map;
 
-    // Check for duplicate unit names (shouldn't happen if map is used correctly)
-    std::set<std::string> unit_names;
-    for (const auto& [name, def] : units)
+    for (const auto& unit : units)
     {
-        if (unit_names.contains(name))
+        if (units_map.contains(unit.name))
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("Unit \"" + name + "\" is defined multiple times");
+            test.messages.push_back("Unit \"" + unit.name + "\" is defined multiple times");
         }
-        unit_names.insert(name);
+        units_map[unit.name] = unit;
     }
 
     cert.printTestResult(test);
+    return units_map;
 }
 
 void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vector<Variable>& variables,
@@ -467,7 +468,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
 
     // Standard copyright notice format components:
     // 1. Copyright symbol (©), word "Copyright", or abbreviation "Copr."
-    // 2. Year(s) of publication (can be a range like 2020-2024)
+    // 2. Year(s) of publication (can be a range like 2020-2026)
     // 3. Copyright holder name
     // 4. Optional: "All Rights Reserved" or similar rights statement
 
@@ -510,7 +511,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     if (!std::regex_search(cr, year_match, year_pattern))
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright notice should include the year of publication (e.g., 2024)");
+        test.messages.push_back("Copyright notice should include the year of publication (e.g., 2026)");
     }
 
     // Check if there's some text that could be the copyright holder name
@@ -652,9 +653,9 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
     cert.printTestResult(test);
 }
 
-std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(xmlDocPtr doc)
+std::vector<UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(xmlDocPtr doc)
 {
-    std::map<std::string, UnitDefinition> units;
+    std::vector<UnitDefinition> units;
 
     // FMI uses UnitDefinitions/Unit for both FMI2 and FMI3
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
@@ -695,7 +696,7 @@ std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::extractUnitDe
             }
         }
 
-        units[unit_def.name] = unit_def;
+        units.push_back(unit_def);
     }
 
     xmlXPathFreeObject(xpath_obj);

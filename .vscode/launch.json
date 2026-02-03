@@ -52,7 +52,7 @@
         {
             "name": "Debug Tests (Windows)",
             "request": "launch",
-            "program": "${workspaceFolder}\\build\\windows-clang-debug\\fslint_tests.exe",
+            "program": "${workspaceFolder}\\build\\windows-clang-debug\\FSLint-tests.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
@@ -62,7 +62,7 @@
         {
             "name": "Debug Tests (macOS)",
             "request": "launch",
-            "program": "${workspaceFolder}/build/macos-clang-debug/fslint_tests",
+            "program": "${workspaceFolder}/build/macos-clang-debug/FSLint-tests",
             "args": [],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build Current Project",
@@ -72,7 +72,7 @@
         {
             "name": "Debug Tests (Linux)",
             "request": "launch",
-            "program": "${workspaceFolder}/build/linux-clang-debug/fslint_tests",
+            "program": "${workspaceFolder}/build/linux-clang-debug/FSLint-tests",
             "args": [],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build Current Project",

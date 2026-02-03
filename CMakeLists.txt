@@ -38,7 +38,7 @@ if(CLANG_TIDY_EXE)
         COMMAND ${CLANG_TIDY_EXE}
             -p ${CMAKE_BINARY_DIR}
             --config-file=${CMAKE_SOURCE_DIR}/.clang-tidy
-            --header-filter=${CMAKE_SOURCE_DIR}/.*
+            "--header-filter=(lib|cli|tests)/.*"
             --system-headers=false
             ${TIDY_SOURCES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
