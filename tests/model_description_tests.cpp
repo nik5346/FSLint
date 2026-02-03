@@ -110,6 +110,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("naming_structured_invalid_indices", "is not a legal variable name");
         validate_fail("naming_structured_invalid_char", "is not a legal variable name");
         validate_fail("naming_structured_invalid_start", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_der_extra_args", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_dot_start", "is not a legal variable name");
     }
 
     SECTION("Metadata")
@@ -128,6 +130,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     SECTION("Variability")
     {
         validate_fail("variability_continuous_non_real", "must have variability != \"continuous\"");
+        validate_fail("variability_continuous_boolean", "must have variability != \"continuous\"");
+        validate_fail("variability_continuous_string", "must have variability != \"continuous\"");
     }
 
     SECTION("Initial/Start Values")
@@ -136,6 +140,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("start_illegal_independent", "has causality=\"independent\" but provides a start value");
         validate_fail("start_missing", "must have a start value");
         validate_fail("combination_illegal", "has illegal combination");
+        validate_fail("combination_illegal_parameter_continuous", "has illegal combination");
+        validate_fail("combination_illegal_input_initial", "has illegal combination");
     }
 
     SECTION("References")
@@ -162,7 +168,12 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     SECTION("Structure")
     {
         validate_fail("structure_output_missing", "ModelStructure/Outputs must have exactly one entry");
+        validate_fail("structure_output_missing_one", "are missing from ModelStructure/Outputs: v2");
+        validate_fail("structure_output_duplicate", "is listed multiple times in ModelStructure/Outputs");
+        validate_fail("structure_output_extra", "listed in ModelStructure/Outputs but does not have causality=\"output\"");
         validate_fail("structure_derivative_no_attr", "must have the \"derivative\" attribute");
+        validate_fail("structure_derivative_missing", "must have exactly one entry");
+        validate_fail("structure_derivative_duplicate", "is listed multiple times");
     }
 }
 

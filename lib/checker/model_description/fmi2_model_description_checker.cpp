@@ -399,7 +399,25 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                     size_t index = std::stoul(*index_str);
                     // FMI2 uses 1-based indexing
                     if (index > 0 && index <= variables.size())
-                        actual_outputs.insert(variables[index - 1].name);
+                    {
+                        const auto& var = variables[index - 1];
+                        if (var.causality != "output")
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
+                                                    std::to_string(var.sourceline) +
+                                                    ") listed in ModelStructure/Outputs but does not have "
+                                                    "causality=\"output\"");
+                        }
+
+                        if (actual_outputs.contains(var.name))
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                                                    "ModelStructure/Outputs");
+                        }
+                        actual_outputs.insert(var.name);
+                    }
                 }
                 catch (...)
                 {
@@ -412,6 +430,33 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     if (expected_outputs != actual_outputs)
     {
         test.status = TestStatus::FAIL;
+        std::vector<std::string> missing;
+        std::vector<std::string> extra;
+
+        for (const auto& name : expected_outputs)
+            if (!actual_outputs.contains(name))
+                missing.push_back(name);
+
+        for (const auto& name : actual_outputs)
+            if (!expected_outputs.contains(name))
+                extra.push_back(name);
+
+        if (!missing.empty())
+        {
+            std::string msg = "The following variables with causality=\"output\" are missing from ModelStructure/Outputs: ";
+            for (size_t i = 0; i < missing.size(); ++i)
+                msg += (i > 0 ? ", " : "") + missing[i];
+            test.messages.push_back(msg);
+        }
+
+        if (!extra.empty())
+        {
+            std::string msg = "The following variables in ModelStructure/Outputs do not have causality=\"output\": ";
+            for (size_t i = 0; i < extra.size(); ++i)
+                msg += (i > 0 ? ", " : "") + extra[i];
+            test.messages.push_back(msg);
+        }
+
         test.messages.push_back(
             "ModelStructure/Outputs must have exactly one entry for each variable with causality=\"output\"");
     }
@@ -425,12 +470,13 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     TestResult test{"ModelStructure Derivatives (FMI2)", TestStatus::PASS, {}};
 
     // Build map of variables that have derivatives
-    std::set<std::string> has_derivative_attr;
+    std::set<std::string> expected_derivatives;
     for (const auto& var : variables)
         if (var.derivative_of.has_value())
-            has_derivative_attr.insert(var.name);
+            expected_derivatives.insert(var.name);
 
     // FMI2: Check Derivatives entries (using index attribute)
+    std::set<std::string> actual_derivatives;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Derivatives/Unknown");
 
     if (xpath_obj && xpath_obj->nodesetval)
@@ -450,13 +496,21 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     {
                         const auto& var = variables[index - 1];
 
-                        if (!has_derivative_attr.contains(var.name))
+                        if (!expected_derivatives.contains(var.name))
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Variable \"" + var.name + "\" (line " +
                                                     std::to_string(var.sourceline) + ") referenced by derivative " +
                                                     std::to_string(i + 1) + " must have the \"derivative\" attribute");
                         }
+
+                        if (actual_derivatives.contains(var.name))
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                                                    "ModelStructure/Derivatives");
+                        }
+                        actual_derivatives.insert(var.name);
                     }
                 }
                 catch (...)
@@ -465,6 +519,41 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
             }
         }
         xmlXPathFreeObject(xpath_obj);
+    }
+
+    if (expected_derivatives != actual_derivatives)
+    {
+        test.status = TestStatus::FAIL;
+        std::vector<std::string> missing;
+        std::vector<std::string> extra;
+
+        for (const auto& name : expected_derivatives)
+            if (!actual_derivatives.contains(name))
+                missing.push_back(name);
+
+        for (const auto& name : actual_derivatives)
+            if (!expected_derivatives.contains(name))
+                extra.push_back(name);
+
+        if (!missing.empty())
+        {
+            std::string msg = "The following variables with a \"derivative\" attribute are missing from ModelStructure/Derivatives: ";
+            for (size_t i = 0; i < missing.size(); ++i)
+                msg += (i > 0 ? ", " : "") + missing[i];
+            test.messages.push_back(msg);
+        }
+
+        if (!extra.empty())
+        {
+            std::string msg = "The following variables in ModelStructure/Derivatives do not have a \"derivative\" attribute: ";
+            for (size_t i = 0; i < extra.size(); ++i)
+                msg += (i > 0 ? ", " : "") + extra[i];
+            test.messages.push_back(msg);
+        }
+
+        test.messages.push_back(
+            "ModelStructure/Derivatives must have exactly one entry for each variable that has a \"derivative\" "
+            "attribute");
     }
 
     cert.printTestResult(test);
