@@ -40,7 +40,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
     for (int i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr scalar_var_node = nodes->nodeTab[i];
+        xmlNodePtr scalar_var_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         Variable var;
 
         // Get attributes from ScalarVariable element
@@ -68,7 +68,8 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            std::string elem_name = reinterpret_cast<const char*>(child->name);
+            std::string elem_name =
+                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
             if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" || elem_name == "String" ||
                 elem_name == "Enumeration")
@@ -387,7 +388,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            xmlNodePtr node =
+                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
@@ -435,7 +437,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            xmlNodePtr node =
+                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
@@ -508,7 +511,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            xmlNodePtr node =
+                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
@@ -568,7 +572,7 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
 
     for (int i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr simple_type_node = nodes->nodeTab[i];
+        xmlNodePtr simple_type_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         TypeDefinition type_def;
 
         // Get name attribute
@@ -581,7 +585,8 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            std::string elem_name = reinterpret_cast<const char*>(child->name);
+            std::string elem_name =
+                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
             if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" || elem_name == "String" ||
                 elem_name == "Enumeration")

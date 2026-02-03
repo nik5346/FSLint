@@ -48,7 +48,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
     for (int i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr node = nodes->nodeTab[i];
+        xmlNodePtr node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         Variable var;
 
         var.name = getXmlAttribute(node, "name").value_or("");
@@ -76,8 +76,9 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
         {
             for (xmlNodePtr child = node->children; child; child = child->next)
             {
-                if (child->type == XML_ELEMENT_NODE &&
-                    xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Start")) == 0)
+                if (child->type == XML_ELEMENT_NODE && xmlStrcmp(child->name,
+                                                                 reinterpret_cast<const xmlChar*>("Start")) ==
+                                                           0) // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
                 {
                     var.start = getXmlAttribute(child, "value");
                     break;
@@ -126,7 +127,8 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
 std::string Fmi3ModelDescriptionChecker::getVariableType(xmlNodePtr node)
 {
-    return std::string(reinterpret_cast<const char*>(node->name));
+    return std::string(
+        reinterpret_cast<const char*>(node->name)); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 }
 
 void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables)
@@ -583,7 +585,8 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            xmlNodePtr node =
+                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto vr = getXmlAttribute(node, "valueReference");
 
             if (vr.has_value())
@@ -635,7 +638,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            xmlNodePtr node =
+                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto vr = getXmlAttribute(node, "valueReference");
 
             if (vr.has_value())
@@ -708,7 +712,8 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            xmlNodePtr node =
+                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto vr = getXmlAttribute(node, "valueReference");
 
             if (vr.has_value())
@@ -769,7 +774,7 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
 
     for (int i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr type_node = nodes->nodeTab[i];
+        xmlNodePtr type_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         TypeDefinition type_def;
 
         // Get name attribute
@@ -777,7 +782,8 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
         type_def.sourceline = type_node->line;
 
         // Element name IS the type (Float32Type, Int8Type, BooleanType, etc.)
-        std::string elem_name = reinterpret_cast<const char*>(type_node->name);
+        std::string elem_name =
+            reinterpret_cast<const char*>(type_node->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
         // Strip "Type" suffix to get the actual type name
         if (elem_name.length() > 4 && elem_name.substr(elem_name.length() - 4) == "Type")
@@ -804,8 +810,9 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
     // Look for Dimension child elements
     for (xmlNodePtr child = node->children; child; child = child->next)
     {
-        if (child->type == XML_ELEMENT_NODE &&
-            xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Dimension")) == 0)
+        if (child->type == XML_ELEMENT_NODE && xmlStrcmp(child->name,
+                                                         reinterpret_cast<const xmlChar*>("Dimension")) ==
+                                                   0) // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
         {
             var.has_dimension = true;
 

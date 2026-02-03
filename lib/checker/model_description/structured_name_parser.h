@@ -28,7 +28,6 @@ class StructuredNameParser
   private:
     explicit StructuredNameParser(std::string_view input)
         : input_(input)
-        , pos_(0)
     {
     }
 
@@ -302,5 +301,5 @@ class StructuredNameParser
     }
 
     std::string_view input_;
-    size_t pos_;
+    size_t pos_ = 0;
 };
