@@ -74,16 +74,17 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
         // FMI3: Check for Start element child for String/Binary types
         if (!var.start.has_value() && (var.type == "String" || var.type == "Binary"))
         {
+            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
             for (xmlNodePtr child = node->children; child; child = child->next)
             {
-                if (child->type == XML_ELEMENT_NODE && xmlStrcmp(child->name,
-                                                                 reinterpret_cast<const xmlChar*>("Start")) ==
-                                                           0) // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                if (child->type == XML_ELEMENT_NODE &&
+                    xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Start")) == 0)
                 {
                     var.start = getXmlAttribute(child, "value");
                     break;
                 }
             }
+            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
         }
 
         var.unit = getXmlAttribute(node, "unit");
@@ -808,11 +809,11 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
 void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& var)
 {
     // Look for Dimension child elements
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
     for (xmlNodePtr child = node->children; child; child = child->next)
     {
-        if (child->type == XML_ELEMENT_NODE && xmlStrcmp(child->name,
-                                                         reinterpret_cast<const xmlChar*>("Dimension")) ==
-                                                   0) // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+        if (child->type == XML_ELEMENT_NODE &&
+            xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Dimension")) == 0)
         {
             var.has_dimension = true;
 
@@ -850,6 +851,7 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
             var.dimensions.push_back(dim);
         }
     }
+    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 }
 
 void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Variable>& variables, Certificate& cert)
