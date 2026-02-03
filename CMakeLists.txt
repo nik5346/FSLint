@@ -336,6 +336,12 @@ target_link_libraries(FSLint-tests PRIVATE
     Catch2::Catch2WithMain
 )
 
+# Mark external dependencies as SYSTEM to suppress warnings
+target_include_directories(FSLint-tests SYSTEM PRIVATE
+    $<TARGET_PROPERTY:Catch2::Catch2,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:Catch2::Catch2WithMain,INTERFACE_INCLUDE_DIRECTORIES>
+)
+
 # Add test to CTest
 add_test(NAME ModelDescriptionTests COMMAND FSLint-tests)
 
