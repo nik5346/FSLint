@@ -275,9 +275,9 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
     constexpr uint32_t UTF16_SURROGATE_MIN = 0xD800;
     constexpr uint32_t UTF16_SURROGATE_MAX = 0xDFFF;
 
-    constexpr int BIT_SHIFT_6 = 6;
-    constexpr int BIT_SHIFT_12 = 12;
-    constexpr int BIT_SHIFT_18 = 18;
+    constexpr int32_t BIT_SHIFT_6 = 6;
+    constexpr int32_t BIT_SHIFT_12 = 12;
+    constexpr int32_t BIT_SHIFT_18 = 18;
 
     constexpr unsigned char MASK_1F = 0x1F;
     constexpr unsigned char MASK_3F = 0x3F;

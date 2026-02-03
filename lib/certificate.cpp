@@ -81,8 +81,8 @@ void Certificate::printSubsectionHeader(const std::string& name)
     log("");
     log("┌────────────────────────────────────────┐");
     std::stringstream ss;
-    constexpr size_t SUBSECTION_NAME_WIDTH = 39;
-    ss << "│ " << std::left << std::setw(static_cast<int>(SUBSECTION_NAME_WIDTH)) << name << "│";
+    constexpr int32_t SUBSECTION_NAME_WIDTH = 39;
+    ss << "│ " << std::left << std::setw(static_cast<int32_t>(SUBSECTION_NAME_WIDTH)) << name << "│";
     log(ss.str());
     log("└────────────────────────────────────────┘");
     log("");

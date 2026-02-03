@@ -46,7 +46,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
         return variables;
     }
 
-    for (int i = 0; i < nodes->nodeNr; ++i)
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
         xmlNodePtr node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         Variable var;
@@ -412,7 +412,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
 {
     TestResult test{"Independent Variable (FMI3)", TestStatus::PASS, {}};
 
-    int independent_count = 0;
+    int32_t independent_count = 0;
     for (const auto& var : variables)
     {
         if (var.causality == "independent")
@@ -583,7 +583,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
     if (xpath_obj && xpath_obj->nodesetval)
     {
-        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
             xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -636,7 +636,7 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
     if (xpath_obj && xpath_obj->nodesetval)
     {
-        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
             xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -710,7 +710,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     if (xpath_obj && xpath_obj->nodesetval)
     {
-        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
             xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -772,7 +772,7 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
         return type_definitions;
     }
 
-    for (int i = 0; i < nodes->nodeNr; ++i)
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
         xmlNodePtr type_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         TypeDefinition type_def;

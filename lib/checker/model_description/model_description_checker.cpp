@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <regex>
@@ -212,28 +213,28 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     }
 
     // Validate date/time ranges
-    constexpr int MATCH_INDEX_YEAR = 1;
-    constexpr int MATCH_INDEX_MONTH = 2;
-    constexpr int MATCH_INDEX_DAY = 3;
-    constexpr int MATCH_INDEX_HOUR = 4;
-    constexpr int MATCH_INDEX_MINUTE = 5;
-    constexpr int MATCH_INDEX_SECOND = 6;
-    constexpr int MATCH_INDEX_TIMEZONE = 8;
+    constexpr int32_t MATCH_INDEX_YEAR = 1;
+    constexpr int32_t MATCH_INDEX_MONTH = 2;
+    constexpr int32_t MATCH_INDEX_DAY = 3;
+    constexpr int32_t MATCH_INDEX_HOUR = 4;
+    constexpr int32_t MATCH_INDEX_MINUTE = 5;
+    constexpr int32_t MATCH_INDEX_SECOND = 6;
+    constexpr int32_t MATCH_INDEX_TIMEZONE = 8;
 
-    constexpr int MIN_MONTH = 1;
-    constexpr int MAX_MONTH = 12;
-    constexpr int MIN_DAY = 1;
-    constexpr int MAX_DAY = 31;
-    constexpr int MAX_HOUR = 23;
-    constexpr int MAX_MINUTE = 59;
-    constexpr int MAX_SECOND = 59;
+    constexpr int32_t MIN_MONTH = 1;
+    constexpr int32_t MAX_MONTH = 12;
+    constexpr int32_t MIN_DAY = 1;
+    constexpr int32_t MAX_DAY = 31;
+    constexpr int32_t MAX_HOUR = 23;
+    constexpr int32_t MAX_MINUTE = 59;
+    constexpr int32_t MAX_SECOND = 59;
 
-    int year = std::stoi(matches[MATCH_INDEX_YEAR]);
-    int month = std::stoi(matches[MATCH_INDEX_MONTH]);
-    int day = std::stoi(matches[MATCH_INDEX_DAY]);
-    int hour = std::stoi(matches[MATCH_INDEX_HOUR]);
-    int minute = std::stoi(matches[MATCH_INDEX_MINUTE]);
-    int second = std::stoi(matches[MATCH_INDEX_SECOND]);
+    int32_t year = std::stoi(matches[MATCH_INDEX_YEAR]);
+    int32_t month = std::stoi(matches[MATCH_INDEX_MONTH]);
+    int32_t day = std::stoi(matches[MATCH_INDEX_DAY]);
+    int32_t hour = std::stoi(matches[MATCH_INDEX_HOUR]);
+    int32_t minute = std::stoi(matches[MATCH_INDEX_MINUTE]);
+    int32_t second = std::stoi(matches[MATCH_INDEX_SECOND]);
     std::string timezone = matches[MATCH_INDEX_TIMEZONE];
 
     if (month < MIN_MONTH || month > MAX_MONTH)
@@ -271,7 +272,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     {
         try
         {
-            constexpr int UNIX_EPOCH_YEAR = 1900;
+            constexpr int32_t UNIX_EPOCH_YEAR = 1900;
             // Parse the datetime string into a time_point
             std::tm tm_time = {};
             tm_time.tm_year = year - UNIX_EPOCH_YEAR;
@@ -292,14 +293,16 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
                 std::smatch tz_matches;
                 if (std::regex_match(timezone, tz_matches, tz_pattern))
                 {
-                    int tz_sign = (tz_matches[1] == "+") ? 1 : -1;
-                    int tz_hours = std::stoi(tz_matches[2]);
-                    int tz_minutes = std::stoi(tz_matches[3]);
+                    int32_t tz_sign = (tz_matches[1] == "+") ? 1 : -1;
+                    int32_t tz_hours = std::stoi(tz_matches[2]);
+                    int32_t tz_minutes = std::stoi(tz_matches[3]);
 
                     // Subtract the timezone offset to get UTC time
-                    constexpr int SECONDS_PER_HOUR = 3600;
-                    constexpr int SECONDS_PER_MINUTE = 60;
-                    generation_time -= tz_sign * (tz_hours * SECONDS_PER_HOUR + tz_minutes * SECONDS_PER_MINUTE);
+                    constexpr int32_t SECONDS_PER_HOUR = 3600;
+                    constexpr int32_t SECONDS_PER_MINUTE = 60;
+                    generation_time -=
+                        static_cast<std::time_t>(tz_sign) * (static_cast<std::time_t>(tz_hours) * SECONDS_PER_HOUR +
+                                                             static_cast<std::time_t>(tz_minutes) * SECONDS_PER_MINUTE);
                 }
             }
 
@@ -337,7 +340,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
             // Check if generation time is unreasonably old (before FMI 1.0 release in 2010)
             // FMI 1.0 was released in 2010, so any date before 2010-01-01 is suspicious
-            constexpr int FMI_FIRST_RELEASE_YEAR = 2010;
+            constexpr int32_t FMI_FIRST_RELEASE_YEAR = 2010;
             std::tm fmi_first_release = {};
             fmi_first_release.tm_year = FMI_FIRST_RELEASE_YEAR - UNIX_EPOCH_YEAR;
             fmi_first_release.tm_mon = 0; // January
@@ -689,7 +692,7 @@ std::vector<UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(
         return units;
     }
 
-    for (int i = 0; i < nodes->nodeNr; ++i)
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
         xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         UnitDefinition unit_def;
