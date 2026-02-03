@@ -2,10 +2,9 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <ModelExchange modelIdentifier="Test"/>
   <ModelVariables>
-    <ScalarVariable name="x" valueReference="1"><Real/></ScalarVariable>
-    <ScalarVariable name="der_x" valueReference="2"><Real derivative="1"/></ScalarVariable>
+    <ScalarVariable name="v" valueReference="1" causality="parameter" variability="continuous">
+      <Real/>
+    </ScalarVariable>
   </ModelVariables>
-  <ModelStructure>
-    <Derivatives/>
-  </ModelStructure>
+  <ModelStructure/>
 </fmiModelDescription>
