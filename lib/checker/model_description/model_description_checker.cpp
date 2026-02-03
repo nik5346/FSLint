@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <regex>
@@ -99,8 +100,8 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
     cert.printTestResult(test);
 }
 
-std::map<std::string, UnitDefinition>
-ModelDescriptionCheckerBase::checkUnits(const std::vector<UnitDefinition>& units, Certificate& cert)
+std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::checkUnits(const std::vector<UnitDefinition>& units,
+                                                                              Certificate& cert)
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
     std::map<std::string, UnitDefinition> units_map;
@@ -212,39 +213,55 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     }
 
     // Validate date/time ranges
-    int year = std::stoi(matches[1]);
-    int month = std::stoi(matches[2]);
-    int day = std::stoi(matches[3]);
-    int hour = std::stoi(matches[4]);
-    int minute = std::stoi(matches[5]);
-    int second = std::stoi(matches[6]);
-    std::string timezone = matches[8];
+    constexpr int32_t MATCH_INDEX_YEAR = 1;
+    constexpr int32_t MATCH_INDEX_MONTH = 2;
+    constexpr int32_t MATCH_INDEX_DAY = 3;
+    constexpr int32_t MATCH_INDEX_HOUR = 4;
+    constexpr int32_t MATCH_INDEX_MINUTE = 5;
+    constexpr int32_t MATCH_INDEX_SECOND = 6;
+    constexpr int32_t MATCH_INDEX_TIMEZONE = 8;
 
-    if (month < 1 || month > 12)
+    constexpr int32_t MIN_MONTH = 1;
+    constexpr int32_t MAX_MONTH = 12;
+    constexpr int32_t MIN_DAY = 1;
+    constexpr int32_t MAX_DAY = 31;
+    constexpr int32_t MAX_HOUR = 23;
+    constexpr int32_t MAX_MINUTE = 59;
+    constexpr int32_t MAX_SECOND = 59;
+
+    int32_t year = std::stoi(matches[MATCH_INDEX_YEAR]);
+    int32_t month = std::stoi(matches[MATCH_INDEX_MONTH]);
+    int32_t day = std::stoi(matches[MATCH_INDEX_DAY]);
+    int32_t hour = std::stoi(matches[MATCH_INDEX_HOUR]);
+    int32_t minute = std::stoi(matches[MATCH_INDEX_MINUTE]);
+    int32_t second = std::stoi(matches[MATCH_INDEX_SECOND]);
+    std::string timezone = matches[MATCH_INDEX_TIMEZONE];
+
+    if (month < MIN_MONTH || month > MAX_MONTH)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Month value " + std::to_string(month) + " is out of range (1-12)");
     }
 
-    if (day < 1 || day > 31)
+    if (day < MIN_DAY || day > MAX_DAY)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Day value " + std::to_string(day) + " is out of range (1-31)");
     }
 
-    if (hour > 23)
+    if (hour > MAX_HOUR)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Hour value " + std::to_string(hour) + " is out of range (0-23)");
     }
 
-    if (minute > 59)
+    if (minute > MAX_MINUTE)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Minute value " + std::to_string(minute) + " is out of range (0-59)");
     }
 
-    if (second > 59)
+    if (second > MAX_SECOND)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Second value " + std::to_string(second) + " is out of range (0-59)");
@@ -255,9 +272,10 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     {
         try
         {
+            constexpr int32_t UNIX_EPOCH_YEAR = 1900;
             // Parse the datetime string into a time_point
             std::tm tm_time = {};
-            tm_time.tm_year = year - 1900;
+            tm_time.tm_year = year - UNIX_EPOCH_YEAR;
             tm_time.tm_mon = month - 1;
             tm_time.tm_mday = day;
             tm_time.tm_hour = hour;
@@ -275,12 +293,16 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
                 std::smatch tz_matches;
                 if (std::regex_match(timezone, tz_matches, tz_pattern))
                 {
-                    int tz_sign = (tz_matches[1] == "+") ? 1 : -1;
-                    int tz_hours = std::stoi(tz_matches[2]);
-                    int tz_minutes = std::stoi(tz_matches[3]);
+                    int32_t tz_sign = (tz_matches[1] == "+") ? 1 : -1;
+                    int32_t tz_hours = std::stoi(tz_matches[2]);
+                    int32_t tz_minutes = std::stoi(tz_matches[3]);
 
                     // Subtract the timezone offset to get UTC time
-                    generation_time -= tz_sign * (tz_hours * 3600 + tz_minutes * 60);
+                    constexpr int32_t SECONDS_PER_HOUR = 3600;
+                    constexpr int32_t SECONDS_PER_MINUTE = 60;
+                    generation_time -=
+                        static_cast<std::time_t>(tz_sign) * (static_cast<std::time_t>(tz_hours) * SECONDS_PER_HOUR +
+                                                             static_cast<std::time_t>(tz_minutes) * SECONDS_PER_MINUTE);
                 }
             }
 
@@ -318,8 +340,9 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
             // Check if generation time is unreasonably old (before FMI 1.0 release in 2010)
             // FMI 1.0 was released in 2010, so any date before 2010-01-01 is suspicious
+            constexpr int32_t FMI_FIRST_RELEASE_YEAR = 2010;
             std::tm fmi_first_release = {};
-            fmi_first_release.tm_year = 2010 - 1900;
+            fmi_first_release.tm_year = FMI_FIRST_RELEASE_YEAR - UNIX_EPOCH_YEAR;
             fmi_first_release.tm_mon = 0; // January
             fmi_first_release.tm_mday = 1;
             fmi_first_release.tm_hour = 0;
@@ -669,9 +692,9 @@ std::vector<UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(
         return units;
     }
 
-    for (int i = 0; i < nodes->nodeNr; ++i)
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr unit_node = nodes->nodeTab[i];
+        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         UnitDefinition unit_def;
 
         // Get name attribute
@@ -686,7 +709,8 @@ std::vector<UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            std::string elem_name = reinterpret_cast<const char*>(child->name);
+            std::string elem_name =
+                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
             if (elem_name == "DisplayUnit")
             {
@@ -747,7 +771,9 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::v
         xmlXPathObjectPtr xpath = getXPathNodes(doc, "//" + elem);
         if (xpath && xpath->nodesetval && xpath->nodesetval->nodeNr > 0)
         {
-            auto model_id = getXmlAttribute(xpath->nodesetval->nodeTab[0], "modelIdentifier");
+            auto model_id = getXmlAttribute(
+                xpath->nodesetval->nodeTab[0], // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                "modelIdentifier");
             if (model_id.has_value())
                 model_identifiers[elem] = *model_id;
         }
@@ -798,11 +824,12 @@ std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodeP
 {
     if (!node)
         return std::nullopt;
-    xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
+    xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(
+                                         attr_name.c_str())); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
     if (!attr)
         return std::nullopt;
 
-    std::string value(reinterpret_cast<char*>(attr));
+    std::string value(reinterpret_cast<char*>(attr)); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlFree(attr);
     return value;
 }
@@ -813,7 +840,8 @@ xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, cons
     if (!context)
         return nullptr;
 
-    xmlXPathObjectPtr result = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), context);
+    xmlXPathObjectPtr result = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()),
+                                                      context); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     xmlXPathFreeContext(context);
     return result;
@@ -835,7 +863,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
         return;
     }
 
-    xmlNodePtr exp_node = xpath_obj->nodesetval->nodeTab[0];
+    xmlNodePtr exp_node = xpath_obj->nodesetval->nodeTab[0]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
     // Extract attributes
     auto start_time_str = getXmlAttribute(exp_node, "startTime");
