@@ -164,9 +164,8 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
         }
         else if (var.causality == "input")
         {
-            // FMI3 allows initial on inputs (unlike FMI2)
-            if (var.variability == "discrete" || var.variability == "continuous")
-                var.initial = "exact";
+            // FMI3: initial NOT ALLOWED for input - keep empty
+            var.initial = "";
         }
         else if (var.causality == "output")
         {
@@ -259,9 +258,9 @@ void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
         {"calculatedParameter", "tunable", "calculated"},
         {"calculatedParameter", "tunable", "approx"},
 
-        // FMI3: inputs CAN have initial="exact" (unlike FMI2)
-        {"input", "discrete", "exact"},
-        {"input", "continuous", "exact"},
+        // FMI3: inputs must NOT have initial attribute (empty string)
+        {"input", "discrete", ""},
+        {"input", "continuous", ""},
 
         {"output", "constant", "exact"},
         {"output", "discrete", "calculated"},
@@ -593,13 +592,37 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
             if (vr.has_value())
             {
                 // Find variable with this value reference
+                bool found = false;
                 for (const auto& var : variables)
                 {
                     if (var.value_reference.has_value() && std::to_string(*var.value_reference) == *vr)
                     {
+                        if (var.causality != "output")
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
+                                                    std::to_string(var.sourceline) +
+                                                    ") listed in ModelStructure/Output but does not have "
+                                                    "causality=\"output\"");
+                        }
+
+                        if (actual_outputs.contains(var.name))
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                                                    "ModelStructure/Output");
+                        }
                         actual_outputs.insert(var.name);
+                        found = true;
                         break;
                     }
+                }
+
+                if (!found)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("ModelStructure/Output " + std::to_string(i + 1) +
+                                            " references non-existent value reference " + *vr);
                 }
             }
         }
@@ -609,6 +632,33 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     if (expected_outputs != actual_outputs)
     {
         test.status = TestStatus::FAIL;
+        std::vector<std::string> missing;
+        std::vector<std::string> extra;
+
+        for (const auto& name : expected_outputs)
+            if (!actual_outputs.contains(name))
+                missing.push_back(name);
+
+        for (const auto& name : actual_outputs)
+            if (!expected_outputs.contains(name))
+                extra.push_back(name);
+
+        if (!missing.empty())
+        {
+            std::string msg = "The following variables with causality=\"output\" are missing from ModelStructure/Output: ";
+            for (size_t i = 0; i < missing.size(); ++i)
+                msg += (i > 0 ? ", " : "") + missing[i];
+            test.messages.push_back(msg);
+        }
+
+        if (!extra.empty())
+        {
+            std::string msg = "The following variables in ModelStructure/Output do not have causality=\"output\": ";
+            for (size_t i = 0; i < extra.size(); ++i)
+                msg += (i > 0 ? ", " : "") + extra[i];
+            test.messages.push_back(msg);
+        }
+
         test.messages.push_back(
             "ModelStructure/Output must have exactly one entry for each variable with causality=\"output\"");
     }
@@ -622,17 +672,20 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     TestResult test{"ModelStructure Derivatives (FMI3)", TestStatus::PASS, {}};
 
     // Build map of variables that are derivatives
-    std::map<uint32_t, const Variable*> derivative_vars;
+    std::set<std::string> expected_derivatives;
+    std::map<uint32_t, const Variable*> derivative_vars_by_vr;
     for (const auto& var : variables)
     {
         if (var.derivative_of.has_value())
         {
+            expected_derivatives.insert(var.name);
             if (var.value_reference.has_value())
-                derivative_vars[*var.value_reference] = &var;
+                derivative_vars_by_vr[*var.value_reference] = &var;
         }
     }
 
     // FMI3: Check ContinuousStateDerivative entries (using valueReference attribute)
+    std::set<std::string> actual_derivatives;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/ContinuousStateDerivative");
 
     if (xpath_obj && xpath_obj->nodesetval)
@@ -655,15 +708,62 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     continue;
                 }
 
-                if (!derivative_vars.contains(vr_num))
+                auto it = derivative_vars_by_vr.find(vr_num);
+                if (it == derivative_vars_by_vr.end())
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("ContinuousStateDerivative " + std::to_string(i + 1) +
                                             " references a variable that does not have the \"derivative\" attribute");
                 }
+                else
+                {
+                    const auto& var = *it->second;
+                    if (actual_derivatives.contains(var.name))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                                                "ModelStructure/ContinuousStateDerivative");
+                    }
+                    actual_derivatives.insert(var.name);
+                }
             }
         }
         xmlXPathFreeObject(xpath_obj);
+    }
+
+    if (expected_derivatives != actual_derivatives)
+    {
+        test.status = TestStatus::FAIL;
+        std::vector<std::string> missing;
+        std::vector<std::string> extra;
+
+        for (const auto& name : expected_derivatives)
+            if (!actual_derivatives.contains(name))
+                missing.push_back(name);
+
+        for (const auto& name : actual_derivatives)
+            if (!expected_derivatives.contains(name))
+                extra.push_back(name);
+
+        if (!missing.empty())
+        {
+            std::string msg = "The following variables with a \"derivative\" attribute are missing from ModelStructure/ContinuousStateDerivative: ";
+            for (size_t i = 0; i < missing.size(); ++i)
+                msg += (i > 0 ? ", " : "") + missing[i];
+            test.messages.push_back(msg);
+        }
+
+        if (!extra.empty())
+        {
+            std::string msg = "The following variables in ModelStructure/ContinuousStateDerivative do not have a \"derivative\" attribute: ";
+            for (size_t i = 0; i < extra.size(); ++i)
+                msg += (i > 0 ? ", " : "") + extra[i];
+            test.messages.push_back(msg);
+        }
+
+        test.messages.push_back(
+            "ModelStructure/ContinuousStateDerivative must have exactly one entry for each variable that has a "
+            "\"derivative\" attribute");
     }
 
     cert.printTestResult(test);

@@ -298,8 +298,10 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Version")
     {
-        validate_fail("fmi_version_empty", "FMI version attribute is empty");
+        validate_fail("fmi_version_missing", "attribute is missing");
+        validate_fail("fmi_version_empty", "attribute is empty");
         validate_fail("fmi_version_invalid", "does not match expected format");
+        validate_fail("fmi_version_patch", "does not match expected format");
     }
 
     SECTION("Variable Names")
@@ -309,6 +311,8 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("naming_flat_cr", "contains illegal carriage return");
         validate_fail("naming_flat_lf", "contains illegal line feed");
         validate_fail("naming_structured_invalid", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_der_extra_args", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_dot_start", "is not a legal variable name");
     }
 
     SECTION("Token")
@@ -363,6 +367,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     SECTION("Illegal Start")
     {
         validate_fail("start_illegal_calculated", "has initial=\"calculated\" but provides a start value");
+        validate_fail("combination_illegal_input_initial", "has illegal combination");
     }
 
     SECTION("Required Start")
@@ -381,19 +386,26 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     SECTION("Variability")
     {
         validate_fail("variability_continuous_non_float", "must have variability != \"continuous\"");
+        validate_fail("variability_continuous_boolean", "must have variability != \"continuous\"");
+        validate_fail("variability_continuous_string", "must have variability != \"continuous\"");
     }
 
     SECTION("Combinations")
     {
         validate_fail("combination_illegal", "has illegal combination");
+        validate_fail("combination_illegal_parameter_continuous", "has illegal combination");
     }
 
     SECTION("Structure")
     {
         validate_fail("structure_output_missing", "ModelStructure/Output must have exactly one entry");
+        validate_fail("structure_output_duplicate", "is listed multiple times in ModelStructure/Output");
+        validate_fail("structure_output_extra", "listed in ModelStructure/Output but does not have causality=\"output\"");
         validate_fail("structure_derivative_invalid",
                       "references a variable that does not have the \"derivative\" attribute");
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");
+        validate_fail("structure_derivative_missing", "must have exactly one entry");
+        validate_fail("structure_derivative_duplicate", "is listed multiple times");
     }
 
     SECTION("Structural Parameters")
@@ -462,6 +474,9 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("meta_missing", "Attribute 'license' is missing or empty");
         validate_warning("meta_missing", "Attribute 'copyright' is missing");
         validate_warning("meta_missing", "Model version attribute is missing or empty");
+        validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
+        validate_warning("model_version_missing", "Model version attribute is missing or empty");
+        validate_warning("model_version_empty", "Model version attribute is missing or empty");
     }
 
     SECTION("Copyright")
