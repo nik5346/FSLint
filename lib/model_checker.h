@@ -9,11 +9,11 @@ class ModelChecker
 {
   public:
     // Main validation method
-    void validate(const std::filesystem::path& path);
+    void validate(const std::filesystem::path& path) const;
 
     // Certificate management
-    bool addCertificate(const std::filesystem::path& path);
-    bool updateCertificate(const std::filesystem::path& path);
+    bool addCertificate(const std::filesystem::path& path) const;
+    bool updateCertificate(const std::filesystem::path& path) const;
     bool removeCertificate(const std::filesystem::path& path) const;
     bool displayCertificate(const std::filesystem::path& path) const;
 

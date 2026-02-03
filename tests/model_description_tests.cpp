@@ -136,6 +136,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("ref_type_undef", "references undefined type");
         validate_fail("ref_unit_undef", "references undefined unit");
         validate_fail("ref_display_unit_undef", "is not defined for unit");
+        validate_fail("unit_duplicate", "is defined multiple times");
     }
 
     SECTION("Bounds")
@@ -230,6 +231,13 @@ TEST_CASE("FMI 2.0 Model Description Passing Cases", "[fmi2][pass]")
     {
         Fmi2ModelDescriptionChecker checker;
         checker.validate("tests/data/fmi2/pass", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("Structured Naming")
+    {
+        Fmi2ModelDescriptionChecker checker;
+        checker.validate("tests/data/fmi2/pass/structured_naming", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }
@@ -389,6 +397,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("ref_type_undef", "references undefined type");
         validate_fail("ref_unit_undef", "references undefined unit");
         validate_fail("ref_display_unit_undef", "is not defined for unit");
+        validate_fail("unit_duplicate", "is defined multiple times");
     }
 
     SECTION("Interfaces")

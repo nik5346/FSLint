@@ -98,7 +98,7 @@ class ModelDescriptionCheckerBase : public Checker
 
     // Common validation methods that work the same way across FMI versions
     void checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert);
-    void checkUnits(const std::map<std::string, UnitDefinition>& units, Certificate& cert);
+    std::map<std::string, UnitDefinition> checkUnits(const std::vector<UnitDefinition>& units, Certificate& cert);
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
@@ -143,7 +143,7 @@ class ModelDescriptionCheckerBase : public Checker
     ModelMetadata extractMetadata(xmlNodePtr root);
     std::map<std::string, std::string> extractModelIdentifiers(xmlDocPtr doc,
                                                                const std::vector<std::string>& interface_elements);
-    std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc);
+    std::vector<UnitDefinition> extractUnitDefinitions(xmlDocPtr doc);
     virtual std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) = 0;
     virtual std::vector<Variable> extractVariables(xmlDocPtr doc) = 0;
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
