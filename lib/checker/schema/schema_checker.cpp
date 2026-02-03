@@ -284,9 +284,10 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
     constexpr unsigned char MASK_0F = 0x0F;
     constexpr unsigned char MASK_07 = 0x07;
 
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     while (i < length)
     {
-        unsigned char byte = data[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        unsigned char byte = data[i];
         size_t num_bytes = 0;
 
         // Determine number of bytes in this UTF-8 character
@@ -322,22 +323,20 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
 
         // Validate continuation bytes
         for (size_t j = 1; j < num_bytes; ++j)
-            if ((data[i + j] & UTF8_CONTINUATION_MASK) !=
-                UTF8_CONTINUATION_PREFIX) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if ((data[i + j] & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_PREFIX)
                 return false;
 
         // Check for overlong encodings and invalid code points
         if (num_bytes == 2)
         {
-            uint32_t codepoint = ((data[i] & MASK_1F) << BIT_SHIFT_6) |
-                                 (data[i + 1] & MASK_3F); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            uint32_t codepoint = ((data[i] & MASK_1F) << BIT_SHIFT_6) | (data[i + 1] & MASK_3F);
             if (codepoint < UTF8_2BYTE_MIN)
                 return false; // Overlong encoding
         }
         else if (num_bytes == 3)
         {
             uint32_t codepoint = ((data[i] & MASK_0F) << BIT_SHIFT_12) | ((data[i + 1] & MASK_3F) << BIT_SHIFT_6) |
-                                 (data[i + 2] & MASK_3F); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                                 (data[i + 2] & MASK_3F);
             if (codepoint < UTF8_3BYTE_MIN)
                 return false; // Overlong encoding
             if (codepoint >= UTF16_SURROGATE_MIN && codepoint <= UTF16_SURROGATE_MAX)
@@ -346,8 +345,7 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
         else if (num_bytes == 4)
         {
             uint32_t codepoint = ((data[i] & MASK_07) << BIT_SHIFT_18) | ((data[i + 1] & MASK_3F) << BIT_SHIFT_12) |
-                                 ((data[i + 2] & MASK_3F) << BIT_SHIFT_6) |
-                                 (data[i + 3] & MASK_3F); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                                 ((data[i + 2] & MASK_3F) << BIT_SHIFT_6) | (data[i + 3] & MASK_3F);
             if (codepoint < UTF8_4BYTE_MIN)
                 return false; // Overlong encoding
             if (codepoint > UTF8_MAX_CODEPOINT)
@@ -356,6 +354,7 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
 
         i += num_bytes;
     }
+    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
     return true;
 }

@@ -824,12 +824,15 @@ std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodeP
 {
     if (!node)
         return std::nullopt;
-    xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(
-                                         attr_name.c_str())); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
     if (!attr)
         return std::nullopt;
 
-    std::string value(reinterpret_cast<char*>(attr)); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    std::string value(reinterpret_cast<char*>(attr));
+    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
+
     xmlFree(attr);
     return value;
 }
@@ -840,8 +843,9 @@ xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, cons
     if (!context)
         return nullptr;
 
-    xmlXPathObjectPtr result = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()),
-                                                      context); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    xmlXPathObjectPtr result = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), context);
+    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
     xmlXPathFreeContext(context);
     return result;
