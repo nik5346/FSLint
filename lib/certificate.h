@@ -2,6 +2,7 @@
 
 #include "checker.h"
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <sstream>
 #include <string>

@@ -97,8 +97,9 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     }
 
     // Read first 512 bytes (should be enough for XML declaration)
-    std::vector<char> buffer(512);
-    file.read(buffer.data(), buffer.size());
+    constexpr size_t XML_DECL_BUFFER_SIZE = 512;
+    std::vector<char> buffer(XML_DECL_BUFFER_SIZE);
+    file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
     size_t bytes_read = static_cast<size_t>(file.gcount());
     file.close();
 
@@ -238,9 +239,12 @@ bool SchemaCheckerBase::isValidUtf8File(const std::filesystem::path& file_path)
     if (!file.is_open())
         return false;
 
-    std::vector<unsigned char> buffer(4096);
+    constexpr size_t UTF8_CHECK_BUFFER_SIZE = 4096;
+    std::vector<unsigned char> buffer(UTF8_CHECK_BUFFER_SIZE);
 
-    while (file.read(reinterpret_cast<char*>(buffer.data()), buffer.size()) || file.gcount() > 0)
+    while (file.read(reinterpret_cast<char*>(buffer.data()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                     static_cast<std::streamsize>(buffer.size())) ||
+           file.gcount() > 0)
     {
         size_t bytes_read = static_cast<size_t>(file.gcount());
         if (!isValidUtf8(buffer.data(), bytes_read))
@@ -253,28 +257,55 @@ bool SchemaCheckerBase::isValidUtf8File(const std::filesystem::path& file_path)
 bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
 {
     size_t i = 0;
+    constexpr unsigned char UTF8_1BYTE_MASK = 0x80;
+    constexpr unsigned char UTF8_1BYTE_PREFIX = 0x00;
+    constexpr unsigned char UTF8_2BYTE_MASK = 0xE0;
+    constexpr unsigned char UTF8_2BYTE_PREFIX = 0xC0;
+    constexpr unsigned char UTF8_3BYTE_MASK = 0xF0;
+    constexpr unsigned char UTF8_3BYTE_PREFIX = 0xE0;
+    constexpr unsigned char UTF8_4BYTE_MASK = 0xF8;
+    constexpr unsigned char UTF8_4BYTE_PREFIX = 0xF0;
+    constexpr unsigned char UTF8_CONTINUATION_MASK = 0xC0;
+    constexpr unsigned char UTF8_CONTINUATION_PREFIX = 0x80;
+
+    constexpr uint32_t UTF8_2BYTE_MIN = 0x80;
+    constexpr uint32_t UTF8_3BYTE_MIN = 0x800;
+    constexpr uint32_t UTF8_4BYTE_MIN = 0x10000;
+    constexpr uint32_t UTF8_MAX_CODEPOINT = 0x10FFFF;
+    constexpr uint32_t UTF16_SURROGATE_MIN = 0xD800;
+    constexpr uint32_t UTF16_SURROGATE_MAX = 0xDFFF;
+
+    constexpr int32_t BIT_SHIFT_6 = 6;
+    constexpr int32_t BIT_SHIFT_12 = 12;
+    constexpr int32_t BIT_SHIFT_18 = 18;
+
+    constexpr unsigned char MASK_1F = 0x1F;
+    constexpr unsigned char MASK_3F = 0x3F;
+    constexpr unsigned char MASK_0F = 0x0F;
+    constexpr unsigned char MASK_07 = 0x07;
+
     while (i < length)
     {
-        unsigned char byte = data[i];
+        unsigned char byte = data[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         size_t num_bytes = 0;
 
         // Determine number of bytes in this UTF-8 character
-        if ((byte & 0x80) == 0x00)
+        if ((byte & UTF8_1BYTE_MASK) == UTF8_1BYTE_PREFIX)
         {
             // 1-byte character (ASCII)
             num_bytes = 1;
         }
-        else if ((byte & 0xE0) == 0xC0)
+        else if ((byte & UTF8_2BYTE_MASK) == UTF8_2BYTE_PREFIX)
         {
             // 2-byte character
             num_bytes = 2;
         }
-        else if ((byte & 0xF0) == 0xE0)
+        else if ((byte & UTF8_3BYTE_MASK) == UTF8_3BYTE_PREFIX)
         {
             // 3-byte character
             num_bytes = 3;
         }
-        else if ((byte & 0xF8) == 0xF0)
+        else if ((byte & UTF8_4BYTE_MASK) == UTF8_4BYTE_PREFIX)
         {
             // 4-byte character
             num_bytes = 4;
@@ -291,31 +322,35 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
 
         // Validate continuation bytes
         for (size_t j = 1; j < num_bytes; ++j)
-            if ((data[i + j] & 0xC0) != 0x80)
+            if ((data[i + j] & UTF8_CONTINUATION_MASK) !=
+                UTF8_CONTINUATION_PREFIX) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 return false;
 
         // Check for overlong encodings and invalid code points
         if (num_bytes == 2)
         {
-            uint32_t codepoint = ((data[i] & 0x1F) << 6) | (data[i + 1] & 0x3F);
-            if (codepoint < 0x80)
+            uint32_t codepoint = ((data[i] & MASK_1F) << BIT_SHIFT_6) |
+                                 (data[i + 1] & MASK_3F); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (codepoint < UTF8_2BYTE_MIN)
                 return false; // Overlong encoding
         }
         else if (num_bytes == 3)
         {
-            uint32_t codepoint = ((data[i] & 0x0F) << 12) | ((data[i + 1] & 0x3F) << 6) | (data[i + 2] & 0x3F);
-            if (codepoint < 0x800)
+            uint32_t codepoint = ((data[i] & MASK_0F) << BIT_SHIFT_12) | ((data[i + 1] & MASK_3F) << BIT_SHIFT_6) |
+                                 (data[i + 2] & MASK_3F); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (codepoint < UTF8_3BYTE_MIN)
                 return false; // Overlong encoding
-            if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
+            if (codepoint >= UTF16_SURROGATE_MIN && codepoint <= UTF16_SURROGATE_MAX)
                 return false; // UTF-16 surrogates not allowed in UTF-8
         }
         else if (num_bytes == 4)
         {
-            uint32_t codepoint = ((data[i] & 0x07) << 18) | ((data[i + 1] & 0x3F) << 12) | ((data[i + 2] & 0x3F) << 6) |
-                                 (data[i + 3] & 0x3F);
-            if (codepoint < 0x10000)
+            uint32_t codepoint = ((data[i] & MASK_07) << BIT_SHIFT_18) | ((data[i + 1] & MASK_3F) << BIT_SHIFT_12) |
+                                 ((data[i + 2] & MASK_3F) << BIT_SHIFT_6) |
+                                 (data[i + 3] & MASK_3F); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (codepoint < UTF8_4BYTE_MIN)
                 return false; // Overlong encoding
-            if (codepoint > 0x10FFFF)
+            if (codepoint > UTF8_MAX_CODEPOINT)
                 return false; // Beyond valid Unicode range
         }
 
@@ -479,7 +514,7 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
 
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
-    va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg)
+    va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
     va_start(args, msg);
     std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
     va_end(args);
@@ -506,7 +541,7 @@ void SchemaCheckerBase::warningCallback(void* ctx, const char* msg, ...)
 
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
-    va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg)
+    va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
     va_start(args, msg);
     std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
     va_end(args);
