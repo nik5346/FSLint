@@ -100,6 +100,7 @@ class ModelDescriptionCheckerBase : public Checker
     // Common validation methods that work the same way across FMI versions
     void checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert);
     void checkUnits(xmlDocPtr doc, Certificate& cert);
+    void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert);
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
