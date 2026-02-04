@@ -749,10 +749,14 @@ std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::extractUnitDe
         unit_def.name = getXmlAttribute(unit_node, "name").value_or("");
         unit_def.sourceline = unit_node->line;
 
+        // FMI 3.0 has factor/offset directly on Unit
+        unit_def.factor = getXmlAttribute(unit_node, "factor");
+        unit_def.offset = getXmlAttribute(unit_node, "offset");
+
         if (unit_def.name.empty())
             continue;
 
-        // Extract DisplayUnit children
+        // Extract children (BaseUnit for FMI 2.0, DisplayUnit for both)
         for (xmlNodePtr child = unit_node->children; child; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
@@ -761,11 +765,28 @@ std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::extractUnitDe
             std::string elem_name =
                 reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
-            if (elem_name == "DisplayUnit")
+            if (elem_name == "BaseUnit")
+            {
+                // FMI 2.0: factor/offset are on BaseUnit
+                auto base_factor = getXmlAttribute(child, "factor");
+                auto base_offset = getXmlAttribute(child, "offset");
+                if (base_factor)
+                    unit_def.factor = base_factor;
+                if (base_offset)
+                    unit_def.offset = base_offset;
+            }
+            else if (elem_name == "DisplayUnit")
             {
                 auto display_unit_name = getXmlAttribute(child, "name");
                 if (display_unit_name)
-                    unit_def.display_units.insert(*display_unit_name);
+                {
+                    DisplayUnit du;
+                    du.name = *display_unit_name;
+                    du.factor = getXmlAttribute(child, "factor");
+                    du.offset = getXmlAttribute(child, "offset");
+                    du.sourceline = child->line;
+                    unit_def.display_units[du.name] = du;
+                }
             }
         }
 
@@ -886,6 +907,31 @@ std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodeP
     return value;
 }
 
+bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
+{
+    std::string s = value;
+    // Remove leading/trailing whitespace
+    s.erase(0, s.find_first_not_of(" \t\n\r"));
+    size_t last = s.find_last_not_of(" \t\n\r");
+    if (last != std::string::npos)
+        s.erase(last + 1);
+
+    if (s.empty())
+        return false;
+
+    std::string lower = s;
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+    if (lower == "nan")
+        return true;
+
+    if (lower == "inf" || lower == "+inf" || lower == "-inf")
+        return true;
+
+    return false;
+}
+
 xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, const std::string& xpath)
 {
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
@@ -903,6 +949,7 @@ xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, cons
 void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certificate& cert)
 {
     TestResult test{"Default Experiment", TestStatus::PASS, {}};
+    bool is_fmi3 = getFmiVersion().starts_with("3.");
 
     // Get DefaultExperiment element
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//DefaultExperiment");
@@ -929,25 +976,42 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     std::optional<double> tolerance;
     std::optional<double> step_size;
 
+    auto checkSpecial = [&](const std::optional<std::string>& val, const std::string& attr_name)
+    {
+        if (val && isSpecialFloat(*val))
+        {
+            if (is_fmi3)
+            {
+                // In FMI 3.0, stopTime="INF" is explicitly allowed and common
+                if (attr_name == "stopTime" &&
+                    (val->find("INF") != std::string::npos || val->find("inf") != std::string::npos))
+                {
+                    return;
+                }
+                if (test.status == TestStatus::PASS)
+                    test.status = TestStatus::WARNING;
+                test.messages.push_back(attr_name + " is " + *val + " (NaN or Infinity). While allowed in FMI 3.0, it is unusual in "
+                                        "DefaultExperiment.");
+            }
+            else
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(attr_name + " value \"" + *val +
+                                        "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+            }
+        }
+    };
+
     // Parse startTime
     if (start_time_str.has_value())
     {
+        checkSpecial(start_time_str, "startTime");
         try
         {
             start_time = std::stod(*start_time_str);
 
-            // Check for invalid values
-            if (std::isnan(*start_time))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("startTime is NaN (not a number)");
-            }
-            else if (std::isinf(*start_time))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("startTime cannot be infinite");
-            }
-            else if (*start_time < 0.0)
+            // Check for invalid values (already checked for special values above, but std::stod handles them too)
+            if (*start_time < 0.0 && !std::isnan(*start_time) && !std::isinf(*start_time))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("startTime (" + std::to_string(*start_time) + ") must be non-negative");
@@ -964,17 +1028,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     // Parse stopTime
     if (stop_time_str.has_value())
     {
+        checkSpecial(stop_time_str, "stopTime");
         try
         {
             stop_time = std::stod(*stop_time_str);
 
             // Check for invalid values - NaN is invalid, but infinity is valid (means run indefinitely)
-            if (std::isnan(*stop_time))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("stopTime is NaN (not a number)");
-            }
-            else if (!std::isinf(*stop_time) && *stop_time < 0.0)
+            if (*stop_time < 0.0 && !std::isnan(*stop_time) && !std::isinf(*stop_time))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("stopTime (" + std::to_string(*stop_time) + ") must be non-negative");
@@ -1002,22 +1062,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     // Parse tolerance
     if (tolerance_str.has_value())
     {
+        checkSpecial(tolerance_str, "tolerance");
         try
         {
             tolerance = std::stod(*tolerance_str);
 
             // Check for invalid values
-            if (std::isnan(*tolerance))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("tolerance is NaN (not a number)");
-            }
-            else if (std::isinf(*tolerance))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("tolerance cannot be infinite");
-            }
-            else if (*tolerance <= 0.0)
+            if (*tolerance <= 0.0 && !std::isnan(*tolerance) && !std::isinf(*tolerance))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("tolerance (" + std::to_string(*tolerance) + ") must be greater than 0");
@@ -1033,22 +1084,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     // Parse stepSize
     if (step_size_str.has_value())
     {
+        checkSpecial(step_size_str, "stepSize");
         try
         {
             step_size = std::stod(*step_size_str);
 
             // Check for invalid values
-            if (std::isnan(*step_size))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("stepSize is NaN (not a number)");
-            }
-            else if (std::isinf(*step_size))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("stepSize cannot be infinite");
-            }
-            else if (*step_size <= 0.0)
+            if (*step_size <= 0.0 && !std::isnan(*step_size) && !std::isinf(*step_size))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("stepSize (" + std::to_string(*step_size) + ") must be greater than 0");
@@ -1114,6 +1156,8 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
 void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
+    bool is_fmi2 = getFmiVersion().starts_with("2.");
+    bool is_fmi3 = getFmiVersion().starts_with("3.");
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
     if (!xpath_obj)
@@ -1132,20 +1176,69 @@ void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
 
     std::set<std::string> seen_names;
 
+    auto checkSpecial = [&](const std::optional<std::string>& val, const std::string& attr_name,
+                            const std::string& context, size_t line)
+    {
+        if (val && isSpecialFloat(*val))
+        {
+            if (is_fmi2)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" +
+                                        *val + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+            }
+            else if (is_fmi3)
+            {
+                if (test.status == TestStatus::PASS)
+                    test.status = TestStatus::WARNING;
+                test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " is " +
+                                        *val + " (NaN or Infinity). While allowed in FMI 3.0, it is unusual.");
+            }
+        }
+    };
+
     for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
         xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto name = getXmlAttribute(unit_node, "name");
+        auto name_opt = getXmlAttribute(unit_node, "name");
+        std::string name = name_opt.value_or("unnamed");
 
-        if (name)
+        if (name_opt)
         {
-            if (seen_names.contains(*name))
+            if (seen_names.contains(*name_opt))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Unit \"" + *name + "\" (line " + std::to_string(unit_node->line) +
+                test.messages.push_back("Unit \"" + *name_opt + "\" (line " + std::to_string(unit_node->line) +
                                         ") is defined multiple times");
             }
-            seen_names.insert(*name);
+            seen_names.insert(*name_opt);
+        }
+
+        // FMI 3.0 factor/offset on Unit
+        checkSpecial(getXmlAttribute(unit_node, "factor"), "factor", "Unit \"" + name + "\"", unit_node->line);
+        checkSpecial(getXmlAttribute(unit_node, "offset"), "offset", "Unit \"" + name + "\"", unit_node->line);
+
+        for (xmlNodePtr child = unit_node->children; child; child = child->next)
+        {
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
+
+            std::string elem_name =
+                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+
+            if (elem_name == "BaseUnit")
+            {
+                checkSpecial(getXmlAttribute(child, "factor"), "factor", "Unit \"" + name + "\" BaseUnit", child->line);
+                checkSpecial(getXmlAttribute(child, "offset"), "offset", "Unit \"" + name + "\" BaseUnit", child->line);
+            }
+            else if (elem_name == "DisplayUnit")
+            {
+                auto du_name = getXmlAttribute(child, "name").value_or("unnamed");
+                checkSpecial(getXmlAttribute(child, "factor"), "factor",
+                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
+                checkSpecial(getXmlAttribute(child, "offset"), "offset",
+                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
+            }
         }
     }
 

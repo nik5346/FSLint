@@ -48,6 +48,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.causality = getXmlAttribute(scalar_var_node, "causality").value_or("local");
         var.variability = getXmlAttribute(scalar_var_node, "variability").value_or("");
         var.initial = getXmlAttribute(scalar_var_node, "initial").value_or("");
+        var.declared_type = getXmlAttribute(scalar_var_node, "declaredType");
         var.sourceline = scalar_var_node->line;
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
@@ -77,10 +78,10 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 var.type = elem_name;
 
                 // Get type-specific attributes
-                var.declared_type = getXmlAttribute(child, "declaredType");
                 var.start = getXmlAttribute(child, "start");
                 var.min = getXmlAttribute(child, "min");
                 var.max = getXmlAttribute(child, "max");
+                var.nominal = getXmlAttribute(child, "nominal");
                 var.unit = getXmlAttribute(child, "unit");
                 var.display_unit = getXmlAttribute(child, "displayUnit");
 
@@ -318,13 +319,49 @@ void Fmi2ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
         // Get effective bounds (considering type definitions)
         EffectiveBounds bounds = getEffectiveBounds(var, type_definitions);
 
-        // First validate type definition's own min/max consistency
+        // Check nominal for special floats (not allowed in FMI 2.0)
+        if (var.type == "Real" && var.nominal && isSpecialFloat(*var.nominal))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    "): nominal value \"" + *var.nominal +
+                                    "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+        }
+
+        // First validate type definition's own min/max/nominal consistency
         if (var.declared_type)
         {
             auto it = type_definitions.find(*var.declared_type);
             if (it != type_definitions.end())
             {
                 const auto& type_def = it->second;
+
+                if (type_def.type == "Real" && type_def.nominal && isSpecialFloat(*type_def.nominal))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
+                                            std::to_string(type_def.sourceline) + "): nominal value \"" +
+                                            *type_def.nominal + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+                }
+
+                if (type_def.type == "Real")
+                {
+                    if (type_def.min && isSpecialFloat(*type_def.min))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
+                                                std::to_string(type_def.sourceline) + "): min value \"" +
+                                                *type_def.min + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+                    }
+                    if (type_def.max && isSpecialFloat(*type_def.max))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
+                                                std::to_string(type_def.sourceline) + "): max value \"" +
+                                                *type_def.max + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+                    }
+                }
+
                 if (type_def.min && type_def.max)
                 {
                     try
@@ -682,9 +719,10 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
             {
                 type_def.type = elem_name;
 
-                // Extract min, max, unit, displayUnit attributes
+                // Extract min, max, nominal, unit, displayUnit attributes
                 type_def.min = getXmlAttribute(child, "min");
                 type_def.max = getXmlAttribute(child, "max");
+                type_def.nominal = getXmlAttribute(child, "nominal");
                 type_def.unit = getXmlAttribute(child, "unit");
                 type_def.display_unit = getXmlAttribute(child, "displayUnit");
 

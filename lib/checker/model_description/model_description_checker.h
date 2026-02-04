@@ -34,6 +34,7 @@ struct Variable
     std::optional<std::string> start;
     std::optional<std::string> min;
     std::optional<std::string> max;
+    std::optional<std::string> nominal;
     std::optional<std::string> unit;
     std::optional<std::string> display_unit;
     std::optional<std::string> declared_type;
@@ -47,11 +48,22 @@ struct Variable
     size_t sourceline = 0;
 };
 
+// Display unit definition
+struct DisplayUnit
+{
+    std::string name;
+    std::optional<std::string> factor;
+    std::optional<std::string> offset;
+    size_t sourceline = 0;
+};
+
 // Unit definition
 struct UnitDefinition
 {
     std::string name;
-    std::set<std::string> display_units;
+    std::optional<std::string> factor;
+    std::optional<std::string> offset;
+    std::map<std::string, DisplayUnit> display_units;
     size_t sourceline = 0;
 };
 
@@ -62,6 +74,7 @@ struct TypeDefinition
     std::string type;
     std::optional<std::string> min;
     std::optional<std::string> max;
+    std::optional<std::string> nominal;
     std::optional<std::string> unit;
     std::optional<std::string> display_unit;
     size_t sourceline = 0;
@@ -153,6 +166,9 @@ class ModelDescriptionCheckerBase : public Checker
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
     xmlXPathObjectPtr getXPathNodes(xmlDocPtr doc, const std::string& xpath);
 
+    // Helper to check for special float values (NaN, INF)
+    bool isSpecialFloat(const std::string& value);
+
     // Helper to get effective min/max for a variable considering type definitions
     struct EffectiveBounds
     {
@@ -185,6 +201,18 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     {
         if (!str_opt)
             return std::nullopt;
+
+        // FMI 2.0: NAN, INF are not allowed in variables
+        if (getFmiVersion().starts_with("2.") && std::is_floating_point_v<T>)
+        {
+            if (isSpecialFloat(*str_opt))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        "): " + attr_name + " value \"" + *str_opt + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+            }
+        }
+
         try
         {
             if constexpr (std::is_floating_point_v<T>)

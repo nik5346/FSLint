@@ -70,6 +70,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.start = getXmlAttribute(node, "start");
         var.min = getXmlAttribute(node, "min");
         var.max = getXmlAttribute(node, "max");
+        var.nominal = getXmlAttribute(node, "nominal");
 
         // FMI3: Check for Start element child for String/Binary types
         if (!var.start.has_value() && (var.type == "String" || var.type == "Binary"))
@@ -894,6 +895,7 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
         // Extract attributes from the type element itself
         type_def.min = getXmlAttribute(type_node, "min");
         type_def.max = getXmlAttribute(type_node, "max");
+        type_def.nominal = getXmlAttribute(type_node, "nominal");
         type_def.unit = getXmlAttribute(type_node, "unit");
         type_def.display_unit = getXmlAttribute(type_node, "displayUnit");
 

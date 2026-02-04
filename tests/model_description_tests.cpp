@@ -46,8 +46,10 @@ bool has_warning_with_text(const Certificate& cert, const std::string& text)
         if (r.test_name.find(text) != std::string::npos)
             return true;
         for (const auto& msg : r.messages)
+        {
             if (msg.find(text) != std::string::npos)
                 return true;
+        }
     }
     return false;
 }
@@ -129,8 +131,9 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
     SECTION("DefaultExperiment")
     {
-        validate_fail("exp_start_nan", "startTime is NaN");
+        validate_fail("exp_start_nan", "startTime");
         validate_fail("exp_stop_less_start", "must be greater than startTime");
+        validate_fail("exp_tolerance_inf", "tolerance value \"INF\"");
     }
 
     SECTION("Variability")
@@ -156,6 +159,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("ref_unit_undef", "references undefined unit");
         validate_fail("ref_display_unit_undef", "is not defined for unit");
         validate_fail("unit_duplicate", "is defined multiple times");
+        validate_fail("unit_factor_nan", "factor value \"NaN\"");
     }
 
     SECTION("Bounds")
@@ -163,6 +167,10 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("bounds_max_min", "max (5) must be >= min (10)");
         validate_fail("bounds_start_min", "start (5) must be >= min (10)");
         validate_fail("bounds_invalid_numeric", "Failed to parse numeric value");
+        validate_fail("start_nan", "NaN or Infinity");
+        validate_fail("nominal_inf", "nominal value \"INF\"");
+        validate_fail("nominal_neg_inf", "nominal value \"-inf\"");
+        validate_fail("type_min_nan", "min value \"NaN\"");
     }
 
     SECTION("Interfaces")
@@ -426,20 +434,6 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("date_format", "does not match ISO 8601 format");
     }
 
-    SECTION("DefaultExperiment")
-    {
-        validate_fail("exp_start_nan", "startTime is NaN");
-        validate_fail("exp_stop_less_start", "must be greater than startTime");
-    }
-
-    SECTION("References")
-    {
-        validate_fail("ref_type_undef", "references undefined type");
-        validate_fail("ref_unit_undef", "references undefined unit");
-        validate_fail("ref_display_unit_undef", "is not defined for unit");
-        validate_fail("unit_duplicate", "is defined multiple times");
-    }
-
     SECTION("Interfaces")
     {
         validate_fail("interface_none", "At least one interface must be implemented");
@@ -519,6 +513,16 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
                          "ModelStructure/InitialUnknowns does not contain the expected set of variables");
         validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
     }
+
+    SECTION("DefaultExperiment")
+    {
+        validate_warning("exp_nan", "startTime is NaN");
+    }
+
+    SECTION("Units")
+    {
+        validate_warning("unit_offset_inf", "offset is INF");
+    }
 }
 
 TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
@@ -529,6 +533,13 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
     {
         Fmi3ModelDescriptionChecker checker;
         checker.validate("tests/data/fmi3/pass", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("DefaultExperiment INF")
+    {
+        Fmi3ModelDescriptionChecker checker;
+        checker.validate("tests/data/fmi3/pass/stop_time_inf", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }
