@@ -43,8 +43,8 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     auto variables = extractVariables(doc);
     applyDefaultInitialValues(variables);
     auto type_definitions = extractTypeDefinitions(doc);
-    auto units_vec = extractUnitDefinitions(doc);
-    auto units = checkUnits(units_vec, cert);
+    auto units = extractUnitDefinitions(doc);
+    checkUnits(doc, cert);
 
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
@@ -100,24 +100,46 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
     cert.printTestResult(test);
 }
 
-std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::checkUnits(const std::vector<UnitDefinition>& units,
-                                                                              Certificate& cert)
+void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
-    std::map<std::string, UnitDefinition> units_map;
 
-    for (const auto& unit : units)
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
+    if (!xpath_obj)
     {
-        if (units_map.contains(unit.name))
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Unit \"" + unit.name + "\" is defined multiple times");
-        }
-        units_map[unit.name] = unit;
+        cert.printTestResult(test);
+        return;
     }
 
+    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
+    if (!nodes)
+    {
+        xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
+    {
+        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto name = getXmlAttribute(unit_node, "name");
+
+        if (name)
+        {
+            if (seen_names.contains(*name))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Unit \"" + *name + "\" (line " + std::to_string(unit_node->line) +
+                                        ") is defined multiple times");
+            }
+            seen_names.insert(*name);
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
     cert.printTestResult(test);
-    return units_map;
 }
 
 void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vector<Variable>& variables,
@@ -687,9 +709,9 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
     cert.printTestResult(test);
 }
 
-std::vector<UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(xmlDocPtr doc)
+std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(xmlDocPtr doc)
 {
-    std::vector<UnitDefinition> units;
+    std::map<std::string, UnitDefinition> units;
 
     // FMI uses UnitDefinitions/Unit for both FMI2 and FMI3
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
@@ -710,6 +732,7 @@ std::vector<UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(
 
         // Get name attribute
         unit_def.name = getXmlAttribute(unit_node, "name").value_or("");
+        unit_def.sourceline = unit_node->line;
 
         if (unit_def.name.empty())
             continue;
@@ -731,7 +754,7 @@ std::vector<UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(
             }
         }
 
-        units.push_back(unit_def);
+        units[unit_def.name] = unit_def;
     }
 
     xmlXPathFreeObject(xpath_obj);
