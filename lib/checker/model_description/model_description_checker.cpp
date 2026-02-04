@@ -44,7 +44,6 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     applyDefaultInitialValues(variables);
     auto type_definitions = extractTypeDefinitions(doc);
     auto units = extractUnitDefinitions(doc);
-    checkUnits(doc, cert);
 
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
@@ -58,6 +57,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkGenerationTool(metadata.generationTool, cert);
 
     checkDefaultExperiment(doc, cert);
+    checkUnits(doc, cert);
 
     checkUniqueVariableNames(variables, cert);
     checkLegalVariability(variables, cert);
@@ -100,47 +100,6 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
-{
-    TestResult test{"Unit Definitions", TestStatus::PASS, {}};
-
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
-    if (!xpath_obj)
-    {
-        cert.printTestResult(test);
-        return;
-    }
-
-    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
-    {
-        xmlXPathFreeObject(xpath_obj);
-        cert.printTestResult(test);
-        return;
-    }
-
-    std::set<std::string> seen_names;
-
-    for (int32_t i = 0; i < nodes->nodeNr; ++i)
-    {
-        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto name = getXmlAttribute(unit_node, "name");
-
-        if (name)
-        {
-            if (seen_names.contains(*name))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Unit \"" + *name + "\" (line " + std::to_string(unit_node->line) +
-                                        ") is defined multiple times");
-            }
-            seen_names.insert(*name);
-        }
-    }
-
-    xmlXPathFreeObject(xpath_obj);
-    cert.printTestResult(test);
-}
 
 void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vector<Variable>& variables,
                                                                 const std::string& convention, Certificate& cert)
@@ -1043,6 +1002,48 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("stepSize \"" + *step_size_str + "\" is not a valid number");
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Unit Definitions", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
+    if (!xpath_obj)
+    {
+        cert.printTestResult(test);
+        return;
+    }
+
+    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
+    if (!nodes)
+    {
+        xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
+    {
+        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto name = getXmlAttribute(unit_node, "name");
+
+        if (name)
+        {
+            if (seen_names.contains(*name))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Unit \"" + *name + "\" (line " + std::to_string(unit_node->line) +
+                                        ") is defined multiple times");
+            }
+            seen_names.insert(*name);
         }
     }
 
