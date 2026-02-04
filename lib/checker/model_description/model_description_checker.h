@@ -71,7 +71,7 @@ struct TypeDefinition
 struct ModelMetadata
 {
     std::optional<std::string> fmiVersion;
-    std::string modelName;
+    std::optional<std::string> modelName;
     std::optional<std::string> guid; // Unified guid (FMI2) / instantiationToken (FMI3)
     std::optional<std::string> modelVersion;
     std::optional<std::string> author;
@@ -105,6 +105,7 @@ class ModelDescriptionCheckerBase : public Checker
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
     void checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert);
+    void checkModelName(const std::optional<std::string>& model_name, Certificate& cert);
     void checkGuid(const std::optional<std::string>& guid, const std::optional<std::string>& fmi_version,
                    Certificate& cert);
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
