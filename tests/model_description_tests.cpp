@@ -92,10 +92,16 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("fmi_version_patch", "does not match expected format");
     }
 
+    SECTION("Model Name")
+    {
+        validate_fail("model_name_missing", "modelName attribute is missing");
+        validate_fail("model_name_empty", "modelName attribute is empty");
+    }
+
     SECTION("GUID")
     {
-        validate_fail("guid_missing", "guid attribute is missing or empty");
-        validate_fail("guid_empty", "guid attribute is missing or empty");
+        validate_fail("guid_missing", "guid attribute is missing");
+        validate_fail("guid_empty", "guid attribute is empty");
         validate_fail("guid_invalid", "does not match expected GUID format");
     }
 
@@ -205,12 +211,12 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
     SECTION("Metadata")
     {
-        validate_warning("meta_missing", "Attribute 'author' is missing or empty");
-        validate_warning("meta_missing", "Attribute 'generationTool' is missing or empty");
-        validate_warning("meta_missing", "Attribute 'license' is missing or empty");
+        validate_warning("meta_missing", "Attribute 'author' is missing");
+        validate_warning("meta_missing", "Attribute 'generationTool' is missing");
+        validate_warning("meta_missing", "Attribute 'license' is missing");
         validate_warning("meta_missing", "Attribute 'copyright' is missing");
-        validate_warning("model_version_missing", "Model version attribute is missing or empty");
-        validate_warning("model_version_empty", "Model version attribute is missing or empty");
+        validate_warning("model_version_missing", "Model version attribute is missing");
+        validate_warning("model_version_empty", "Model version attribute is empty");
         validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
     }
 
@@ -317,8 +323,8 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Token")
     {
-        validate_fail("token_missing", "instantiationToken attribute is missing or empty");
-        validate_fail("token_empty", "instantiationToken attribute is missing or empty");
+        validate_fail("token_missing", "instantiationToken attribute is missing");
+        validate_fail("token_empty", "instantiationToken attribute is empty");
     }
 
     SECTION("Independent Variable")
@@ -469,14 +475,14 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("Metadata")
     {
-        validate_warning("meta_missing", "Attribute 'author' is missing or empty");
-        validate_warning("meta_missing", "Attribute 'generationTool' is missing or empty");
-        validate_warning("meta_missing", "Attribute 'license' is missing or empty");
+        validate_warning("meta_missing", "Attribute 'author' is missing");
+        validate_warning("meta_missing", "Attribute 'generationTool' is missing");
+        validate_warning("meta_missing", "Attribute 'license' is missing");
         validate_warning("meta_missing", "Attribute 'copyright' is missing");
-        validate_warning("meta_missing", "Model version attribute is missing or empty");
+        validate_warning("meta_missing", "Model version attribute is missing");
         validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
-        validate_warning("model_version_missing", "Model version attribute is missing or empty");
-        validate_warning("model_version_empty", "Model version attribute is missing or empty");
+        validate_warning("model_version_missing", "Model version attribute is missing");
+        validate_warning("model_version_empty", "Model version attribute is empty");
     }
 
     SECTION("Copyright")
