@@ -47,6 +47,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
+    checkModelName(metadata.modelName, cert);
     checkGuid(metadata.guid, metadata.fmiVersion, cert);
 
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
@@ -96,6 +97,29 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
                                     ") is not unique");
         }
         seen_names.insert(var.name);
+    }
+
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string>& model_name, Certificate& cert)
+{
+    TestResult test{"Model Name Format", TestStatus::PASS, {}};
+
+    if (!model_name.has_value())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("modelName attribute is missing");
+        cert.printTestResult(test);
+        return;
+    }
+
+    if (model_name->empty())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("modelName attribute is empty");
+        cert.printTestResult(test);
+        return;
     }
 
     cert.printTestResult(test);
@@ -396,10 +420,18 @@ void ModelDescriptionCheckerBase::checkGuid(const std::optional<std::string>& gu
     std::string attribute_name = is_fmi3 ? "instantiationToken" : "guid";
     TestResult test{is_fmi3 ? "Instantiation Token Format" : "GUID Format", TestStatus::PASS, {}};
 
-    if (!guid_opt.has_value() || guid_opt->empty())
+    if (!guid_opt.has_value())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back(attribute_name + " attribute is missing or empty");
+        test.messages.push_back(attribute_name + " attribute is missing");
+        cert.printTestResult(test);
+        return;
+    }
+
+    if (guid_opt->empty())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back(attribute_name + " attribute is empty");
         cert.printTestResult(test);
         return;
     }
@@ -435,11 +467,19 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
 {
     TestResult test{"Model Version Format", TestStatus::PASS, {}};
 
-    if (!version.has_value() || version->empty())
+    if (!version.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Model version attribute is missing or empty. It is recommended to provide a version "
+        test.messages.push_back("Model version attribute is missing. It is recommended to provide a version "
                                 "number for the model.");
+        cert.printTestResult(test);
+        return;
+    }
+
+    if (version->empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Model version attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -561,12 +601,17 @@ void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>&
 {
     TestResult test{"License Information", TestStatus::PASS, {}};
 
-    if (!license || license->empty())
+    if (!license.has_value())
     {
         test.status = TestStatus::WARNING;
         test.messages.push_back(
-            "Attribute 'license' is missing or empty. It is recommended to specify a license (e.g., 'BSD', 'MIT', "
+            "Attribute 'license' is missing. It is recommended to specify a license (e.g., 'BSD', 'MIT', "
             "'Proprietary').");
+    }
+    else if (license->empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'license' is empty.");
     }
 
     cert.printTestResult(test);
@@ -576,10 +621,15 @@ void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& 
 {
     TestResult test{"Author Information", TestStatus::PASS, {}};
 
-    if (!author || author->empty())
+    if (!author.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'author' is missing or empty.");
+        test.messages.push_back("Attribute 'author' is missing.");
+    }
+    else if (author->empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'author' is empty.");
     }
 
     cert.printTestResult(test);
@@ -589,10 +639,15 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
 {
     TestResult test{"Generation Tool Information", TestStatus::PASS, {}};
 
-    if (!tool || tool->empty())
+    if (!tool.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationTool' is missing or empty.");
+        test.messages.push_back("Attribute 'generationTool' is missing.");
+    }
+    else if (tool->empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'generationTool' is empty.");
     }
 
     cert.printTestResult(test);
@@ -782,7 +837,7 @@ ModelMetadata ModelDescriptionCheckerBase::extractMetadata(xmlNodePtr root)
 {
     ModelMetadata metadata;
     metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
-    metadata.modelName = getXmlAttribute(root, "modelName").value_or("");
+    metadata.modelName = getXmlAttribute(root, "modelName");
 
     // Unified GUID/Instantiation Token
     if (metadata.fmiVersion && metadata.fmiVersion->starts_with("3."))
