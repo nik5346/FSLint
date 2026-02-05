@@ -258,29 +258,25 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning("model_version_missing", "Model version attribute is missing");
         validate_warning("model_version_empty", "Model version attribute is empty");
         validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
-    }
-
-    SECTION("Date")
-    {
         validate_warning("date_old", "is before the first FMI standard release");
-    }
-
-    SECTION("Copyright")
-    {
         validate_warning("copyright_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
         validate_warning("copyright_no_year", "should include the year of publication");
         validate_warning("copyright_no_holder", "should include the name of the copyright holder");
     }
 
-    SECTION("Identifiers")
+    SECTION("Interfaces")
     {
         validate_warning("id_long", "longer than recommended");
     }
 
-    SECTION("Unit & Type Definitions")
+    SECTION("Unit definitions")
+    {
+        validate_warning("unused_definitions", "Unit \"s\" is unused");
+    }
+
+    SECTION("Type definitions")
     {
         validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 11) is unused");
-        validate_warning("unused_definitions", "Unit \"s\" is unused");
     }
 
     SECTION("Structure")
@@ -518,21 +514,13 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
         validate_warning("model_version_missing", "Model version attribute is missing");
         validate_warning("model_version_empty", "Model version attribute is empty");
-    }
-
-    SECTION("Copyright")
-    {
+        validate_warning("date_old", "is before the first FMI standard release");
         validate_warning("copyright_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
         validate_warning("copyright_no_year", "should include the year of publication");
         validate_warning("copyright_no_holder", "should include the name of the copyright holder");
     }
 
-    SECTION("Date")
-    {
-        validate_warning("date_old", "is before the first FMI standard release");
-    }
-
-    SECTION("Identifiers")
+    SECTION("Interfaces")
     {
         validate_warning("id_long", "longer than recommended");
     }
@@ -542,15 +530,15 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("token_no_guid", "does not match GUID format");
     }
 
-    SECTION("Unused")
+    SECTION("Unit definitions")
     {
-        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 9) is unused");
         validate_warning("unused_definitions", "Unit \"s\" is unused");
+        validate_warning("unit_offset_inf", "offset is INF");
     }
 
-    SECTION("Structure")
+    SECTION("Type definitions")
     {
-        validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
+        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 9) is unused");
     }
 
     SECTION("DefaultExperiment")
@@ -558,9 +546,9 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("exp_nan", "startTime is NaN");
     }
 
-    SECTION("Units")
+    SECTION("Structure")
     {
-        validate_warning("unit_offset_inf", "offset is INF");
+        validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
     }
 }
 
