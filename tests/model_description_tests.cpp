@@ -80,51 +80,53 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
     SECTION("File")
     {
-        validate_fail("malformed_xml", "Failed to parse modelDescription.xml");
         validate_fail("missing_file", "modelDescription.xml not found");
+        validate_fail("malformed_xml", "Failed to parse modelDescription.xml");
     }
 
-    SECTION("Version")
+    SECTION("Metadata")
     {
         validate_fail("fmi_version_missing", "attribute is missing");
         validate_fail("fmi_version_empty", "attribute is empty");
         validate_fail("fmi_version_invalid", "does not match expected format");
         validate_fail("fmi_version_patch", "does not match expected format");
-    }
 
-    SECTION("Model Name")
-    {
         validate_fail("model_name_missing", "modelName attribute is missing");
         validate_fail("model_name_empty", "modelName attribute is empty");
-    }
 
-    SECTION("GUID")
-    {
         validate_fail("guid_missing", "guid attribute is missing");
         validate_fail("guid_empty", "guid attribute is empty");
         validate_fail("guid_invalid", "does not match expected GUID format");
-    }
 
-    SECTION("Variable Names")
-    {
-        validate_fail("duplicate_name", "is not unique");
-        validate_fail("naming_flat_tab", "contains illegal tab character");
-        validate_fail("naming_flat_cr", "contains illegal carriage return");
-        validate_fail("naming_flat_lf", "contains illegal line feed");
-        validate_fail("naming_structured_invalid_der", "is not a legal variable name");
-        validate_fail("naming_structured_invalid_qname", "is not a legal variable name");
-        validate_fail("naming_structured_invalid_indices", "is not a legal variable name");
-        validate_fail("naming_structured_invalid_char", "is not a legal variable name");
-        validate_fail("naming_structured_invalid_start", "is not a legal variable name");
-        validate_fail("naming_structured_invalid_der_extra_args", "is not a legal variable name");
-        validate_fail("naming_structured_invalid_dot_start", "is not a legal variable name");
-    }
-
-    SECTION("Metadata")
-    {
         validate_fail("date_invalid", "is out of range");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
+    }
+
+    SECTION("Interfaces")
+    {
+        validate_fail("interface_none", "At least one interface must be implemented");
+        validate_fail("interface_id_digit", "cannot start with a digit");
+    }
+
+    SECTION("Unit definitions")
+    {
+        validate_fail("unit_duplicate", "is defined multiple times");
+        validate_fail("unit_display_unit_duplicate", "is defined multiple times");
+        validate_fail("unit_factor_nan", "factor value \"NaN\"");
+    }
+
+    SECTION("Type definitions")
+    {
+        validate_fail("type_name_as_variable_name", "must be different from all ScalarVariable names");
+        validate_fail("enumeration_variable_no_type", "must have a declaredType attribute");
+        validate_fail("enumeration_item_duplicate_value", "must be unique within the same enumeration");
+        validate_fail("enumeration_no_item", "must have at least one Item");
+    }
+
+    SECTION("Log categories")
+    {
+        validate_fail("log_category_duplicate", "is defined multiple times");
     }
 
     SECTION("DefaultExperiment")
@@ -134,11 +136,33 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("exp_tolerance_inf", "tolerance value \"INF\"");
     }
 
+    SECTION("Vendor annotations")
+    {
+        validate_fail("vendor_annotation_duplicate", "is defined multiple times");
+    }
+
+    SECTION("Variable Names")
+    {
+        validate_fail("duplicate_name", "is not unique");
+        validate_fail("naming_flat_tab", "contains illegal tab character");
+        validate_fail("naming_flat_cr", "contains illegal carriage return");
+        validate_fail("naming_flat_lf", "contains illegal line feed");
+        validate_fail("naming_structured_invalid", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_der", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_qname", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_indices", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_char", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_start", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_der_extra_args", "is not a legal variable name");
+        validate_fail("naming_structured_invalid_dot_start", "is not a legal variable name");
+    }
+
     SECTION("Variability")
     {
         validate_fail("variability_continuous_non_real", "must have variability != \"continuous\"");
         validate_fail("variability_continuous_boolean", "must have variability != \"continuous\"");
         validate_fail("variability_continuous_string", "must have variability != \"continuous\"");
+        validate_fail("parameter_continuous", "Parameters must be \"fixed\" or \"tunable\"");
     }
 
     SECTION("Initial/Start Values")
@@ -149,6 +173,18 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("combination_illegal", "has illegal combination");
         validate_fail("combination_illegal_parameter_continuous", "has illegal combination");
         validate_fail("combination_illegal_input_initial", "has illegal combination");
+
+        validate_fail("independent_multiple", "Found multiple");
+        validate_fail("independent_non_real", "must be of type \"Real\"");
+        validate_fail("independent_with_start", "not allowed to have a \"start\" attribute");
+        validate_fail("independent_with_initial", "not allowed to define \"initial\"");
+    }
+
+    SECTION("Aliases")
+    {
+        validate_fail("alias_conflicting_start", "At most one variable in an alias set");
+        validate_fail("alias_inconsistent_unit", "All variables in an alias set must have the same unit");
+        validate_fail("alias_constant_conflicting_start", "have different start values");
     }
 
     SECTION("References")
@@ -156,8 +192,6 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("ref_type_undef", "references undefined type");
         validate_fail("ref_unit_undef", "references undefined unit");
         validate_fail("ref_display_unit_undef", "is not defined for unit");
-        validate_fail("unit_duplicate", "is defined multiple times");
-        validate_fail("unit_factor_nan", "factor value \"NaN\"");
     }
 
     SECTION("Bounds")
@@ -169,12 +203,6 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("nominal_inf", "nominal value \"INF\"");
         validate_fail("nominal_neg_inf", "nominal value \"-inf\"");
         validate_fail("type_min_nan", "min value \"NaN\"");
-    }
-
-    SECTION("Interfaces")
-    {
-        validate_fail("interface_none", "At least one interface must be implemented");
-        validate_fail("interface_id_digit", "cannot start with a digit");
     }
 
     SECTION("Structure")
@@ -192,25 +220,6 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
         validate_fail("structure_initial_unknowns_mismatch",
                       "ModelStructure/InitialUnknowns does not contain the expected set of variables");
-    }
-
-    SECTION("Missing Checks FMI 2.0")
-    {
-        validate_fail("unit_display_unit_duplicate", "is defined multiple times");
-        validate_fail("type_name_as_variable_name", "must be different from all ScalarVariable names");
-        validate_fail("enumeration_item_duplicate_value", "must be unique within the same enumeration");
-        validate_fail("enumeration_no_item", "must have at least one Item");
-        validate_fail("log_category_duplicate", "is defined multiple times");
-        validate_fail("vendor_annotation_duplicate", "is defined multiple times");
-        validate_fail("enumeration_variable_no_type", "must have a declaredType attribute");
-        validate_fail("alias_conflicting_start", "At most one variable in an alias set");
-        validate_fail("alias_inconsistent_unit", "All variables in an alias set must have the same unit");
-        validate_fail("independent_multiple", "Found multiple");
-        validate_fail("independent_non_real", "must be of type \"Real\"");
-        validate_fail("independent_with_start", "not allowed to have a \"start\" attribute");
-        validate_fail("independent_with_initial", "not allowed to define \"initial\"");
-        validate_fail("parameter_continuous", "Parameters must be \"fixed\" or \"tunable\"");
-        validate_fail("alias_constant_conflicting_start", "have different start values");
     }
 }
 
@@ -251,6 +260,11 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
     }
 
+    SECTION("Date")
+    {
+        validate_warning("date_old", "is before the first FMI standard release");
+    }
+
     SECTION("Copyright")
     {
         validate_warning("copyright_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
@@ -258,17 +272,12 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning("copyright_no_holder", "should include the name of the copyright holder");
     }
 
-    SECTION("Date")
-    {
-        validate_warning("date_old", "is before the first FMI standard release");
-    }
-
     SECTION("Identifiers")
     {
         validate_warning("id_long", "longer than recommended");
     }
 
-    SECTION("Unused")
+    SECTION("Unit & Type Definitions")
     {
         validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 11) is unused");
         validate_warning("unused_definitions", "Unit \"s\" is unused");
