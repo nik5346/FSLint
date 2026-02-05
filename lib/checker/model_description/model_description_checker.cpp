@@ -949,7 +949,6 @@ xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, cons
 void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certificate& cert)
 {
     TestResult test{"Default Experiment", TestStatus::PASS, {}};
-    bool is_fmi3 = getFmiVersion().starts_with("3.");
 
     // Get DefaultExperiment element
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//DefaultExperiment");
@@ -980,25 +979,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     {
         if (val && isSpecialFloat(*val))
         {
-            if (is_fmi3)
-            {
-                // In FMI 3.0, stopTime="INF" is explicitly allowed and common
-                if (attr_name == "stopTime" &&
-                    (val->find("INF") != std::string::npos || val->find("inf") != std::string::npos))
-                {
-                    return;
-                }
-                if (test.status == TestStatus::PASS)
-                    test.status = TestStatus::WARNING;
-                test.messages.push_back(attr_name + " is " + *val + " (NaN or Infinity). While allowed in FMI 3.0, it is unusual in "
-                                        "DefaultExperiment.");
-            }
-            else
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back(attr_name + " value \"" + *val +
-                                        "\" is NaN or Infinity, which is not allowed in FMI 2.0");
-            }
+            validateDefaultExperimentSpecialFloat(test, *val, attr_name);
         }
     };
 
@@ -1156,8 +1137,6 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
 void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
-    bool is_fmi2 = getFmiVersion().starts_with("2.");
-    bool is_fmi3 = getFmiVersion().starts_with("3.");
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
     if (!xpath_obj)
@@ -1181,19 +1160,7 @@ void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
     {
         if (val && isSpecialFloat(*val))
         {
-            if (is_fmi2)
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" +
-                                        *val + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
-            }
-            else if (is_fmi3)
-            {
-                if (test.status == TestStatus::PASS)
-                    test.status = TestStatus::WARNING;
-                test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " is " +
-                                        *val + " (NaN or Infinity). While allowed in FMI 3.0, it is unusual.");
-            }
+            validateUnitSpecialFloat(test, *val, attr_name, context, line);
         }
     };
 

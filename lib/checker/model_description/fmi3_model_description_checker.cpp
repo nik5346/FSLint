@@ -1366,3 +1366,45 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
 
     cert.printTestResult(test);
 }
+
+void Fmi3ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& /*test*/, const Variable& /*var*/,
+                                                               const std::string& /*val*/,
+                                                               const std::string& /*attr_name*/)
+{
+    // Special floats are allowed in FMI 3.0 variable values
+}
+
+void Fmi3ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
+                                                                        const std::string& attr_name)
+{
+    // In FMI 3.0, stopTime="INF" is explicitly allowed and common
+    if (attr_name == "stopTime" && (val.find("INF") != std::string::npos || val.find("inf") != std::string::npos))
+    {
+        return;
+    }
+
+    if (test.status == TestStatus::PASS)
+        test.status = TestStatus::WARNING;
+
+    test.messages.push_back(attr_name + " is " + val +
+                            " (NaN or Infinity). While allowed in FMI 3.0, it is unusual in DefaultExperiment.");
+}
+
+void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
+                                                          const std::string& attr_name, const std::string& context,
+                                                          size_t line)
+{
+    if (test.status == TestStatus::PASS)
+        test.status = TestStatus::WARNING;
+
+    test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " is " + val +
+                            " (NaN or Infinity). While allowed in FMI 3.0, it is unusual.");
+}
+
+void Fmi3ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& /*test*/,
+                                                                     const TypeDefinition& /*type_def*/,
+                                                                     const std::string& /*val*/,
+                                                                     const std::string& /*attr_name*/)
+{
+    // Special floats are allowed in FMI 3.0 type definitions
+}

@@ -169,6 +169,16 @@ class ModelDescriptionCheckerBase : public Checker
     // Helper to check for special float values (NaN, INF)
     bool isSpecialFloat(const std::string& value);
 
+    // Version-specific special float validation hooks
+    virtual void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
+                                              const std::string& attr_name) = 0;
+    virtual void validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
+                                                       const std::string& attr_name) = 0;
+    virtual void validateUnitSpecialFloat(TestResult& test, const std::string& val, const std::string& attr_name,
+                                          const std::string& unit_name, size_t line) = 0;
+    virtual void validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
+                                                    const std::string& val, const std::string& attr_name) = 0;
+
     // Helper to get effective min/max for a variable considering type definitions
     struct EffectiveBounds
     {
@@ -202,15 +212,10 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         if (!str_opt)
             return std::nullopt;
 
-        // FMI 2.0: NAN, INF are not allowed in variables
-        if (getFmiVersion().starts_with("2.") && std::is_floating_point_v<T>)
+        // Check for special floats (NaN, INF) using version-specific hook
+        if (std::is_floating_point_v<T> && isSpecialFloat(*str_opt))
         {
-            if (isSpecialFloat(*str_opt))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        "): " + attr_name + " value \"" + *str_opt + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
-            }
+            validateVariableSpecialFloat(test, var, *str_opt, attr_name);
         }
 
         try

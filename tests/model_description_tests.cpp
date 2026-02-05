@@ -389,6 +389,14 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("start_missing", "must have a start value");
     }
 
+    SECTION("References")
+    {
+        validate_fail("ref_type_undef", "references undefined type");
+        validate_fail("ref_unit_undef", "references undefined unit");
+        validate_fail("ref_display_unit_undef", "is not defined for unit");
+        validate_fail("unit_duplicate", "is defined multiple times");
+    }
+
     SECTION("Bounds")
     {
         validate_fail("bounds_int8", "start (10) must be <= max (5)");
