@@ -112,15 +112,14 @@ class ModelDescriptionCheckerBase : public Checker
 
     // Common validation methods that work the same way across FMI versions
     void checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert);
-    void checkUnits(xmlDocPtr doc, Certificate& cert);
+    virtual void checkUnits(xmlDocPtr doc, Certificate& cert) = 0;
     void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert);
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
     void checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert);
     void checkModelName(const std::optional<std::string>& model_name, Certificate& cert);
-    void checkGuid(const std::optional<std::string>& guid, const std::optional<std::string>& fmi_version,
-                   Certificate& cert);
+    virtual void checkGuid(const std::optional<std::string>& guid, Certificate& cert) = 0;
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
     void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert);
     void checkLicense(const std::optional<std::string>& license, Certificate& cert);
@@ -157,10 +156,10 @@ class ModelDescriptionCheckerBase : public Checker
                                         Certificate& cert) = 0;
 
     // XML parsing helpers
-    ModelMetadata extractMetadata(xmlNodePtr root);
+    virtual ModelMetadata extractMetadata(xmlNodePtr root) = 0;
     std::map<std::string, std::string> extractModelIdentifiers(xmlDocPtr doc,
                                                                const std::vector<std::string>& interface_elements);
-    std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc);
+    virtual std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) = 0;
     virtual std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) = 0;
     virtual std::vector<Variable> extractVariables(xmlDocPtr doc) = 0;
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);

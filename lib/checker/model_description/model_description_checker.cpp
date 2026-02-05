@@ -48,7 +48,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
     checkModelName(metadata.modelName, cert);
-    checkGuid(metadata.guid, metadata.fmiVersion, cert);
+    checkGuid(metadata.guid, cert);
 
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
     checkModelVersion(metadata.modelVersion, cert);
@@ -413,55 +413,6 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkGuid(const std::optional<std::string>& guid_opt,
-                                            const std::optional<std::string>& fmi_version, Certificate& cert)
-{
-    bool is_fmi3 = fmi_version && fmi_version->starts_with("3.");
-    std::string attribute_name = is_fmi3 ? "instantiationToken" : "guid";
-    TestResult test{is_fmi3 ? "Instantiation Token Format" : "GUID Format", TestStatus::PASS, {}};
-
-    if (!guid_opt.has_value())
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back(attribute_name + " attribute is missing");
-        cert.printTestResult(test);
-        return;
-    }
-
-    if (guid_opt->empty())
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back(attribute_name + " attribute is empty");
-        cert.printTestResult(test);
-        return;
-    }
-
-    const std::string& guid = *guid_opt;
-
-    // GUID format variations:
-    // Standard: {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
-    std::regex guid_pattern(
-        R"(^(\{)?[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}(\})?$)");
-
-    if (!std::regex_match(guid, guid_pattern))
-    {
-        if (is_fmi3)
-        {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back(attribute_name + " \"" + guid +
-                                    "\" does not match GUID format. While allowed in FMI 3.0, using a GUID is "
-                                    "recommended for uniqueness.");
-        }
-        else
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back(attribute_name + " \"" + guid +
-                                    "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
-        }
-    }
-
-    cert.printTestResult(test);
-}
 
 void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::string>& version, Certificate& cert)
 {
@@ -724,78 +675,6 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
     cert.printTestResult(test);
 }
 
-std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(xmlDocPtr doc)
-{
-    std::map<std::string, UnitDefinition> units;
-
-    // FMI uses UnitDefinitions/Unit for both FMI2 and FMI3
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
-    if (!xpath_obj)
-        return units;
-
-    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
-    {
-        xmlXPathFreeObject(xpath_obj);
-        return units;
-    }
-
-    for (int32_t i = 0; i < nodes->nodeNr; ++i)
-    {
-        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        UnitDefinition unit_def;
-
-        // Get name attribute
-        unit_def.name = getXmlAttribute(unit_node, "name").value_or("");
-        unit_def.sourceline = unit_node->line;
-
-        // FMI 3.0 has factor/offset directly on Unit
-        unit_def.factor = getXmlAttribute(unit_node, "factor");
-        unit_def.offset = getXmlAttribute(unit_node, "offset");
-
-        if (unit_def.name.empty())
-            continue;
-
-        // Extract children (BaseUnit for FMI 2.0, DisplayUnit for both)
-        for (xmlNodePtr child = unit_node->children; child; child = child->next)
-        {
-            if (child->type != XML_ELEMENT_NODE)
-                continue;
-
-            std::string elem_name =
-                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
-
-            if (elem_name == "BaseUnit")
-            {
-                // FMI 2.0: factor/offset are on BaseUnit
-                auto base_factor = getXmlAttribute(child, "factor");
-                auto base_offset = getXmlAttribute(child, "offset");
-                if (base_factor)
-                    unit_def.factor = base_factor;
-                if (base_offset)
-                    unit_def.offset = base_offset;
-            }
-            else if (elem_name == "DisplayUnit")
-            {
-                auto display_unit_name = getXmlAttribute(child, "name");
-                if (display_unit_name)
-                {
-                    DisplayUnit du;
-                    du.name = *display_unit_name;
-                    du.factor = getXmlAttribute(child, "factor");
-                    du.offset = getXmlAttribute(child, "offset");
-                    du.sourceline = child->line;
-                    unit_def.display_units[du.name] = du;
-                }
-            }
-        }
-
-        units[unit_def.name] = unit_def;
-    }
-
-    xmlXPathFreeObject(xpath_obj);
-    return units;
-}
 
 ModelDescriptionCheckerBase::EffectiveBounds
 ModelDescriptionCheckerBase::getEffectiveBounds(const Variable& var,
@@ -854,41 +733,6 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::v
     return model_identifiers;
 }
 
-ModelMetadata ModelDescriptionCheckerBase::extractMetadata(xmlNodePtr root)
-{
-    ModelMetadata metadata;
-    metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
-    metadata.modelName = getXmlAttribute(root, "modelName");
-
-    // Unified GUID/Instantiation Token
-    if (metadata.fmiVersion && metadata.fmiVersion->starts_with("3."))
-        metadata.guid = getXmlAttribute(root, "instantiationToken");
-    else
-        metadata.guid = getXmlAttribute(root, "guid");
-
-    metadata.modelVersion = getXmlAttribute(root, "version");
-    metadata.author = getXmlAttribute(root, "author");
-    metadata.copyright = getXmlAttribute(root, "copyright");
-    metadata.license = getXmlAttribute(root, "license");
-    metadata.generationTool = getXmlAttribute(root, "generationTool");
-    metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
-
-    metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
-
-    auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
-    if (num_event_ind)
-    {
-        try
-        {
-            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
-        }
-        catch (...)
-        {
-        }
-    }
-
-    return metadata;
-}
 
 std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
@@ -1134,84 +978,6 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
-{
-    TestResult test{"Unit Definitions", TestStatus::PASS, {}};
-
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
-    if (!xpath_obj)
-    {
-        cert.printTestResult(test);
-        return;
-    }
-
-    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
-    {
-        xmlXPathFreeObject(xpath_obj);
-        cert.printTestResult(test);
-        return;
-    }
-
-    std::set<std::string> seen_names;
-
-    auto checkSpecial = [&](const std::optional<std::string>& val, const std::string& attr_name,
-                            const std::string& context, size_t line)
-    {
-        if (val && isSpecialFloat(*val))
-        {
-            validateUnitSpecialFloat(test, *val, attr_name, context, line);
-        }
-    };
-
-    for (int32_t i = 0; i < nodes->nodeNr; ++i)
-    {
-        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto name_opt = getXmlAttribute(unit_node, "name");
-        std::string name = name_opt.value_or("unnamed");
-
-        if (name_opt)
-        {
-            if (seen_names.contains(*name_opt))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Unit \"" + *name_opt + "\" (line " + std::to_string(unit_node->line) +
-                                        ") is defined multiple times");
-            }
-            seen_names.insert(*name_opt);
-        }
-
-        // FMI 3.0 factor/offset on Unit
-        checkSpecial(getXmlAttribute(unit_node, "factor"), "factor", "Unit \"" + name + "\"", unit_node->line);
-        checkSpecial(getXmlAttribute(unit_node, "offset"), "offset", "Unit \"" + name + "\"", unit_node->line);
-
-        for (xmlNodePtr child = unit_node->children; child; child = child->next)
-        {
-            if (child->type != XML_ELEMENT_NODE)
-                continue;
-
-            std::string elem_name =
-                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
-
-            if (elem_name == "BaseUnit")
-            {
-                checkSpecial(getXmlAttribute(child, "factor"), "factor", "Unit \"" + name + "\" BaseUnit", child->line);
-                checkSpecial(getXmlAttribute(child, "offset"), "offset", "Unit \"" + name + "\" BaseUnit", child->line);
-            }
-            else if (elem_name == "DisplayUnit")
-            {
-                auto du_name = getXmlAttribute(child, "name").value_or("unnamed");
-                checkSpecial(getXmlAttribute(child, "factor"), "factor",
-                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
-                checkSpecial(getXmlAttribute(child, "offset"), "offset",
-                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
-            }
-        }
-    }
-
-    xmlXPathFreeObject(xpath_obj);
-    cert.printTestResult(test);
-}
 
 void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
     const std::vector<Variable>& variables, const std::map<std::string, TypeDefinition>& type_definitions,

@@ -24,6 +24,9 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                 const std::map<std::string, TypeDefinition>& type_definitions,
                                 Certificate& cert) override;
 
+    void checkUnits(xmlDocPtr doc, Certificate& cert) override;
+    void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
+
     void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
                                       const std::string& attr_name) override;
     void validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
@@ -36,8 +39,10 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
   private:
     // FMI2-specific variable extraction (different XML structure than FMI3)
     std::vector<Variable> extractVariables(xmlDocPtr doc) override;
+    ModelMetadata extractMetadata(xmlNodePtr root) override;
 
     // FMI2-specific checks
+    std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) override;
     std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) override;
 
     // FMI2-specific model structure checks
