@@ -24,9 +24,22 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                 const std::map<std::string, TypeDefinition>& type_definitions,
                                 Certificate& cert) override;
 
+    void checkUnits(xmlDocPtr doc, Certificate& cert) override;
+    void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
+
+    void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
+                                      const std::string& attr_name) override;
+    void validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
+                                               const std::string& attr_name) override;
+    void validateUnitSpecialFloat(TestResult& test, const std::string& val, const std::string& attr_name,
+                                  const std::string& context, size_t line) override;
+    void validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def, const std::string& val,
+                                            const std::string& attr_name) override;
+
   private:
     // FMI3-specific variable extraction (different XML structure than FMI2)
     std::vector<Variable> extractVariables(xmlDocPtr doc) override;
+    ModelMetadata extractMetadata(xmlNodePtr root) override;
     std::string getVariableType(xmlNodePtr node);
 
     // Extract dimension information from variable node
@@ -44,6 +57,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkClockReferences(const std::vector<Variable>& variables, Certificate& cert);
     void checkClockedVariables(const std::vector<Variable>& variables, Certificate& cert);
 
+    std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) override;
     std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) override;
 
     // FMI3-specific model structure checks

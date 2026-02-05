@@ -34,6 +34,7 @@ struct Variable
     std::optional<std::string> start;
     std::optional<std::string> min;
     std::optional<std::string> max;
+    std::optional<std::string> nominal;
     std::optional<std::string> unit;
     std::optional<std::string> display_unit;
     std::optional<std::string> declared_type;
@@ -47,11 +48,22 @@ struct Variable
     size_t sourceline = 0;
 };
 
+// Display unit definition
+struct DisplayUnit
+{
+    std::string name;
+    std::optional<std::string> factor;
+    std::optional<std::string> offset;
+    size_t sourceline = 0;
+};
+
 // Unit definition
 struct UnitDefinition
 {
     std::string name;
-    std::set<std::string> display_units;
+    std::optional<std::string> factor;
+    std::optional<std::string> offset;
+    std::map<std::string, DisplayUnit> display_units;
     size_t sourceline = 0;
 };
 
@@ -62,6 +74,7 @@ struct TypeDefinition
     std::string type;
     std::optional<std::string> min;
     std::optional<std::string> max;
+    std::optional<std::string> nominal;
     std::optional<std::string> unit;
     std::optional<std::string> display_unit;
     size_t sourceline = 0;
@@ -99,15 +112,14 @@ class ModelDescriptionCheckerBase : public Checker
 
     // Common validation methods that work the same way across FMI versions
     void checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert);
-    void checkUnits(xmlDocPtr doc, Certificate& cert);
+    virtual void checkUnits(xmlDocPtr doc, Certificate& cert) = 0;
     void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert);
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
     void checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert);
     void checkModelName(const std::optional<std::string>& model_name, Certificate& cert);
-    void checkGuid(const std::optional<std::string>& guid, const std::optional<std::string>& fmi_version,
-                   Certificate& cert);
+    virtual void checkGuid(const std::optional<std::string>& guid, Certificate& cert) = 0;
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
     void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert);
     void checkLicense(const std::optional<std::string>& license, Certificate& cert);
@@ -144,14 +156,27 @@ class ModelDescriptionCheckerBase : public Checker
                                         Certificate& cert) = 0;
 
     // XML parsing helpers
-    ModelMetadata extractMetadata(xmlNodePtr root);
+    virtual ModelMetadata extractMetadata(xmlNodePtr root) = 0;
     std::map<std::string, std::string> extractModelIdentifiers(xmlDocPtr doc,
                                                                const std::vector<std::string>& interface_elements);
-    std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc);
+    virtual std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) = 0;
     virtual std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) = 0;
     virtual std::vector<Variable> extractVariables(xmlDocPtr doc) = 0;
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
     xmlXPathObjectPtr getXPathNodes(xmlDocPtr doc, const std::string& xpath);
+
+    // Helper to check for special float values (NaN, INF)
+    bool isSpecialFloat(const std::string& value);
+
+    // Version-specific special float validation hooks
+    virtual void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
+                                              const std::string& attr_name) = 0;
+    virtual void validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
+                                                       const std::string& attr_name) = 0;
+    virtual void validateUnitSpecialFloat(TestResult& test, const std::string& val, const std::string& attr_name,
+                                          const std::string& unit_name, size_t line) = 0;
+    virtual void validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
+                                                    const std::string& val, const std::string& attr_name) = 0;
 
     // Helper to get effective min/max for a variable considering type definitions
     struct EffectiveBounds
@@ -185,6 +210,11 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     {
         if (!str_opt)
             return std::nullopt;
+
+        // Check for special floats (NaN, INF) using version-specific hook
+        if (std::is_floating_point_v<T> && isSpecialFloat(*str_opt))
+            validateVariableSpecialFloat(test, var, *str_opt, attr_name);
+
         try
         {
             if constexpr (std::is_floating_point_v<T>)
