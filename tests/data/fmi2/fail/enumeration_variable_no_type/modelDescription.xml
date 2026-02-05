@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="test" guid="{12345678-1234-1234-1234-123456789012}">
+    <ModelExchange modelIdentifier="test"/>
+    <ModelVariables>
+        <ScalarVariable name="v" valueReference="0" causality="output">
+            <Enumeration/>
+        </ScalarVariable>
+    </ModelVariables>
+    <ModelStructure>
+        <Outputs>
+            <Unknown index="1"/>
+        </Outputs>
+    </ModelStructure>
+</fmiModelDescription>

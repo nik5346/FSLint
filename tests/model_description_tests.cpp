@@ -187,6 +187,30 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_derivative_no_attr", "must have the \"derivative\" attribute");
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
+        validate_fail("structure_initial_unknowns_not_ordered", "ordered according to their ScalarVariable index");
+        validate_fail("structure_dependencies_not_ordered", "ordered according to magnitude");
+        validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
+        validate_fail("structure_initial_unknowns_mismatch",
+                      "ModelStructure/InitialUnknowns does not contain the expected set of variables");
+    }
+
+    SECTION("Missing Checks FMI 2.0")
+    {
+        validate_fail("unit_display_unit_duplicate", "is defined multiple times");
+        validate_fail("type_name_as_variable_name", "must be different from all ScalarVariable names");
+        validate_fail("enumeration_item_duplicate_value", "must be unique within the same enumeration");
+        validate_fail("enumeration_no_item", "must have at least one Item");
+        validate_fail("log_category_duplicate", "is defined multiple times");
+        validate_fail("vendor_annotation_duplicate", "is defined multiple times");
+        validate_fail("enumeration_variable_no_type", "must have a declaredType attribute");
+        validate_fail("alias_conflicting_start", "At most one variable in an alias set");
+        validate_fail("alias_inconsistent_unit", "All variables in an alias set must have the same unit");
+        validate_fail("independent_multiple", "Found multiple");
+        validate_fail("independent_non_real", "must be of type \"Real\"");
+        validate_fail("independent_with_start", "not allowed to have a \"start\" attribute");
+        validate_fail("independent_with_initial", "not allowed to define \"initial\"");
+        validate_fail("parameter_continuous", "Parameters must be \"fixed\" or \"tunable\"");
+        validate_fail("alias_constant_conflicting_start", "have different start values");
     }
 }
 
@@ -252,8 +276,6 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
     SECTION("Structure")
     {
-        validate_warning("structure_initial_unknowns_mismatch",
-                         "ModelStructure/InitialUnknowns does not contain the expected set of variables");
         validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
     }
 }
@@ -428,6 +450,8 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
+        validate_fail("structure_initial_unknowns_mismatch",
+                      "ModelStructure/InitialUnknowns does not contain the expected set of variables");
     }
 
     SECTION("Structural Parameters")
@@ -517,8 +541,6 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("Structure")
     {
-        validate_warning("structure_initial_unknowns_mismatch",
-                         "ModelStructure/InitialUnknowns does not contain the expected set of variables");
         validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
     }
 
