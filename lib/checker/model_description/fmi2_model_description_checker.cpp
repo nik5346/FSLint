@@ -1,6 +1,6 @@
-#include <regex>
 #include "fmi2_model_description_checker.h"
 #include "certificate.h"
+#include <regex>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -322,9 +322,7 @@ void Fmi2ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
 
         // Check nominal for special floats (not allowed in FMI 2.0)
         if (var.type == "Real" && var.nominal && isSpecialFloat(*var.nominal))
-        {
             validateVariableSpecialFloat(test, var, *var.nominal, "nominal");
-        }
 
         // First validate type definition's own min/max/nominal consistency
         if (var.declared_type)
@@ -335,20 +333,14 @@ void Fmi2ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
                 const auto& type_def = it->second;
 
                 if (type_def.type == "Real" && type_def.nominal && isSpecialFloat(*type_def.nominal))
-                {
                     validateTypeDefinitionSpecialFloat(test, type_def, *type_def.nominal, "nominal");
-                }
 
                 if (type_def.type == "Real")
                 {
                     if (type_def.min && isSpecialFloat(*type_def.min))
-                    {
                         validateTypeDefinitionSpecialFloat(test, type_def, *type_def.min, "min");
-                    }
                     if (type_def.max && isSpecialFloat(*type_def.max))
-                    {
                         validateTypeDefinitionSpecialFloat(test, type_def, *type_def.max, "max");
-                    }
                 }
 
                 if (type_def.min && type_def.max)
@@ -439,7 +431,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         if (actual_outputs.contains(var.name))
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                            test.messages.push_back("Variable \"" + var.name +
+                                                    "\" is listed multiple times in "
                                                     "ModelStructure/Outputs");
                         }
                         actual_outputs.insert(var.name);
@@ -469,7 +462,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
         if (!missing.empty())
         {
-            std::string msg = "The following variables with causality=\"output\" are missing from ModelStructure/Outputs: ";
+            std::string msg =
+                "The following variables with causality=\"output\" are missing from ModelStructure/Outputs: ";
             for (size_t i = 0; i < missing.size(); ++i)
                 msg += (i > 0 ? ", " : "") + missing[i];
             test.messages.push_back(msg);
@@ -533,7 +527,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         if (actual_derivatives.contains(var.name))
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                            test.messages.push_back("Variable \"" + var.name +
+                                                    "\" is listed multiple times in "
                                                     "ModelStructure/Derivatives");
                         }
                         actual_derivatives.insert(var.name);
@@ -563,7 +558,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
         if (!missing.empty())
         {
-            std::string msg = "The following variables with a \"derivative\" attribute are missing from ModelStructure/Derivatives: ";
+            std::string msg =
+                "The following variables with a \"derivative\" attribute are missing from ModelStructure/Derivatives: ";
             for (size_t i = 0; i < missing.size(); ++i)
                 msg += (i > 0 ? ", " : "") + missing[i];
             test.messages.push_back(msg);
@@ -571,7 +567,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
         if (!extra.empty())
         {
-            std::string msg = "The following variables in ModelStructure/Derivatives do not have a \"derivative\" attribute: ";
+            std::string msg =
+                "The following variables in ModelStructure/Derivatives do not have a \"derivative\" attribute: ";
             for (size_t i = 0; i < extra.size(); ++i)
                 msg += (i > 0 ? ", " : "") + extra[i];
             test.messages.push_back(msg);
@@ -731,8 +728,8 @@ void Fmi2ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test,
                                                                const std::string& val, const std::string& attr_name)
 {
     test.status = TestStatus::FAIL;
-    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): " + attr_name +
-                            " value \"" + val + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): " +
+                            attr_name + " value \"" + val + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
 }
 
 void Fmi2ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
@@ -743,8 +740,8 @@ void Fmi2ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResu
 }
 
 void Fmi2ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
-                                                          const std::string& attr_name, const std::string& context,
-                                                          size_t line)
+                                                           const std::string& attr_name, const std::string& context,
+                                                           size_t line)
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
@@ -757,7 +754,8 @@ void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult&
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back("Type definition \"" + type_def.name + "\" (line " + std::to_string(type_def.sourceline) +
-                            "): " + attr_name + " value \"" + val + "\" is NaN or Infinity, which is not allowed in FMI 2.0");
+                            "): " + attr_name + " value \"" + val +
+                            "\" is NaN or Infinity, which is not allowed in FMI 2.0");
 }
 
 void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)
@@ -787,7 +785,8 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     if (!std::regex_match(guid, guid_pattern))
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("guid \"" + guid + "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
+        test.messages.push_back("guid \"" + guid +
+                                "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
     }
 
     cert.printTestResult(test);
@@ -847,9 +846,7 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
                             const std::string& context, size_t line)
     {
         if (val && isSpecialFloat(*val))
-        {
             validateUnitSpecialFloat(test, *val, attr_name, context, line);
-        }
     };
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)

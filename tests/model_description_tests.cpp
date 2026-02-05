@@ -46,10 +46,8 @@ bool has_warning_with_text(const Certificate& cert, const std::string& text)
         if (r.test_name.find(text) != std::string::npos)
             return true;
         for (const auto& msg : r.messages)
-        {
             if (msg.find(text) != std::string::npos)
                 return true;
-        }
     }
     return false;
 }
@@ -184,7 +182,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_output_missing", "ModelStructure/Outputs must have exactly one entry");
         validate_fail("structure_output_missing_one", "are missing from ModelStructure/Outputs: v2");
         validate_fail("structure_output_duplicate", "is listed multiple times in ModelStructure/Outputs");
-        validate_fail("structure_output_extra", "listed in ModelStructure/Outputs but does not have causality=\"output\"");
+        validate_fail("structure_output_extra",
+                      "listed in ModelStructure/Outputs but does not have causality=\"output\"");
         validate_fail("structure_derivative_no_attr", "must have the \"derivative\" attribute");
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
@@ -422,7 +421,8 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     {
         validate_fail("structure_output_missing", "ModelStructure/Output must have exactly one entry");
         validate_fail("structure_output_duplicate", "is listed multiple times in ModelStructure/Output");
-        validate_fail("structure_output_extra", "listed in ModelStructure/Output but does not have causality=\"output\"");
+        validate_fail("structure_output_extra",
+                      "listed in ModelStructure/Output but does not have causality=\"output\"");
         validate_fail("structure_derivative_invalid",
                       "references a variable that does not have the \"derivative\" attribute");
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");

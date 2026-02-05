@@ -213,9 +213,7 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
 
         // Check for special floats (NaN, INF) using version-specific hook
         if (std::is_floating_point_v<T> && isSpecialFloat(*str_opt))
-        {
             validateVariableSpecialFloat(test, var, *str_opt, attr_name);
-        }
 
         try
         {

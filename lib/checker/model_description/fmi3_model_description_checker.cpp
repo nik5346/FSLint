@@ -1,6 +1,6 @@
-#include <regex>
 #include "fmi3_model_description_checker.h"
 #include "certificate.h"
+#include <regex>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -610,7 +610,8 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         if (actual_outputs.contains(var.name))
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                            test.messages.push_back("Variable \"" + var.name +
+                                                    "\" is listed multiple times in "
                                                     "ModelStructure/Output");
                         }
                         actual_outputs.insert(var.name);
@@ -646,7 +647,8 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
         if (!missing.empty())
         {
-            std::string msg = "The following variables with causality=\"output\" are missing from ModelStructure/Output: ";
+            std::string msg =
+                "The following variables with causality=\"output\" are missing from ModelStructure/Output: ";
             for (size_t i = 0; i < missing.size(); ++i)
                 msg += (i > 0 ? ", " : "") + missing[i];
             test.messages.push_back(msg);
@@ -722,7 +724,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     if (actual_derivatives.contains(var.name))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                        test.messages.push_back("Variable \"" + var.name +
+                                                "\" is listed multiple times in "
                                                 "ModelStructure/ContinuousStateDerivative");
                     }
                     actual_derivatives.insert(var.name);
@@ -748,7 +751,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
         if (!missing.empty())
         {
-            std::string msg = "The following variables with a \"derivative\" attribute are missing from ModelStructure/ContinuousStateDerivative: ";
+            std::string msg = "The following variables with a \"derivative\" attribute are missing from "
+                              "ModelStructure/ContinuousStateDerivative: ";
             for (size_t i = 0; i < missing.size(); ++i)
                 msg += (i > 0 ? ", " : "") + missing[i];
             test.messages.push_back(msg);
@@ -756,7 +760,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
         if (!extra.empty())
         {
-            std::string msg = "The following variables in ModelStructure/ContinuousStateDerivative do not have a \"derivative\" attribute: ";
+            std::string msg = "The following variables in ModelStructure/ContinuousStateDerivative do not have a "
+                              "\"derivative\" attribute: ";
             for (size_t i = 0; i < extra.size(); ++i)
                 msg += (i > 0 ? ", " : "") + extra[i];
             test.messages.push_back(msg);
@@ -1380,9 +1385,7 @@ void Fmi3ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResu
 {
     // In FMI 3.0, stopTime="INF" is explicitly allowed and common
     if (attr_name == "stopTime" && (val.find("INF") != std::string::npos || val.find("inf") != std::string::npos))
-    {
         return;
-    }
 
     if (test.status == TestStatus::PASS)
         test.status = TestStatus::WARNING;
@@ -1392,8 +1395,8 @@ void Fmi3ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResu
 }
 
 void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
-                                                          const std::string& attr_name, const std::string& context,
-                                                          size_t line)
+                                                           const std::string& attr_name, const std::string& context,
+                                                           size_t line)
 {
     if (test.status == TestStatus::PASS)
         test.status = TestStatus::WARNING;
@@ -1437,7 +1440,9 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     if (!std::regex_match(guid, guid_pattern))
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("instantiationToken \"" + guid + "\" does not match GUID format. While allowed in FMI 3.0, using a GUID is recommended for uniqueness.");
+        test.messages.push_back(
+            "instantiationToken \"" + guid +
+            "\" does not match GUID format. While allowed in FMI 3.0, using a GUID is recommended for uniqueness.");
     }
 
     cert.printTestResult(test);
@@ -1497,9 +1502,7 @@ void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
                             const std::string& context, size_t line)
     {
         if (val && isSpecialFloat(*val))
-        {
             validateUnitSpecialFloat(test, *val, attr_name, context, line);
-        }
     };
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)

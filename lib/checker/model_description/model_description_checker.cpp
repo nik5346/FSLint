@@ -125,7 +125,6 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     cert.printTestResult(test);
 }
 
-
 void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vector<Variable>& variables,
                                                                 const std::string& convention, Certificate& cert)
 {
@@ -413,7 +412,6 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     cert.printTestResult(test);
 }
 
-
 void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::string>& version, Certificate& cert)
 {
     TestResult test{"Model Version Format", TestStatus::PASS, {}};
@@ -675,7 +673,6 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
     cert.printTestResult(test);
 }
 
-
 ModelDescriptionCheckerBase::EffectiveBounds
 ModelDescriptionCheckerBase::getEffectiveBounds(const Variable& var,
                                                 const std::map<std::string, TypeDefinition>& type_definitions)
@@ -732,7 +729,6 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::v
 
     return model_identifiers;
 }
-
 
 std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
@@ -822,9 +818,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     auto checkSpecial = [&](const std::optional<std::string>& val, const std::string& attr_name)
     {
         if (val && isSpecialFloat(*val))
-        {
             validateDefaultExperimentSpecialFloat(test, *val, attr_name);
-        }
     };
 
     // Parse startTime
@@ -977,7 +971,6 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
     xmlXPathFreeObject(xpath_obj);
     cert.printTestResult(test);
 }
-
 
 void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
     const std::vector<Variable>& variables, const std::map<std::string, TypeDefinition>& type_definitions,
