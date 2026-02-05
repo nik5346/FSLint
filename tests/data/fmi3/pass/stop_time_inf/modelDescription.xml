@@ -7,6 +7,7 @@
   </ModelVariables>
   <ModelStructure>
     <Output valueReference="2"/>
+    <InitialUnknown valueReference="2"/>
   </ModelStructure>
   <DefaultExperiment stopTime="INF"/>
 </fmiModelDescription>

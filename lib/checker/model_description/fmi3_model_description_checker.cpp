@@ -841,7 +841,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     if (expected != actual)
     {
-        test.status = TestStatus::WARNING;
+        test.status = TestStatus::FAIL;
 
         std::string expected_str;
         for (const auto& name : expected)
