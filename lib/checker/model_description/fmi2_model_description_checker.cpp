@@ -6,6 +6,7 @@
 #include <libxml/xpath.h>
 
 #include <iostream>
+#include <sstream>
 #include <tuple>
 
 void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
@@ -21,6 +22,237 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
 
     // Run FMI2-specific model structure checks
     checkModelStructure(doc, variables, cert);
+
+    // Enumeration variables must have a declaredType
+    checkEnumerationVariables(variables, cert);
+
+    // Check Alias variables
+    checkAliases(variables, cert);
+
+    // Check Independent variable
+    checkIndependentVariable(variables, cert);
+}
+
+void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Enumeration Variable Type (FMI2)", TestStatus::PASS, {}};
+
+    for (const auto& var : variables)
+    {
+        if (var.type == "Enumeration" && !var.declared_type.has_value())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") is of type Enumeration and must have a declaredType attribute");
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Independent Variable (FMI2)", TestStatus::PASS, {}};
+
+    const Variable* independent_var = nullptr;
+    size_t count = 0;
+
+    for (const auto& var : variables)
+    {
+        if (var.causality == "independent")
+        {
+            count++;
+            if (!independent_var)
+                independent_var = &var;
+            else
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(
+                    "At most one ScalarVariable can be defined as \"independent\". Found multiple: " +
+                    independent_var->name + ", " + var.name);
+            }
+        }
+    }
+
+    if (independent_var)
+    {
+        if (independent_var->type != "Real")
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Independent variable \"" + independent_var->name + "\" must be of type \"Real\"");
+        }
+
+        if (independent_var->start.has_value())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Independent variable \"" + independent_var->name +
+                                    "\" is not allowed to have a \"start\" attribute");
+        }
+
+        if (!independent_var->initial.empty())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Independent variable \"" + independent_var->name +
+                                    "\" is not allowed to define \"initial\"");
+        }
+
+        if (independent_var->variability != "continuous")
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Independent variable \"" + independent_var->name +
+                                    "\" must have variability=\"continuous\"");
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Alias Variables (FMI2)", TestStatus::PASS, {}};
+
+    // Group variables by base type and valueReference
+    auto get_base_type = [](const std::string& type) -> std::string
+    {
+        if (type == "Integer" || type == "Enumeration")
+            return "Integer/Enumeration";
+        return type;
+    };
+
+    std::map<std::pair<std::string, uint32_t>, std::vector<const Variable*>> alias_sets;
+    for (const auto& var : variables)
+        if (var.value_reference.has_value())
+            alias_sets[{get_base_type(var.type), *var.value_reference}].push_back(&var);
+
+    for (const auto& [key, alias_set] : alias_sets)
+    {
+        if (alias_set.size() <= 1)
+            continue;
+
+        bool has_non_constant = std::any_of(alias_set.begin(), alias_set.end(),
+                                            [](const Variable* v) { return v->variability != "constant"; });
+
+        const Variable* first_constant = nullptr;
+
+        auto can_be_set = [](const Variable* v) -> bool
+        {
+            if (v->variability == "constant")
+                return false;
+            if (v->causality == "input")
+                return true;
+            if (v->causality == "parameter")
+                return true; // fixed or tunable
+            if (v->causality == "independent")
+                return true; // Set via fmi2SetTime
+            if (v->initial == "exact" || v->initial == "approx")
+                return true;
+            return false;
+        };
+
+        std::vector<const Variable*> settable_vars;
+
+        for (const auto* var : alias_set)
+        {
+            if (var->variability == "constant")
+            {
+                if (!first_constant)
+                    first_constant = var;
+            }
+
+            if (can_be_set(var))
+                settable_vars.push_back(var);
+        }
+
+        // Rule 1: Cannot both be set with fmi2SetXXX
+        if (settable_vars.size() > 1)
+        {
+            test.status = TestStatus::FAIL;
+            std::string msg = "Alias set for " + key.first + " with VR " + std::to_string(key.second) +
+                              " contains multiple variables that can be set with fmi2SetXXX: ";
+            for (size_t i = 0; i < settable_vars.size(); ++i)
+                msg += (i > 0 ? ", " : "") + settable_vars[i]->name;
+            test.messages.push_back(msg);
+        }
+
+        // Rule 2: At most one variable of the same alias set of variables with variability != "constant" can have a
+        // start attribute
+        if (has_non_constant)
+        {
+            size_t non_constant_start_count =
+                std::count_if(alias_set.begin(), alias_set.end(),
+                              [](const Variable* v) { return v->variability != "constant" && v->start.has_value(); });
+
+            if (non_constant_start_count > 1)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Alias set for " + key.first + " with VR " + std::to_string(key.second) +
+                                        " has multiple variables with a start attribute. At most one variable in an "
+                                        "alias set (where at least one is not constant) can have a start attribute.");
+            }
+        }
+
+        // Rule 3: A variable with variability="constant" can only be aliased to another variable with
+        // variability="constant"
+        if (first_constant)
+        {
+            for (const auto* var : alias_set)
+            {
+                if (var->variability != "constant")
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Variable \"" + var->name + "\" (variability=\"" + var->variability +
+                                            "\") is aliased to constant variable \"" + first_constant->name +
+                                            "\" (VR " + std::to_string(key.second) +
+                                            "). Constants can only be aliased to other constants.");
+                }
+                else
+                {
+                    // start values must be identical
+                    if (var->start != first_constant->start)
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Aliased constant variables \"" + var->name + "\" and \"" +
+                                                first_constant->name + "\" have different start values ('" +
+                                                var->start.value_or("") + "' vs '" +
+                                                first_constant->start.value_or("") + "')");
+                    }
+                }
+            }
+        }
+
+        // Rule 4: All variables in the same alias set must have the same unit
+        const Variable* first_with_unit = nullptr;
+        for (const auto* var : alias_set)
+        {
+            if (var->unit.has_value())
+            {
+                if (!first_with_unit)
+                    first_with_unit = var;
+                else if (var->unit != first_with_unit->unit)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("All variables in an alias set must have the same unit. Variable \"" +
+                                            var->name + "\" has unit \"" + *var->unit + "\" but \"" +
+                                            first_with_unit->name + "\" has unit \"" + *first_with_unit->unit + "\"");
+                }
+            }
+        }
+        if (first_with_unit)
+        {
+            for (const auto* var : alias_set)
+            {
+                if (!var->unit.has_value())
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("All variables in an alias set must have the same unit. Variable \"" +
+                                            var->name + "\" has no unit but \"" + first_with_unit->name +
+                                            "\" has unit \"" + *first_with_unit->unit + "\"");
+                }
+            }
+        }
+    }
+
+    cert.printTestResult(test);
 }
 
 std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
@@ -182,6 +414,16 @@ void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                     ") is of type " + var.type + " and must have variability != \"continuous\"");
+        }
+
+        // FMI2: causality="parameter" or "calculatedParameter" must have variability="fixed" or "tunable"
+        if ((var.causality == "parameter" || var.causality == "calculatedParameter") &&
+            (var.variability != "fixed" && var.variability != "tunable"))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has causality=\"" + var.causality + "\" but variability=\"" + var.variability +
+                                    "\". Parameters must be \"fixed\" or \"tunable\".");
         }
     }
 
@@ -436,6 +678,60 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                                     "ModelStructure/Outputs");
                         }
                         actual_outputs.insert(var.name);
+
+                        // Check dependencies ordering and dependenciesKind consistency
+                        auto deps_str = getXmlAttribute(node, "dependencies");
+                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+
+                        if (deps_str.has_value())
+                        {
+                            std::vector<size_t> deps;
+                            std::stringstream ss(*deps_str);
+                            size_t dep_idx;
+                            while (ss >> dep_idx)
+                                deps.push_back(dep_idx);
+
+                            // Check ordering
+                            for (size_t j = 1; j < deps.size(); ++j)
+                            {
+                                if (deps[j] <= deps[j - 1])
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(
+                                        "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
+                                        ") in ModelStructure/Outputs has dependencies that are not ordered "
+                                        "according to magnitude");
+                                    break;
+                                }
+                            }
+
+                            // Check dependenciesKind size
+                            if (deps_kind_str.has_value())
+                            {
+                                std::vector<std::string> kinds;
+                                std::stringstream ss_kind(*deps_kind_str);
+                                std::string kind;
+                                while (ss_kind >> kind)
+                                    kinds.push_back(kind);
+
+                                if (kinds.size() != deps.size())
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(
+                                        "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
+                                        ") in ModelStructure/Outputs must have the same number of list elements in "
+                                        "dependencies and dependenciesKind");
+                                }
+                            }
+                        }
+                        else if (deps_kind_str.has_value())
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
+                                                    std::to_string(node->line) +
+                                                    ") in ModelStructure/Outputs: If 'dependenciesKind' is present, "
+                                                    "'dependencies' must be present");
+                        }
                     }
                 }
                 catch (...)
@@ -532,6 +828,60 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                                     "ModelStructure/Derivatives");
                         }
                         actual_derivatives.insert(var.name);
+
+                        // Check dependencies ordering and dependenciesKind consistency
+                        auto deps_str = getXmlAttribute(node, "dependencies");
+                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+
+                        if (deps_str.has_value())
+                        {
+                            std::vector<size_t> deps;
+                            std::stringstream ss(*deps_str);
+                            size_t dep_idx;
+                            while (ss >> dep_idx)
+                                deps.push_back(dep_idx);
+
+                            // Check ordering
+                            for (size_t j = 1; j < deps.size(); ++j)
+                            {
+                                if (deps[j] <= deps[j - 1])
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(
+                                        "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
+                                        ") in ModelStructure/Derivatives has dependencies that are not ordered "
+                                        "according to magnitude");
+                                    break;
+                                }
+                            }
+
+                            // Check dependenciesKind size
+                            if (deps_kind_str.has_value())
+                            {
+                                std::vector<std::string> kinds;
+                                std::stringstream ss_kind(*deps_kind_str);
+                                std::string kind;
+                                while (ss_kind >> kind)
+                                    kinds.push_back(kind);
+
+                                if (kinds.size() != deps.size())
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(
+                                        "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
+                                        ") in ModelStructure/Derivatives must have the same number of list elements "
+                                        "in dependencies and dependenciesKind");
+                                }
+                            }
+                        }
+                        else if (deps_kind_str.has_value())
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
+                                                    std::to_string(node->line) +
+                                                    ") in ModelStructure/Derivatives: If 'dependenciesKind' is "
+                                                    "present, 'dependencies' must be present");
+                        }
                     }
                 }
                 catch (...)
@@ -617,6 +967,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     // FMI2: Get actual initial unknowns (using index attribute)
     std::set<std::string> actual;
+    std::vector<size_t> actual_indices;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/InitialUnknowns/Unknown");
 
     if (xpath_obj && xpath_obj->nodesetval)
@@ -633,7 +984,58 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                 {
                     size_t index = std::stoul(*index_str);
                     if (index > 0 && index <= variables.size())
+                    {
                         actual.insert(variables[index - 1].name);
+                        actual_indices.push_back(index);
+
+                        // Check dependencies ordering and dependenciesKind consistency
+                        auto deps_str = getXmlAttribute(node, "dependencies");
+                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+
+                        if (deps_str.has_value())
+                        {
+                            std::vector<size_t> deps;
+                            std::stringstream ss(*deps_str);
+                            size_t dep_idx;
+                            while (ss >> dep_idx)
+                                deps.push_back(dep_idx);
+
+                            // Check ordering
+                            for (size_t j = 1; j < deps.size(); ++j)
+                            {
+                                if (deps[j] <= deps[j - 1])
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(
+                                        "Variable \"" + variables[index - 1].name + "\" (line " +
+                                        std::to_string(node->line) +
+                                        ") in ModelStructure/InitialUnknowns has dependencies that are not ordered "
+                                        "according to magnitude");
+                                    break;
+                                }
+                            }
+
+                            // Check dependenciesKind size
+                            if (deps_kind_str.has_value())
+                            {
+                                std::vector<std::string> kinds;
+                                std::stringstream ss_kind(*deps_kind_str);
+                                std::string kind;
+                                while (ss_kind >> kind)
+                                    kinds.push_back(kind);
+
+                                if (kinds.size() != deps.size())
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(
+                                        "Variable \"" + variables[index - 1].name + "\" (line " +
+                                        std::to_string(node->line) +
+                                        ") in ModelStructure/InitialUnknowns must have the same number of list "
+                                        "elements in dependencies and dependenciesKind");
+                                }
+                            }
+                        }
+                    }
                 }
                 catch (...)
                 {
@@ -643,9 +1045,21 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         xmlXPathFreeObject(xpath_obj);
     }
 
+    // Check ordering of InitialUnknowns
+    for (size_t i = 1; i < actual_indices.size(); ++i)
+    {
+        if (actual_indices[i] <= actual_indices[i - 1])
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("ModelStructure/InitialUnknowns must be ordered according to their "
+                                    "ScalarVariable index");
+            break;
+        }
+    }
+
     if (expected != actual)
     {
-        test.status = TestStatus::WARNING;
+        test.status = TestStatus::FAIL;
 
         std::string expected_str;
         for (const auto& name : expected)
@@ -854,6 +1268,7 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
         xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         auto name_opt = getXmlAttribute(unit_node, "name");
         std::string name = name_opt.value_or("unnamed");
+        std::set<std::string> unit_display_names;
 
         if (name_opt)
         {
@@ -881,7 +1296,21 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
             }
             else if (elem_name == "DisplayUnit")
             {
-                auto du_name = getXmlAttribute(child, "name").value_or("unnamed");
+                auto du_name_opt = getXmlAttribute(child, "name");
+                std::string du_name = du_name_opt.value_or("unnamed");
+
+                if (du_name_opt)
+                {
+                    if (unit_display_names.contains(*du_name_opt))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("DisplayUnit \"" + *du_name_opt + "\" (line " +
+                                                std::to_string(child->line) +
+                                                ") is defined multiple times for unit \"" + name + "\"");
+                    }
+                    unit_display_names.insert(*du_name_opt);
+                }
+
                 checkSpecial(getXmlAttribute(child, "factor"), "factor",
                              "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
                 checkSpecial(getXmlAttribute(child, "offset"), "offset",

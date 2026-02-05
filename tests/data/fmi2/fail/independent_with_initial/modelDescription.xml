@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="IndependentWithInitial" guid="123">
+    <ModelExchange modelIdentifier="IndependentWithInitial"/>
+    <ModelVariables>
+        <ScalarVariable name="t" valueReference="1" causality="independent" variability="continuous" initial="exact">
+            <Real/>
+        </ScalarVariable>
+    </ModelVariables>
+    <ModelStructure>
+        <InitialUnknowns/>
+    </ModelStructure>
+</fmiModelDescription>

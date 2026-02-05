@@ -50,4 +50,8 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
+
+    void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert);
+    void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
+    void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert);
 };

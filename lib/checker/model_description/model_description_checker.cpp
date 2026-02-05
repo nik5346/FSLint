@@ -57,11 +57,14 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkAuthor(metadata.author, cert);
     checkGenerationTool(metadata.generationTool, cert);
 
+    checkLogCategories(doc, cert);
+    checkVendorAnnotations(doc, cert);
     checkDefaultExperiment(doc, cert);
     checkTypeDefinitions(doc, cert);
     checkUnits(doc, cert);
 
     checkUniqueVariableNames(variables, cert);
+    checkTypeNameClashes(variables, type_definitions, cert);
     checkLegalVariability(variables, cert);
     checkRequiredStartValues(variables, cert);
     checkCausalityVariabilityInitialCombinations(variables, cert);
@@ -97,6 +100,30 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
                                     ") is not unique");
         }
         seen_names.insert(var.name);
+    }
+
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkTypeNameClashes(const std::vector<Variable>& variables,
+                                                       const std::map<std::string, TypeDefinition>& type_definitions,
+                                                       Certificate& cert)
+{
+    TestResult test{"Type and Variable Name Clashes", TestStatus::PASS, {}};
+
+    std::set<std::string> variable_names;
+    for (const auto& var : variables)
+        variable_names.insert(var.name);
+
+    for (const auto& [name, type_def] : type_definitions)
+    {
+        if (variable_names.contains(name))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Type definition name \"" + name + "\" (line " +
+                                    std::to_string(type_def.sourceline) +
+                                    ") must be different from all ScalarVariable names");
+        }
     }
 
     cert.printTestResult(test);
@@ -602,6 +629,74 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
     cert.printTestResult(test);
 }
 
+void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Log Categories Uniqueness", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//LogCategories/Category");
+    if (!xpath_obj || !xpath_obj->nodesetval)
+    {
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+    for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+    {
+        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto name = getXmlAttribute(node, "name");
+        if (name)
+        {
+            if (seen_names.contains(*name))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Log category \"" + *name + "\" (line " + std::to_string(node->line) +
+                                        ") is defined multiple times");
+            }
+            seen_names.insert(*name);
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkVendorAnnotations(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Vendor Annotations Uniqueness", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//VendorAnnotations/Tool");
+    if (!xpath_obj || !xpath_obj->nodesetval)
+    {
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+    for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+    {
+        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto name = getXmlAttribute(node, "name");
+        if (name)
+        {
+            if (seen_names.contains(*name))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Vendor annotation tool \"" + *name + "\" (line " + std::to_string(node->line) +
+                                        ") is defined multiple times");
+            }
+            seen_names.insert(*name);
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
 void ModelDescriptionCheckerBase::checkNumberOfImplementedInterfaces(
     const std::map<std::string, std::string>& model_identifiers, Certificate& cert)
 {
@@ -930,7 +1025,7 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
 {
     TestResult test{"Type Definitions", TestStatus::PASS, {}};
 
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/*");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/SimpleType");
     if (!xpath_obj)
     {
         cert.printTestResult(test);
@@ -954,17 +1049,88 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
         if (type_node->type != XML_ELEMENT_NODE)
             continue;
 
-        auto name = getXmlAttribute(type_node, "name");
+        auto name_opt = getXmlAttribute(type_node, "name");
+        std::string name = name_opt.value_or("unnamed");
 
-        if (name)
+        if (name_opt)
         {
-            if (seen_names.contains(*name))
+            if (seen_names.contains(*name_opt))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Type definition \"" + *name + "\" (line " + std::to_string(type_node->line) +
-                                        ") is defined multiple times");
+                test.messages.push_back("Type definition \"" + *name_opt + "\" (line " +
+                                        std::to_string(type_node->line) + ") is defined multiple times");
             }
-            seen_names.insert(*name);
+            seen_names.insert(*name_opt);
+        }
+
+        // Check Enumeration types
+        for (xmlNodePtr child = type_node->children; child; child = child->next)
+        {
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
+
+            std::string elem_name =
+                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            if (elem_name == "Enumeration")
+            {
+                bool has_items = false;
+                std::set<int32_t> item_values;
+                std::set<std::string> item_names;
+
+                for (xmlNodePtr item = child->children; item; item = item->next)
+                {
+                    if (item->type != XML_ELEMENT_NODE)
+                        continue;
+
+                    std::string item_elem_name = reinterpret_cast<const char*>(
+                        item->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                    if (item_elem_name == "Item")
+                    {
+                        has_items = true;
+                        auto item_name = getXmlAttribute(item, "name");
+                        auto item_value_str = getXmlAttribute(item, "value");
+
+                        if (item_name)
+                        {
+                            if (item_names.contains(*item_name))
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back("Enumeration type \"" + name + "\" (line " +
+                                                        std::to_string(child->line) + ") has multiple items named \"" +
+                                                        *item_name + "\"");
+                            }
+                            item_names.insert(*item_name);
+                        }
+
+                        if (item_value_str)
+                        {
+                            try
+                            {
+                                int32_t val = std::stoi(*item_value_str);
+                                if (item_values.contains(val))
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(
+                                        "Enumeration type \"" + name + "\" (line " + std::to_string(child->line) +
+                                        ") has multiple items with value " + *item_value_str +
+                                        ". Item values must be unique within the same enumeration.");
+                                }
+                                item_values.insert(val);
+                            }
+                            catch (...)
+                            {
+                            }
+                        }
+                    }
+                }
+
+                if (!has_items)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Enumeration type \"" + name + "\" (line " + std::to_string(child->line) +
+                                            ") must have at least one Item");
+                }
+            }
         }
     }
 

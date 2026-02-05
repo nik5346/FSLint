@@ -112,6 +112,8 @@ class ModelDescriptionCheckerBase : public Checker
 
     // Common validation methods that work the same way across FMI versions
     void checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert);
+    void checkTypeNameClashes(const std::vector<Variable>& variables,
+                              const std::map<std::string, TypeDefinition>& type_definitions, Certificate& cert);
     virtual void checkUnits(xmlDocPtr doc, Certificate& cert) = 0;
     void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert);
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
@@ -125,6 +127,8 @@ class ModelDescriptionCheckerBase : public Checker
     void checkLicense(const std::optional<std::string>& license, Certificate& cert);
     void checkAuthor(const std::optional<std::string>& author, Certificate& cert);
     void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert);
+    void checkLogCategories(xmlDocPtr doc, Certificate& cert);
+    void checkVendorAnnotations(xmlDocPtr doc, Certificate& cert);
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
                                             Certificate& cert);
     void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
