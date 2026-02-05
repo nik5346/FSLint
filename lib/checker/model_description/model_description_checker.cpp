@@ -48,7 +48,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
     checkModelName(metadata.modelName, cert);
-    checkGuid(metadata.guid, metadata.fmiVersion, cert);
+    checkGuid(metadata.guid, cert);
 
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
     checkModelVersion(metadata.modelVersion, cert);
@@ -124,7 +124,6 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
 
     cert.printTestResult(test);
 }
-
 
 void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vector<Variable>& variables,
                                                                 const std::string& convention, Certificate& cert)
@@ -413,56 +412,6 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkGuid(const std::optional<std::string>& guid_opt,
-                                            const std::optional<std::string>& fmi_version, Certificate& cert)
-{
-    bool is_fmi3 = fmi_version && fmi_version->starts_with("3.");
-    std::string attribute_name = is_fmi3 ? "instantiationToken" : "guid";
-    TestResult test{is_fmi3 ? "Instantiation Token Format" : "GUID Format", TestStatus::PASS, {}};
-
-    if (!guid_opt.has_value())
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back(attribute_name + " attribute is missing");
-        cert.printTestResult(test);
-        return;
-    }
-
-    if (guid_opt->empty())
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back(attribute_name + " attribute is empty");
-        cert.printTestResult(test);
-        return;
-    }
-
-    const std::string& guid = *guid_opt;
-
-    // GUID format variations:
-    // Standard: {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
-    std::regex guid_pattern(
-        R"(^(\{)?[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}(\})?$)");
-
-    if (!std::regex_match(guid, guid_pattern))
-    {
-        if (is_fmi3)
-        {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back(attribute_name + " \"" + guid +
-                                    "\" does not match GUID format. While allowed in FMI 3.0, using a GUID is "
-                                    "recommended for uniqueness.");
-        }
-        else
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back(attribute_name + " \"" + guid +
-                                    "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
-        }
-    }
-
-    cert.printTestResult(test);
-}
-
 void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::string>& version, Certificate& cert)
 {
     TestResult test{"Model Version Format", TestStatus::PASS, {}};
@@ -724,58 +673,6 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
     cert.printTestResult(test);
 }
 
-std::map<std::string, UnitDefinition> ModelDescriptionCheckerBase::extractUnitDefinitions(xmlDocPtr doc)
-{
-    std::map<std::string, UnitDefinition> units;
-
-    // FMI uses UnitDefinitions/Unit for both FMI2 and FMI3
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
-    if (!xpath_obj)
-        return units;
-
-    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
-    {
-        xmlXPathFreeObject(xpath_obj);
-        return units;
-    }
-
-    for (int32_t i = 0; i < nodes->nodeNr; ++i)
-    {
-        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        UnitDefinition unit_def;
-
-        // Get name attribute
-        unit_def.name = getXmlAttribute(unit_node, "name").value_or("");
-        unit_def.sourceline = unit_node->line;
-
-        if (unit_def.name.empty())
-            continue;
-
-        // Extract DisplayUnit children
-        for (xmlNodePtr child = unit_node->children; child; child = child->next)
-        {
-            if (child->type != XML_ELEMENT_NODE)
-                continue;
-
-            std::string elem_name =
-                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
-
-            if (elem_name == "DisplayUnit")
-            {
-                auto display_unit_name = getXmlAttribute(child, "name");
-                if (display_unit_name)
-                    unit_def.display_units.insert(*display_unit_name);
-            }
-        }
-
-        units[unit_def.name] = unit_def;
-    }
-
-    xmlXPathFreeObject(xpath_obj);
-    return units;
-}
-
 ModelDescriptionCheckerBase::EffectiveBounds
 ModelDescriptionCheckerBase::getEffectiveBounds(const Variable& var,
                                                 const std::map<std::string, TypeDefinition>& type_definitions)
@@ -833,42 +730,6 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::v
     return model_identifiers;
 }
 
-ModelMetadata ModelDescriptionCheckerBase::extractMetadata(xmlNodePtr root)
-{
-    ModelMetadata metadata;
-    metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
-    metadata.modelName = getXmlAttribute(root, "modelName");
-
-    // Unified GUID/Instantiation Token
-    if (metadata.fmiVersion && metadata.fmiVersion->starts_with("3."))
-        metadata.guid = getXmlAttribute(root, "instantiationToken");
-    else
-        metadata.guid = getXmlAttribute(root, "guid");
-
-    metadata.modelVersion = getXmlAttribute(root, "version");
-    metadata.author = getXmlAttribute(root, "author");
-    metadata.copyright = getXmlAttribute(root, "copyright");
-    metadata.license = getXmlAttribute(root, "license");
-    metadata.generationTool = getXmlAttribute(root, "generationTool");
-    metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
-
-    metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
-
-    auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
-    if (num_event_ind)
-    {
-        try
-        {
-            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
-        }
-        catch (...)
-        {
-        }
-    }
-
-    return metadata;
-}
-
 std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
     if (!node)
@@ -884,6 +745,31 @@ std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodeP
 
     xmlFree(attr);
     return value;
+}
+
+bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
+{
+    std::string s = value;
+    // Remove leading/trailing whitespace
+    s.erase(0, s.find_first_not_of(" \t\n\r"));
+    size_t last = s.find_last_not_of(" \t\n\r");
+    if (last != std::string::npos)
+        s.erase(last + 1);
+
+    if (s.empty())
+        return false;
+
+    std::string lower = s;
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+    if (lower == "nan")
+        return true;
+
+    if (lower == "inf" || lower == "+inf" || lower == "-inf")
+        return true;
+
+    return false;
 }
 
 xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, const std::string& xpath)
@@ -929,25 +815,22 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     std::optional<double> tolerance;
     std::optional<double> step_size;
 
+    auto checkSpecial = [&](const std::optional<std::string>& val, const std::string& attr_name)
+    {
+        if (val && isSpecialFloat(*val))
+            validateDefaultExperimentSpecialFloat(test, *val, attr_name);
+    };
+
     // Parse startTime
     if (start_time_str.has_value())
     {
+        checkSpecial(start_time_str, "startTime");
         try
         {
             start_time = std::stod(*start_time_str);
 
-            // Check for invalid values
-            if (std::isnan(*start_time))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("startTime is NaN (not a number)");
-            }
-            else if (std::isinf(*start_time))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("startTime cannot be infinite");
-            }
-            else if (*start_time < 0.0)
+            // Check for invalid values (already checked for special values above, but std::stod handles them too)
+            if (*start_time < 0.0 && !std::isnan(*start_time) && !std::isinf(*start_time))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("startTime (" + std::to_string(*start_time) + ") must be non-negative");
@@ -964,17 +847,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     // Parse stopTime
     if (stop_time_str.has_value())
     {
+        checkSpecial(stop_time_str, "stopTime");
         try
         {
             stop_time = std::stod(*stop_time_str);
 
             // Check for invalid values - NaN is invalid, but infinity is valid (means run indefinitely)
-            if (std::isnan(*stop_time))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("stopTime is NaN (not a number)");
-            }
-            else if (!std::isinf(*stop_time) && *stop_time < 0.0)
+            if (*stop_time < 0.0 && !std::isnan(*stop_time) && !std::isinf(*stop_time))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("stopTime (" + std::to_string(*stop_time) + ") must be non-negative");
@@ -1002,22 +881,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     // Parse tolerance
     if (tolerance_str.has_value())
     {
+        checkSpecial(tolerance_str, "tolerance");
         try
         {
             tolerance = std::stod(*tolerance_str);
 
             // Check for invalid values
-            if (std::isnan(*tolerance))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("tolerance is NaN (not a number)");
-            }
-            else if (std::isinf(*tolerance))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("tolerance cannot be infinite");
-            }
-            else if (*tolerance <= 0.0)
+            if (*tolerance <= 0.0 && !std::isnan(*tolerance) && !std::isinf(*tolerance))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("tolerance (" + std::to_string(*tolerance) + ") must be greater than 0");
@@ -1033,22 +903,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     // Parse stepSize
     if (step_size_str.has_value())
     {
+        checkSpecial(step_size_str, "stepSize");
         try
         {
             step_size = std::stod(*step_size_str);
 
             // Check for invalid values
-            if (std::isnan(*step_size))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("stepSize is NaN (not a number)");
-            }
-            else if (std::isinf(*step_size))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("stepSize cannot be infinite");
-            }
-            else if (*step_size <= 0.0)
+            if (*step_size <= 0.0 && !std::isnan(*step_size) && !std::isinf(*step_size))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("stepSize (" + std::to_string(*step_size) + ") must be greater than 0");
@@ -1101,48 +962,6 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Type definition \"" + *name + "\" (line " + std::to_string(type_node->line) +
-                                        ") is defined multiple times");
-            }
-            seen_names.insert(*name);
-        }
-    }
-
-    xmlXPathFreeObject(xpath_obj);
-    cert.printTestResult(test);
-}
-
-void ModelDescriptionCheckerBase::checkUnits(xmlDocPtr doc, Certificate& cert)
-{
-    TestResult test{"Unit Definitions", TestStatus::PASS, {}};
-
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
-    if (!xpath_obj)
-    {
-        cert.printTestResult(test);
-        return;
-    }
-
-    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
-    {
-        xmlXPathFreeObject(xpath_obj);
-        cert.printTestResult(test);
-        return;
-    }
-
-    std::set<std::string> seen_names;
-
-    for (int32_t i = 0; i < nodes->nodeNr; ++i)
-    {
-        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto name = getXmlAttribute(unit_node, "name");
-
-        if (name)
-        {
-            if (seen_names.contains(*name))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Unit \"" + *name + "\" (line " + std::to_string(unit_node->line) +
                                         ") is defined multiple times");
             }
             seen_names.insert(*name);

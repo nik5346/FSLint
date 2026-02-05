@@ -1,5 +1,6 @@
 #include "fmi3_model_description_checker.h"
 #include "certificate.h"
+#include <regex>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -70,6 +71,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.start = getXmlAttribute(node, "start");
         var.min = getXmlAttribute(node, "min");
         var.max = getXmlAttribute(node, "max");
+        var.nominal = getXmlAttribute(node, "nominal");
 
         // FMI3: Check for Start element child for String/Binary types
         if (!var.start.has_value() && (var.type == "String" || var.type == "Binary"))
@@ -608,7 +610,8 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         if (actual_outputs.contains(var.name))
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                            test.messages.push_back("Variable \"" + var.name +
+                                                    "\" is listed multiple times in "
                                                     "ModelStructure/Output");
                         }
                         actual_outputs.insert(var.name);
@@ -644,7 +647,8 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
         if (!missing.empty())
         {
-            std::string msg = "The following variables with causality=\"output\" are missing from ModelStructure/Output: ";
+            std::string msg =
+                "The following variables with causality=\"output\" are missing from ModelStructure/Output: ";
             for (size_t i = 0; i < missing.size(); ++i)
                 msg += (i > 0 ? ", " : "") + missing[i];
             test.messages.push_back(msg);
@@ -720,7 +724,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     if (actual_derivatives.contains(var.name))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("Variable \"" + var.name + "\" is listed multiple times in "
+                        test.messages.push_back("Variable \"" + var.name +
+                                                "\" is listed multiple times in "
                                                 "ModelStructure/ContinuousStateDerivative");
                     }
                     actual_derivatives.insert(var.name);
@@ -746,7 +751,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
         if (!missing.empty())
         {
-            std::string msg = "The following variables with a \"derivative\" attribute are missing from ModelStructure/ContinuousStateDerivative: ";
+            std::string msg = "The following variables with a \"derivative\" attribute are missing from "
+                              "ModelStructure/ContinuousStateDerivative: ";
             for (size_t i = 0; i < missing.size(); ++i)
                 msg += (i > 0 ? ", " : "") + missing[i];
             test.messages.push_back(msg);
@@ -754,7 +760,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
         if (!extra.empty())
         {
-            std::string msg = "The following variables in ModelStructure/ContinuousStateDerivative do not have a \"derivative\" attribute: ";
+            std::string msg = "The following variables in ModelStructure/ContinuousStateDerivative do not have a "
+                              "\"derivative\" attribute: ";
             for (size_t i = 0; i < extra.size(); ++i)
                 msg += (i > 0 ? ", " : "") + extra[i];
             test.messages.push_back(msg);
@@ -894,6 +901,7 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
         // Extract attributes from the type element itself
         type_def.min = getXmlAttribute(type_node, "min");
         type_def.max = getXmlAttribute(type_node, "max");
+        type_def.nominal = getXmlAttribute(type_node, "nominal");
         type_def.unit = getXmlAttribute(type_node, "unit");
         type_def.display_unit = getXmlAttribute(type_node, "displayUnit");
 
@@ -1363,4 +1371,240 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
     }
 
     cert.printTestResult(test);
+}
+
+void Fmi3ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& /*test*/, const Variable& /*var*/,
+                                                               const std::string& /*val*/,
+                                                               const std::string& /*attr_name*/)
+{
+    // Special floats are allowed in FMI 3.0 variable values
+}
+
+void Fmi3ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
+                                                                        const std::string& attr_name)
+{
+    // In FMI 3.0, stopTime="INF" is explicitly allowed and common
+    if (attr_name == "stopTime" && (val.find("INF") != std::string::npos || val.find("inf") != std::string::npos))
+        return;
+
+    if (test.status == TestStatus::PASS)
+        test.status = TestStatus::WARNING;
+
+    test.messages.push_back(attr_name + " is " + val +
+                            " (NaN or Infinity). While allowed in FMI 3.0, it is unusual in DefaultExperiment.");
+}
+
+void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
+                                                           const std::string& attr_name, const std::string& context,
+                                                           size_t line)
+{
+    if (test.status == TestStatus::PASS)
+        test.status = TestStatus::WARNING;
+
+    test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " is " + val +
+                            " (NaN or Infinity). While allowed in FMI 3.0, it is unusual.");
+}
+
+void Fmi3ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& /*test*/,
+                                                                     const TypeDefinition& /*type_def*/,
+                                                                     const std::string& /*val*/,
+                                                                     const std::string& /*attr_name*/)
+{
+    // Special floats are allowed in FMI 3.0 type definitions
+}
+
+void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)
+{
+    TestResult test{"Instantiation Token Format", TestStatus::PASS, {}};
+
+    if (!guid_opt.has_value())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("instantiationToken attribute is missing");
+        cert.printTestResult(test);
+        return;
+    }
+
+    if (guid_opt->empty())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("instantiationToken attribute is empty");
+        cert.printTestResult(test);
+        return;
+    }
+
+    const std::string& guid = *guid_opt;
+    std::regex guid_pattern(
+        R"(^(\{)?[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}(\})?$)");
+
+    if (!std::regex_match(guid, guid_pattern))
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back(
+            "instantiationToken \"" + guid +
+            "\" does not match GUID format. While allowed in FMI 3.0, using a GUID is recommended for uniqueness.");
+    }
+
+    cert.printTestResult(test);
+}
+
+ModelMetadata Fmi3ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
+{
+    ModelMetadata metadata;
+    metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
+    metadata.modelName = getXmlAttribute(root, "modelName");
+    metadata.guid = getXmlAttribute(root, "instantiationToken");
+    metadata.modelVersion = getXmlAttribute(root, "version");
+    metadata.author = getXmlAttribute(root, "author");
+    metadata.copyright = getXmlAttribute(root, "copyright");
+    metadata.license = getXmlAttribute(root, "license");
+    metadata.generationTool = getXmlAttribute(root, "generationTool");
+    metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
+    metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
+
+    auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
+    if (num_event_ind)
+    {
+        try
+        {
+            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
+        }
+        catch (...)
+        {
+        }
+    }
+
+    return metadata;
+}
+
+void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Unit Definitions", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
+    if (!xpath_obj)
+    {
+        cert.printTestResult(test);
+        return;
+    }
+
+    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
+    if (!nodes)
+    {
+        xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+
+    auto checkSpecial = [&](const std::optional<std::string>& val, const std::string& attr_name,
+                            const std::string& context, size_t line)
+    {
+        if (val && isSpecialFloat(*val))
+            validateUnitSpecialFloat(test, *val, attr_name, context, line);
+    };
+
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
+    {
+        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto name_opt = getXmlAttribute(unit_node, "name");
+        std::string name = name_opt.value_or("unnamed");
+
+        if (name_opt)
+        {
+            if (seen_names.contains(*name_opt))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Unit \"" + *name_opt + "\" (line " + std::to_string(unit_node->line) +
+                                        ") is defined multiple times");
+            }
+            seen_names.insert(*name_opt);
+        }
+
+        // FMI 3.0 factor/offset on Unit
+        checkSpecial(getXmlAttribute(unit_node, "factor"), "factor", "Unit \"" + name + "\"", unit_node->line);
+        checkSpecial(getXmlAttribute(unit_node, "offset"), "offset", "Unit \"" + name + "\"", unit_node->line);
+
+        for (xmlNodePtr child = unit_node->children; child; child = child->next)
+        {
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
+
+            std::string elem_name =
+                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+
+            if (elem_name == "DisplayUnit")
+            {
+                auto du_name = getXmlAttribute(child, "name").value_or("unnamed");
+                checkSpecial(getXmlAttribute(child, "factor"), "factor",
+                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
+                checkSpecial(getXmlAttribute(child, "offset"), "offset",
+                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
+            }
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+std::map<std::string, UnitDefinition> Fmi3ModelDescriptionChecker::extractUnitDefinitions(xmlDocPtr doc)
+{
+    std::map<std::string, UnitDefinition> units;
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
+    if (!xpath_obj)
+        return units;
+
+    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
+    if (!nodes)
+    {
+        xmlXPathFreeObject(xpath_obj);
+        return units;
+    }
+
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
+    {
+        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        UnitDefinition unit_def;
+
+        unit_def.name = getXmlAttribute(unit_node, "name").value_or("");
+        unit_def.sourceline = unit_node->line;
+
+        // FMI 3.0 has factor/offset directly on Unit
+        unit_def.factor = getXmlAttribute(unit_node, "factor");
+        unit_def.offset = getXmlAttribute(unit_node, "offset");
+
+        if (unit_def.name.empty())
+            continue;
+
+        for (xmlNodePtr child = unit_node->children; child; child = child->next)
+        {
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
+
+            std::string elem_name =
+                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+
+            if (elem_name == "DisplayUnit")
+            {
+                auto display_unit_name = getXmlAttribute(child, "name");
+                if (display_unit_name)
+                {
+                    DisplayUnit du;
+                    du.name = *display_unit_name;
+                    du.factor = getXmlAttribute(child, "factor");
+                    du.offset = getXmlAttribute(child, "offset");
+                    du.sourceline = child->line;
+                    unit_def.display_units[du.name] = du;
+                }
+            }
+        }
+
+        units[unit_def.name] = unit_def;
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    return units;
 }

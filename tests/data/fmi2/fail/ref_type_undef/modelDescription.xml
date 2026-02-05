@@ -2,8 +2,8 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" generationTool="Handwritten" variableNamingConvention="flat">
   <ModelExchange modelIdentifier="Test"/>
   <ModelVariables>
-    <ScalarVariable name="v" valueReference="1" causality="output" variability="continuous">
-      <Real declaredType="None"/>
+    <ScalarVariable name="v" valueReference="1" causality="output" variability="continuous" declaredType="None">
+      <Real/>
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
