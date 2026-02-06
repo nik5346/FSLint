@@ -310,6 +310,12 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("fmi_version_patch", "does not match expected format");
     }
 
+    SECTION("Model Name")
+    {
+        validate_fail("model_name_missing", "modelName attribute is missing");
+        validate_fail("model_name_empty", "modelName attribute is empty");
+    }
+
     SECTION("Variable Names")
     {
         validate_fail("duplicate_name", "is not unique");
