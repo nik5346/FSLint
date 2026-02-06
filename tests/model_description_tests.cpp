@@ -225,6 +225,9 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
         validate_fail("structure_initial_unknowns_mismatch",
                       "ModelStructure/InitialUnknowns does not contain the expected set of variables");
+        validate_fail("structure_initial_unknowns_state_approx", "Expected { der_x, x } but was {  }");
+        validate_fail("structure_dependencies_kind_invalid_initial", "is not allowed in InitialUnknowns");
+        validate_fail("structure_dependencies_kind_non_real", "only allowed for Real variables");
         validate_fail("derivative_index_out_of_range", "referencing index 99 which does not exist");
         validate_fail("derivative_non_real", "Continuous-time state \"x\" (line 5) must be of type Real");
         validate_fail("reinit_non_state", "but is not a continuous-time state");
