@@ -40,6 +40,9 @@ struct Variable
     std::optional<std::string> declared_type;
     std::optional<uint32_t> value_reference;
     std::optional<uint32_t> derivative_of;
+    std::optional<bool> reinit;
+    std::optional<bool> can_handle_multiple_set;
+    uint32_t index = 0; // 1-based ScalarVariable index
     bool is_alias = false;
     bool has_dimension = false;
     std::vector<std::string> dimension_refs; // For backwards compatibility (names)
