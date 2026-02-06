@@ -37,9 +37,13 @@ struct Variable
     std::optional<std::string> unit;
     std::optional<std::string> display_unit;
     std::optional<std::string> declared_type;
+    std::optional<std::string> nominal;
+    std::optional<std::string> quantity;
     std::optional<uint32_t> value_reference;
     std::optional<uint32_t> derivative_of;
     bool is_alias = false;
+    bool reinit = false;
+    bool can_handle_multiple_set_per_time_instant = false;
     bool has_dimension = false;
     std::vector<std::string> dimension_refs; // For backwards compatibility (names)
     std::vector<Dimension> dimensions;       // Full dimension information
@@ -70,6 +74,8 @@ struct TypeDefinition
     std::string type;
     std::optional<std::string> min;
     std::optional<std::string> max;
+    std::optional<std::string> nominal;
+    std::optional<std::string> quantity;
     std::optional<std::string> unit;
     std::optional<std::string> display_unit;
     std::vector<EnumerationItem> enumeration_items;
@@ -113,6 +119,7 @@ class ModelDescriptionCheckerBase : public Checker
     void checkTypeDefinitions(xmlDocPtr doc, const std::map<std::string, TypeDefinition>& type_definitions,
                               Certificate& cert);
     void checkLogCategories(xmlDocPtr doc, Certificate& cert);
+    void checkVendorAnnotations(xmlDocPtr doc, Certificate& cert);
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);

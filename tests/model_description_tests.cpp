@@ -162,9 +162,10 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("unit_duplicate", "is defined multiple times");
         validate_fail("type_duplicate", "is defined multiple times");
         validate_fail("log_category_duplicate", "is defined multiple times");
+        validate_fail("vendor_tool_duplicate", "is defined multiple times");
         validate_fail("enum_item_duplicate", "is not unique");
         validate_fail("enum_empty", "must have at least one Item");
-        validate_fail("alias_type_mismatch", "Alias mismatch");
+        validate_fail("alias_type_mismatch", "Alias mismatch for VR");
     }
 
     SECTION("Bounds")
@@ -191,6 +192,20 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
         validate_fail("derivative_vr_missing", "which does not exist");
         validate_fail("initial_unknowns_order", "must be ordered");
+    }
+
+    SECTION("FMI 2.0 Specific")
+    {
+        validate_fail("type_element_missing", "is missing a type child element");
+        validate_fail("type_element_multiple", "has multiple type child elements");
+        validate_fail("independent_type", "must be of type Real");
+        validate_fail("independent_start", "must not have a start attribute");
+        validate_fail("independent_initial", "must not have an initial attribute");
+        validate_fail("independent_multiple", "At most one independent variable is allowed");
+        validate_fail("enum_no_declared_type", "must have a 'declaredType' attribute");
+        validate_fail("multiple_set_non_input", "has 'canHandleMultipleSetPerTimeInstant' but is not an input");
+        validate_fail("reinit_no_me", "has 'reinit=\"true\"' but FMU does not implement Model Exchange");
+        validate_fail("reinit_non_state", "has 'reinit=\"true\"' but is not a continuous-time state");
     }
 }
 
@@ -358,7 +373,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Value References")
     {
-        validate_fail("vr_duplicate", "Value reference 0 is used by both");
+        validate_fail("vr_duplicate", "is used by multiple non-local variables");
     }
 
     SECTION("Dimensions")

@@ -24,6 +24,11 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     // Run additional FMI2 checks
     checkValueReferences(variables, cert);
     checkInitialUnknownsOrder(doc, variables, cert);
+
+    checkScalarVariableTypeElements(variables, cert);
+    checkIndependentVariable(variables, cert);
+    checkEnumerationVariables(variables, cert);
+    checkAttributePlacement(doc, variables, cert);
 }
 
 std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
@@ -54,6 +59,10 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.initial = getXmlAttribute(scalar_var_node, "initial").value_or("");
         var.sourceline = scalar_var_node->line;
 
+        auto can_handle = getXmlAttribute(scalar_var_node, "canHandleMultipleSetPerTimeInstant");
+        if (can_handle == "true")
+            var.can_handle_multiple_set_per_time_instant = true;
+
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
         if (vr.has_value())
         {
@@ -67,6 +76,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
         }
 
         // FMI2: The type element (Real, Integer, Boolean, String, Enumeration) is a child of ScalarVariable
+        int32_t type_count = 0;
         for (xmlNodePtr child = scalar_var_node->children; child; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
@@ -78,6 +88,10 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
             if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" || elem_name == "String" ||
                 elem_name == "Enumeration")
             {
+                type_count++;
+                if (type_count > 1)
+                    continue;
+
                 var.type = elem_name;
 
                 // Get type-specific attributes
@@ -87,6 +101,8 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 var.max = getXmlAttribute(child, "max");
                 var.unit = getXmlAttribute(child, "unit");
                 var.display_unit = getXmlAttribute(child, "displayUnit");
+                var.nominal = getXmlAttribute(child, "nominal");
+                var.quantity = getXmlAttribute(child, "quantity");
 
                 // FMI2: derivative attribute is on the Real element
                 if (elem_name == "Real")
@@ -102,21 +118,35 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                         {
                         }
                     }
+
+                    auto reinit_attr = getXmlAttribute(child, "reinit");
+                    if (reinit_attr == "true")
+                        var.reinit = true;
                 }
 
-                break;
+                continue;
             }
         }
 
+        // Validate type count (explicitly in extract for now, will report later)
+        if (type_count == 0)
+        {
+            // Invalid - will be caught by checks
+        }
+        else if (type_count > 1)
+        {
+            // Invalid - will be caught by checks
+            var.type = "MULTIPLE";
+        }
+
         // Apply default variability if not specified (FMI2-specific rules)
-        if (var.variability.empty())
+        if (var.variability.empty() && !var.type.empty())
         {
             if (var.type == "Real" && !(var.causality == "parameter" || var.causality == "calculatedParameter"))
             {
                 var.variability = "continuous";
             }
-            else if ((var.causality == "input" || var.causality == "output" || var.causality == "local") &&
-                     var.type != "Real")
+            else
             {
                 var.variability = "discrete";
             }
@@ -203,32 +233,217 @@ void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
 
 void Fmi2ModelDescriptionChecker::checkValueReferences(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Unique Value References (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Value References (FMI2)", TestStatus::PASS, {}};
 
-    std::map<uint32_t, const Variable*> base_variables;
-
+    std::map<uint32_t, std::vector<const Variable*>> groups;
     for (const auto& var : variables)
     {
         if (var.value_reference.has_value())
+            groups[*var.value_reference].push_back(&var);
+    }
+
+    for (const auto& [vr, group] : groups)
+    {
+        if (group.size() <= 1)
+            continue;
+
+        const Variable* first = group[0];
+        int32_t non_local_count = 0;
+
+        for (const auto* var : group)
         {
-            uint32_t vr = *var.value_reference;
+            if (var->causality != "local")
+                non_local_count++;
 
-            if (base_variables.contains(vr))
+            // FMI2: Aliases must have the same type, unit, displayUnit and nominal
+            if (var->type != first->type)
             {
-                const Variable* base = base_variables[vr];
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Alias mismatch for VR " + std::to_string(vr) + ": \"" + first->name +
+                                        "\" has type \"" + first->type + "\", but \"" + var->name + "\" has type \"" +
+                                        var->type + "\"");
+            }
 
-                // FMI2: Aliases must have the same type
-                if (var.type != base->type)
+            if (var->unit != first->unit)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Alias mismatch for VR " + std::to_string(vr) + ": \"" + first->name +
+                                        "\" has unit \"" + first->unit.value_or("null") + "\", but \"" + var->name +
+                                        "\" has unit \"" + var->unit.value_or("null") + "\"");
+            }
+
+            if (var->display_unit != first->display_unit)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Alias mismatch for VR " + std::to_string(vr) + ": \"" + first->name +
+                                        "\" has displayUnit \"" + first->display_unit.value_or("null") +
+                                        "\", but \"" + var->name + "\" has displayUnit \"" +
+                                        var->display_unit.value_or("null") + "\"");
+            }
+
+            if (var->nominal != first->nominal)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Alias mismatch for VR " + std::to_string(vr) + ": \"" + first->name +
+                                        "\" has nominal \"" + first->nominal.value_or("null") + "\", but \"" +
+                                        var->name + "\" has nominal \"" + var->nominal.value_or("null") + "\"");
+            }
+        }
+
+        if (non_local_count > 1)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Value reference " + std::to_string(vr) +
+                                    " is used by multiple non-local variables (at most one non-local allowed)");
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkScalarVariableTypeElements(const std::vector<Variable>& variables,
+                                                                 Certificate& cert)
+{
+    TestResult test{"ScalarVariable Type Elements (FMI2)", TestStatus::PASS, {}};
+
+    for (const auto& var : variables)
+    {
+        if (var.type.empty())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") is missing a type child element (Real, Integer, Boolean, String, Enumeration)");
+        }
+        else if (var.type == "MULTIPLE")
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has multiple type child elements (only one is allowed)");
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Independent Variable (FMI2)", TestStatus::PASS, {}};
+
+    int32_t independent_count = 0;
+    for (const auto& var : variables)
+    {
+        if (var.causality == "independent")
+        {
+            independent_count++;
+
+            // FMI2: Must be Real
+            if (var.type != "Real")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
+                                        std::to_string(var.sourceline) + ") must be of type Real, found " + var.type);
+            }
+
+            // FMI2: Must not have start or initial
+            if (var.start.has_value())
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
+                                        std::to_string(var.sourceline) + ") must not have a start attribute");
+            }
+
+            if (!var.initial.empty())
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
+                                        std::to_string(var.sourceline) + ") must not have an initial attribute");
+            }
+        }
+    }
+
+    if (independent_count > 1)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("At most one independent variable is allowed, found " +
+                                std::to_string(independent_count));
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Enumeration Variables (FMI2)", TestStatus::PASS, {}};
+
+    for (const auto& var : variables)
+    {
+        if (var.type == "Enumeration")
+        {
+            // FMI2: Enumeration variables MUST have declaredType
+            if (!var.declared_type.has_value() || var.declared_type->empty())
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Enumeration variable \"" + var.name + "\" (line " +
+                                        std::to_string(var.sourceline) + ") must have a 'declaredType' attribute");
+            }
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkAttributePlacement(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                           Certificate& cert)
+{
+    TestResult test{"Attribute Placement (FMI2)", TestStatus::PASS, {}};
+
+    // Check if Model Exchange is present
+    xmlXPathObjectPtr me_xpath = getXPathNodes(doc, "//ModelExchange");
+    bool has_model_exchange = (me_xpath && me_xpath->nodesetval && me_xpath->nodesetval->nodeNr > 0);
+    if (me_xpath)
+        xmlXPathFreeObject(me_xpath);
+
+    for (const auto& var : variables)
+    {
+        // 1. canHandleMultipleSetPerTimeInstant: Only for inputs
+        if (var.can_handle_multiple_set_per_time_instant && var.causality != "input")
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has 'canHandleMultipleSetPerTimeInstant' but is not an input");
+        }
+
+        // 2. reinit: Only for Model Exchange states
+        if (var.reinit)
+        {
+            if (!has_model_exchange)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has 'reinit=\"true\"' but FMU does not implement Model Exchange");
+            }
+
+            // Check if it's a state (has a derivative pointing to it)
+            bool is_state = false;
+            for (const auto& v : variables)
+            {
+                if (v.derivative_of.has_value())
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Alias mismatch for value reference " + std::to_string(vr) + ": \"" +
-                                            base->name + "\" has type \"" + base->type + "\", but \"" + var.name +
-                                            "\" has type \"" + var.type + "\"");
+                    // Find the state by index
+                    const Variable* state = getVariableByDerivativeRef(variables, *v.derivative_of);
+                    if (state == &var)
+                    {
+                        is_state = true;
+                        break;
+                    }
                 }
             }
-            else
+
+            if (!is_state)
             {
-                base_variables[vr] = &var;
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has 'reinit=\"true\"' but is not a continuous-time state");
             }
         }
     }
@@ -777,6 +992,8 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
                 // Extract min, max, unit, displayUnit attributes
                 type_def.min = getXmlAttribute(child, "min");
                 type_def.max = getXmlAttribute(child, "max");
+                type_def.nominal = getXmlAttribute(child, "nominal");
+                type_def.quantity = getXmlAttribute(child, "quantity");
                 type_def.unit = getXmlAttribute(child, "unit");
                 type_def.display_unit = getXmlAttribute(child, "displayUnit");
 

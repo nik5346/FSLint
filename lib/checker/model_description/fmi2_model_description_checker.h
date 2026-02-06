@@ -44,4 +44,10 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkValueReferences(const std::vector<Variable>& variables, Certificate& cert);
     void checkInitialUnknownsOrder(xmlDocPtr doc, const std::vector<Variable>& variables,
                                    Certificate& cert);
+
+    // New FMI 2.0 specific checks
+    void checkScalarVariableTypeElements(const std::vector<Variable>& variables, Certificate& cert);
+    void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert);
+    void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert);
+    void checkAttributePlacement(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
 };

@@ -474,27 +474,43 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
 
 void Fmi3ModelDescriptionChecker::checkUniqueValueReferences(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Unique Value References (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Value References (FMI3)", TestStatus::PASS, {}};
 
-    std::map<uint32_t, std::string> value_references;
-
+    std::map<uint32_t, std::vector<const Variable*>> groups;
     for (const auto& var : variables)
     {
         if (var.value_reference.has_value())
-        {
-            uint32_t vr = *var.value_reference;
+            groups[*var.value_reference].push_back(&var);
+    }
 
-            if (value_references.contains(vr))
+    for (const auto& [vr, group] : groups)
+    {
+        if (group.size() <= 1)
+            continue;
+
+        const Variable* first = group[0];
+        int32_t non_local_count = 0;
+
+        for (const auto* var : group)
+        {
+            if (var->causality != "local")
+                non_local_count++;
+
+            // FMI3: All variables with the same valueReference MUST have the same data type
+            if (var->type != first->type)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Value reference " + std::to_string(vr) + " is used by both \"" +
-                                        value_references[vr] + "\" and \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) + ")");
+                test.messages.push_back("Alias mismatch for VR " + std::to_string(vr) + ": \"" + first->name +
+                                        "\" has type \"" + first->type + "\", but \"" + var->name + "\" has type \"" +
+                                        var->type + "\"");
             }
-            else
-            {
-                value_references[vr] = var.name;
-            }
+        }
+
+        if (non_local_count > 1)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Value reference " + std::to_string(vr) +
+                                    " is used by multiple non-local variables (at most one non-local allowed)");
         }
     }
 

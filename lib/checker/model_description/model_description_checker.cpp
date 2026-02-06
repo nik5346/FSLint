@@ -62,6 +62,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkTypeDefinitions(doc, type_definitions, cert);
     checkUnits(doc, cert);
     checkLogCategories(doc, cert);
+    checkVendorAnnotations(doc, cert);
 
     checkUniqueVariableNames(variables, cert);
     checkLegalVariability(variables, cert);
@@ -1148,6 +1149,54 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("stepSize \"" + *step_size_str + "\" is not a valid number");
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkVendorAnnotations(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Vendor Annotations", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//VendorAnnotations/Tool");
+    if (!xpath_obj)
+    {
+        cert.printTestResult(test);
+        return;
+    }
+
+    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
+    if (!nodes)
+    {
+        xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
+    {
+        xmlNodePtr tool_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto name = getXmlAttribute(tool_node, "name");
+
+        if (name)
+        {
+            if (seen_names.contains(*name))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Vendor tool \"" + *name + "\" (line " + std::to_string(tool_node->line) +
+                                        ") is defined multiple times");
+            }
+            seen_names.insert(*name);
+        }
+        else
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Vendor tool (line " + std::to_string(tool_node->line) +
+                                    ") is missing 'name' attribute");
         }
     }
 
