@@ -1063,7 +1063,7 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
             seen_names.insert(*name_opt);
         }
 
-        // Check Enumeration types
+        // Check types
         for (xmlNodePtr child = type_node->children; child; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
@@ -1071,6 +1071,47 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
             std::string elem_name =
                 reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+
+            auto min_str = getXmlAttribute(child, "min");
+            auto max_str = getXmlAttribute(child, "max");
+
+            if (min_str && max_str)
+            {
+                try
+                {
+                    if (elem_name == "Real")
+                    {
+                        double min_val = std::stod(*min_str);
+                        double max_val = std::stod(*max_str);
+                        if (max_val < min_val)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                    std::to_string(child->line) + "): max (" + *max_str +
+                                                    ") must be >= min (" + *min_str + ")");
+                        }
+                    }
+                    else if (elem_name == "Integer" || elem_name == "Enumeration")
+                    {
+                        int64_t min_val = std::stoll(*min_str);
+                        int64_t max_val = std::stoll(*max_str);
+                        if (max_val < min_val)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                    std::to_string(child->line) + "): max (" + *max_str +
+                                                    ") must be >= min (" + *min_str + ")");
+                        }
+                    }
+                }
+                catch (...)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Type definition \"" + name + "\" (line " + std::to_string(child->line) +
+                                            "): Failed to parse min/max values");
+                }
+            }
+
             if (elem_name == "Enumeration")
             {
                 bool has_items = false;
@@ -1274,27 +1315,38 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
 {
     TestResult test{"Derivative References", TestStatus::PASS, {}};
 
-    // Build a map of value_reference -> Variable for quick lookup
-    std::map<uint32_t, const Variable*> vr_to_variable;
+    bool is_fmi2 = getFmiVersion().starts_with("2.");
+
+    // Build lookup map: for FMI2 it's index -> Variable, for FMI3 it's valueReference -> Variable
+    std::map<uint32_t, const Variable*> lookup_map;
     for (const auto& var : variables)
-        if (var.value_reference.has_value())
-            vr_to_variable[*var.value_reference] = &var;
+    {
+        if (is_fmi2)
+        {
+            lookup_map[var.index] = &var;
+        }
+        else if (var.value_reference.has_value())
+        {
+            lookup_map[*var.value_reference] = &var;
+        }
+    }
 
     // Check each variable that has a derivative_of attribute
     for (const auto& var : variables)
     {
         if (var.derivative_of.has_value())
         {
-            uint32_t derivative_of_vr = *var.derivative_of;
+            uint32_t ref = *var.derivative_of;
 
             // Check if the referenced variable exists
-            auto it = vr_to_variable.find(derivative_of_vr);
-            if (it == vr_to_variable.end())
+            auto it = lookup_map.find(ref);
+            if (it == lookup_map.end())
             {
                 test.status = TestStatus::FAIL;
+                std::string ref_type = is_fmi2 ? "index" : "value reference";
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has derivative attribute referencing value reference " +
-                                        std::to_string(derivative_of_vr) + " which does not exist");
+                                        ") has derivative attribute referencing " + ref_type + " " +
+                                        std::to_string(ref) + " which does not exist");
             }
             else
             {

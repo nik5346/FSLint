@@ -31,6 +31,9 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
 
     // Check Independent variable
     checkIndependentVariable(variables, cert);
+
+    // Check reinit and canHandleMultipleSet
+    checkFmi2Attributes(doc, variables, cert);
 }
 
 void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert)
@@ -44,6 +47,91 @@ void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                     ") is of type Enumeration and must have a declaredType attribute");
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkFmi2Attributes(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                      Certificate& cert)
+{
+    TestResult test{"FMI2 Attribute Validation", TestStatus::PASS, {}};
+
+    bool has_me = !extractModelIdentifiers(doc, {"ModelExchange"}).empty();
+    bool has_cs = !extractModelIdentifiers(doc, {"CoSimulation"}).empty();
+
+    // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
+    std::set<uint32_t> state_indices;
+    for (const auto& var : variables)
+    {
+        if (var.derivative_of.has_value())
+        {
+            state_indices.insert(*var.derivative_of);
+        }
+    }
+
+    for (const auto& var : variables)
+    {
+        // Rule: reinit: "Can only be present for a continuous-time state."
+        if (var.reinit.has_value())
+        {
+            if (!state_indices.contains(var.index))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has 'reinit' attribute but is not a continuous-time state");
+            }
+
+            if (!has_me && has_cs)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has 'reinit' attribute which is not allowed for Co-Simulation only FMUs");
+            }
+        }
+
+        // Rule: canHandleMultipleSetPerTimeInstant: "Only for variables with causality = 'input'."
+        if (var.can_handle_multiple_set.has_value())
+        {
+            if (var.causality != "input")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has 'canHandleMultipleSetPerTimeInstant' but causality is '" +
+                                        var.causality + "' (expected 'input')");
+            }
+
+            if (!has_me && has_cs)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(
+                    "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                    ") has 'canHandleMultipleSetPerTimeInstant' which is not allowed for Co-Simulation only FMUs");
+            }
+        }
+
+        // Rule: A continuous-time state must have causality = 'local' or 'output'
+        if (state_indices.contains(var.index))
+        {
+            if (var.causality != "local" && var.causality != "output")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Continuous-time state \"" + var.name + "\" (line " +
+                                        std::to_string(var.sourceline) + ") must have causality 'local' or 'output'");
+            }
+        }
+
+        // Rule: State derivatives and continuous-time states must be of type Real
+        if (var.derivative_of.has_value() || state_indices.contains(var.index))
+        {
+            if (var.type != "Real")
+            {
+                test.status = TestStatus::FAIL;
+                std::string role = var.derivative_of.has_value() ? "State derivative" : "Continuous-time state";
+                test.messages.push_back(role + " \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") must be of type Real");
+            }
         }
     }
 
@@ -283,6 +371,11 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.initial = getXmlAttribute(scalar_var_node, "initial").value_or("");
         var.declared_type = getXmlAttribute(scalar_var_node, "declaredType");
         var.sourceline = scalar_var_node->line;
+        var.index = static_cast<uint32_t>(i + 1);
+
+        auto multi_set = getXmlAttribute(scalar_var_node, "canHandleMultipleSetPerTimeInstant");
+        if (multi_set)
+            var.can_handle_multiple_set = (*multi_set == "true");
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
         if (vr.has_value())
@@ -318,7 +411,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 var.unit = getXmlAttribute(child, "unit");
                 var.display_unit = getXmlAttribute(child, "displayUnit");
 
-                // FMI2: derivative attribute is on the Real element
+                // FMI2: derivative and reinit attributes are on the Real element
                 if (elem_name == "Real")
                 {
                     auto der = getXmlAttribute(child, "derivative");
@@ -332,6 +425,10 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                         {
                         }
                     }
+
+                    auto ri = getXmlAttribute(child, "reinit");
+                    if (ri)
+                        var.reinit = (*ri == "true");
                 }
 
                 break;
@@ -705,7 +802,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                 }
                             }
 
-                            // Check dependenciesKind size
+                            // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
@@ -721,6 +818,21 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                         "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/Outputs must have the same number of list elements in "
                                         "dependencies and dependenciesKind");
+                                }
+
+                                for (const auto& k : kinds)
+                                {
+                                    if (k == "constant" || k == "fixed" || k == "tunable" || k == "discrete")
+                                    {
+                                        if (var.type != "Real")
+                                        {
+                                            test.status = TestStatus::FAIL;
+                                            test.messages.push_back(
+                                                "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
+                                                ") in ModelStructure/Outputs has dependenciesKind=\"" + k +
+                                                "\" which is only allowed for Real variables");
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -855,7 +967,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                 }
                             }
 
-                            // Check dependenciesKind size
+                            // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
@@ -871,6 +983,21 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                         "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/Derivatives must have the same number of list elements "
                                         "in dependencies and dependenciesKind");
+                                }
+
+                                for (const auto& k : kinds)
+                                {
+                                    if (k == "constant" || k == "fixed" || k == "tunable" || k == "discrete")
+                                    {
+                                        if (var.type != "Real")
+                                        {
+                                            test.status = TestStatus::FAIL;
+                                            test.messages.push_back(
+                                                "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
+                                                ") in ModelStructure/Derivatives has dependenciesKind=\"" + k +
+                                                "\" which is only allowed for Real variables");
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -940,28 +1067,29 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     // Build expected set of initial unknowns (FMI2 spec)
     std::set<std::string> expected;
 
+    // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
+    std::set<uint32_t> state_indices;
     for (const auto& var : variables)
     {
-        // Outputs with initial="approx" or "calculated"
+        if (var.derivative_of.has_value())
+            state_indices.insert(*var.derivative_of);
+    }
+
+    for (const auto& var : variables)
+    {
+        // (1) Outputs with initial="approx" or "calculated"
         if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated"))
             expected.insert(var.name);
 
-        // Calculated parameters
+        // (2) Calculated parameters
         if (var.causality == "calculatedParameter")
             expected.insert(var.name);
 
-        // States and their derivatives with initial="approx" or "calculated"
-        if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
+        // (3) States and their derivatives with initial="approx" or "calculated"
+        if ((state_indices.contains(var.index) || var.derivative_of.has_value()) &&
+            (var.initial == "approx" || var.initial == "calculated"))
         {
             expected.insert(var.name);
-
-            // Also add the state itself if it has initial="approx" or "calculated"
-            if (*var.derivative_of > 0 && *var.derivative_of <= variables.size())
-            {
-                const auto& state = variables[*var.derivative_of - 1];
-                if (state.initial == "approx" || state.initial == "calculated")
-                    expected.insert(state.name);
-            }
         }
     }
 
@@ -985,7 +1113,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                     size_t index = std::stoul(*index_str);
                     if (index > 0 && index <= variables.size())
                     {
-                        actual.insert(variables[index - 1].name);
+                        const auto& var = variables[index - 1];
+                        actual.insert(var.name);
                         actual_indices.push_back(index);
 
                         // Check dependencies ordering and dependenciesKind consistency
@@ -1007,15 +1136,14 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                                 {
                                     test.status = TestStatus::FAIL;
                                     test.messages.push_back(
-                                        "Variable \"" + variables[index - 1].name + "\" (line " +
-                                        std::to_string(node->line) +
+                                        "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/InitialUnknowns has dependencies that are not ordered "
                                         "according to magnitude");
                                     break;
                                 }
                             }
 
-                            // Check dependenciesKind size
+                            // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
@@ -1028,10 +1156,32 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                                 {
                                     test.status = TestStatus::FAIL;
                                     test.messages.push_back(
-                                        "Variable \"" + variables[index - 1].name + "\" (line " +
-                                        std::to_string(node->line) +
+                                        "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/InitialUnknowns must have the same number of list "
                                         "elements in dependencies and dependenciesKind");
+                                }
+
+                                for (const auto& k : kinds)
+                                {
+                                    if (k == "fixed" || k == "tunable" || k == "discrete")
+                                    {
+                                        test.status = TestStatus::FAIL;
+                                        test.messages.push_back(
+                                            "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
+                                            ") in ModelStructure/InitialUnknowns has dependenciesKind=\"" + k +
+                                            "\" which is not allowed in InitialUnknowns");
+                                    }
+                                    else if (k == "constant")
+                                    {
+                                        if (var.type != "Real")
+                                        {
+                                            test.status = TestStatus::FAIL;
+                                            test.messages.push_back(
+                                                "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
+                                                ") in ModelStructure/InitialUnknowns has dependenciesKind=\"" + k +
+                                                "\" which is only allowed for Real variables");
+                                        }
+                                    }
                                 }
                             }
                         }

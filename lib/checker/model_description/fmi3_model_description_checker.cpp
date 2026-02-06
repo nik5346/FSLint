@@ -51,6 +51,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
     {
         xmlNodePtr node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         Variable var;
+        var.index = static_cast<uint32_t>(i + 1);
 
         var.name = getXmlAttribute(node, "name").value_or("");
         var.type = getVariableType(node);
