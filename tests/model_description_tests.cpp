@@ -118,6 +118,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
     SECTION("Type definitions")
     {
+        validate_fail("type_duplicate", "is defined multiple times");
+        validate_fail("type_max_min", "max (5) must be >= min (10)");
         validate_fail("type_name_as_variable_name", "must be different from all ScalarVariable names");
         validate_fail("enumeration_variable_no_type", "must have a declaredType attribute");
         validate_fail("enumeration_item_duplicate_value", "must be unique within the same enumeration");
@@ -163,6 +165,9 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("variability_continuous_boolean", "must have variability != \"continuous\"");
         validate_fail("variability_continuous_string", "must have variability != \"continuous\"");
         validate_fail("parameter_continuous", "Parameters must be \"fixed\" or \"tunable\"");
+        validate_fail("independent_variability", "must have variability=\"continuous\"");
+        validate_fail("multiple_set_non_input", "has 'canHandleMultipleSetPerTimeInstant' but causality is 'output'");
+        validate_fail("multiple_set_cs_only", "not allowed for Co-Simulation only FMUs");
     }
 
     SECTION("Initial/Start Values")
@@ -220,6 +225,10 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
         validate_fail("structure_initial_unknowns_mismatch",
                       "ModelStructure/InitialUnknowns does not contain the expected set of variables");
+        validate_fail("derivative_index_out_of_range", "referencing index 99 which does not exist");
+        validate_fail("derivative_non_real", "Continuous-time state \"x\" (line 5) must be of type Real");
+        validate_fail("reinit_non_state", "but is not a continuous-time state");
+        validate_fail("reinit_cs_only", "not allowed for Co-Simulation only FMUs");
     }
 }
 

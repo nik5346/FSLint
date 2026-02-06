@@ -54,4 +54,5 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert);
     void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
     void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert);
+    void checkFmi2Attributes(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
 };
