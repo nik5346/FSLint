@@ -1,4 +1,5 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+    <ModelExchange modelIdentifier="Test"/>
     <TypeDefinitions>
         <SimpleType name="MyType"><Real/></SimpleType>
         <SimpleType name="MyType"><Real/></SimpleType>

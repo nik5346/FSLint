@@ -20,6 +20,10 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
 
     // Run FMI2-specific model structure checks
     checkModelStructure(doc, variables, cert);
+
+    // Run additional FMI2 checks
+    checkValueReferences(variables, cert);
+    checkInitialUnknownsOrder(doc, variables, cert);
 }
 
 std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
@@ -125,6 +129,17 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
     return variables;
 }
 
+const Variable* Fmi2ModelDescriptionChecker::getVariableByDerivativeRef(const std::vector<Variable>& variables,
+                                                                        uint32_t ref) const
+{
+    // FMI2: derivative is a 1-based index
+    if (ref > 0 && ref <= variables.size())
+    {
+        return &variables[ref - 1];
+    }
+    return nullptr;
+}
+
 void Fmi2ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables)
 {
     for (auto& var : variables)
@@ -181,6 +196,83 @@ void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                     ") is of type " + var.type + " and must have variability != \"continuous\"");
         }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkValueReferences(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Unique Value References (FMI2)", TestStatus::PASS, {}};
+
+    std::map<uint32_t, const Variable*> base_variables;
+
+    for (const auto& var : variables)
+    {
+        if (var.value_reference.has_value())
+        {
+            uint32_t vr = *var.value_reference;
+
+            if (base_variables.contains(vr))
+            {
+                const Variable* base = base_variables[vr];
+
+                // FMI2: Aliases must have the same type
+                if (var.type != base->type)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Alias mismatch for value reference " + std::to_string(vr) + ": \"" +
+                                            base->name + "\" has type \"" + base->type + "\", but \"" + var.name +
+                                            "\" has type \"" + var.type + "\"");
+                }
+            }
+            else
+            {
+                base_variables[vr] = &var;
+            }
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkInitialUnknownsOrder(xmlDocPtr doc,
+                                                             [[maybe_unused]] const std::vector<Variable>& variables,
+                                                             Certificate& cert)
+{
+    TestResult test{"InitialUnknowns Ordering (FMI2)", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/InitialUnknowns/Unknown");
+
+    if (xpath_obj && xpath_obj->nodesetval)
+    {
+        size_t last_index = 0;
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT
+            auto index_str = getXmlAttribute(node, "index");
+
+            if (index_str.has_value())
+            {
+                try
+                {
+                    size_t index = std::stoul(*index_str);
+                    if (index <= last_index)
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("ModelStructure/InitialUnknowns: Unknown at line " +
+                                                std::to_string(node->line) + " has index " + std::to_string(index) +
+                                                ", which is not greater than previous index " +
+                                                std::to_string(last_index) + " (must be ordered and distinct)");
+                    }
+                    last_index = index;
+                }
+                catch (...)
+                {
+                }
+            }
+        }
+        xmlXPathFreeObject(xpath_obj);
     }
 
     cert.printTestResult(test);
@@ -687,6 +779,37 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
                 type_def.max = getXmlAttribute(child, "max");
                 type_def.unit = getXmlAttribute(child, "unit");
                 type_def.display_unit = getXmlAttribute(child, "displayUnit");
+
+                // Extract Enumeration items
+                if (elem_name == "Enumeration")
+                {
+                    for (xmlNodePtr item = child->children; item; item = item->next)
+                    {
+                        if (item->type != XML_ELEMENT_NODE)
+                            continue;
+
+                        std::string item_elem_name = reinterpret_cast<const char*>(
+                            item->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                        if (item_elem_name == "Item")
+                        {
+                            EnumerationItem enum_item;
+                            enum_item.name = getXmlAttribute(item, "name").value_or("");
+                            auto value_str = getXmlAttribute(item, "value");
+                            if (value_str)
+                            {
+                                try
+                                {
+                                    enum_item.value = std::stoll(*value_str);
+                                }
+                                catch (...)
+                                {
+                                }
+                            }
+                            enum_item.sourceline = item->line;
+                            type_def.enumeration_items.push_back(enum_item);
+                        }
+                    }
+                }
 
                 break;
             }

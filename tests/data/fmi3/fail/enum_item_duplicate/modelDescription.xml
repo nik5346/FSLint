@@ -1,8 +1,10 @@
 <fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
     <ModelExchange modelIdentifier="Test"/>
     <TypeDefinitions>
-        <Float64Type name="MyType"/>
-        <Float64Type name="MyType"/>
+        <EnumerationType name="MyEnum">
+            <Item name="item1" value="1"/>
+            <Item name="item1" value="2"/>
+        </EnumerationType>
     </TypeDefinitions>
     <ModelVariables>
         <Float64 name="v" valueReference="0" causality="output"/>

@@ -59,8 +59,9 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkGenerationTool(metadata.generationTool, cert);
 
     checkDefaultExperiment(doc, cert);
-    checkTypeDefinitions(doc, cert);
+    checkTypeDefinitions(doc, type_definitions, cert);
     checkUnits(doc, cert);
+    checkLogCategories(doc, cert);
 
     checkUniqueVariableNames(variables, cert);
     checkLegalVariability(variables, cert);
@@ -73,7 +74,18 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkMinMaxStartValues(variables, type_definitions, cert);
     checkVariableNamingConventionAttribute(metadata.variableNamingConvention, cert);
     checkVariableNamingConvention(variables, metadata.variableNamingConvention.value_or("flat"), cert);
-    checkNumberOfEventIndicators(metadata.numberOfEventIndicators, cert);
+
+    if (metadata.fmiVersion && metadata.fmiVersion->starts_with("2."))
+    {
+        checkNumberOfEventIndicators(metadata.numberOfEventIndicators, cert);
+    }
+    else if (metadata.numberOfEventIndicators.has_value())
+    {
+        TestResult test{"Number of Event Indicators", TestStatus::WARNING, {}};
+        test.messages.push_back("Attribute 'numberOfEventIndicators' is not part of FMI 3.0 and will be ignored.");
+        cert.printTestResult(test);
+    }
+
     checkDerivativeReferences(variables, cert);
 
     // Perform version-specific validation
@@ -1143,11 +1155,11 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert)
+void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate& cert)
 {
-    TestResult test{"Type Definitions", TestStatus::PASS, {}};
+    TestResult test{"Log Categories", TestStatus::PASS, {}};
 
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/*");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//LogCategories/Category");
     if (!xpath_obj)
     {
         cert.printTestResult(test);
@@ -1166,26 +1178,100 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr type_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-
-        if (type_node->type != XML_ELEMENT_NODE)
-            continue;
-
-        auto name = getXmlAttribute(type_node, "name");
+        xmlNodePtr cat_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto name = getXmlAttribute(cat_node, "name");
 
         if (name)
         {
             if (seen_names.contains(*name))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Type definition \"" + *name + "\" (line " + std::to_string(type_node->line) +
+                test.messages.push_back("Log category \"" + *name + "\" (line " + std::to_string(cat_node->line) +
                                         ") is defined multiple times");
             }
             seen_names.insert(*name);
         }
+        else
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Log category (line " + std::to_string(cat_node->line) + ") is missing 'name' attribute");
+        }
     }
 
     xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc,
+                                                       const std::map<std::string, TypeDefinition>& type_definitions,
+                                                       Certificate& cert)
+{
+    TestResult test{"Type Definitions", TestStatus::PASS, {}};
+
+    // 1. Check for uniqueness of names in XML
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/*");
+    if (xpath_obj && xpath_obj->nodesetval)
+    {
+        std::set<std::string> seen_names;
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            xmlNodePtr type_node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT
+            if (type_node->type != XML_ELEMENT_NODE)
+                continue;
+
+            auto name = getXmlAttribute(type_node, "name");
+            if (name)
+            {
+                if (seen_names.contains(*name))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Type definition \"" + *name + "\" (line " + std::to_string(type_node->line) +
+                                            ") is defined multiple times");
+                }
+                seen_names.insert(*name);
+            }
+        }
+        xmlXPathFreeObject(xpath_obj);
+    }
+
+    // 2. Validation of items
+    for (const auto& [name, type_def] : type_definitions)
+    {
+        // Validation for Enumerations
+        if (type_def.type == "Enumeration")
+        {
+            if (type_def.enumeration_items.empty())
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Enumeration type \"" + name + "\" (line " +
+                                        std::to_string(type_def.sourceline) + ") must have at least one Item");
+            }
+
+            std::set<std::string> item_names;
+            std::set<int64_t> item_values;
+
+            for (const auto& item : type_def.enumeration_items)
+            {
+                if (item_names.contains(item.name))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Enumeration type \"" + name + "\": Item name \"" + item.name +
+                                            "\" (line " + std::to_string(item.sourceline) + ") is not unique");
+                }
+                item_names.insert(item.name);
+
+                if (item_values.contains(item.value))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Enumeration type \"" + name + "\": Item value \"" +
+                                            std::to_string(item.value) + "\" (line " +
+                                            std::to_string(item.sourceline) + ") is not unique");
+                }
+                item_values.insert(item.value);
+            }
+        }
+    }
+
     cert.printTestResult(test);
 }
 
@@ -1367,32 +1453,24 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
 {
     TestResult test{"Derivative References", TestStatus::PASS, {}};
 
-    // Build a map of value_reference -> Variable for quick lookup
-    std::map<uint32_t, const Variable*> vr_to_variable;
-    for (const auto& var : variables)
-        if (var.value_reference.has_value())
-            vr_to_variable[*var.value_reference] = &var;
-
     // Check each variable that has a derivative_of attribute
     for (const auto& var : variables)
     {
         if (var.derivative_of.has_value())
         {
-            uint32_t derivative_of_vr = *var.derivative_of;
+            uint32_t derivative_of_ref = *var.derivative_of;
 
             // Check if the referenced variable exists
-            auto it = vr_to_variable.find(derivative_of_vr);
-            if (it == vr_to_variable.end())
+            const Variable* referenced_var = getVariableByDerivativeRef(variables, derivative_of_ref);
+            if (!referenced_var)
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has derivative attribute referencing value reference " +
-                                        std::to_string(derivative_of_vr) + " which does not exist");
+                                        ") has derivative attribute referencing \"" +
+                                        std::to_string(derivative_of_ref) + "\" which does not exist");
             }
             else
             {
-                const Variable* referenced_var = it->second;
-
                 // Additional validation: the derivative should be of a continuous variable
                 // (This is implicit in FMI spec - derivatives are of continuous states)
                 if (referenced_var->variability != "continuous")
@@ -1416,28 +1494,20 @@ void ModelDescriptionCheckerBase::checkDerivativeDimensions(const std::vector<Va
 {
     TestResult test{"Derivative Dimension Matching", TestStatus::PASS, {}};
 
-    // Build a map of value_reference -> Variable for quick lookup
-    std::map<uint32_t, const Variable*> vr_to_variable;
-    for (const auto& var : variables)
-        if (var.value_reference.has_value())
-            vr_to_variable[*var.value_reference] = &var;
-
     // Check each variable that has a derivative_of attribute
     for (const auto& var : variables)
     {
         if (var.derivative_of.has_value())
         {
-            uint32_t derivative_of_vr = *var.derivative_of;
+            uint32_t derivative_of_ref = *var.derivative_of;
 
             // Find the state variable
-            auto it = vr_to_variable.find(derivative_of_vr);
-            if (it == vr_to_variable.end())
+            const Variable* state_var = getVariableByDerivativeRef(variables, derivative_of_ref);
+            if (!state_var)
             {
                 // This will be caught by checkDerivativeReferences, so skip here
                 continue;
             }
-
-            const Variable* state_var = it->second;
 
             // Compare dimensions
             bool dimensions_match = compareDimensions(var, *state_var);

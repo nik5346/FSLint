@@ -161,6 +161,10 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("ref_display_unit_undef", "is not defined for unit");
         validate_fail("unit_duplicate", "is defined multiple times");
         validate_fail("type_duplicate", "is defined multiple times");
+        validate_fail("log_category_duplicate", "is defined multiple times");
+        validate_fail("enum_item_duplicate", "is not unique");
+        validate_fail("enum_empty", "must have at least one Item");
+        validate_fail("alias_type_mismatch", "Alias mismatch");
     }
 
     SECTION("Bounds")
@@ -186,6 +190,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
         validate_fail("derivative_vr_missing", "which does not exist");
+        validate_fail("initial_unknowns_order", "must be ordered");
     }
 }
 
@@ -441,8 +446,6 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("date_format", "does not match ISO 8601 format");
         validate_fail("naming_convention_empty", "variableNamingConvention' is empty");
         validate_fail("naming_convention_invalid", "variableNamingConvention' has invalid value");
-        validate_fail("event_indicators_empty", "numberOfEventIndicators' is empty");
-        validate_fail("event_indicators_invalid", "numberOfEventIndicators' must be a non-negative integer");
     }
 
     SECTION("DefaultExperiment")
@@ -458,6 +461,9 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("ref_display_unit_undef", "is not defined for unit");
         validate_fail("unit_duplicate", "is defined multiple times");
         validate_fail("type_duplicate", "is defined multiple times");
+        validate_fail("log_category_duplicate", "is defined multiple times");
+        validate_fail("enum_item_duplicate", "is not unique");
+        validate_fail("enum_empty", "must have at least one Item");
     }
 
     SECTION("Interfaces")
@@ -505,6 +511,8 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("model_version_missing", "Model version attribute is missing");
         validate_warning("model_version_empty", "Model version attribute is empty");
         validate_warning("description_empty", "Attribute 'description' is empty");
+        validate_warning("event_indicators_empty", "is not part of FMI 3.0");
+        validate_warning("event_indicators_invalid", "is not part of FMI 3.0");
     }
 
     SECTION("Copyright")

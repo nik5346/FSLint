@@ -13,6 +13,9 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
         return "3.0";
     }
 
+    const Variable* getVariableByDerivativeRef(const std::vector<Variable>& variables,
+                                               uint32_t ref) const override;
+
     // FMI3-specific implementations
     void applyDefaultInitialValues(std::vector<Variable>& variables) override;
     void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,

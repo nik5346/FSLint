@@ -132,6 +132,20 @@ std::string Fmi3ModelDescriptionChecker::getVariableType(xmlNodePtr node)
         reinterpret_cast<const char*>(node->name)); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 }
 
+const Variable* Fmi3ModelDescriptionChecker::getVariableByDerivativeRef(const std::vector<Variable>& variables,
+                                                                        uint32_t ref) const
+{
+    // FMI3: derivative is a valueReference
+    for (const auto& var : variables)
+    {
+        if (var.value_reference == ref)
+        {
+            return &var;
+        }
+    }
+    return nullptr;
+}
+
 void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables)
 {
     for (auto& var : variables)
@@ -896,6 +910,37 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
         type_def.max = getXmlAttribute(type_node, "max");
         type_def.unit = getXmlAttribute(type_node, "unit");
         type_def.display_unit = getXmlAttribute(type_node, "displayUnit");
+
+        // Extract Enumeration items
+        if (elem_name == "EnumerationType")
+        {
+            for (xmlNodePtr item = type_node->children; item; item = item->next)
+            {
+                if (item->type != XML_ELEMENT_NODE)
+                    continue;
+
+                std::string item_elem_name = reinterpret_cast<const char*>(
+                    item->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                if (item_elem_name == "Item")
+                {
+                    EnumerationItem enum_item;
+                    enum_item.name = getXmlAttribute(item, "name").value_or("");
+                    auto value_str = getXmlAttribute(item, "value");
+                    if (value_str)
+                    {
+                        try
+                        {
+                            enum_item.value = std::stoll(*value_str);
+                        }
+                        catch (...)
+                        {
+                        }
+                    }
+                    enum_item.sourceline = item->line;
+                    type_def.enumeration_items.push_back(enum_item);
+                }
+            }
+        }
 
         if (!type_def.name.empty())
             type_definitions[type_def.name] = type_def;

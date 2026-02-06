@@ -1,4 +1,9 @@
-<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" numberOfEventIndicators="">
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+    <ModelExchange modelIdentifier="Test"/>
+    <LogCategories>
+        <Category name="logAll"/>
+        <Category name="logAll"/>
+    </LogCategories>
     <ModelVariables>
         <Float64 name="v" valueReference="0" causality="output"/>
         <Float64 name="t" valueReference="1" causality="independent" variability="continuous"/>

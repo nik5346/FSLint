@@ -13,6 +13,9 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
         return "2.0";
     }
 
+    const Variable* getVariableByDerivativeRef(const std::vector<Variable>& variables,
+                                               uint32_t ref) const override;
+
     // FMI2-specific implementations
     void applyDefaultInitialValues(std::vector<Variable>& variables) override;
     void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
@@ -36,4 +39,9 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
+
+    // New: FMI2-specific alias and ordering checks
+    void checkValueReferences(const std::vector<Variable>& variables, Certificate& cert);
+    void checkInitialUnknownsOrder(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                   Certificate& cert);
 };

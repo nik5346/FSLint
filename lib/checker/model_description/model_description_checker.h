@@ -55,6 +55,14 @@ struct UnitDefinition
     size_t sourceline = 0;
 };
 
+// Enumeration item
+struct EnumerationItem
+{
+    std::string name;
+    int64_t value = 0;
+    size_t sourceline = 0;
+};
+
 // Type definition
 struct TypeDefinition
 {
@@ -64,6 +72,7 @@ struct TypeDefinition
     std::optional<std::string> max;
     std::optional<std::string> unit;
     std::optional<std::string> display_unit;
+    std::vector<EnumerationItem> enumeration_items;
     size_t sourceline = 0;
 };
 
@@ -101,7 +110,9 @@ class ModelDescriptionCheckerBase : public Checker
     // Common validation methods that work the same way across FMI versions
     void checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert);
     void checkUnits(xmlDocPtr doc, Certificate& cert);
-    void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert);
+    void checkTypeDefinitions(xmlDocPtr doc, const std::map<std::string, TypeDefinition>& type_definitions,
+                              Certificate& cert);
+    void checkLogCategories(xmlDocPtr doc, Certificate& cert);
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
@@ -135,6 +146,10 @@ class ModelDescriptionCheckerBase : public Checker
 
     // New: Check that derivative dimensions match state dimensions
     void checkDerivativeDimensions(const std::vector<Variable>& variables, Certificate& cert);
+
+    // Resolve a variable by its derivative attribute (index in FMI2, valueReference in FMI3)
+    virtual const Variable* getVariableByDerivativeRef(const std::vector<Variable>& variables,
+                                                       uint32_t ref) const = 0;
 
     // Version-specific validation methods (must be implemented by derived classes)
     virtual void applyDefaultInitialValues(std::vector<Variable>& variables) = 0;

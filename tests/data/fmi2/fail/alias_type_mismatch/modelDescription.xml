@@ -1,7 +1,8 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
     <ModelExchange modelIdentifier="Test"/>
     <ModelVariables>
-        <ScalarVariable name="v" valueReference="0" causality="output"><Real derivative="999"/></ScalarVariable>
+        <ScalarVariable name="v1" valueReference="0" causality="output"><Real/></ScalarVariable>
+        <ScalarVariable name="v2" valueReference="0" causality="local"><Integer/></ScalarVariable>
     </ModelVariables>
     <ModelStructure><Outputs><Unknown index="1"/></Outputs></ModelStructure>
 </fmiModelDescription>
