@@ -73,14 +73,15 @@ struct ModelMetadata
     std::optional<std::string> fmiVersion;
     std::optional<std::string> modelName;
     std::optional<std::string> guid; // Unified guid (FMI2) / instantiationToken (FMI3)
+    std::optional<std::string> description;
     std::optional<std::string> modelVersion;
     std::optional<std::string> author;
     std::optional<std::string> copyright;
     std::optional<std::string> license;
     std::optional<std::string> generationTool;
     std::optional<std::string> generationDateAndTime;
-    std::string variableNamingConvention = "flat";
-    std::optional<uint32_t> numberOfEventIndicators;
+    std::optional<std::string> variableNamingConvention;
+    std::optional<std::string> numberOfEventIndicators;
 };
 
 class ModelDescriptionCheckerBase : public Checker
@@ -108,11 +109,14 @@ class ModelDescriptionCheckerBase : public Checker
     void checkModelName(const std::optional<std::string>& model_name, Certificate& cert);
     void checkGuid(const std::optional<std::string>& guid, const std::optional<std::string>& fmi_version,
                    Certificate& cert);
+    void checkDescription(const std::optional<std::string>& description, Certificate& cert);
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
     void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert);
     void checkLicense(const std::optional<std::string>& license, Certificate& cert);
     void checkAuthor(const std::optional<std::string>& author, Certificate& cert);
     void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert);
+    void checkVariableNamingConventionAttribute(const std::optional<std::string>& convention, Certificate& cert);
+    void checkNumberOfEventIndicators(const std::optional<std::string>& count, Certificate& cert);
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
                                             Certificate& cert);
     void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,

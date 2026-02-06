@@ -50,6 +50,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkModelName(metadata.modelName, cert);
     checkGuid(metadata.guid, metadata.fmiVersion, cert);
 
+    checkDescription(metadata.description, cert);
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
     checkModelVersion(metadata.modelVersion, cert);
     checkCopyright(metadata.copyright, cert);
@@ -70,7 +71,9 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     checkUnusedDefinitions(type_definitions, units, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
-    checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
+    checkVariableNamingConventionAttribute(metadata.variableNamingConvention, cert);
+    checkVariableNamingConvention(variables, metadata.variableNamingConvention.value_or("flat"), cert);
+    checkNumberOfEventIndicators(metadata.numberOfEventIndicators, cert);
     checkDerivativeReferences(variables, cert);
 
     // Perform version-specific validation
@@ -97,6 +100,92 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
                                     ") is not unique");
         }
         seen_names.insert(var.name);
+    }
+
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkDescription(const std::optional<std::string>& description, Certificate& cert)
+{
+    TestResult test{"Model Description Information", TestStatus::PASS, {}};
+
+    if (!description.has_value())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back(
+            "Attribute 'description' is missing. It is recommended to provide a brief description of the model.");
+    }
+    else if (description->empty())
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Attribute 'description' is empty.");
+    }
+
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkVariableNamingConventionAttribute(const std::optional<std::string>& convention,
+                                                                         Certificate& cert)
+{
+    TestResult test{"Variable Naming Convention Attribute", TestStatus::PASS, {}};
+
+    if (!convention.has_value())
+    {
+        // Missing is allowed, defaults to flat
+        cert.printTestResult(test);
+        return;
+    }
+
+    if (convention->empty())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Attribute 'variableNamingConvention' is empty (expected \"flat\" or \"structured\")");
+    }
+    else if (*convention != "flat" && *convention != "structured")
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Attribute 'variableNamingConvention' has invalid value \"" + *convention +
+                                "\" (expected \"flat\" or \"structured\")");
+    }
+
+    cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkNumberOfEventIndicators(const std::optional<std::string>& count,
+                                                                Certificate& cert)
+{
+    TestResult test{"Number of Event Indicators", TestStatus::PASS, {}};
+
+    if (!count.has_value())
+    {
+        cert.printTestResult(test);
+        return;
+    }
+
+    if (count->empty())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Attribute 'numberOfEventIndicators' is empty");
+    }
+    else
+    {
+        try
+        {
+            [[maybe_unused]] size_t val = std::stoul(*count);
+            // stoul doesn't catch negative signs easily if they wrap, so we should check for non-digits
+            if (count->find('-') != std::string::npos)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Attribute 'numberOfEventIndicators' must be a non-negative integer, found \"" +
+                                        *count + "\"");
+            }
+        }
+        catch (...)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Attribute 'numberOfEventIndicators' must be a non-negative integer, found \"" +
+                                    *count + "\"");
+        }
     }
 
     cert.printTestResult(test);
@@ -845,26 +934,15 @@ ModelMetadata ModelDescriptionCheckerBase::extractMetadata(xmlNodePtr root)
     else
         metadata.guid = getXmlAttribute(root, "guid");
 
+    metadata.description = getXmlAttribute(root, "description");
     metadata.modelVersion = getXmlAttribute(root, "version");
     metadata.author = getXmlAttribute(root, "author");
     metadata.copyright = getXmlAttribute(root, "copyright");
     metadata.license = getXmlAttribute(root, "license");
     metadata.generationTool = getXmlAttribute(root, "generationTool");
     metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
-
-    metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
-
-    auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
-    if (num_event_ind)
-    {
-        try
-        {
-            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
-        }
-        catch (...)
-        {
-        }
-    }
+    metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention");
+    metadata.numberOfEventIndicators = getXmlAttribute(root, "numberOfEventIndicators");
 
     return metadata;
 }

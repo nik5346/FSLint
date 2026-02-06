@@ -1,0 +1,7 @@
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" variableNamingConvention="invalid">
+    <ModelVariables>
+        <Float64 name="v" valueReference="0" causality="output"/>
+        <Float64 name="t" valueReference="1" causality="independent" variability="continuous"/>
+    </ModelVariables>
+    <ModelStructure><Output valueReference="0"/></ModelStructure>
+</fmiModelDescription>

@@ -125,6 +125,10 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("date_invalid", "is out of range");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
+        validate_fail("naming_convention_empty", "variableNamingConvention' is empty");
+        validate_fail("naming_convention_invalid", "variableNamingConvention' has invalid value");
+        validate_fail("event_indicators_empty", "numberOfEventIndicators' is empty");
+        validate_fail("event_indicators_invalid", "numberOfEventIndicators' must be a non-negative integer");
     }
 
     SECTION("DefaultExperiment")
@@ -156,6 +160,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("ref_unit_undef", "references undefined unit");
         validate_fail("ref_display_unit_undef", "is not defined for unit");
         validate_fail("unit_duplicate", "is defined multiple times");
+        validate_fail("type_duplicate", "is defined multiple times");
     }
 
     SECTION("Bounds")
@@ -180,6 +185,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_derivative_no_attr", "must have the \"derivative\" attribute");
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
+        validate_fail("derivative_vr_missing", "which does not exist");
     }
 }
 
@@ -215,9 +221,11 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning("meta_missing", "Attribute 'generationTool' is missing");
         validate_warning("meta_missing", "Attribute 'license' is missing");
         validate_warning("meta_missing", "Attribute 'copyright' is missing");
+        validate_warning("meta_missing", "Attribute 'description' is missing");
         validate_warning("model_version_missing", "Model version attribute is missing");
         validate_warning("model_version_empty", "Model version attribute is empty");
         validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
+        validate_warning("description_empty", "Attribute 'description' is empty");
     }
 
     SECTION("Copyright")
@@ -418,6 +426,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
+        validate_fail("derivative_vr_missing", "which does not exist");
     }
 
     SECTION("Structural Parameters")
@@ -430,6 +439,10 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("date_invalid", "is out of range");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
+        validate_fail("naming_convention_empty", "variableNamingConvention' is empty");
+        validate_fail("naming_convention_invalid", "variableNamingConvention' has invalid value");
+        validate_fail("event_indicators_empty", "numberOfEventIndicators' is empty");
+        validate_fail("event_indicators_invalid", "numberOfEventIndicators' must be a non-negative integer");
     }
 
     SECTION("DefaultExperiment")
@@ -444,6 +457,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("ref_unit_undef", "references undefined unit");
         validate_fail("ref_display_unit_undef", "is not defined for unit");
         validate_fail("unit_duplicate", "is defined multiple times");
+        validate_fail("type_duplicate", "is defined multiple times");
     }
 
     SECTION("Interfaces")
@@ -485,10 +499,12 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("meta_missing", "Attribute 'generationTool' is missing");
         validate_warning("meta_missing", "Attribute 'license' is missing");
         validate_warning("meta_missing", "Attribute 'copyright' is missing");
+        validate_warning("meta_missing", "Attribute 'description' is missing");
         validate_warning("meta_missing", "Model version attribute is missing");
         validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
         validate_warning("model_version_missing", "Model version attribute is missing");
         validate_warning("model_version_empty", "Model version attribute is empty");
+        validate_warning("description_empty", "Attribute 'description' is empty");
     }
 
     SECTION("Copyright")
