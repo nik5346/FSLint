@@ -766,14 +766,14 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
         test.messages.push_back("Model identifier \"" + model_identifier + "\" is too long (" +
                                 std::to_string(model_identifier.length()) + " characters). Maximum length is " +
                                 std::to_string(ABSOLUTE_MAX_LENGTH) +
-                                    " characters to ensure cross-platform compatibility.");
+                                " characters to ensure cross-platform compatibility.");
     }
     else if (model_identifier.length() > RECOMMENDED_MAX_LENGTH)
     {
         test.status = TestStatus::WARNING;
         test.messages.push_back("Model identifier \"" + model_identifier + "\" is longer than recommended (" +
                                 std::to_string(model_identifier.length()) + " characters). Consider keeping it under " +
-                                    std::to_string(RECOMMENDED_MAX_LENGTH) + " characters for better portability.");
+                                std::to_string(RECOMMENDED_MAX_LENGTH) + " characters for better portability.");
     }
 
     cert.printTestResult(test);
@@ -1160,8 +1160,8 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
                     catch (...)
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("Type definition \"" + name + "\" (line " + std::to_string(child->line) +
-                                                "): Failed to parse min/max values.");
+                        test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                std::to_string(child->line) + "): Failed to parse min/max values.");
                     }
                 }
             }
@@ -1177,8 +1177,8 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
                     if (item->type != XML_ELEMENT_NODE)
                         continue;
 
-                    std::string item_elem_name = reinterpret_cast<const char*>(
-                        item->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                    std::string item_elem_name = reinterpret_cast<const char*>(item->name);
                     if (item_elem_name == "Item")
                     {
                         has_items = true;
@@ -1309,11 +1309,10 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                             {
                                 if (test.status == TestStatus::PASS)
                                     test.status = TestStatus::WARNING;
-                                test.messages.push_back("Variable \"" + var.name + "\" (line " +
-                                                        std::to_string(var.sourceline) +
-                                                        ") has relativeQuantity=\"true\" but is associated with unit \"" +
-                                                        *unit_to_check + "\" which has a non-zero offset (" +
-                                                        *unit_def.offset + ").");
+                                test.messages.push_back(
+                                    "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has relativeQuantity=\"true\" but is associated with unit \"" + *unit_to_check +
+                                    "\" which has a non-zero offset (" + *unit_def.offset + ").");
                             }
                         }
                         catch (...)
@@ -1368,11 +1367,10 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                             {
                                 if (test.status == TestStatus::PASS)
                                     test.status = TestStatus::WARNING;
-                                test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                        std::to_string(type_def.sourceline) +
-                                                        ") has relativeQuantity=\"true\" but references unit \"" +
-                                                        *type_def.unit + "\" which has a non-zero offset (" +
-                                                        *unit_def.offset + ").");
+                                test.messages.push_back(
+                                    "Type definition \"" + name + "\" (line " + std::to_string(type_def.sourceline) +
+                                    ") has relativeQuantity=\"true\" but references unit \"" + *type_def.unit +
+                                    "\" which has a non-zero offset (" + *unit_def.offset + ").");
                             }
                         }
                         catch (...)
@@ -1426,16 +1424,10 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
     // Build lookup map: for FMI2 it's index -> Variable, for FMI3 it's valueReference -> Variable
     std::map<uint32_t, const Variable*> lookup_map;
     for (const auto& var : variables)
-    {
         if (is_fmi2)
-        {
             lookup_map[var.index] = &var;
-        }
         else if (var.value_reference.has_value())
-        {
             lookup_map[*var.value_reference] = &var;
-        }
-    }
 
     // Check each variable that has a derivative_of attribute
     for (const auto& var : variables)

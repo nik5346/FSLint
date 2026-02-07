@@ -63,12 +63,8 @@ void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
 
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
-    {
         if (var.derivative_of.has_value())
-        {
             state_indices.insert(*var.derivative_of);
-        }
-    }
 
     for (const auto& var : variables)
     {
@@ -132,12 +128,8 @@ void Fmi2ModelDescriptionChecker::checkContinuousStates(const std::vector<Variab
 
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
-    {
         if (var.derivative_of.has_value())
-        {
             state_indices.insert(*var.derivative_of);
-        }
-    }
 
     for (const auto& var : variables)
     {
@@ -171,13 +163,11 @@ void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
     TestResult test{"Independent Variable (FMI2)", TestStatus::PASS, {}};
 
     const Variable* independent_var = nullptr;
-    size_t count = 0;
 
     for (const auto& var : variables)
     {
         if (var.causality == "independent")
         {
-            count++;
             if (!independent_var)
                 independent_var = &var;
             else
@@ -331,7 +321,7 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                         test.messages.push_back("Aliased constant variables \"" + var->name + "\" and \"" +
                                                 first_constant->name + "\" have different start values ('" +
                                                 var->start.value_or("") + "' vs '" +
-                                            first_constant->start.value_or("") + "').");
+                                                first_constant->start.value_or("") + "').");
                     }
                 }
             }
@@ -774,7 +764,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         {
                             std::vector<size_t> deps;
                             std::stringstream ss(*deps_str);
-                            size_t dep_idx;
+                            size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
 
@@ -941,7 +931,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         {
                             std::vector<size_t> deps;
                             std::stringstream ss(*deps_str);
-                            size_t dep_idx;
+                            size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
 
@@ -1064,10 +1054,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
-    {
         if (var.derivative_of.has_value())
             state_indices.insert(*var.derivative_of);
-    }
 
     for (const auto& var : variables)
     {
@@ -1119,7 +1107,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         {
                             std::vector<size_t> deps;
                             std::stringstream ss(*deps_str);
-                            size_t dep_idx;
+                            size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
 
@@ -1292,8 +1280,8 @@ void Fmi2ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test,
                                                                const std::string& val, const std::string& attr_name)
 {
     test.status = TestStatus::FAIL;
-    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): " +
-                            attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
+    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                            "): " + attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
                             ", which is not allowed in FMI 2.0.");
 }
 
