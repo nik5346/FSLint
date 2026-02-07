@@ -102,6 +102,7 @@ void Certificate::printTestResult(const TestResult& test)
     {
         ss << "  [✗ FAIL] ";
         current_subsection_failed++;
+        m_total_failed++;
     }
     else
     {
@@ -118,11 +119,18 @@ void Certificate::printTestResult(const TestResult& test)
 
 void Certificate::printSubsectionSummary(bool subsection_valid)
 {
+    bool actual_valid = subsection_valid && (current_subsection_failed == 0);
+
+    if (!actual_valid && current_subsection_failed == 0)
+    {
+        m_total_failed++;
+    }
+
     log("");
     log("  ────────────────────────────────────────");
     log("  Tests: " + std::to_string(current_subsection_passed) + " Passed, " +
         std::to_string(current_subsection_failed) + " Failed");
-    log("  Result: " + std::string(subsection_valid ? "PASSED" : "FAILED"));
+    log("  Result: " + std::string(actual_valid ? "PASSED" : "FAILED"));
     log("  ────────────────────────────────────────");
 }
 
@@ -130,7 +138,7 @@ void Certificate::printFooter()
 {
     log("");
     log("╔════════════════════════════════════════════════════════════╗");
-    if (current_subsection_failed == 0)
+    if (m_total_failed == 0)
         log("║ ✓ MODEL VALIDATION PASSED                                  ║");
     else
         log("║ ✗ MODEL VALIDATION FAILED                                  ║");

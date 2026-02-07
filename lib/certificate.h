@@ -31,8 +31,13 @@ class Certificate
     // Subsection tracking
     size_t current_subsection_passed = 0;
     size_t current_subsection_failed = 0;
+    size_t m_total_failed = 0;
 
   public:
+    bool isFailed() const
+    {
+        return m_total_failed > 0;
+    }
     void log(const std::string& message);
     void printMainHeader(const std::string& filename, const std::string& hash);
     void printSubsectionHeader(const std::string& name);
