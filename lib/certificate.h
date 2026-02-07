@@ -25,14 +25,19 @@ struct TestResult
 class Certificate
 {
   private:
-    std::stringstream report_buffer;
-    std::vector<TestResult> m_results;
+    std::stringstream _report_buffer;
+    std::vector<TestResult> _results;
 
     // Subsection tracking
-    size_t current_subsection_passed = 0;
-    size_t current_subsection_failed = 0;
+    size_t _current_subsection_passed = 0;
+    size_t _current_subsection_failed = 0;
+    size_t _total_failed = 0;
 
   public:
+    bool isFailed() const
+    {
+        return _total_failed > 0;
+    }
     void log(const std::string& message);
     void printMainHeader(const std::string& filename, const std::string& hash);
     void printSubsectionHeader(const std::string& name);
@@ -44,11 +49,11 @@ class Certificate
     bool saveToFile(const std::filesystem::path& path) const;
     std::string getFullReport() const
     {
-        return report_buffer.str();
+        return _report_buffer.str();
     }
 
     const std::vector<TestResult>& getResults() const
     {
-        return m_results;
+        return _results;
     }
 };

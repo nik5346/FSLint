@@ -10,8 +10,8 @@ void Certificate::log(const std::string& message)
     std::cout << message;
     std::cout << "\n";
 
-    report_buffer << message;
-    report_buffer << "\n";
+    _report_buffer << message;
+    _report_buffer << "\n";
 }
 
 void Certificate::printMainHeader(const std::string& filename, const std::string& hash)
@@ -75,8 +75,8 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
 void Certificate::printSubsectionHeader(const std::string& name)
 {
     // Reset subsection counters
-    current_subsection_passed = 0;
-    current_subsection_failed = 0;
+    _current_subsection_passed = 0;
+    _current_subsection_failed = 0;
 
     log("");
     log("┌────────────────────────────────────────┐");
@@ -90,23 +90,24 @@ void Certificate::printSubsectionHeader(const std::string& name)
 
 void Certificate::printTestResult(const TestResult& test)
 {
-    m_results.push_back(test);
+    _results.push_back(test);
 
     std::stringstream ss;
     if (test.status == TestStatus::PASS)
     {
         ss << "  [✓ PASS] ";
-        current_subsection_passed++;
+        _current_subsection_passed++;
     }
     else if (test.status == TestStatus::FAIL)
     {
         ss << "  [✗ FAIL] ";
-        current_subsection_failed++;
+        _current_subsection_failed++;
+        _total_failed++;
     }
     else
     {
         ss << "  [⚠ WARN] ";
-        current_subsection_passed++; // Warnings count as passed
+        _current_subsection_passed++; // Warnings count as passed
     }
 
     ss << test.test_name;
@@ -118,11 +119,18 @@ void Certificate::printTestResult(const TestResult& test)
 
 void Certificate::printSubsectionSummary(bool subsection_valid)
 {
+    bool actual_valid = subsection_valid && (_current_subsection_failed == 0);
+
+    if (!actual_valid && _current_subsection_failed == 0)
+    {
+        _total_failed++;
+    }
+
     log("");
     log("  ────────────────────────────────────────");
-    log("  Tests: " + std::to_string(current_subsection_passed) + " Passed, " +
-        std::to_string(current_subsection_failed) + " Failed");
-    log("  Result: " + std::string(subsection_valid ? "PASSED" : "FAILED"));
+    log("  Tests: " + std::to_string(_current_subsection_passed) + " Passed, " +
+        std::to_string(_current_subsection_failed) + " Failed");
+    log("  Result: " + std::string(actual_valid ? "PASSED" : "FAILED"));
     log("  ────────────────────────────────────────");
 }
 
@@ -130,7 +138,7 @@ void Certificate::printFooter()
 {
     log("");
     log("╔════════════════════════════════════════════════════════════╗");
-    if (current_subsection_failed == 0)
+    if (_total_failed == 0)
         log("║ ✓ MODEL VALIDATION PASSED                                  ║");
     else
         log("║ ✗ MODEL VALIDATION FAILED                                  ║");
@@ -142,6 +150,6 @@ bool Certificate::saveToFile(const std::filesystem::path& path) const
     std::ofstream file(path);
     if (!file)
         return false;
-    file << report_buffer.str();
+    file << _report_buffer.str();
     return true;
 }

@@ -27,31 +27,31 @@ class StructuredNameParser
 
   private:
     explicit StructuredNameParser(std::string_view input)
-        : input_(input)
+        : _input(input)
     {
     }
 
     // Character access helpers
     char current() const
     {
-        return pos_ < input_.size() ? input_[pos_] : '\0';
+        return _pos < _input.size() ? _input[_pos] : '\0';
     }
 
     char peek(size_t offset = 1) const
     {
-        size_t peek_pos = pos_ + offset;
-        return peek_pos < input_.size() ? input_[peek_pos] : '\0';
+        size_t peek_pos = _pos + offset;
+        return peek_pos < _input.size() ? _input[peek_pos] : '\0';
     }
 
     void advance()
     {
-        if (pos_ < input_.size())
-            ++pos_;
+        if (_pos < _input.size())
+            ++_pos;
     }
 
     bool isAtEnd() const
     {
-        return pos_ >= input_.size();
+        return _pos >= _input.size();
     }
 
     // BNF Grammar Rules
@@ -62,7 +62,7 @@ class StructuredNameParser
         // Check for "der(" prefix
         if (current() == 'd' && peek() == 'e' && peek(2) == 'r' && peek(3) == '(')
         {
-            pos_ += 4; // Skip "der("
+            _pos += 4; // Skip "der("
 
             if (!parseIdentifier())
                 return false;
@@ -300,6 +300,6 @@ class StructuredNameParser
         }
     }
 
-    std::string_view input_;
-    size_t pos_ = 0;
+    std::string_view _input;
+    size_t _pos = 0;
 };
