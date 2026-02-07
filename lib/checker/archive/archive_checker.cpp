@@ -69,7 +69,7 @@ void ArchiveChecker::checkFileExtension(const std::filesystem::path& path, Certi
     if (path.extension() != ".fmu" && path.extension() != ".ssp")
     {
         ext_test.status = TestStatus::FAIL;
-        ext_test.messages.push_back("model file must have .fmu or .ssp extension respectively");
+        ext_test.messages.push_back("model file must have .fmu or .ssp extension respectively.");
     }
 
     cert.printTestResult(ext_test);
@@ -91,7 +91,7 @@ void ArchiveChecker::checkCompressionMethods(const std::vector<ZipFileEntry>& en
             test.messages.push_back("Invalid compression method for '" + entry.filename +
                                     "': " + std::to_string(entry.compression_method) + " (only " +
                                     std::to_string(COMPRESSION_STORE) + "=store and " +
-                                    std::to_string(COMPRESSION_DEFLATE) + "=deflate allowed)");
+                                    std::to_string(COMPRESSION_DEFLATE) + "=deflate allowed).");
         }
     }
 
@@ -113,7 +113,7 @@ void ArchiveChecker::checkVersionNeeded(const std::vector<ZipFileEntry>& entries
             test.messages.push_back("Version needed to extract for '" + entry.filename + "' is " +
                                     std::to_string(entry.version_needed / VERSION_CONVERSION_FACTOR) + "." +
                                     std::to_string(entry.version_needed % VERSION_CONVERSION_FACTOR) +
-                                    " (maximum allowed is 2.0)");
+                                    " (maximum allowed is 2.0).");
         }
     }
 
@@ -131,7 +131,7 @@ void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& 
         {
             test.status = TestStatus::WARNING;
             test.messages.push_back("Language encoding flag (bit 11) is set for '" + entry.filename +
-                                    "' (for maximum portability, keeping this bit at 0 is recommended)");
+                                    "' (for maximum portability, keeping this bit at 0 is recommended).");
         }
     }
 
@@ -147,7 +147,7 @@ void ArchiveChecker::checkEncryption(const std::vector<ZipFileEntry>& entries, C
         if (entry.is_encrypted)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("File '" + entry.filename + "' is encrypted (encryption not allowed)");
+            test.messages.push_back("File '" + entry.filename + "' is encrypted (encryption not allowed).");
         }
     }
 
@@ -170,7 +170,7 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Backslash '\\' found in path '" + path +
-                                    "' (only forward slashes '/' allowed per ZIP specification section 4.4.17)");
+                                    "' (only forward slashes '/' allowed per ZIP specification section 4.4.17).");
         }
 
         // Check for non-ASCII characters
@@ -179,14 +179,14 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
         {
             test.status = TestStatus::WARNING;
             test.messages.push_back("Non-ASCII characters in path '" + path +
-                                    "' (may cause compatibility issues on different operating systems)");
+                                    "' (may cause compatibility issues on different operating systems).");
         }
 
         // Check for leading slash (absolute path)
         if (!path.empty() && path[0] == '/')
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("Path '" + path + "' must not start with '/' (absolute paths not allowed)");
+            test.messages.push_back("Path '" + path + "' must not start with '/' (absolute paths not allowed).");
         }
 
         // Check for drive or device letter (Windows-style paths)
@@ -194,28 +194,28 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Path '" + path +
-                                    "' must not contain ':' (drive letters or device paths not allowed)");
+                                    "' must not contain ':' (drive letters or device paths not allowed).");
         }
 
         // Check for parent directory traversal
         if (path.find("../") != std::string::npos || path.find("..\\") != std::string::npos)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("Path '" + path + "' contains '..' (parent directory traversal not allowed)");
+            test.messages.push_back("Path '" + path + "' contains '..' (parent directory traversal not allowed).");
         }
 
         // Check for current directory reference at start
         if (path.size() >= 2 && path[0] == '.' && path[1] == '/')
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("Path '" + path + "' starts with './' (redundant current directory reference)");
+            test.messages.push_back("Path '" + path + "' starts with './' (redundant current directory reference).");
         }
 
         // Check for multiple consecutive slashes
         if (path.find("//") != std::string::npos)
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("Path '" + path + "' contains '//' (multiple consecutive slashes)");
+            test.messages.push_back("Path '" + path + "' contains '//' (multiple consecutive slashes).");
         }
     }
 
@@ -232,7 +232,7 @@ void ArchiveChecker::checkSymbolicLinks(const std::vector<ZipFileEntry>& entries
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Symbolic link found: '" + entry.filename +
-                                    "' (links not allowed in FMU/SSP archives)");
+                                    "' (links not allowed in FMU/SSP archives).");
         }
     }
 
@@ -259,7 +259,7 @@ void ArchiveChecker::checkGeneralPurposeBit3(const std::vector<ZipFileEntry>& en
             test.status = TestStatus::FAIL;
             test.messages.push_back("General purpose bit 3 is set for '" + entry.filename +
                                     "' but compression method is not deflate (" + std::to_string(COMPRESSION_DEFLATE) +
-                                    ")");
+                                    ").");
         }
     }
 
@@ -273,7 +273,7 @@ void ArchiveChecker::checkDiskSpanning(Zipper& handler, Certificate& cert)
     if (handler.getDiskCount() != 1)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Split or spanned ZIP archives are not allowed");
+        test.messages.push_back("Split or spanned ZIP archives are not allowed.");
     }
 
     cert.printTestResult(test);

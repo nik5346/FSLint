@@ -13,19 +13,13 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
     [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
 {
-    // Extract and check model identifiers for FMI3
-    auto model_identifiers = extractModelIdentifiers(doc, {"CoSimulation", "ModelExchange", "ScheduledExecution"});
-    checkNumberOfImplementedInterfaces(model_identifiers, cert);
-    for (const auto& [interface_name, model_id] : model_identifiers)
-        checkModelIdentifier(model_id, interface_name, cert);
-
     // FMI3-specific checks
     checkIndependentVariable(variables, cert);
     checkDimensionReferences(variables, cert);
     checkArrayStartValues(variables, cert);
     checkClockReferences(variables, cert);
     checkClockedVariables(variables, cert);
-    checkUniqueValueReferences(variables, cert);
+    checkAliases(variables, cert);
     checkStructuralParameter(variables, cert);
     checkDerivativeDimensions(variables, cert);
     checkModelStructure(doc, variables, cert);
@@ -200,7 +194,7 @@ void Fmi3ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
             test.status = TestStatus::FAIL;
             test.messages.push_back(
                 "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + ") is of type " + var.type +
-                " and must have variability != \"continuous\" (only Float32/Float64 can be continuous)");
+                " and cannot have variability \"continuous\". Only variables of type Float32 or Float64 can be continuous.");
         }
     }
 
@@ -235,7 +229,7 @@ void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") must have a start value");
+                                    ") must have a start value.");
         }
     }
 
@@ -298,7 +292,7 @@ void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                     ") has illegal combination: causality=\"" + var.causality + "\", variability=\"" +
-                                    var.variability + "\", initial=\"" + initial + "\"");
+                                    var.variability + "\", initial=\"" + initial + "\".");
         }
     }
 
@@ -316,7 +310,7 @@ void Fmi3ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has initial=\"calculated\" but provides a start value");
+                                    ") has initial=\"calculated\" but provides a start value.");
         }
 
         // FMI3: Independent variables should not have start values
@@ -324,7 +318,7 @@ void Fmi3ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has causality=\"independent\" but provides a start value");
+                                    ") has causality=\"independent\" but provides a start value.");
         }
     }
 
@@ -369,7 +363,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
                                                     std::to_string(type_def.sourceline) + "): max (" + *type_def.max +
-                                                    ") must be >= min (" + *type_def.min + ")");
+                                                    ") must be >= min (" + *type_def.min + ").");
                         }
                     }
                     catch (...)
@@ -377,7 +371,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
                                                 std::to_string(type_def.sourceline) +
-                                                "): Failed to parse min/max values");
+                                                "): Failed to parse min/max values.");
                     }
                 }
             }
@@ -427,7 +421,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
                                         std::to_string(var.sourceline) +
-                                        ") must be of floating point type (Float32 or Float64)");
+                                        ") must be of floating point type (Float32 or Float64).");
             }
 
             // FMI3: Check for illegal initial attribute
@@ -436,7 +430,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
                                         std::to_string(var.sourceline) +
-                                        ") must not have an initial attribute (FMI3 spec)");
+                                        ") must not have an initial attribute (FMI3 spec).");
             }
 
             // FMI3: Check for illegal start attribute
@@ -445,7 +439,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
                                         std::to_string(var.sourceline) +
-                                        ") must not have a start attribute (FMI3 spec)");
+                                        ") must not have a start attribute (FMI3 spec).");
             }
         }
     }
@@ -455,35 +449,140 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Exactly one independent variable must be defined, found " +
-                                std::to_string(independent_count));
+                                std::to_string(independent_count) + ".");
     }
 
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkUniqueValueReferences(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Unique Value References (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Alias Variables (FMI3)", TestStatus::PASS, {}};
 
-    std::map<uint32_t, std::string> value_references;
-
+    // Group variables by valueReference
+    std::map<uint32_t, std::vector<const Variable*>> vr_to_vars;
     for (const auto& var : variables)
     {
         if (var.value_reference.has_value())
-        {
-            uint32_t vr = *var.value_reference;
+            vr_to_vars[*var.value_reference].push_back(&var);
+    }
 
-            if (value_references.contains(vr))
+    for (const auto& [vr, alias_set] : vr_to_vars)
+    {
+        if (alias_set.size() <= 1)
+            continue;
+
+        const Variable* first = alias_set[0];
+
+        for (size_t i = 1; i < alias_set.size(); ++i)
+        {
+            const Variable* var = alias_set[i];
+
+            // 1. Same base type
+            if (var->type != first->type)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Value reference " + std::to_string(vr) + " is used by both \"" +
-                                        value_references[vr] + "\" and \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) + ")");
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same type. \"" +
+                                        var->name + "\" is " + var->type + " but \"" + first->name + "\" is " +
+                                        first->type + ".");
             }
-            else
+
+            // 2. Same unit and displayUnit
+            if (var->unit != first->unit)
             {
-                value_references[vr] = var.name;
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same unit. \"" +
+                                        var->name + "\" has unit \"" + var->unit.value_or("(none)") +
+                                        "\" but \"" + first->name + "\" has unit \"" +
+                                        first->unit.value_or("(none)") + "\".");
             }
+            if (var->display_unit != first->display_unit)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
+                                        " must have the same displayUnit. \"" + var->name + "\" has displayUnit \"" +
+                                        var->display_unit.value_or("(none)") + "\" but \"" + first->name +
+                                        "\" has displayUnit \"" + first->display_unit.value_or("(none)") + "\".");
+            }
+
+            // 3. Same relativeQuantity
+            if (var->relative_quantity != first->relative_quantity)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
+                                        " must have the same relativeQuantity attribute.");
+            }
+
+            // 4. Same variability
+            if (var->variability != first->variability)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
+                                        " must have the same variability. \"" + var->name + "\" is " +
+                                        var->variability + " but \"" + first->name + "\" is " + first->variability +
+                                        ".");
+            }
+
+            // 5. Same dimensions
+            if (!compareDimensions(*var, *first))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
+                                        " must have the same dimensions. Variable \"" + var->name +
+                                        "\" dimensions do not match \"" + first->name + "\".");
+            }
+        }
+
+        // 5. Causality: At most one variable in an alias set can be non-local.
+        std::vector<const Variable*> non_local;
+        for (const auto* v : alias_set)
+        {
+            if (v->causality != "local")
+                non_local.push_back(v);
+        }
+
+        if (non_local.size() > 1)
+        {
+            test.status = TestStatus::FAIL;
+            std::string msg = "Alias set for VR " + std::to_string(vr) +
+                              " has multiple variables with causality other than 'local': ";
+            for (size_t i = 0; i < non_local.size(); ++i)
+                msg += (i > 0 ? ", " : "") + non_local[i]->name;
+            msg += ". At most one variable in an alias set can be non-local (parameter, input, output, or independent).";
+            test.messages.push_back(msg);
+        }
+
+        // 6. Constant variables: must have identical start values if they are aliased
+        if (first->variability == "constant")
+        {
+            for (const auto* var : alias_set)
+            {
+                if (var->start != first->start)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Aliased constant variables \"" + var->name + "\" and \"" +
+                                            first->name + "\" (sharing VR " + std::to_string(vr) +
+                                            ") have different start values ('" + var->start.value_or("") +
+                                            "' vs '" + first->start.value_or("") + "').");
+                }
+            }
+        }
+
+        // 7. Start attributes: At most one non-constant variable with start
+        std::vector<const Variable*> non_constant_with_start;
+        for (const auto* v : alias_set)
+            if (v->variability != "constant" && v->start.has_value())
+                non_constant_with_start.push_back(v);
+
+        if (non_constant_with_start.size() > 1)
+        {
+            test.status = TestStatus::FAIL;
+            std::string msg = "Alias set for VR " + std::to_string(vr) +
+                              " has multiple non-constant variables with a start attribute: ";
+            for (size_t i = 0; i < non_constant_with_start.size(); ++i)
+                msg += (i > 0 ? ", " : "") + non_constant_with_start[i]->name;
+            msg += ". At most one variable in an alias set (where at least one is not constant) can have a start attribute.";
+            test.messages.push_back(msg);
         }
     }
 
@@ -507,7 +606,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Structural parameter \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) + ") must be of type UInt64, found " + var.type);
+                                        std::to_string(var.sourceline) + ") must be of type UInt64, found " + var.type + ".");
             }
         }
     }
@@ -525,7 +624,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                             ") references dimension \"" + dim_ref +
-                                            "\" which is not a structural parameter");
+                                            "\" which is not a structural parameter.");
                 }
                 else
                 {
@@ -541,7 +640,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back("Structural parameter \"" + sp->name + "\" (line " +
                                                         std::to_string(sp->sourceline) +
-                                                        ") is referenced in <Dimension> and must have start > 0");
+                                                        ") is referenced in <Dimension> and must have start > 0.");
                             }
                         }
                         catch (...)
@@ -549,7 +648,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Structural parameter \"" + sp->name + "\" (line " +
                                                     std::to_string(sp->sourceline) +
-                                                    ") has invalid start value (not a valid UInt64)");
+                                                    ") has invalid start value (not a valid UInt64).");
                         }
                     }
                 }
@@ -574,13 +673,19 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     TestResult test{"ModelStructure Outputs (FMI3)", TestStatus::PASS, {}};
 
     // Get expected outputs (all variables with causality="output")
-    std::set<std::string> expected_outputs;
+    std::set<uint32_t> expected_vrs;
+    std::map<uint32_t, std::string> vr_to_name;
     for (const auto& var : variables)
-        if (var.causality == "output")
-            expected_outputs.insert(var.name);
+    {
+        if (var.causality == "output" && var.value_reference.has_value())
+        {
+            expected_vrs.insert(*var.value_reference);
+            vr_to_name[*var.value_reference] = var.name;
+        }
+    }
 
     // FMI3: Get actual outputs from ModelStructure/Output (using valueReference attribute)
-    std::set<std::string> actual_outputs;
+    std::set<uint32_t> actual_vrs;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Output");
 
     if (xpath_obj && xpath_obj->nodesetval)
@@ -589,62 +694,75 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
         {
             xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto vr = getXmlAttribute(node, "valueReference");
+            auto vr_str = getXmlAttribute(node, "valueReference");
 
-            if (vr.has_value())
+            if (vr_str.has_value())
             {
-                // Find variable with this value reference
-                bool found = false;
+                uint32_t vr = 0;
+                try
+                {
+                    vr = std::stoul(*vr_str);
+                }
+                catch (...)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("ModelStructure/Output " + std::to_string(i + 1) +
+                                            " has invalid valueReference \"" + *vr_str + "\".");
+                    continue;
+                }
+
+                if (actual_vrs.contains(vr))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Value reference " + std::to_string(vr) +
+                                            " is listed multiple times in ModelStructure/Output.");
+                }
+                actual_vrs.insert(vr);
+
+                // Check if it's an output
+                bool is_output = false;
                 for (const auto& var : variables)
                 {
-                    if (var.value_reference.has_value() && std::to_string(*var.value_reference) == *vr)
+                    if (var.value_reference.has_value() && *var.value_reference == vr)
                     {
-                        if (var.causality != "output")
+                        if (var.causality == "output")
+                            is_output = true;
+                        else
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Variable \"" + var.name + "\" (line " +
                                                     std::to_string(var.sourceline) +
                                                     ") listed in ModelStructure/Output but does not have "
-                                                    "causality=\"output\"");
+                                                    "causality=\"output\".");
                         }
-
-                        if (actual_outputs.contains(var.name))
-                        {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name +
-                                                    "\" is listed multiple times in "
-                                                    "ModelStructure/Output");
-                        }
-                        actual_outputs.insert(var.name);
-                        found = true;
-                        break;
                     }
                 }
 
-                if (!found)
+                if (!is_output && test.status != TestStatus::FAIL)
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("ModelStructure/Output " + std::to_string(i + 1) +
-                                            " references non-existent value reference " + *vr);
+                    test.messages.push_back("Value reference " + std::to_string(vr) +
+                                            " listed in ModelStructure/Output does not correspond to any output "
+                                            "variable.");
                 }
             }
         }
         xmlXPathFreeObject(xpath_obj);
     }
 
-    if (expected_outputs != actual_outputs)
+    if (expected_vrs != actual_vrs)
     {
         test.status = TestStatus::FAIL;
         std::vector<std::string> missing;
         std::vector<std::string> extra;
 
-        for (const auto& name : expected_outputs)
-            if (!actual_outputs.contains(name))
-                missing.push_back(name);
+        for (uint32_t vr : expected_vrs)
+            if (!actual_vrs.contains(vr))
+                missing.push_back(vr_to_name[vr] + " (VR " + std::to_string(vr) + ")");
 
-        for (const auto& name : actual_outputs)
-            if (!expected_outputs.contains(name))
-                extra.push_back(name);
+        for (uint32_t vr : actual_vrs)
+            if (!expected_vrs.contains(vr))
+                extra.push_back("VR " + std::to_string(vr));
 
         if (!missing.empty())
         {
@@ -652,6 +770,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 "The following variables with causality=\"output\" are missing from ModelStructure/Output: ";
             for (size_t i = 0; i < missing.size(); ++i)
                 msg += (i > 0 ? ", " : "") + missing[i];
+            msg += ".";
             test.messages.push_back(msg);
         }
 
@@ -660,11 +779,12 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
             std::string msg = "The following variables in ModelStructure/Output do not have causality=\"output\": ";
             for (size_t i = 0; i < extra.size(); ++i)
                 msg += (i > 0 ? ", " : "") + extra[i];
+            msg += ".";
             test.messages.push_back(msg);
         }
 
         test.messages.push_back(
-            "ModelStructure/Output must have exactly one entry for each variable with causality=\"output\"");
+            "ModelStructure/Output must have exactly one entry for each variable with causality=\"output\".");
     }
 
     cert.printTestResult(test);
@@ -676,20 +796,19 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     TestResult test{"ModelStructure Derivatives (FMI3)", TestStatus::PASS, {}};
 
     // Build map of variables that are derivatives
-    std::set<std::string> expected_derivatives;
-    std::map<uint32_t, const Variable*> derivative_vars_by_vr;
+    std::set<uint32_t> expected_vrs;
+    std::map<uint32_t, std::string> vr_to_name;
     for (const auto& var : variables)
     {
-        if (var.derivative_of.has_value())
+        if (var.derivative_of.has_value() && var.value_reference.has_value())
         {
-            expected_derivatives.insert(var.name);
-            if (var.value_reference.has_value())
-                derivative_vars_by_vr[*var.value_reference] = &var;
+            expected_vrs.insert(*var.value_reference);
+            vr_to_name[*var.value_reference] = var.name;
         }
     }
 
     // FMI3: Check ContinuousStateDerivative entries (using valueReference attribute)
-    std::set<std::string> actual_derivatives;
+    std::set<uint32_t> actual_vrs;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/ContinuousStateDerivative");
 
     if (xpath_obj && xpath_obj->nodesetval)
@@ -698,57 +817,53 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
         {
             xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto vr = getXmlAttribute(node, "valueReference");
+            auto vr_str = getXmlAttribute(node, "valueReference");
 
-            if (vr.has_value())
+            if (vr_str.has_value())
             {
-                uint32_t vr_num = 0;
+                uint32_t vr = 0;
                 try
                 {
-                    vr_num = std::stoul(*vr);
+                    vr = std::stoul(*vr_str);
                 }
                 catch (...)
                 {
                     continue;
                 }
 
-                auto it = derivative_vars_by_vr.find(vr_num);
-                if (it == derivative_vars_by_vr.end())
+                if (actual_vrs.contains(vr))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("ContinuousStateDerivative " + std::to_string(i + 1) +
-                                            " references a variable that does not have the \"derivative\" attribute");
+                    test.messages.push_back("Value reference " + std::to_string(vr) +
+                                            " is listed multiple times in ModelStructure/ContinuousStateDerivative.");
                 }
-                else
+                actual_vrs.insert(vr);
+
+                if (!expected_vrs.contains(vr))
                 {
-                    const auto& var = *it->second;
-                    if (actual_derivatives.contains(var.name))
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Variable \"" + var.name +
-                                                "\" is listed multiple times in "
-                                                "ModelStructure/ContinuousStateDerivative");
-                    }
-                    actual_derivatives.insert(var.name);
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Value reference " + std::to_string(vr) +
+                                            " listed in ModelStructure/ContinuousStateDerivative does not have the "
+                                            "\"derivative\" attribute.");
                 }
             }
         }
         xmlXPathFreeObject(xpath_obj);
     }
 
-    if (expected_derivatives != actual_derivatives)
+    if (expected_vrs != actual_vrs)
     {
         test.status = TestStatus::FAIL;
         std::vector<std::string> missing;
         std::vector<std::string> extra;
 
-        for (const auto& name : expected_derivatives)
-            if (!actual_derivatives.contains(name))
-                missing.push_back(name);
+        for (uint32_t vr : expected_vrs)
+            if (!actual_vrs.contains(vr))
+                missing.push_back(vr_to_name[vr] + " (VR " + std::to_string(vr) + ")");
 
-        for (const auto& name : actual_derivatives)
-            if (!expected_derivatives.contains(name))
-                extra.push_back(name);
+        for (uint32_t vr : actual_vrs)
+            if (!expected_vrs.contains(vr))
+                extra.push_back("VR " + std::to_string(vr));
 
         if (!missing.empty())
         {
@@ -756,21 +871,23 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                               "ModelStructure/ContinuousStateDerivative: ";
             for (size_t i = 0; i < missing.size(); ++i)
                 msg += (i > 0 ? ", " : "") + missing[i];
+            msg += ".";
             test.messages.push_back(msg);
         }
 
         if (!extra.empty())
         {
-            std::string msg = "The following variables in ModelStructure/ContinuousStateDerivative do not have a "
-                              "\"derivative\" attribute: ";
+            std::string msg = "The following value references in ModelStructure/ContinuousStateDerivative do not "
+                              "correspond to derivatives: ";
             for (size_t i = 0; i < extra.size(); ++i)
                 msg += (i > 0 ? ", " : "") + extra[i];
+            msg += ".";
             test.messages.push_back(msg);
         }
 
         test.messages.push_back(
             "ModelStructure/ContinuousStateDerivative must have exactly one entry for each variable that has a "
-            "\"derivative\" attribute");
+            "\"derivative\" attribute.");
     }
 
     cert.printTestResult(test);
@@ -781,39 +898,59 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 {
     TestResult test{"ModelStructure Initial Unknowns (FMI3)", TestStatus::PASS, {}};
 
-    // Build expected set of initial unknowns (FMI3 spec)
-    std::set<std::string> expected;
+    // Build expected set of initial unknown value references (FMI3 spec)
+    std::set<uint32_t> expected_vrs;
+    std::map<uint32_t, std::string> vr_to_name;
 
     for (const auto& var : variables)
     {
-        // Outputs with initial="approx" or "calculated" (not clocked)
+        if (!var.value_reference.has_value())
+            continue;
+
+        bool is_required = false;
+
+        // (1) Outputs with initial="approx" or "calculated" (not clocked)
         if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
             !var.clocks.has_value())
-            expected.insert(var.name);
-
-        // Calculated parameters
-        if (var.causality == "calculatedParameter")
-            expected.insert(var.name);
-
-        // States and their derivatives with initial="approx" or "calculated"
-        if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
         {
-            expected.insert(var.name);
-
-            // Also add the state itself if it has initial="approx" or "calculated"
-            for (const auto& state : variables)
+            is_required = true;
+        }
+        // (2) Calculated parameters
+        else if (var.causality == "calculatedParameter")
+        {
+            is_required = true;
+        }
+        // (3) State derivatives with initial="approx" or "calculated"
+        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
+        {
+            is_required = true;
+        }
+        // (4) States with initial="approx" or "calculated"
+        // Identifying states: variables referenced by 'derivative' attribute of some other variable
+        else
+        {
+            for (const auto& other : variables)
             {
-                if (state.value_reference == var.derivative_of &&
-                    (state.initial == "approx" || state.initial == "calculated"))
+                if (other.derivative_of.has_value() && *other.derivative_of == *var.value_reference)
                 {
-                    expected.insert(state.name);
+                    if (var.initial == "approx" || var.initial == "calculated")
+                    {
+                        is_required = true;
+                        break;
+                    }
                 }
             }
+        }
+
+        if (is_required)
+        {
+            expected_vrs.insert(*var.value_reference);
+            vr_to_name[*var.value_reference] = var.name;
         }
     }
 
     // FMI3: Get actual initial unknowns (using valueReference attribute)
-    std::set<std::string> actual;
+    std::set<uint32_t> actual_vrs;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/InitialUnknown");
 
     if (xpath_obj && xpath_obj->nodesetval)
@@ -822,43 +959,42 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         {
             xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto vr = getXmlAttribute(node, "valueReference");
+            auto vr_str = getXmlAttribute(node, "valueReference");
 
-            if (vr.has_value())
+            if (vr_str.has_value())
             {
-                // Find variable with this value reference
-                for (const auto& var : variables)
+                try
                 {
-                    if (var.value_reference.has_value() && std::to_string(*var.value_reference) == *vr)
-                    {
-                        actual.insert(var.name);
-                        break;
-                    }
+                    uint32_t vr = std::stoul(*vr_str);
+                    actual_vrs.insert(vr);
+                }
+                catch (...)
+                {
                 }
             }
         }
         xmlXPathFreeObject(xpath_obj);
     }
 
-    if (expected != actual)
+    if (expected_vrs != actual_vrs)
     {
         test.status = TestStatus::FAIL;
 
         std::string expected_str;
-        for (const auto& name : expected)
-            expected_str += name + ", ";
+        for (uint32_t vr : expected_vrs)
+            expected_str += vr_to_name[vr] + " (VR " + std::to_string(vr) + "), ";
         if (!expected_str.empty())
             expected_str = expected_str.substr(0, expected_str.length() - 2);
 
         std::string actual_str;
-        for (const auto& name : actual)
-            actual_str += name + ", ";
+        for (uint32_t vr : actual_vrs)
+            actual_str += "VR " + std::to_string(vr) + ", ";
         if (!actual_str.empty())
             actual_str = actual_str.substr(0, actual_str.length() - 2);
 
-        test.messages.push_back("ModelStructure/InitialUnknowns does not contain the expected set of variables. "
+        test.messages.push_back("ModelStructure/InitialUnknown does not contain the expected set of variables. "
                                 "Expected { " +
-                                expected_str + " } but was { " + actual_str + " }");
+                                expected_str + " } but was { " + actual_str + " }.");
     }
 
     cert.printTestResult(test);
@@ -991,7 +1127,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                             "), Dimension " + std::to_string(i + 1) + " (line " +
                                             std::to_string(dim.sourceline) +
-                                            "): must have either 'start' or 'valueReference' attribute");
+                                            "): must have either 'start' or 'valueReference' attribute.");
                 }
                 else if (has_start && has_vr)
                 {
@@ -999,7 +1135,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                             "), Dimension " + std::to_string(i + 1) + " (line " +
                                             std::to_string(dim.sourceline) +
-                                            "): must have either 'start' OR 'valueReference', not both");
+                                            "): must have either 'start' OR 'valueReference', not both.");
                 }
 
                 // If valueReference is used, check that it points to a structural parameter
@@ -1015,7 +1151,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                                                 std::to_string(var.sourceline) + "), Dimension " +
                                                 std::to_string(i + 1) + " (line " + std::to_string(dim.sourceline) +
                                                 ") references value reference " + std::to_string(vr) +
-                                                " which is not a structural parameter");
+                                                " which is not a structural parameter.");
                     }
                     else
                     {
@@ -1046,7 +1182,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                                         "), Dimension " + std::to_string(i + 1) + " (line " +
                                         std::to_string(dim.sourceline) + ") references structural parameter \"" +
                                         sp->name + "\" (line " + std::to_string(sp->sourceline) +
-                                        ") which has start=0 (must be > 0)");
+                                        ") which has start=0 (must be > 0).");
                                 }
                             }
                             catch (...)
@@ -1057,7 +1193,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                                     "), Dimension " + std::to_string(i + 1) + " (line " +
                                     std::to_string(dim.sourceline) + ") references structural parameter \"" + sp->name +
                                     "\" (line " + std::to_string(sp->sourceline) +
-                                    ") which has invalid start value (not a valid UInt64)");
+                                        ") which has invalid start value (not a valid UInt64).");
                             }
                         }
                         else
@@ -1067,7 +1203,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                                 "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                 "), Dimension " + std::to_string(i + 1) + " (line " + std::to_string(dim.sourceline) +
                                 ") references structural parameter \"" + sp->name + "\" (line " +
-                                std::to_string(sp->sourceline) + ") which does not have a start value");
+                                std::to_string(sp->sourceline) + ") which does not have a start value.");
                         }
                     }
                 }
@@ -1081,7 +1217,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                         test.messages.push_back("Variable \"" + var.name + "\" (line " +
                                                 std::to_string(var.sourceline) + "), Dimension " +
                                                 std::to_string(i + 1) + " (line " + std::to_string(dim.sourceline) +
-                                                ") has start=0 (must be > 0)");
+                                                ") has start=0 (must be > 0).");
                     }
                 }
             }
@@ -1221,7 +1357,7 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
                                             std::to_string(*total_size) + ") but has " +
                                             std::to_string(num_start_values) + " start value" +
                                             (num_start_values == 1 ? "" : "s") + ". Expected either " +
-                                            std::to_string(*total_size) + " values or 1 scalar value (for broadcast)");
+                                            std::to_string(*total_size) + " values or 1 scalar value (for broadcast).");
                 }
             }
         }
@@ -1263,7 +1399,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        "): Invalid clock reference '" + vr_str + "' in clocks attribute");
+                                        "): Invalid clock reference '" + vr_str + "' in clocks attribute.");
                 continue;
             }
         }
@@ -1276,7 +1412,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Clock variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        "): Clock cannot reference itself in clocks attribute");
+                                        "): Clock cannot reference itself in clocks attribute.");
                 continue;
             }
 
@@ -1326,7 +1462,7 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
             test.messages.push_back(
                 "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                 "): Clocked variables must have causality 'input', 'output', or 'local', but has '" + var.causality +
-                "'");
+                "'.");
         }
 
         // Check variability - clocked variables must have discrete variability
@@ -1340,7 +1476,7 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                         "): Continuous variables cannot have a clocks attribute. " +
-                                        "Clocked variables must have variability='discrete'");
+                                        "Clocked variables must have variability='discrete'.");
             }
             // Constants, fixed, and tunable also cannot be clocked
             else if (var.variability == "constant" || var.variability == "fixed" || var.variability == "tunable")
@@ -1349,7 +1485,7 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                         "): Variables with variability='" + var.variability +
                                         "' cannot have a clocks attribute. " +
-                                        "Clocked variables must have variability='discrete'");
+                                        "Clocked variables must have variability='discrete'.");
             }
         }
 
@@ -1358,7 +1494,7 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    "): Independent variable cannot have a clocks attribute");
+                                    "): Independent variable cannot have a clocks attribute.");
         }
 
         // Check that parameters are not clocked
@@ -1367,7 +1503,7 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    "): Parameters (causality='" + var.causality + "') cannot have a clocks attribute");
+                                    "): Parameters (causality='" + var.causality + "') cannot have a clocks attribute.");
         }
     }
 
@@ -1391,8 +1527,8 @@ void Fmi3ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResu
     if (test.status == TestStatus::PASS)
         test.status = TestStatus::WARNING;
 
-    test.messages.push_back(attr_name + " is " + val +
-                            " (NaN or Infinity). While allowed in FMI 3.0, it is unusual in DefaultExperiment.");
+    test.messages.push_back(attr_name + " value \"" + val +
+                            "\" is NaN or Infinity. While allowed in FMI 3.0, it is unusual in DefaultExperiment.");
 }
 
 void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
@@ -1402,8 +1538,8 @@ void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, con
     if (test.status == TestStatus::PASS)
         test.status = TestStatus::WARNING;
 
-    test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " is " + val +
-                            " (NaN or Infinity). While allowed in FMI 3.0, it is unusual.");
+    test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
+                            "\" is NaN or Infinity. While allowed in FMI 3.0, it is unusual.");
 }
 
 void Fmi3ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& /*test*/,
@@ -1421,7 +1557,7 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     if (!guid_opt.has_value())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("instantiationToken attribute is missing");
+        test.messages.push_back("instantiationToken attribute is missing.");
         cert.printTestResult(test);
         return;
     }
@@ -1429,7 +1565,7 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     if (guid_opt->empty())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("instantiationToken attribute is empty");
+        test.messages.push_back("instantiationToken attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -1518,7 +1654,7 @@ void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Unit \"" + *name_opt + "\" (line " + std::to_string(unit_node->line) +
-                                        ") is defined multiple times");
+                                        ") is defined multiple times.");
             }
             seen_names.insert(*name_opt);
         }

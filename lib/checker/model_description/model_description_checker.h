@@ -48,6 +48,7 @@ struct Variable
     std::vector<std::string> dimension_refs; // For backwards compatibility (names)
     std::vector<Dimension> dimensions;       // Full dimension information
     std::optional<std::string> clocks;
+    bool relative_quantity = false;
     size_t sourceline = 0;
 };
 
@@ -80,6 +81,7 @@ struct TypeDefinition
     std::optional<std::string> nominal;
     std::optional<std::string> unit;
     std::optional<std::string> display_unit;
+    bool relative_quantity = false;
     size_t sourceline = 0;
 };
 
@@ -199,13 +201,13 @@ class ModelDescriptionCheckerBase : public Checker
     bool validateTypeBounds(const Variable& var, const std::optional<std::string>& effective_min,
                             const std::optional<std::string>& effective_max, TestResult& test);
 
-  private:
-    std::set<std::string> used_type_definitions;
-    std::set<std::string> used_units;
-
     // Helper methods for dimension comparison
     bool compareDimensions(const Variable& var1, const Variable& var2);
     std::string formatDimensions(const Variable& var);
+
+  private:
+    std::set<std::string> used_type_definitions;
+    std::set<std::string> used_units;
 };
 
 template <typename T>

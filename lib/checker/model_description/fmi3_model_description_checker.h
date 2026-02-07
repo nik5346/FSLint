@@ -56,6 +56,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
 
     void checkClockReferences(const std::vector<Variable>& variables, Certificate& cert);
     void checkClockedVariables(const std::vector<Variable>& variables, Certificate& cert);
+    void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
 
     std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) override;
     std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) override;
