@@ -23,8 +23,14 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     // Check Independent variable
     checkIndependentVariable(variables, cert);
 
-    // Check reinit and canHandleMultipleSet
-    checkFmi2Attributes(doc, variables, cert);
+    // Check reinit attribute
+    checkReinitAttribute(doc, variables, cert);
+
+    // Check MultipleSetPerTimeInstant attribute
+    checkMultipleSetAttribute(doc, variables, cert);
+
+    // Check continuous-time states
+    checkContinuousStates(variables, cert);
 
     // Run FMI2-specific model structure checks (should be last)
     checkModelStructure(doc, variables, cert);
@@ -47,15 +53,14 @@ void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkFmi2Attributes(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                      Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                       Certificate& cert)
 {
-    TestResult test{"FMI2 Attribute Validation", TestStatus::PASS, {}};
+    TestResult test{"Reinit Attribute (FMI2)", TestStatus::PASS, {}};
 
     bool has_me = !extractModelIdentifiers(doc, {"ModelExchange"}).empty();
     bool has_cs = !extractModelIdentifiers(doc, {"CoSimulation"}).empty();
 
-    // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
     {
@@ -67,7 +72,6 @@ void Fmi2ModelDescriptionChecker::checkFmi2Attributes(xmlDocPtr doc, const std::
 
     for (const auto& var : variables)
     {
-        // Rule: reinit: "Can only be present for a continuous-time state."
         if (var.reinit.has_value())
         {
             if (!state_indices.contains(var.index))
@@ -84,8 +88,21 @@ void Fmi2ModelDescriptionChecker::checkFmi2Attributes(xmlDocPtr doc, const std::
                                         ") has 'reinit' attribute which is not allowed for Co-Simulation only FMUs.");
             }
         }
+    }
 
-        // Rule: canHandleMultipleSetPerTimeInstant: "Only for variables with causality = 'input'."
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                            Certificate& cert)
+{
+    TestResult test{"Multiple Set Attribute (FMI2)", TestStatus::PASS, {}};
+
+    bool has_me = !extractModelIdentifiers(doc, {"ModelExchange"}).empty();
+    bool has_cs = !extractModelIdentifiers(doc, {"CoSimulation"}).empty();
+
+    for (const auto& var : variables)
+    {
         if (var.can_handle_multiple_set.has_value())
         {
             if (var.causality != "input")
@@ -104,8 +121,26 @@ void Fmi2ModelDescriptionChecker::checkFmi2Attributes(xmlDocPtr doc, const std::
                     ") has 'canHandleMultipleSetPerTimeInstant' which is not allowed for Co-Simulation only FMUs.");
             }
         }
+    }
 
-        // Rule: A continuous-time state must have causality = 'local' or 'output'
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkContinuousStates(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Continuous-time States (FMI2)", TestStatus::PASS, {}};
+
+    std::set<uint32_t> state_indices;
+    for (const auto& var : variables)
+    {
+        if (var.derivative_of.has_value())
+        {
+            state_indices.insert(*var.derivative_of);
+        }
+    }
+
+    for (const auto& var : variables)
+    {
         if (state_indices.contains(var.index))
         {
             if (var.causality != "local" && var.causality != "output")
@@ -116,7 +151,6 @@ void Fmi2ModelDescriptionChecker::checkFmi2Attributes(xmlDocPtr doc, const std::
             }
         }
 
-        // Rule: State derivatives and continuous-time states must be of type Real
         if (var.derivative_of.has_value() || state_indices.contains(var.index))
         {
             if (var.type != "Real")
