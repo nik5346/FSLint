@@ -176,6 +176,7 @@ class ModelDescriptionCheckerBase : public Checker
 
     // Helper to check for special float values (NaN, INF)
     bool isSpecialFloat(const std::string& value);
+    std::string getSpecialFloatDescription(const std::string& value);
 
     // Version-specific special float validation hooks
     virtual void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
@@ -255,7 +256,7 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (" +
-                                *effective_max + ") must be >= min (" + *effective_min + ")");
+                                *effective_max + ") must be >= min (" + *effective_min + ").");
         success = false;
     }
 
@@ -267,6 +268,7 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
                           *var.start + ") must be >= min (" + *effective_min + ")";
         if (!var.min && var.declared_type)
             msg += " (min inherited from type '" + *var.declared_type + "')";
+        msg += ".";
         test.messages.push_back(msg);
         success = false;
     }
@@ -279,6 +281,7 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
                           *var.start + ") must be <= max (" + *effective_max + ")";
         if (!var.max && var.declared_type)
             msg += " (max inherited from type '" + *var.declared_type + "')";
+        msg += ".";
         test.messages.push_back(msg);
         success = false;
     }

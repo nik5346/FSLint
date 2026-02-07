@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="IndependentNonReal" guid="123">
-    <ModelExchange modelIdentifier="IndependentNonReal"/>
-    <ModelVariables>
-        <ScalarVariable name="t" valueReference="1" causality="independent" variability="continuous">
-            <Integer/>
-        </ScalarVariable>
-    </ModelVariables>
-    <ModelStructure>
-        <InitialUnknowns/>
-    </ModelStructure>
+  <ModelExchange modelIdentifier="IndependentNonReal"/>
+  <ModelVariables>
+    <ScalarVariable name="t" valueReference="1" causality="independent" variability="continuous">
+      <Integer/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <InitialUnknowns/>
+  </ModelStructure>
 </fmiModelDescription>

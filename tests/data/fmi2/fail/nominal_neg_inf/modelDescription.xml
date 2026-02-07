@@ -6,5 +6,9 @@
       <Real nominal="-inf"/>
     </ScalarVariable>
   </ModelVariables>
-  <ModelStructure><Outputs><Unknown index="1"/></Outputs></ModelStructure>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="1"/>
+    </Outputs>
+  </ModelStructure>
 </fmiModelDescription>

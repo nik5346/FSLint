@@ -49,8 +49,15 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkFmiVersion(metadata.fmiVersion, cert);
     checkModelName(metadata.modelName, cert);
     checkGuid(metadata.guid, cert);
+    checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
+    checkModelVersion(metadata.modelVersion, cert);
+    checkCopyright(metadata.copyright, cert);
+    checkLicense(metadata.license, cert);
+    checkAuthor(metadata.author, cert);
+    checkGenerationTool(metadata.generationTool, cert);
+    checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
 
-    // Perform interface checks early
+    // Perform interface checks
     std::vector<std::string> interface_elements;
     if (metadata.fmiVersion && metadata.fmiVersion->starts_with("2."))
         interface_elements = {"CoSimulation", "ModelExchange"};
@@ -62,18 +69,11 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     for (const auto& [interface_name, model_id] : model_identifiers)
         checkModelIdentifier(model_id, interface_name, cert);
 
-    checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
-    checkModelVersion(metadata.modelVersion, cert);
-    checkCopyright(metadata.copyright, cert);
-    checkLicense(metadata.license, cert);
-    checkAuthor(metadata.author, cert);
-    checkGenerationTool(metadata.generationTool, cert);
-
-    checkLogCategories(doc, cert);
-    checkVendorAnnotations(doc, cert);
-    checkDefaultExperiment(doc, cert);
-    checkTypeDefinitions(doc, cert);
     checkUnits(doc, cert);
+    checkTypeDefinitions(doc, cert);
+    checkLogCategories(doc, cert);
+    checkDefaultExperiment(doc, cert);
+    checkVendorAnnotations(doc, cert);
 
     checkUniqueVariableNames(variables, cert);
     checkTypeNameClashes(variables, type_definitions, cert);
@@ -85,7 +85,6 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     checkUnusedDefinitions(type_definitions, units, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
-    checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
     checkDerivativeReferences(variables, cert);
 
     // Perform version-specific validation
@@ -879,6 +878,30 @@ bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
     return false;
 }
 
+std::string ModelDescriptionCheckerBase::getSpecialFloatDescription(const std::string& value)
+{
+    std::string s = value;
+    s.erase(0, s.find_first_not_of(" \t\n\r"));
+    size_t last = s.find_last_not_of(" \t\n\r");
+    if (last != std::string::npos)
+        s.erase(last + 1);
+
+    if (s.empty())
+        return "NaN or Infinity";
+
+    std::string lower = s;
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+    if (lower == "nan")
+        return "NaN";
+
+    if (lower == "inf" || lower == "+inf" || lower == "-inf")
+        return "Infinity";
+
+    return "NaN or Infinity";
+}
+
 xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, const std::string& xpath)
 {
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
@@ -1086,41 +1109,60 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
             auto min_str = getXmlAttribute(child, "min");
             auto max_str = getXmlAttribute(child, "max");
+            auto nominal_str = getXmlAttribute(child, "nominal");
+
+            // Check for special floats (NaN, INF)
+            TypeDefinition td_for_special;
+            td_for_special.name = name;
+            td_for_special.sourceline = child->line;
+
+            if (min_str && isSpecialFloat(*min_str))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, *min_str, "min");
+            if (max_str && isSpecialFloat(*max_str))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, *max_str, "max");
+            if (nominal_str && isSpecialFloat(*nominal_str))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, *nominal_str, "nominal");
 
             if (min_str && max_str)
             {
-                try
+                bool special_min = isSpecialFloat(*min_str);
+                bool special_max = isSpecialFloat(*max_str);
+
+                if (!special_min && !special_max)
                 {
-                    if (elem_name == "Real")
+                    try
                     {
-                        double min_val = std::stod(*min_str);
-                        double max_val = std::stod(*max_str);
-                        if (max_val < min_val)
+                        if (elem_name == "Real")
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                    std::to_string(child->line) + "): max (" + *max_str +
-                                                    ") must be >= min (" + *min_str + ").");
+                            double min_val = std::stod(*min_str);
+                            double max_val = std::stod(*max_str);
+                            if (max_val < min_val)
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                        std::to_string(child->line) + "): max (" + *max_str +
+                                                        ") must be >= min (" + *min_str + ").");
+                            }
+                        }
+                        else if (elem_name == "Integer" || elem_name == "Enumeration")
+                        {
+                            int64_t min_val = std::stoll(*min_str);
+                            int64_t max_val = std::stoll(*max_str);
+                            if (max_val < min_val)
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                        std::to_string(child->line) + "): max (" + *max_str +
+                                                        ") must be >= min (" + *min_str + ").");
+                            }
                         }
                     }
-                    else if (elem_name == "Integer" || elem_name == "Enumeration")
+                    catch (...)
                     {
-                        int64_t min_val = std::stoll(*min_str);
-                        int64_t max_val = std::stoll(*max_str);
-                        if (max_val < min_val)
-                        {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                    std::to_string(child->line) + "): max (" + *max_str +
-                                                    ") must be >= min (" + *min_str + ").");
-                        }
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Type definition \"" + name + "\" (line " + std::to_string(child->line) +
+                                                "): Failed to parse min/max values.");
                     }
-                }
-                catch (...)
-                {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Type definition \"" + name + "\" (line " + std::to_string(child->line) +
-                                            "): Failed to parse min/max values.");
                 }
             }
 

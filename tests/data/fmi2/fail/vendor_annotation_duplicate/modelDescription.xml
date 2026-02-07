@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="test" guid="{12345678-1234-1234-1234-123456789012}">
-    <ModelExchange modelIdentifier="test"/>
-    <VendorAnnotations>
-        <Tool name="MyTool">
-            <SomeAnnotation/>
-        </Tool>
-        <Tool name="MyTool">
-            <OtherAnnotation/>
-        </Tool>
-    </VendorAnnotations>
-    <ModelVariables>
-        <ScalarVariable name="v" valueReference="0" causality="output">
-            <Real/>
-        </ScalarVariable>
-    </ModelVariables>
-    <ModelStructure>
-        <Outputs>
-            <Unknown index="1"/>
-        </Outputs>
-    </ModelStructure>
+  <ModelExchange modelIdentifier="test"/>
+  <VendorAnnotations>
+    <Tool name="MyTool">
+      <SomeAnnotation/>
+    </Tool>
+    <Tool name="MyTool">
+      <OtherAnnotation/>
+    </Tool>
+  </VendorAnnotations>
+  <ModelVariables>
+    <ScalarVariable name="v" valueReference="0" causality="output">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="1"/>
+    </Outputs>
+  </ModelStructure>
 </fmiModelDescription>

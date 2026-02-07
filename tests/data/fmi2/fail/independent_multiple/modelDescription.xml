@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="MultipleIndependent" guid="123">
-    <ModelExchange modelIdentifier="MultipleIndependent"/>
-    <ModelVariables>
-        <ScalarVariable name="t1" valueReference="1" causality="independent" variability="continuous">
-            <Real/>
-        </ScalarVariable>
-        <ScalarVariable name="t2" valueReference="2" causality="independent" variability="continuous">
-            <Real/>
-        </ScalarVariable>
-    </ModelVariables>
-    <ModelStructure>
-        <InitialUnknowns/>
-    </ModelStructure>
+  <ModelExchange modelIdentifier="MultipleIndependent"/>
+  <ModelVariables>
+    <ScalarVariable name="t1" valueReference="1" causality="independent" variability="continuous">
+      <Real/>
+    </ScalarVariable>
+    <ScalarVariable name="t2" valueReference="2" causality="independent" variability="continuous">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <InitialUnknowns/>
+  </ModelStructure>
 </fmiModelDescription>

@@ -107,6 +107,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     {
         validate_fail("interface_none", "At least one interface must be implemented");
         validate_fail("model_identifier_invalid", "cannot start with a digit");
+        validate_fail("model_identifier_too_long", "is too long");
     }
 
     SECTION("Unit definitions")
@@ -114,15 +115,18 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("unit_duplicate", "is defined multiple times");
         validate_fail("unit_display_unit_duplicate", "is defined multiple times");
         validate_fail("unit_factor_nan", "factor value \"NaN\"");
+        validate_fail("unit_offset_inf", "offset value \"INF\"");
     }
 
     SECTION("Type definitions")
     {
         validate_fail("type_duplicate", "is defined multiple times");
         validate_fail("type_max_min", "max (5) must be >= min (10)");
+        validate_fail("type_min_nan", "min value \"NaN\"");
         validate_fail("type_name_as_variable_name", "must be different from all ScalarVariable names");
         validate_fail("enumeration_variable_no_type", "must have a declaredType attribute");
         validate_fail("enumeration_item_duplicate_value", "must be unique within the same enumeration");
+        validate_fail("enumeration_item_duplicate_name", "has multiple items named \"A\"");
         validate_fail("enumeration_no_item", "must have at least one Item");
     }
 
@@ -203,10 +207,9 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("bounds_max_min", "max (5) must be >= min (10)");
         validate_fail("bounds_start_min", "start (5) must be >= min (10)");
         validate_fail("bounds_invalid_numeric", "Failed to parse numeric value");
-        validate_fail("start_nan", "is NaN or Infinity");
-        validate_fail("nominal_inf", "nominal value \"INF\"");
-        validate_fail("nominal_neg_inf", "nominal value \"-inf\"");
-        validate_fail("type_min_nan", "min value \"NaN\"");
+        validate_fail("start_nan", "is NaN");
+        validate_fail("nominal_inf", "nominal value \"INF\" is Infinity");
+        validate_fail("nominal_neg_inf", "nominal value \"-inf\" is Infinity");
     }
 
     SECTION("Structure")
@@ -542,7 +545,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
     SECTION("Unit definitions")
     {
         validate_warning("unused_definitions", "Unit \"s\" is unused");
-        validate_warning("unit_offset_inf", "offset value \"INF\" is NaN or Infinity");
+        validate_warning("unit_offset_inf", "offset value \"INF\" is Infinity");
     }
 
     SECTION("Type definitions")
@@ -552,7 +555,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("DefaultExperiment")
     {
-        validate_warning("exp_nan", "startTime value \"NaN\" is NaN or Infinity");
+        validate_warning("exp_nan", "startTime value \"NaN\" is NaN");
     }
 
     SECTION("Structure")
