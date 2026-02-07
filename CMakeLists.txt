@@ -329,6 +329,7 @@ enable_testing()
 
 add_executable(FSLint-tests
     tests/model_description_tests.cpp
+    tests/certificate_tests.cpp
 )
 
 target_link_libraries(FSLint-tests PRIVATE
