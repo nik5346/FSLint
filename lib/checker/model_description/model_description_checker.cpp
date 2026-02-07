@@ -674,7 +674,6 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
     cert.printTestResult(test);
 }
 
-
 void ModelDescriptionCheckerBase::checkNumberOfImplementedInterfaces(
     const std::map<std::string, std::string>& model_identifiers, Certificate& cert)
 {
@@ -1023,7 +1022,6 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     cert.printTestResult(test);
 }
 
-
 void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
     const std::vector<Variable>& variables, const std::map<std::string, TypeDefinition>& type_definitions,
     const std::map<std::string, UnitDefinition>& units, Certificate& cert)
@@ -1257,4 +1255,3 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
 
     cert.printTestResult(test);
 }
-

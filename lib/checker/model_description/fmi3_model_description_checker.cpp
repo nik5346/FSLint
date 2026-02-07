@@ -1780,10 +1780,10 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                             if (item_values.contains(val))
                             {
                                 test.status = TestStatus::FAIL;
-                                test.messages.push_back(
-                                    "Enumeration type \"" + name + "\" (line " + std::to_string(type_node->line) +
-                                    ") has multiple items with value " + *item_value_str +
-                                    ". Item values must be unique within the same enumeration.");
+                                test.messages.push_back("Enumeration type \"" + name + "\" (line " +
+                                                        std::to_string(type_node->line) +
+                                                        ") has multiple items with value " + *item_value_str +
+                                                        ". Item values must be unique within the same enumeration.");
                             }
                             item_values.insert(val);
                         }
