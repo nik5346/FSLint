@@ -91,7 +91,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (!file.is_open())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to open file for encoding check");
+        test.messages.push_back("Failed to open file for encoding check.");
         cert.printTestResult(test);
         return false;
     }
@@ -106,7 +106,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (bytes_read == 0)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("File is empty");
+        test.messages.push_back("File is empty.");
         cert.printTestResult(test);
         return false;
     }
@@ -130,7 +130,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (first_line.find("<?xml") != 0)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Missing XML declaration on first line");
+        test.messages.push_back("Missing XML declaration on first line.");
         cert.printTestResult(test);
         return false;
     }
@@ -140,7 +140,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (version_pos == std::string::npos)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("XML declaration missing version attribute");
+        test.messages.push_back("XML declaration missing version attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -150,7 +150,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (version_quote_start == std::string::npos)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Malformed version attribute");
+        test.messages.push_back("Malformed version attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -160,7 +160,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (version_quote_end == std::string::npos)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Malformed version attribute");
+        test.messages.push_back("Malformed version attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -181,7 +181,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (encoding_pos == std::string::npos)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("XML declaration missing encoding attribute");
+        test.messages.push_back("XML declaration missing encoding attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -191,7 +191,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (quote_start == std::string::npos)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Malformed encoding attribute");
+        test.messages.push_back("Malformed encoding attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -201,7 +201,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (quote_end == std::string::npos)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Malformed encoding attribute");
+        test.messages.push_back("Malformed encoding attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -224,7 +224,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (!isValidUtf8File(xml_path))
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("File content is not valid UTF-8");
+        test.messages.push_back("File content is not valid UTF-8.");
         cert.printTestResult(test);
         return false;
     }
@@ -444,7 +444,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     if (!parser_ctx)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to create schema parser context");
+        test.messages.push_back("Failed to create schema parser context.");
         cert.printTestResult(test);
         xmlCleanupParser();
         return;
@@ -463,7 +463,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
         if (test.messages.empty())
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("Failed to parse schema");
+            test.messages.push_back("Failed to parse schema.");
         }
         cert.printTestResult(test);
         xmlCleanupParser();
@@ -475,7 +475,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     if (!valid_ctx)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to create validation context");
+        test.messages.push_back("Failed to create validation context.");
         cert.printTestResult(test);
         xmlSchemaFree(schema);
         xmlCleanupParser();
@@ -494,7 +494,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
         if (test.messages.empty())
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("Schema validation failed");
+            test.messages.push_back("Schema validation failed.");
         }
     }
 
@@ -520,7 +520,7 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
 
     if (written < 0)
     {
-        test->messages.push_back("Error formatting validation message");
+        test->messages.push_back("Error formatting validation message.");
         test->status = TestStatus::FAIL;
         return;
     }
@@ -528,6 +528,9 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
     std::string error(buffer.data());
     if (!error.empty() && error.back() == '\n')
         error.pop_back();
+
+    if (!error.empty() && error.back() != '.')
+        error += ".";
 
     test->messages.push_back(error);
     test->status = TestStatus::FAIL;
@@ -547,13 +550,16 @@ void SchemaCheckerBase::warningCallback(void* ctx, const char* msg, ...)
 
     if (written < 0)
     {
-        test->messages.push_back("Warning: Error formatting validation message");
+        test->messages.push_back("Warning: Error formatting validation message.");
         return;
     }
 
     std::string warning(buffer.data());
     if (!warning.empty() && warning.back() == '\n')
         warning.pop_back();
+
+    if (!warning.empty() && warning.back() != '.')
+        warning += ".";
 
     test->messages.push_back(warning);
     if (test->status == TestStatus::PASS)
