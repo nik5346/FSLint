@@ -22,7 +22,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     if (!std::filesystem::exists(model_desc_path))
     {
-        TestResult test{"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found"}};
+        TestResult test{"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -31,7 +31,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml"}};
+        TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -49,6 +49,18 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkFmiVersion(metadata.fmiVersion, cert);
     checkModelName(metadata.modelName, cert);
     checkGuid(metadata.guid, cert);
+
+    // Perform interface checks early
+    std::vector<std::string> interface_elements;
+    if (metadata.fmiVersion && metadata.fmiVersion->starts_with("2."))
+        interface_elements = {"CoSimulation", "ModelExchange"};
+    else
+        interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
+
+    auto model_identifiers = extractModelIdentifiers(doc, interface_elements);
+    checkNumberOfImplementedInterfaces(model_identifiers, cert);
+    for (const auto& [interface_name, model_id] : model_identifiers)
+        checkModelIdentifier(model_id, interface_name, cert);
 
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
     checkModelVersion(metadata.modelVersion, cert);
@@ -97,7 +109,7 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable name \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") is not unique");
+                                    ") is not unique.");
         }
         seen_names.insert(var.name);
     }
@@ -122,7 +134,7 @@ void ModelDescriptionCheckerBase::checkTypeNameClashes(const std::vector<Variabl
             test.status = TestStatus::FAIL;
             test.messages.push_back("Type definition name \"" + name + "\" (line " +
                                     std::to_string(type_def.sourceline) +
-                                    ") must be different from all ScalarVariable names");
+                                    ") must be different from all ScalarVariable names.");
         }
     }
 
@@ -136,7 +148,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     if (!model_name.has_value())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("modelName attribute is missing");
+        test.messages.push_back("modelName attribute is missing.");
         cert.printTestResult(test);
         return;
     }
@@ -144,7 +156,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     if (model_name->empty())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("modelName attribute is empty");
+        test.messages.push_back("modelName attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -170,7 +182,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
                 test.status = TestStatus::FAIL;
                 std::string escaped_name = std::regex_replace(var.name, std::regex("\r"), "\\r");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") contains illegal carriage return character (U+000D)");
+                                        ") contains illegal carriage return character (U+000D).");
                 is_valid = false;
             }
             if (var.name.find('\n') != std::string::npos)
@@ -178,7 +190,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
                 test.status = TestStatus::FAIL;
                 std::string escaped_name = std::regex_replace(var.name, std::regex("\n"), "\\n");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") contains illegal line feed character (U+000A)");
+                                        ") contains illegal line feed character (U+000A).");
                 is_valid = false;
             }
             if (var.name.find('\t') != std::string::npos)
@@ -186,7 +198,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
                 test.status = TestStatus::FAIL;
                 std::string escaped_name = std::regex_replace(var.name, std::regex("\t"), "\\t");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") contains illegal tab character (U+0009)");
+                                        ") contains illegal tab character (U+0009).");
                 is_valid = false;
             }
         }
@@ -198,7 +210,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("\"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") is not a legal variable name for naming convention \"structured\"");
+                                        ") is not a legal variable name for naming convention \"structured\".");
             }
         }
     }
@@ -242,7 +254,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Generation date and time \"" + dt +
-                                "\" does not match ISO 8601 format (expected YYYY-MM-DDThh:mm:ssZ or similar)");
+                                "\" does not match ISO 8601 format (expected YYYY-MM-DDThh:mm:ssZ or similar).");
         cert.printTestResult(test);
         return;
     }
@@ -275,31 +287,31 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (month < MIN_MONTH || month > MAX_MONTH)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Month value " + std::to_string(month) + " is out of range (1-12)");
+        test.messages.push_back("Month value " + std::to_string(month) + " is out of range (1-12).");
     }
 
     if (day < MIN_DAY || day > MAX_DAY)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Day value " + std::to_string(day) + " is out of range (1-31)");
+        test.messages.push_back("Day value " + std::to_string(day) + " is out of range (1-31).");
     }
 
     if (hour > MAX_HOUR)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Hour value " + std::to_string(hour) + " is out of range (0-23)");
+        test.messages.push_back("Hour value " + std::to_string(hour) + " is out of range (0-23).");
     }
 
     if (minute > MAX_MINUTE)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Minute value " + std::to_string(minute) + " is out of range (0-59)");
+        test.messages.push_back("Minute value " + std::to_string(minute) + " is out of range (0-59).");
     }
 
     if (second > MAX_SECOND)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Second value " + std::to_string(second) + " is out of range (0-59)");
+        test.messages.push_back("Second value " + std::to_string(second) + " is out of range (0-59).");
     }
 
     // Check if the generation date is in the past and not unreasonably old
@@ -355,13 +367,13 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 #ifdef _WIN32
                 if (gmtime_s(&current_tm, &current_time) != 0)
                 {
-                    test.messages.push_back("Generation date and time \"" + dt + "\" is in the future");
+                    test.messages.push_back("Generation date and time \"" + dt + "\" is in the future.");
                 }
                 else
 #else
                 if (gmtime_r(&current_time, &current_tm) == nullptr)
                 {
-                    test.messages.push_back("Generation date and time \"" + dt + "\" is in the future");
+                    test.messages.push_back("Generation date and time \"" + dt + "\" is in the future.");
                 }
                 else
 #endif
@@ -369,7 +381,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
                     std::ostringstream current_time_str;
                     current_time_str << std::put_time(&current_tm, "%Y-%m-%dT%H:%M:%SZ");
                     test.messages.push_back("Generation date and time \"" + dt +
-                                            "\" is in the future (current time: " + current_time_str.str() + ")");
+                                            "\" is in the future (current time: " + current_time_str.str() + ").");
                 }
             }
 
@@ -411,7 +423,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     if (!fmi_version.has_value())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("FMI version attribute is missing");
+        test.messages.push_back("FMI version attribute is missing.");
         cert.printTestResult(test);
         return;
     }
@@ -419,7 +431,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     if (fmi_version->empty())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("FMI version attribute is empty");
+        test.messages.push_back("FMI version attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -433,7 +445,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
         test.status = TestStatus::FAIL;
         test.messages.push_back(
             "FMI version \"" + *fmi_version +
-            "\" does not match expected format (X.Y or X.Y-suffix, patch versions should be omitted)");
+            "\" does not match expected format (X.Y or X.Y-suffix, patch versions should be omitted).");
     }
 
     cert.printTestResult(test);
@@ -470,7 +482,7 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
     {
         test.status = TestStatus::WARNING;
         test.messages.push_back("Model version \"" + ver +
-                                "\" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH)");
+                                "\" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).");
     }
 
     cert.printTestResult(test);
@@ -493,7 +505,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     if (cr.empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright attribute is empty");
+        test.messages.push_back("Copyright attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -533,7 +545,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     if (!has_copyright_indicator)
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright notice should begin with ©, 'Copyright', or 'Copr.'");
+        test.messages.push_back("Copyright notice should begin with ©, 'Copyright', or 'Copr.'.");
     }
 
     // Check for a year (4 digits) anywhere in the notice
@@ -543,7 +555,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     if (!std::regex_search(cr, year_match, year_pattern))
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright notice should include the year of publication (e.g., 2026)");
+        test.messages.push_back("Copyright notice should include the year of publication (e.g., 2026).");
     }
 
     // Check if there's some text that could be the copyright holder name
@@ -560,7 +572,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     if (name_check.empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright notice should include the name of the copyright holder");
+        test.messages.push_back("Copyright notice should include the name of the copyright holder.");
     }
 
     // Provide an informational note about proper format if warnings were issued
@@ -653,7 +665,7 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Log category \"" + *name + "\" (line " + std::to_string(node->line) +
-                                        ") is defined multiple times");
+                                        ") is defined multiple times.");
             }
             seen_names.insert(*name);
         }
@@ -687,7 +699,7 @@ void ModelDescriptionCheckerBase::checkVendorAnnotations(xmlDocPtr doc, Certific
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Vendor annotation tool \"" + *name + "\" (line " + std::to_string(node->line) +
-                                        ") is defined multiple times");
+                                        ") is defined multiple times.");
             }
             seen_names.insert(*name);
         }
@@ -705,7 +717,7 @@ void ModelDescriptionCheckerBase::checkNumberOfImplementedInterfaces(
     if (!model_identifiers.empty())
         test.status = TestStatus::PASS;
     else
-        test.messages.push_back("At least one interface must be implemented");
+        test.messages.push_back("At least one interface must be implemented.");
 
     cert.printTestResult(test);
 }
@@ -718,7 +730,7 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
     if (model_identifier.empty())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Model identifier attribute is empty");
+        test.messages.push_back("Model identifier attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -735,13 +747,13 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
         char first_char = model_identifier[0];
         if (first_char >= '0' && first_char <= '9')
         {
-            test.messages.push_back("Model identifier \"" + model_identifier + "\" cannot start with a digit");
+            test.messages.push_back("Model identifier \"" + model_identifier + "\" cannot start with a digit.");
         }
         else
         {
             test.messages.push_back(
                 "Model identifier \"" + model_identifier +
-                "\" contains invalid characters (only letters, digits, and underscores are allowed)");
+                "\" contains invalid characters (only letters, digits, and underscores are allowed).");
         }
     }
 
@@ -755,14 +767,14 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
         test.messages.push_back("Model identifier \"" + model_identifier + "\" is too long (" +
                                 std::to_string(model_identifier.length()) + " characters). Maximum length is " +
                                 std::to_string(ABSOLUTE_MAX_LENGTH) +
-                                " characters to ensure cross-platform compatibility");
+                                    " characters to ensure cross-platform compatibility.");
     }
     else if (model_identifier.length() > RECOMMENDED_MAX_LENGTH)
     {
         test.status = TestStatus::WARNING;
         test.messages.push_back("Model identifier \"" + model_identifier + "\" is longer than recommended (" +
                                 std::to_string(model_identifier.length()) + " characters). Consider keeping it under " +
-                                std::to_string(RECOMMENDED_MAX_LENGTH) + " characters for better portability");
+                                    std::to_string(RECOMMENDED_MAX_LENGTH) + " characters for better portability.");
     }
 
     cert.printTestResult(test);
@@ -928,14 +940,14 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             if (*start_time < 0.0 && !std::isnan(*start_time) && !std::isinf(*start_time))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("startTime (" + std::to_string(*start_time) + ") must be non-negative");
+                test.messages.push_back("startTime (" + std::to_string(*start_time) + ") must be non-negative.");
             }
         }
         catch (const std::exception&)
         {
             // Schema should have caught this, but just in case
             test.status = TestStatus::FAIL;
-            test.messages.push_back("startTime \"" + *start_time_str + "\" is not a valid number");
+            test.messages.push_back("startTime \"" + *start_time_str + "\" is not a valid number.");
         }
     }
 
@@ -951,13 +963,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             if (*stop_time < 0.0 && !std::isnan(*stop_time) && !std::isinf(*stop_time))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("stopTime (" + std::to_string(*stop_time) + ") must be non-negative");
+                test.messages.push_back("stopTime (" + std::to_string(*stop_time) + ") must be non-negative.");
             }
         }
         catch (const std::exception&)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("stopTime \"" + *stop_time_str + "\" is not a valid number");
+            test.messages.push_back("stopTime \"" + *stop_time_str + "\" is not a valid number.");
         }
     }
 
@@ -969,7 +981,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("stopTime (" + std::to_string(*stop_time) + ") must be greater than startTime (" +
-                                    std::to_string(*start_time) + ")");
+                                    std::to_string(*start_time) + ").");
         }
     }
 
@@ -985,13 +997,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             if (*tolerance <= 0.0 && !std::isnan(*tolerance) && !std::isinf(*tolerance))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("tolerance (" + std::to_string(*tolerance) + ") must be greater than 0");
+                test.messages.push_back("tolerance (" + std::to_string(*tolerance) + ") must be greater than 0.");
             }
         }
         catch (const std::exception&)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("tolerance \"" + *tolerance_str + "\" is not a valid number");
+            test.messages.push_back("tolerance \"" + *tolerance_str + "\" is not a valid number.");
         }
     }
 
@@ -1007,13 +1019,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             if (*step_size <= 0.0 && !std::isnan(*step_size) && !std::isinf(*step_size))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("stepSize (" + std::to_string(*step_size) + ") must be greater than 0");
+                test.messages.push_back("stepSize (" + std::to_string(*step_size) + ") must be greater than 0.");
             }
         }
         catch (const std::exception&)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("stepSize \"" + *step_size_str + "\" is not a valid number");
+            test.messages.push_back("stepSize \"" + *step_size_str + "\" is not a valid number.");
         }
     }
 
@@ -1058,7 +1070,7 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Type definition \"" + *name_opt + "\" (line " +
-                                        std::to_string(type_node->line) + ") is defined multiple times");
+                                        std::to_string(type_node->line) + ") is defined multiple times.");
             }
             seen_names.insert(*name_opt);
         }
@@ -1088,7 +1100,7 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Type definition \"" + name + "\" (line " +
                                                     std::to_string(child->line) + "): max (" + *max_str +
-                                                    ") must be >= min (" + *min_str + ")");
+                                                    ") must be >= min (" + *min_str + ").");
                         }
                     }
                     else if (elem_name == "Integer" || elem_name == "Enumeration")
@@ -1100,7 +1112,7 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Type definition \"" + name + "\" (line " +
                                                     std::to_string(child->line) + "): max (" + *max_str +
-                                                    ") must be >= min (" + *min_str + ")");
+                                                    ") must be >= min (" + *min_str + ").");
                         }
                     }
                 }
@@ -1108,7 +1120,7 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("Type definition \"" + name + "\" (line " + std::to_string(child->line) +
-                                            "): Failed to parse min/max values");
+                                            "): Failed to parse min/max values.");
                 }
             }
 
@@ -1138,7 +1150,7 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back("Enumeration type \"" + name + "\" (line " +
                                                         std::to_string(child->line) + ") has multiple items named \"" +
-                                                        *item_name + "\"");
+                                                        *item_name + "\".");
                             }
                             item_names.insert(*item_name);
                         }
@@ -1169,7 +1181,7 @@ void ModelDescriptionCheckerBase::checkTypeDefinitions(xmlDocPtr doc, Certificat
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("Enumeration type \"" + name + "\" (line " + std::to_string(child->line) +
-                                            ") must have at least one Item");
+                                            ") must have at least one Item.");
                 }
             }
         }
@@ -1198,7 +1210,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") references undefined type \"" + *var.declared_type + "\"");
+                                        ") references undefined type \"" + *var.declared_type + "\".");
             }
             else
             {
@@ -1221,7 +1233,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") references undefined unit \"" + *unit_to_check + "\"");
+                                        ") references undefined unit \"" + *unit_to_check + "\".");
             }
             else
             {
@@ -1238,7 +1250,33 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("DisplayUnit \"" + *var.display_unit + "\" of variable \"" + var.name +
                                                 "\" (line " + std::to_string(var.sourceline) +
-                                                ") is not defined for unit \"" + *unit_to_check + "\"");
+                                                ") is not defined for unit \"" + *unit_to_check + "\".");
+                    }
+                }
+
+                // Check relativeQuantity vs offset
+                if (var.relative_quantity)
+                {
+                    const auto& unit_def = units.at(*unit_to_check);
+                    if (unit_def.offset.has_value())
+                    {
+                        try
+                        {
+                            double offset_val = std::stod(*unit_def.offset);
+                            if (offset_val != 0.0)
+                            {
+                                if (test.status == TestStatus::PASS)
+                                    test.status = TestStatus::WARNING;
+                                test.messages.push_back("Variable \"" + var.name + "\" (line " +
+                                                        std::to_string(var.sourceline) +
+                                                        ") has relativeQuantity=\"true\" but is associated with unit \"" +
+                                                        *unit_to_check + "\" which has a non-zero offset (" +
+                                                        *unit_def.offset + ").");
+                            }
+                        }
+                        catch (...)
+                        {
+                        }
                     }
                 }
             }
@@ -1255,7 +1293,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Type definition \"" + name + "\" (line " +
                                         std::to_string(type_def.sourceline) + ") references undefined unit \"" +
-                                        *type_def.unit + "\"");
+                                        *type_def.unit + "\".");
             }
             else
             {
@@ -1271,7 +1309,33 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("DisplayUnit \"" + *type_def.display_unit + "\" of type definition \"" +
                                                 name + "\" (line " + std::to_string(type_def.sourceline) +
-                                                ") is not defined for unit \"" + *type_def.unit + "\"");
+                                                ") is not defined for unit \"" + *type_def.unit + "\".");
+                    }
+                }
+
+                // Check relativeQuantity vs offset
+                if (type_def.relative_quantity)
+                {
+                    const auto& unit_def = units.at(*type_def.unit);
+                    if (unit_def.offset.has_value())
+                    {
+                        try
+                        {
+                            double offset_val = std::stod(*unit_def.offset);
+                            if (offset_val != 0.0)
+                            {
+                                if (test.status == TestStatus::PASS)
+                                    test.status = TestStatus::WARNING;
+                                test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                        std::to_string(type_def.sourceline) +
+                                                        ") has relativeQuantity=\"true\" but references unit \"" +
+                                                        *type_def.unit + "\" which has a non-zero offset (" +
+                                                        *unit_def.offset + ").");
+                            }
+                        }
+                        catch (...)
+                        {
+                        }
                     }
                 }
             }
@@ -1294,7 +1358,7 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
             if (test.status == TestStatus::PASS)
                 test.status = TestStatus::WARNING;
             test.messages.push_back("Type definition \"" + name + "\" (line " + std::to_string(type_def.sourceline) +
-                                    ") is unused");
+                                    ") is unused.");
         }
     }
 
@@ -1304,7 +1368,7 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
         {
             if (test.status == TestStatus::PASS)
                 test.status = TestStatus::WARNING;
-            test.messages.push_back("Unit \"" + name + "\" is unused");
+            test.messages.push_back("Unit \"" + name + "\" is unused.");
         }
     }
 
@@ -1346,7 +1410,7 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
                 std::string ref_type = is_fmi2 ? "index" : "value reference";
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                         ") has derivative attribute referencing " + ref_type + " " +
-                                        std::to_string(ref) + " which does not exist");
+                                        std::to_string(ref) + " which does not exist.");
             }
             else
             {
@@ -1360,7 +1424,7 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
                     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                             ") is derivative of \"" + referenced_var->name +
                                             "\" which has variability \"" + referenced_var->variability +
-                                            "\" (expected \"continuous\")");
+                                            "\" (expected \"continuous\").");
                 }
             }
         }
@@ -1412,7 +1476,7 @@ void ModelDescriptionCheckerBase::checkDerivativeDimensions(const std::vector<Va
                                         ") is derivative of \"" + state_var->name + "\" (line " +
                                         std::to_string(state_var->sourceline) + ") but has different dimensions. " +
                                         "Derivative dimensions: " + derivative_dims + ", " +
-                                        "State dimensions: " + state_dims);
+                                        "State dimensions: " + state_dims + ".");
             }
         }
     }

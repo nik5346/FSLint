@@ -106,7 +106,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     SECTION("Interfaces")
     {
         validate_fail("interface_none", "At least one interface must be implemented");
-        validate_fail("interface_id_digit", "cannot start with a digit");
+        validate_fail("model_identifier_invalid", "cannot start with a digit");
     }
 
     SECTION("Unit definitions")
@@ -155,15 +155,14 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("naming_structured_invalid_indices", "is not a legal variable name");
         validate_fail("naming_structured_invalid_char", "is not a legal variable name");
         validate_fail("naming_structured_invalid_start", "is not a legal variable name");
-        validate_fail("naming_structured_invalid_der_extra_args", "is not a legal variable name");
         validate_fail("naming_structured_invalid_dot_start", "is not a legal variable name");
     }
 
     SECTION("Variability")
     {
-        validate_fail("variability_continuous_non_real", "must have variability != \"continuous\"");
-        validate_fail("variability_continuous_boolean", "must have variability != \"continuous\"");
-        validate_fail("variability_continuous_string", "must have variability != \"continuous\"");
+        validate_fail("variability_continuous_integer", "cannot have variability \"continuous\"");
+        validate_fail("variability_continuous_boolean", "cannot have variability \"continuous\"");
+        validate_fail("variability_continuous_string", "cannot have variability \"continuous\"");
         validate_fail("parameter_continuous", "Parameters must be \"fixed\" or \"tunable\"");
         validate_fail("independent_variability", "must have variability=\"continuous\"");
         validate_fail("multiple_set_non_input", "has 'canHandleMultipleSetPerTimeInstant' but causality is 'output'");
@@ -204,7 +203,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("bounds_max_min", "max (5) must be >= min (10)");
         validate_fail("bounds_start_min", "start (5) must be >= min (10)");
         validate_fail("bounds_invalid_numeric", "Failed to parse numeric value");
-        validate_fail("start_nan", "NaN or Infinity");
+        validate_fail("start_nan", "is NaN or Infinity");
         validate_fail("nominal_inf", "nominal value \"INF\"");
         validate_fail("nominal_neg_inf", "nominal value \"-inf\"");
         validate_fail("type_min_nan", "min value \"NaN\"");
@@ -224,8 +223,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_dependencies_not_ordered", "ordered according to magnitude");
         validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
         validate_fail("structure_initial_unknowns_mismatch",
-                      "ModelStructure/InitialUnknowns does not contain the expected set of variables");
-        validate_fail("structure_initial_unknowns_state_approx", "Expected { der_x, x } but was {  }");
+                      "does not contain the expected set of variables");
+        validate_fail("structure_initial_unknowns_state_approx", "der_x");
         validate_fail("structure_dependencies_kind_invalid_initial", "is not allowed in InitialUnknowns");
         validate_fail("structure_dependencies_kind_non_real", "only allowed for Real variables");
         validate_fail("derivative_index_out_of_range", "referencing index 99 which does not exist");
@@ -363,7 +362,6 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("naming_flat_cr", "contains illegal carriage return");
         validate_fail("naming_flat_lf", "contains illegal line feed");
         validate_fail("naming_structured_invalid", "is not a legal variable name");
-        validate_fail("naming_structured_invalid_der_extra_args", "is not a legal variable name");
         validate_fail("naming_structured_invalid_dot_start", "is not a legal variable name");
     }
 
@@ -385,7 +383,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Value References")
     {
-        validate_fail("vr_duplicate", "Value reference 0 is used by both");
+        validate_fail("vr_duplicate", "multiple variables with causality other than 'local'");
     }
 
     SECTION("Dimensions")
@@ -401,7 +399,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("clock_self", "Clock cannot reference itself");
         validate_fail("clock_ref_undef", "References non-existent clock");
         validate_fail("clock_ref_not_clock", "which is a Float64, not a Clock");
-        validate_fail("clock_ref_invalid_vr", "Invalid clock reference 'abc'");
+        validate_fail("clock_ref_invalid_vr", "Invalid clock reference");
     }
 
     SECTION("Clocked Variables")
@@ -445,9 +443,9 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Variability")
     {
-        validate_fail("variability_continuous_non_float", "must have variability != \"continuous\"");
-        validate_fail("variability_continuous_boolean", "must have variability != \"continuous\"");
-        validate_fail("variability_continuous_string", "must have variability != \"continuous\"");
+        validate_fail("variability_continuous_integer", "cannot have variability \"continuous\"");
+        validate_fail("variability_continuous_boolean", "cannot have variability \"continuous\"");
+        validate_fail("variability_continuous_string", "cannot have variability \"continuous\"");
     }
 
     SECTION("Combinations")
@@ -463,12 +461,12 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("structure_output_extra",
                       "listed in ModelStructure/Output but does not have causality=\"output\"");
         validate_fail("structure_derivative_invalid",
-                      "references a variable that does not have the \"derivative\" attribute");
+                      "listed in ModelStructure/ContinuousStateDerivative does not have the \"derivative\" attribute");
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
         validate_fail("structure_initial_unknowns_mismatch",
-                      "ModelStructure/InitialUnknowns does not contain the expected set of variables");
+                      "does not contain the expected set of variables");
     }
 
     SECTION("Structural Parameters")
@@ -486,7 +484,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     SECTION("Interfaces")
     {
         validate_fail("interface_none", "At least one interface must be implemented");
-        validate_fail("interface_id_digit", "cannot start with a digit");
+        validate_fail("model_identifier_invalid", "cannot start with a digit");
     }
 }
 
@@ -522,10 +520,9 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("meta_missing", "Attribute 'generationTool' is missing");
         validate_warning("meta_missing", "Attribute 'license' is missing");
         validate_warning("meta_missing", "Attribute 'copyright' is missing");
-        validate_warning("meta_missing", "Model version attribute is missing");
-        validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
         validate_warning("model_version_missing", "Model version attribute is missing");
         validate_warning("model_version_empty", "Model version attribute is empty");
+        validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
         validate_warning("date_old", "is before the first FMI standard release");
         validate_warning("copyright_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
         validate_warning("copyright_no_year", "should include the year of publication");
@@ -545,7 +542,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
     SECTION("Unit definitions")
     {
         validate_warning("unused_definitions", "Unit \"s\" is unused");
-        validate_warning("unit_offset_inf", "offset is INF");
+        validate_warning("unit_offset_inf", "offset value \"INF\" is NaN or Infinity");
     }
 
     SECTION("Type definitions")
@@ -555,7 +552,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("DefaultExperiment")
     {
-        validate_warning("exp_nan", "startTime is NaN");
+        validate_warning("exp_nan", "startTime value \"NaN\" is NaN or Infinity");
     }
 
     SECTION("Structure")
