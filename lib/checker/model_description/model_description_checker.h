@@ -207,8 +207,8 @@ class ModelDescriptionCheckerBase : public Checker
     std::string formatDimensions(const Variable& var);
 
   private:
-    std::set<std::string> used_type_definitions;
-    std::set<std::string> used_units;
+    std::set<std::string> _used_type_definitions;
+    std::set<std::string> _used_units;
 };
 
 template <typename T>

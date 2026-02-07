@@ -1239,8 +1239,8 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
 {
     TestResult test{"Type and Unit References", TestStatus::PASS, {}};
 
-    used_type_definitions.clear();
-    used_units.clear();
+    _used_type_definitions.clear();
+    _used_units.clear();
 
     // Check Variable references
     for (const auto& var : variables)
@@ -1256,7 +1256,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             }
             else
             {
-                used_type_definitions.insert(*var.declared_type);
+                _used_type_definitions.insert(*var.declared_type);
             }
         }
 
@@ -1281,7 +1281,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             {
                 // Only mark as used if it was directly on the variable
                 if (var.unit.has_value())
-                    used_units.insert(*var.unit);
+                    _used_units.insert(*var.unit);
 
                 // Check displayUnit if it exists on the variable
                 if (var.display_unit.has_value())
@@ -1338,8 +1338,8 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             }
             else
             {
-                if (used_type_definitions.contains(name))
-                    used_units.insert(*type_def.unit);
+                if (_used_type_definitions.contains(name))
+                    _used_units.insert(*type_def.unit);
 
                 // Check displayUnit if it exists on the type definition
                 if (type_def.display_unit.has_value())
@@ -1393,7 +1393,7 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
 
     for (const auto& [name, type_def] : type_definitions)
     {
-        if (!used_type_definitions.contains(name))
+        if (!_used_type_definitions.contains(name))
         {
             if (test.status == TestStatus::PASS)
                 test.status = TestStatus::WARNING;
@@ -1404,7 +1404,7 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
 
     for (const auto& [name, unit_def] : units)
     {
-        if (!used_units.contains(name))
+        if (!_used_units.contains(name))
         {
             if (test.status == TestStatus::PASS)
                 test.status = TestStatus::WARNING;
