@@ -7,6 +7,8 @@
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
-    <Outputs><Unknown index="1"/></Outputs>
+    <Outputs>
+      <Unknown index="1"/>
+    </Outputs>
   </ModelStructure>
 </fmiModelDescription>

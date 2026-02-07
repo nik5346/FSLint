@@ -2,8 +2,12 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <ModelExchange modelIdentifier="Test"/>
   <ModelVariables>
-    <ScalarVariable name="v1" valueReference="1" causality="output"><Real/></ScalarVariable>
-    <ScalarVariable name="v2" valueReference="2" causality="output"><Real/></ScalarVariable>
+    <ScalarVariable name="v1" valueReference="1" causality="output">
+      <Real/>
+    </ScalarVariable>
+    <ScalarVariable name="v2" valueReference="2" causality="output">
+      <Real/>
+    </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
     <Outputs>

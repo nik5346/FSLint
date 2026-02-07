@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="test" guid="{12345678-1234-1234-1234-123456781234}">
-    <ModelExchange modelIdentifier="test"/>
-    <ModelVariables>
-        <ScalarVariable name="x" valueReference="1" causality="local" initial="approx">
-            <Real/>
-        </ScalarVariable>
-        <ScalarVariable name="der_x" valueReference="2" causality="local">
-            <Real derivative="1"/>
-        </ScalarVariable>
-    </ModelVariables>
-    <ModelStructure>
-        <Derivatives>
-            <Unknown index="2"/>
-        </Derivatives>
-        <InitialUnknowns>
-            <!-- Missing x and der_x (both should be here as der_x is also calculated by default) -->
-        </InitialUnknowns>
-    </ModelStructure>
+  <ModelExchange modelIdentifier="test"/>
+  <ModelVariables>
+    <ScalarVariable name="x" valueReference="1" causality="local" initial="approx">
+      <Real/>
+    </ScalarVariable>
+    <ScalarVariable name="der_x" valueReference="2" causality="local">
+      <Real derivative="1"/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Derivatives>
+      <Unknown index="2"/>
+    </Derivatives>
+    <InitialUnknowns>
+      <!-- Missing x and der_x (both should be here as der_x is also calculated by default) -->
+    </InitialUnknowns>
+  </ModelStructure>
 </fmiModelDescription>

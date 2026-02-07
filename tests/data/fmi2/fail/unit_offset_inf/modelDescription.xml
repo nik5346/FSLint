@@ -3,12 +3,12 @@
   <ModelExchange modelIdentifier="Test"/>
   <UnitDefinitions>
     <Unit name="m">
-      <BaseUnit factor="NaN"/>
+      <BaseUnit offset="INF"/>
     </Unit>
   </UnitDefinitions>
   <ModelVariables>
-    <ScalarVariable name="v" valueReference="1" causality="output" variability="continuous">
-      <Real/>
+    <ScalarVariable name="v" valueReference="1" causality="output">
+      <Real unit="m"/>
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>

@@ -344,38 +344,6 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
         // Get effective bounds (considering type definitions)
         EffectiveBounds bounds = getEffectiveBounds(var, type_definitions);
 
-        // First validate type definition's own min/max consistency
-        if (var.declared_type)
-        {
-            auto it = type_definitions.find(*var.declared_type);
-            if (it != type_definitions.end())
-            {
-                const auto& type_def = it->second;
-                if (type_def.min && type_def.max)
-                {
-                    try
-                    {
-                        double type_min = std::stod(*type_def.min);
-                        double type_max = std::stod(*type_def.max);
-
-                        if (type_max < type_min)
-                        {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
-                                                    std::to_string(type_def.sourceline) + "): max (" + *type_def.max +
-                                                    ") must be >= min (" + *type_def.min + ").");
-                        }
-                    }
-                    catch (...)
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
-                                                std::to_string(type_def.sourceline) +
-                                                "): Failed to parse min/max values.");
-                    }
-                }
-            }
-        }
 
         // Validate variable's bounds using the appropriate type
         if (var.type == "Float32")
@@ -1527,8 +1495,8 @@ void Fmi3ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResu
     if (test.status == TestStatus::PASS)
         test.status = TestStatus::WARNING;
 
-    test.messages.push_back(attr_name + " value \"" + val +
-                            "\" is NaN or Infinity. While allowed in FMI 3.0, it is unusual in DefaultExperiment.");
+    test.messages.push_back(attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
+                            ". While allowed in FMI 3.0, it is unusual in DefaultExperiment.");
 }
 
 void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
@@ -1539,7 +1507,8 @@ void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, con
         test.status = TestStatus::WARNING;
 
     test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
-                            "\" is NaN or Infinity. While allowed in FMI 3.0, it is unusual.");
+                            "\" is " + getSpecialFloatDescription(val) +
+                            ". While allowed in FMI 3.0, it is unusual.");
 }
 
 void Fmi3ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& /*test*/,

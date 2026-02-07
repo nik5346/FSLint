@@ -14,9 +14,6 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
     [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
 {
-    // Run FMI2-specific model structure checks
-    checkModelStructure(doc, variables, cert);
-
     // Enumeration variables must have a declaredType
     checkEnumerationVariables(variables, cert);
 
@@ -28,6 +25,9 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
 
     // Check reinit and canHandleMultipleSet
     checkFmi2Attributes(doc, variables, cert);
+
+    // Run FMI2-specific model structure checks (should be last)
+    checkModelStructure(doc, variables, cert);
 }
 
 void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert)
@@ -664,51 +664,6 @@ void Fmi2ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
         if (var.type == "Real" && var.nominal && isSpecialFloat(*var.nominal))
             validateVariableSpecialFloat(test, var, *var.nominal, "nominal");
 
-        // First validate type definition's own min/max/nominal consistency
-        if (var.declared_type)
-        {
-            auto it = type_definitions.find(*var.declared_type);
-            if (it != type_definitions.end())
-            {
-                const auto& type_def = it->second;
-
-                if (type_def.type == "Real" && type_def.nominal && isSpecialFloat(*type_def.nominal))
-                    validateTypeDefinitionSpecialFloat(test, type_def, *type_def.nominal, "nominal");
-
-                if (type_def.type == "Real")
-                {
-                    if (type_def.min && isSpecialFloat(*type_def.min))
-                        validateTypeDefinitionSpecialFloat(test, type_def, *type_def.min, "min");
-                    if (type_def.max && isSpecialFloat(*type_def.max))
-                        validateTypeDefinitionSpecialFloat(test, type_def, *type_def.max, "max");
-                }
-
-                if (type_def.min && type_def.max)
-                {
-                    try
-                    {
-                        double type_min = std::stod(*type_def.min);
-                        double type_max = std::stod(*type_def.max);
-
-                        if (type_max < type_min)
-                        {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
-                                                    std::to_string(type_def.sourceline) + "): max (" + *type_def.max +
-                                                    ") must be >= min (" + *type_def.min + ").");
-                        }
-                    }
-                    catch (...)
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
-                                                std::to_string(type_def.sourceline) +
-                                                "): Failed to parse min/max values.");
-                    }
-                }
-            }
-        }
-
         // Validate variable's bounds using the appropriate type
         if (var.type == "Real")
             validateTypeBounds<double>(var, bounds.min, bounds.max, test);
@@ -1304,14 +1259,16 @@ void Fmi2ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test,
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): " +
-                            attr_name + " value \"" + val + "\" is NaN or Infinity, which is not allowed in FMI 2.0.");
+                            attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
+                            ", which is not allowed in FMI 2.0.");
 }
 
 void Fmi2ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
                                                                         const std::string& attr_name)
 {
     test.status = TestStatus::FAIL;
-    test.messages.push_back(attr_name + " value \"" + val + "\" is NaN or Infinity, which is not allowed in FMI 2.0.");
+    test.messages.push_back(attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
+                            ", which is not allowed in FMI 2.0.");
 }
 
 void Fmi2ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
@@ -1320,7 +1277,7 @@ void Fmi2ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, con
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
-                            "\" is NaN or Infinity, which is not allowed in FMI 2.0.");
+                            "\" is " + getSpecialFloatDescription(val) + ", which is not allowed in FMI 2.0.");
 }
 
 void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
@@ -1329,8 +1286,8 @@ void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult&
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back("Type definition \"" + type_def.name + "\" (line " + std::to_string(type_def.sourceline) +
-                            "): " + attr_name + " value \"" + val +
-                            "\" is NaN or Infinity, which is not allowed in FMI 2.0.");
+                            "): " + attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
+                            ", which is not allowed in FMI 2.0.");
 }
 
 void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)
