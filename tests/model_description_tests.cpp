@@ -225,8 +225,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_initial_unknowns_not_ordered", "ordered according to their ScalarVariable index");
         validate_fail("structure_dependencies_not_ordered", "ordered according to magnitude");
         validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
-        validate_fail("structure_initial_unknowns_mismatch",
-                      "does not contain the expected set of variables");
+        validate_fail("structure_initial_unknowns_mismatch", "does not contain the expected set of variables");
         validate_fail("structure_initial_unknowns_state_approx", "der_x");
         validate_fail("structure_dependencies_kind_invalid_initial", "is not allowed in InitialUnknowns");
         validate_fail("structure_dependencies_kind_non_real", "only allowed for Real variables");
@@ -468,8 +467,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
-        validate_fail("structure_initial_unknowns_mismatch",
-                      "does not contain the expected set of variables");
+        validate_fail("structure_initial_unknowns_mismatch", "does not contain the expected set of variables");
     }
 
     SECTION("Structural Parameters")

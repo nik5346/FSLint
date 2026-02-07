@@ -192,9 +192,10 @@ void Fmi3ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
         if (var.type != "Float32" && var.type != "Float64" && var.variability == "continuous")
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back(
-                "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + ") is of type " + var.type +
-                " and cannot have variability \"continuous\". Only variables of type Float32 or Float64 can be continuous.");
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") is of type " + var.type +
+                                    " and cannot have variability \"continuous\". Only variables of type Float32 or "
+                                    "Float64 can be continuous.");
         }
     }
 
@@ -344,7 +345,6 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
         // Get effective bounds (considering type definitions)
         EffectiveBounds bounds = getEffectiveBounds(var, type_definitions);
 
-
         // Validate variable's bounds using the appropriate type
         if (var.type == "Float32")
             validateTypeBounds<float>(var, bounds.min, bounds.max, test);
@@ -430,10 +430,8 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     // Group variables by valueReference
     std::map<uint32_t, std::vector<const Variable*>> vr_to_vars;
     for (const auto& var : variables)
-    {
         if (var.value_reference.has_value())
             vr_to_vars[*var.value_reference].push_back(&var);
-    }
 
     for (const auto& [vr, alias_set] : vr_to_vars)
     {
@@ -460,9 +458,8 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same unit. \"" +
-                                        var->name + "\" has unit \"" + var->unit.value_or("(none)") +
-                                        "\" but \"" + first->name + "\" has unit \"" +
-                                        first->unit.value_or("(none)") + "\".");
+                                        var->name + "\" has unit \"" + var->unit.value_or("(none)") + "\" but \"" +
+                                        first->name + "\" has unit \"" + first->unit.value_or("(none)") + "\".");
             }
             if (var->display_unit != first->display_unit)
             {
@@ -485,10 +482,9 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             if (var->variability != first->variability)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
-                                        " must have the same variability. \"" + var->name + "\" is " +
-                                        var->variability + " but \"" + first->name + "\" is " + first->variability +
-                                        ".");
+                test.messages.push_back(
+                    "Variables sharing VR " + std::to_string(vr) + " must have the same variability. \"" + var->name +
+                    "\" is " + var->variability + " but \"" + first->name + "\" is " + first->variability + ".");
             }
 
             // 5. Same dimensions
@@ -504,10 +500,8 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         // 5. Causality: At most one variable in an alias set can be non-local.
         std::vector<const Variable*> non_local;
         for (const auto* v : alias_set)
-        {
             if (v->causality != "local")
                 non_local.push_back(v);
-        }
 
         if (non_local.size() > 1)
         {
@@ -516,7 +510,8 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                               " has multiple variables with causality other than 'local': ";
             for (size_t i = 0; i < non_local.size(); ++i)
                 msg += (i > 0 ? ", " : "") + non_local[i]->name;
-            msg += ". At most one variable in an alias set can be non-local (parameter, input, output, or independent).";
+            msg +=
+                ". At most one variable in an alias set can be non-local (parameter, input, output, or independent).";
             test.messages.push_back(msg);
         }
 
@@ -528,10 +523,10 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                 if (var->start != first->start)
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Aliased constant variables \"" + var->name + "\" and \"" +
-                                            first->name + "\" (sharing VR " + std::to_string(vr) +
-                                            ") have different start values ('" + var->start.value_or("") +
-                                            "' vs '" + first->start.value_or("") + "').");
+                    test.messages.push_back("Aliased constant variables \"" + var->name + "\" and \"" + first->name +
+                                            "\" (sharing VR " + std::to_string(vr) +
+                                            ") have different start values ('" + var->start.value_or("") + "' vs '" +
+                                            first->start.value_or("") + "').");
                 }
             }
         }
@@ -549,7 +544,8 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                               " has multiple non-constant variables with a start attribute: ";
             for (size_t i = 0; i < non_constant_with_start.size(); ++i)
                 msg += (i > 0 ? ", " : "") + non_constant_with_start[i]->name;
-            msg += ". At most one variable in an alias set (where at least one is not constant) can have a start attribute.";
+            msg += ". At most one variable in an alias set (where at least one is not constant) can have a start "
+                   "attribute.";
             test.messages.push_back(msg);
         }
     }
@@ -574,7 +570,8 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Structural parameter \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) + ") must be of type UInt64, found " + var.type + ".");
+                                        std::to_string(var.sourceline) + ") must be of type UInt64, found " + var.type +
+                                        ".");
             }
         }
     }
@@ -1161,7 +1158,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                                     "), Dimension " + std::to_string(i + 1) + " (line " +
                                     std::to_string(dim.sourceline) + ") references structural parameter \"" + sp->name +
                                     "\" (line " + std::to_string(sp->sourceline) +
-                                        ") which has invalid start value (not a valid UInt64).");
+                                    ") which has invalid start value (not a valid UInt64).");
                             }
                         }
                         else
@@ -1471,7 +1468,8 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    "): Parameters (causality='" + var.causality + "') cannot have a clocks attribute.");
+                                    "): Parameters (causality='" + var.causality +
+                                    "') cannot have a clocks attribute.");
         }
     }
 
@@ -1507,8 +1505,7 @@ void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, con
         test.status = TestStatus::WARNING;
 
     test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
-                            "\" is " + getSpecialFloatDescription(val) +
-                            ". While allowed in FMI 3.0, it is unusual.");
+                            "\" is " + getSpecialFloatDescription(val) + ". While allowed in FMI 3.0, it is unusual.");
 }
 
 void Fmi3ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& /*test*/,
