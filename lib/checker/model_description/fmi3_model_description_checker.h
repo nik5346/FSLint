@@ -25,6 +25,8 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                 Certificate& cert) override;
 
     void checkUnits(xmlDocPtr doc, Certificate& cert) override;
+    void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) override;
+    void checkAnnotations(xmlDocPtr doc, Certificate& cert) override;
     void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
 
     void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
@@ -57,6 +59,10 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkClockReferences(const std::vector<Variable>& variables, Certificate& cert);
     void checkClockedVariables(const std::vector<Variable>& variables, Certificate& cert);
     void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
+
+    void checkDerivativeDimensions(const std::vector<Variable>& variables, Certificate& cert);
+    bool compareDimensions(const Variable& var1, const Variable& var2);
+    std::string formatDimensions(const Variable& var);
 
     std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) override;
     std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) override;
