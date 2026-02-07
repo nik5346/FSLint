@@ -7,6 +7,6 @@
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
-    <Outputs></Outputs>
+    <Outputs/>
   </ModelStructure>
 </fmiModelDescription>

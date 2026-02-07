@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
-  <ModelExchange modelIdentifier="Test"/>
+  <ModelExchange modelIdentifier="This_is_a_very_long_model_identifier_that_exceeds_two_hundred_characters_to_trigger_a_validation_failure_in_the_fslint_tool_it_is_important_to_ensure_that_the_identifier_is_not_excessively_long_to_maintain_compatibility_with_all_tools_and_platforms_especially_those_with_path_length_limitations"/>
   <ModelVariables>
     <ScalarVariable name="v" valueReference="1" causality="output">
       <Real/>
@@ -8,7 +8,6 @@
   </ModelVariables>
   <ModelStructure>
     <Outputs>
-      <Unknown index="1"/>
       <Unknown index="1"/>
     </Outputs>
   </ModelStructure>
