@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="ArrayStartCountString" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <ModelExchange modelIdentifier="ArrayStartCountString"/>
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <String name="s" valueReference="1" causality="parameter" variability="fixed">
+      <Dimension start="3"/>
+      <Start value="A"/>
+      <Start value="B"/>
+    </String>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

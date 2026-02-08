@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <ModelExchange modelIdentifier="Test"/>
+  <TypeDefinitions>
+    <ClockType name="BadClock" intervalVariability="constant"/>
+  </TypeDefinitions>
+  <ModelVariables>
+    <Clock name="c" valueReference="1" causality="input" declaredType="BadClock"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

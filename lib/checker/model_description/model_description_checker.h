@@ -32,6 +32,7 @@ struct Variable
     std::string variability;
     std::string initial;
     std::optional<std::string> start;
+    size_t num_start_values = 0;
     std::optional<std::string> min;
     std::optional<std::string> max;
     std::optional<std::string> nominal;
@@ -45,8 +46,7 @@ struct Variable
     uint32_t index = 0; // 1-based ScalarVariable index
     bool is_alias = false;
     bool has_dimension = false;
-    std::vector<std::string> dimension_refs; // For backwards compatibility (names)
-    std::vector<Dimension> dimensions;       // Full dimension information
+    std::vector<Dimension> dimensions; // Full dimension information
     std::optional<std::string> clocks;
     bool relative_quantity = false;
     size_t sourceline = 0;
