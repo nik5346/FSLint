@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
+  <Terminals>
+    <Terminal name="PortA" matchingRule="plug">
+      <TerminalStreamMemberVariable outStreamVariableName="h_outflow" outStreamMemberName="h_out" inStreamVariableName="h_inflow" inStreamMemberName="h_in"/>
+    </Terminal>
+  </Terminals>
+</fmiTerminalsAndIcons>
