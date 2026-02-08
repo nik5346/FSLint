@@ -3,6 +3,7 @@
 #include "unzip.h"
 #include "zip.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
