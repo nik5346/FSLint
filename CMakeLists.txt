@@ -357,6 +357,15 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT FSLint-cli)
 
 target_link_libraries(FSLint-cli PRIVATE FSLint-lib)
 
+if(UNIX)
+    if(APPLE)
+        set_target_properties(FSLint-cli PROPERTIES INSTALL_RPATH "@loader_path")
+    else()
+        set_target_properties(FSLint-cli PROPERTIES INSTALL_RPATH "$ORIGIN")
+    endif()
+    set_target_properties(FSLint-cli PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+endif()
+
 target_compile_definitions(FSLint-cli PRIVATE
     PROJECT_VERSION="${CMAKE_PROJECT_VERSION}"
     PROJECT_VERSION_MAJOR=${CMAKE_PROJECT_VERSION_MAJOR}
@@ -425,17 +434,12 @@ endif()
 # ============================================================================
 # Install
 # ============================================================================
-install(TARGETS FSLint-lib FSLint-cli
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-)
 
+# We use manual installation for the CLI to avoid export dependency issues with fetched libraries
+install(PROGRAMS $<TARGET_FILE:FSLint-cli> DESTINATION .)
+install(DIRECTORY standard DESTINATION .)
+
+# Install headers for developer use
 install(DIRECTORY lib/ DESTINATION include
     FILES_MATCHING PATTERN "*.h"
-)
-
-# Install schema files
-install(DIRECTORY ${CMAKE_BINARY_DIR}/schema/
-    DESTINATION share/FSLint-cli/schema
 )

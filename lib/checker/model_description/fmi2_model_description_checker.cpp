@@ -1,5 +1,6 @@
 #include "fmi2_model_description_checker.h"
 #include "certificate.h"
+#include <algorithm>
 #include <regex>
 
 #include <libxml/parser.h>

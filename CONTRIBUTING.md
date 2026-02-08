@@ -15,7 +15,7 @@ Thank you for your interest in contributing to FSLint! We welcome contributions 
 
 ### Pull Requests
 
-1.  Fork the repository and create your branch from `main`.
+1.  Fork the repository and create your branch from `master`.
 2.  Ensure your code follows the project's style and quality standards.
 3.  Include tests for any new functionality.
 4.  Update documentation if necessary.

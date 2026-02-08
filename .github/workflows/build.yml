@@ -1,0 +1,76 @@
+name: Build and Package CLI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build --config Release --target FSLint-cli
+
+    - name: Prepare Artifact (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        mkdir -p dist
+        cp build/FSLint-cli dist/
+        cp -r standard dist/
+        # Copy libxml2 shared library (including symlinks)
+        find build/_deps/libxml2-build -name "libxml2.so*" -exec cp -P {} dist/ \;
+
+    - name: Prepare Artifact (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        mkdir -p dist
+        cp build/FSLint-cli dist/
+        cp -r standard dist/
+        # Copy libxml2 shared library (including symlinks)
+        find build/_deps/libxml2-build -name "libxml2*.dylib" -exec cp -P {} dist/ \;
+
+    - name: Prepare Artifact (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        mkdir -p dist
+        cp build/Release/FSLint-cli.exe dist/
+        cp -r standard dist/
+        # Copy DLLs from Release folder
+        cp build/Release/*.dll dist/ 2>/dev/null || true
+        # libxml2 might be in its build dir
+        find build/_deps/libxml2-build -name "*.dll" -exec cp {} dist/ \;
+
+    - name: Test with Bouncing Ball FMU
+      shell: bash
+      run: |
+        curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
+        # Use python to unzip if unzip is not available, or just use python since it's everywhere
+        python3 -c "import zipfile; zipfile.ZipFile('Reference-FMUs.zip').extract('2.0/BouncingBall.fmu', 'test_fmu')"
+        mv test_fmu/2.0/BouncingBall.fmu .
+
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          ./dist/FSLint-cli.exe BouncingBall.fmu
+        else
+          ./dist/FSLint-cli BouncingBall.fmu
+        fi
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: FSLint-cli-${{ matrix.os }}
+        path: dist/
