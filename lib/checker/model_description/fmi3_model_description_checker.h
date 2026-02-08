@@ -48,6 +48,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void extractDimensions(xmlNodePtr node, Variable& var);
 
     // FMI3-specific checks
+    void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert);
     void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert);
     void checkUniqueValueReferences(const std::vector<Variable>& variables, Certificate& cert);
     void checkStructuralParameter(const std::vector<Variable>& variables, Certificate& cert);
@@ -59,6 +60,10 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkClockReferences(const std::vector<Variable>& variables, Certificate& cert);
     void checkClockedVariables(const std::vector<Variable>& variables, Certificate& cert);
     void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
+    void checkReinitAttribute(const std::vector<Variable>& variables, Certificate& cert);
+    void checkDerivativeAttributes(const std::vector<Variable>& variables, Certificate& cert);
+    void checkCanHandleMultipleSet(const std::vector<Variable>& variables, Certificate& cert);
+    void checkClockTypes(xmlDocPtr doc, Certificate& cert);
 
     void checkDerivativeDimensions(const std::vector<Variable>& variables, Certificate& cert);
     bool compareDimensions(const Variable& var1, const Variable& var2);
@@ -71,5 +76,8 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
+    void validateClockedStates(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
+    void validateEventIndicators(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
+    void checkVariableDependencies(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
 };

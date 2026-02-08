@@ -399,6 +399,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Clocks")
     {
+        validate_fail("clock_type_bad_variability", "missing 'intervalDecimal' or 'intervalCounter'");
         validate_fail("clock_self", "Clock cannot reference itself");
         validate_fail("clock_ref_undef", "References non-existent clock");
         validate_fail("clock_ref_not_clock", "which is a Float64, not a Clock");
@@ -415,6 +416,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     SECTION("Arrays")
     {
         validate_fail("array_start_count", "Expected either 3 values or 1 scalar value");
+        validate_fail("array_start_count_string", "Expected either 3 values or 1 scalar value");
     }
 
     SECTION("Illegal Start")
@@ -434,6 +436,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("ref_unit_undef", "references undefined unit");
         validate_fail("ref_display_unit_undef", "is not defined for unit");
         validate_fail("unit_duplicate", "is defined multiple times");
+        validate_fail("enumeration_no_type", "must have a declaredType attribute");
     }
 
     SECTION("Bounds")
@@ -449,6 +452,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("variability_continuous_integer", "cannot have variability \"continuous\"");
         validate_fail("variability_continuous_boolean", "cannot have variability \"continuous\"");
         validate_fail("variability_continuous_string", "cannot have variability \"continuous\"");
+        validate_fail("parameter_discrete", "Parameters must be \"fixed\" or \"tunable\"");
     }
 
     SECTION("Combinations")
@@ -468,8 +472,26 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
-        validate_fail("structure_initial_unknowns_mismatch", "does not contain the expected set of variables");
+        validate_fail("structure_initial_unknowns_mismatch", "missing from ModelStructure/InitialUnknown");
         validate_fail("derivative_non_continuous", "must have variability=\"continuous\"");
+        validate_fail("derivative_non_float", "must be Float32 or Float64");
+        validate_fail("reinit_non_state", "is not a continuous-time state");
+        validate_fail("reinit_non_float", "must be Float32 or Float64");
+        validate_fail("can_handle_multiple_set_bad_causality", "must be 'input'");
+        validate_fail("structure_clocked_state_missing", "missing from ModelStructure/ClockedState");
+        validate_fail("event_indicator_bad_causality", "does not have causality='local' or 'output'");
+        validate_fail("event_indicator_bad_type", "is used as an event indicator but is of type Int32");
+        validate_fail("event_indicator_bad_variability", "does not have variability='continuous'");
+        validate_fail("structure_initial_unknown_duplicate", "is listed multiple times in ModelStructure/InitialUnknown");
+        validate_fail("structure_event_indicator_duplicate", "is listed multiple times in ModelStructure/EventIndicator");
+    }
+
+    SECTION("Dependencies")
+    {
+        validate_fail("deps_missing_kind", "has 'dependenciesKind' but 'dependencies' is missing");
+        validate_fail("deps_mismatch_size", "has different number of elements in 'dependencies'");
+        validate_fail("deps_kind_illegal_initial", "has illegal dependencyKind 'fixed'");
+        validate_fail("deps_kind_illegal_type", "has dependencyKind 'constant' but unknown is not a float type");
     }
 
     SECTION("Structural Parameters")
