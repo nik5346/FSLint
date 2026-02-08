@@ -1,21 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <UnitDefinitions>
-    <Unit name="m"/>
     <Unit name="s"/>
   </UnitDefinitions>
-  <TypeDefinitions>
-    <SimpleType name="MyType">
-      <Real unit="m"/>
-    </SimpleType>
-    <SimpleType name="UnusedType">
-      <Real unit="s"/>
-    </SimpleType>
-  </TypeDefinitions>
   <ModelExchange modelIdentifier="Test"/>
   <ModelVariables>
     <ScalarVariable name="v" valueReference="1">
-      <Real declaredType="MyType"/>
+      <Real/>
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure/>
