@@ -19,4 +19,5 @@ class CheckerFactory
   private:
     static std::unique_ptr<Checker> createSchemaChecker(const ModelInfo& info);
     static std::unique_ptr<Checker> createModelDescriptionChecker(const ModelInfo& info);
+    static std::unique_ptr<Checker> createTerminalsAndIconsChecker(const ModelInfo& info);
 };

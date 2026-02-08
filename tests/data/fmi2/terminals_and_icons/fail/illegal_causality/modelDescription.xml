@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{123}">
+  <CoSimulation modelIdentifier="Test"/>
+  <ModelVariables>
+    <ScalarVariable name="v_local" valueReference="1" causality="local">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

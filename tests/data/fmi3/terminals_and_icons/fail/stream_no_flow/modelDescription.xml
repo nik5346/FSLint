@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="test" instantiationToken="123">
+  <CoSimulation modelIdentifier="test"/>
+  <ModelVariables>
+    <Float64 name="h_inflow" valueReference="1" causality="input"/>
+    <Float64 name="h_outflow" valueReference="2" causality="output"/>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>
