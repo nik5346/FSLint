@@ -1223,6 +1223,14 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
     {
         if (var.derivative_of.has_value())
         {
+            // The derivative itself must be continuous
+            if (var.variability != "continuous")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") is a derivative and must have variability=\"continuous\".");
+            }
+
             uint32_t ref = *var.derivative_of;
 
             // Check if the referenced variable exists
@@ -1239,15 +1247,14 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
             {
                 const Variable* referenced_var = it->second;
 
-                // Additional validation: the derivative should be of a continuous variable
-                // (This is implicit in FMI spec - derivatives are of continuous states)
+                // The state variable must be continuous
                 if (referenced_var->variability != "continuous")
                 {
-                    test.status = TestStatus::WARNING;
+                    test.status = TestStatus::FAIL;
                     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                             ") is derivative of \"" + referenced_var->name +
                                             "\" which has variability \"" + referenced_var->variability +
-                                            "\" (expected \"continuous\").");
+                                            "\". Continuous-time states must have variability=\"continuous\".");
                 }
             }
         }

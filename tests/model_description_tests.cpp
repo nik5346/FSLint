@@ -233,6 +233,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("derivative_non_real", "Continuous-time state \"x\" (line 5) must be of type Real");
         validate_fail("reinit_non_state", "but is not a continuous-time state");
         validate_fail("reinit_cs_only", "not allowed for Co-Simulation only FMUs");
+        validate_fail("derivative_variability", "must have variability=\"continuous\"");
     }
 }
 
@@ -295,11 +296,6 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
     SECTION("Type definitions")
     {
         validate_warning("type_unused", "Type definition \"UnusedType\" (line 4) is unused.");
-    }
-
-    SECTION("Structure")
-    {
-        validate_warning("derivative_variability", "which has variability \"discrete\" (expected \"continuous\")");
     }
 }
 
@@ -473,6 +469,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("structure_derivative_missing", "must have exactly one entry");
         validate_fail("structure_derivative_duplicate", "is listed multiple times");
         validate_fail("structure_initial_unknowns_mismatch", "does not contain the expected set of variables");
+        validate_fail("derivative_non_continuous", "must have variability=\"continuous\"");
     }
 
     SECTION("Structural Parameters")
@@ -559,11 +556,6 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
     SECTION("DefaultExperiment")
     {
         validate_warning("exp_nan", "startTime value \"NaN\" is NaN");
-    }
-
-    SECTION("Structure")
-    {
-        validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
     }
 }
 
