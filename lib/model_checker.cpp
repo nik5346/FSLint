@@ -102,8 +102,7 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
         archive_checker.validate(path, cert);
 
         // Step 2: Extract to temporary directory
-        extract_dir =
-            std::filesystem::temp_directory_path() / ("model_cert_add_" + std::to_string(std::time(nullptr)));
+        extract_dir = std::filesystem::temp_directory_path() / ("model_cert_add_" + std::to_string(std::time(nullptr)));
         is_temporary = true;
 
         Zipper zipper;
