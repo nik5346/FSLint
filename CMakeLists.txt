@@ -343,8 +343,10 @@ target_include_directories(FSLint-tests SYSTEM PRIVATE
     $<TARGET_PROPERTY:Catch2::Catch2WithMain,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
-# Add test to CTest
-add_test(NAME ModelDescriptionTests COMMAND FSLint-tests)
+# Add tests to CTest via Catch2 discovery
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(Catch)
+catch_discover_tests(FSLint-tests)
 
 # Copy test data to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
