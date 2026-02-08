@@ -19,28 +19,41 @@ void ModelChecker::validate(const std::filesystem::path& path) const
     std::string hash = calculateSHA256(path);
     cert.printMainHeader(path.string(), hash);
 
-    // Step 1: Archive validation (version-agnostic)
-    ArchiveChecker archive_checker;
-    archive_checker.validate(path, cert);
+    std::filesystem::path extract_dir;
+    bool is_temporary = false;
 
-    // Step 2: Extract to temporary directory
-    std::filesystem::path extract_dir =
-        std::filesystem::temp_directory_path() / ("model_validation_" + std::to_string(std::time(nullptr)));
-
-    Zipper zipper;
-    if (!zipper.open(path))
+    if (std::filesystem::is_directory(path))
     {
-        cert.printFooter();
-        return;
+        extract_dir = path;
     }
-
-    if (!zipper.extractAll(extract_dir))
+    else
     {
+        // Step 1: Archive validation (version-agnostic)
+        ArchiveChecker archive_checker;
+        archive_checker.validate(path, cert);
+
+        // Step 2: Extract to temporary directory
+        extract_dir =
+            std::filesystem::temp_directory_path() / ("model_validation_" + std::to_string(std::time(nullptr)));
+        is_temporary = true;
+
+        Zipper zipper;
+        if (!zipper.open(path))
+        {
+            cert.printFooter();
+            return;
+        }
+
+        if (!zipper.extractAll(extract_dir))
+        {
+            zipper.close();
+            cert.printFooter();
+            if (std::filesystem::exists(extract_dir))
+                std::filesystem::remove_all(extract_dir);
+            return;
+        }
         zipper.close();
-        cert.printFooter();
-        return;
     }
-    zipper.close();
 
     // Step 3: Detect model type and create appropriate checkers
     ModelInfo model_info = CheckerFactory::detectModel(extract_dir);
@@ -49,7 +62,8 @@ void ModelChecker::validate(const std::filesystem::path& path) const
     {
         std::cerr << "Error: Could not detect model standard\n";
         cert.printFooter();
-        std::filesystem::remove_all(extract_dir);
+        if (is_temporary && std::filesystem::exists(extract_dir))
+            std::filesystem::remove_all(extract_dir);
         return;
     }
 
@@ -62,7 +76,7 @@ void ModelChecker::validate(const std::filesystem::path& path) const
     cert.printFooter();
 
     // Cleanup temporary directory
-    if (std::filesystem::exists(extract_dir))
+    if (is_temporary && std::filesystem::exists(extract_dir))
         std::filesystem::remove_all(extract_dir);
 }
 
@@ -74,28 +88,41 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     std::string hash = calculateSHA256(path);
     cert.printMainHeader(path.string(), hash);
 
-    // Step 1: Archive validation
-    ArchiveChecker archive_checker;
-    archive_checker.validate(path, cert);
+    std::filesystem::path extract_dir;
+    bool is_temporary = false;
 
-    // Step 2: Extract to temporary directory
-    std::filesystem::path extract_dir =
-        std::filesystem::temp_directory_path() / ("model_cert_add_" + std::to_string(std::time(nullptr)));
-
-    Zipper zipper;
-    if (!zipper.open(path))
+    if (std::filesystem::is_directory(path))
     {
-        cert.printFooter();
-        return false;
+        extract_dir = path;
     }
-
-    if (!zipper.extractAll(extract_dir))
+    else
     {
+        // Step 1: Archive validation
+        ArchiveChecker archive_checker;
+        archive_checker.validate(path, cert);
+
+        // Step 2: Extract to temporary directory
+        extract_dir =
+            std::filesystem::temp_directory_path() / ("model_cert_add_" + std::to_string(std::time(nullptr)));
+        is_temporary = true;
+
+        Zipper zipper;
+        if (!zipper.open(path))
+        {
+            cert.printFooter();
+            return false;
+        }
+
+        if (!zipper.extractAll(extract_dir))
+        {
+            zipper.close();
+            cert.printFooter();
+            if (std::filesystem::exists(extract_dir))
+                std::filesystem::remove_all(extract_dir);
+            return false;
+        }
         zipper.close();
-        cert.printFooter();
-        return false;
     }
-    zipper.close();
 
     // Step 3: Detect and validate
     ModelInfo model_info = CheckerFactory::detectModel(extract_dir);
@@ -104,7 +131,8 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     {
         std::cerr << "Error: Could not detect model standard\n";
         cert.printFooter();
-        std::filesystem::remove_all(extract_dir);
+        if (is_temporary && std::filesystem::exists(extract_dir))
+            std::filesystem::remove_all(extract_dir);
         return false;
     }
 
@@ -123,8 +151,15 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     if (!cert.saveToFile(cert_file))
     {
         std::cerr << "Error: Failed to create certificate file\n";
-        std::filesystem::remove_all(extract_dir);
+        if (is_temporary && std::filesystem::exists(extract_dir))
+            std::filesystem::remove_all(extract_dir);
         return false;
+    }
+
+    if (!is_temporary)
+    {
+        std::cout << "\nCertificate added successfully to directory model\n";
+        return true;
     }
 
     // Create backup
@@ -138,13 +173,15 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
         std::cerr << "Error: Failed to repackage model with certificate\n";
         std::filesystem::copy_file(backup_path, path, std::filesystem::copy_options::overwrite_existing);
         std::filesystem::remove(backup_path);
-        std::filesystem::remove_all(extract_dir);
+        if (std::filesystem::exists(extract_dir))
+            std::filesystem::remove_all(extract_dir);
         return false;
     }
 
     // Cleanup
     std::filesystem::remove(backup_path);
-    std::filesystem::remove_all(extract_dir);
+    if (std::filesystem::exists(extract_dir))
+        std::filesystem::remove_all(extract_dir);
 
     std::cout << "\nCertificate added successfully to model\n";
     return true;
@@ -153,6 +190,12 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
 {
     std::cout << "Re-validating model and updating certificate...\n\n";
+
+    if (std::filesystem::is_directory(path))
+    {
+        removeCertificate(path);
+        return addCertificate(path);
+    }
 
     // Remove existing certificate first
     std::filesystem::path temp_dir =
@@ -192,6 +235,26 @@ bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
 
 bool ModelChecker::removeCertificate(const std::filesystem::path& path) const
 {
+    if (std::filesystem::is_directory(path))
+    {
+        std::filesystem::path extra_dir = path / "extra";
+        std::filesystem::path cert_file = extra_dir / "validation_certificate.txt";
+
+        if (std::filesystem::exists(cert_file))
+        {
+            std::filesystem::remove(cert_file);
+            // Remove extra directory if empty
+            if (std::filesystem::exists(extra_dir) && std::filesystem::is_empty(extra_dir))
+                std::filesystem::remove(extra_dir);
+            std::cout << "Validation certificate removed successfully from directory model\n";
+        }
+        else
+        {
+            std::cout << "No validation certificate found in directory model\n";
+        }
+        return true;
+    }
+
     std::filesystem::path temp_dir =
         std::filesystem::temp_directory_path() / ("model_cert_remove_" + std::to_string(std::time(nullptr)));
 
@@ -244,6 +307,27 @@ bool ModelChecker::removeCertificate(const std::filesystem::path& path) const
 
 bool ModelChecker::displayCertificate(const std::filesystem::path& path) const
 {
+    if (std::filesystem::is_directory(path))
+    {
+        std::filesystem::path cert_file = path / "extra" / "validation_certificate.txt";
+        if (!std::filesystem::exists(cert_file))
+        {
+            std::cout << "No validation certificate found in directory model\n";
+            return false;
+        }
+
+        std::ifstream file(cert_file);
+        if (!file)
+        {
+            std::cerr << "Error: Failed to open certificate file\n";
+            return false;
+        }
+        std::stringstream ss;
+        ss << file.rdbuf();
+        std::cout << "\n" << ss.str() << "\n";
+        return true;
+    }
+
     Zipper zipper;
 
     if (!zipper.open(path))
@@ -329,6 +413,15 @@ bool ModelChecker::package(const std::filesystem::path& extract_dir, const std::
 
 std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) const
 {
+    if (std::filesystem::is_directory(path))
+    {
+        if (std::filesystem::exists(path / "modelDescription.xml"))
+            return calculateSHA256(path / "modelDescription.xml");
+        if (std::filesystem::exists(path / "SystemStructure.ssd"))
+            return calculateSHA256(path / "SystemStructure.ssd");
+        return "N/A (Directory)";
+    }
+
     std::ifstream file(path, std::ios::binary);
     if (!file)
     {
