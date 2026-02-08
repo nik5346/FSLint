@@ -9,6 +9,17 @@
 #include <string>
 #include <vector>
 
+struct TerminalDimension
+{
+    std::optional<uint64_t> start;
+    std::optional<uint32_t> value_reference;
+
+    bool operator==(const TerminalDimension& other) const
+    {
+        return start == other.start && value_reference == other.value_reference;
+    }
+};
+
 struct TerminalVariableInfo
 {
     std::string name;
@@ -16,6 +27,7 @@ struct TerminalVariableInfo
     std::string variability;
     std::string type;
     int sourceline;
+    std::vector<TerminalDimension> dimensions;
 };
 
 class TerminalsAndIconsCheckerBase : public Checker
@@ -37,6 +49,8 @@ class TerminalsAndIconsCheckerBase : public Checker
                                  const std::map<std::string, TerminalVariableInfo>& variables, TestResult& test);
     void checkUniqueMemberNames(xmlXPathContextPtr context, const std::string& p, TestResult& test);
     void checkStreamFlowConstraints(xmlXPathContextPtr context, const std::string& p, TestResult& test);
+    void checkGraphicalRepresentation(const std::filesystem::path& path, xmlXPathContextPtr context,
+                                      const std::string& p, TestResult& test);
 
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 };

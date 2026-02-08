@@ -110,5 +110,11 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
                       "is missing mandatory 'memberName' for matchingRule 'plug'");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/missing_member_name_bus",
                       "is missing mandatory 'memberName' for matchingRule 'bus'");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/mismatched_stream_dims", "has mismatched dimensions");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/missing_icon_png", "not found");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/invalid_icon_uri",
+                      "must be a relative URI and must not contain \"..\"");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/invalid_connection_color",
+                      "must have exactly 3 RGB values");
     }
 }

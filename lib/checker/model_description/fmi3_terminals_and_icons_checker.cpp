@@ -53,6 +53,38 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
             var.sourceline = node->line;
             var.type = reinterpret_cast<const char*>(node->name);
 
+            for (xmlNodePtr child = node->children; child; child = child->next)
+            {
+                if (child->type == XML_ELEMENT_NODE &&
+                    xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Dimension")) == 0)
+                {
+                    TerminalDimension dim;
+                    auto start_str = getXmlAttribute(child, "start");
+                    if (start_str)
+                    {
+                        try
+                        {
+                            dim.start = std::stoull(*start_str);
+                        }
+                        catch (...)
+                        {
+                        }
+                    }
+                    auto vr_str = getXmlAttribute(child, "valueReference");
+                    if (vr_str)
+                    {
+                        try
+                        {
+                            dim.value_reference = static_cast<uint32_t>(std::stoul(*vr_str));
+                        }
+                        catch (...)
+                        {
+                        }
+                    }
+                    var.dimensions.push_back(dim);
+                }
+            }
+
             if (!var.name.empty())
                 variables[var.name] = var;
         }

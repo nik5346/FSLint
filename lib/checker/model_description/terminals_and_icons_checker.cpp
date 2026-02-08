@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <libxml/parser.h>
+#include <sstream>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 #include <set>
@@ -110,6 +111,13 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     {
         TestResult test{"Stream and Flow Constraints", TestStatus::PASS, {}};
         checkStreamFlowConstraints(context, p, test);
+        print_test(test);
+    }
+
+    // 6. Graphical Representation
+    {
+        TestResult test{"Graphical Representation", TestStatus::PASS, {}};
+        checkGraphicalRepresentation(path, context, p, test);
         print_test(test);
     }
 
@@ -250,6 +258,23 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                 }
             }
 
+            if (in_stream && out_stream)
+            {
+                auto it_in = variables.find(*in_stream);
+                auto it_out = variables.find(*out_stream);
+
+                if (it_in != variables.end() && it_out != variables.end())
+                {
+                    if (it_in->second.dimensions != it_out->second.dimensions)
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("TerminalStreamMemberVariable (line " + std::to_string(node->line) +
+                                                ") has mismatched dimensions for \"" + *in_stream + "\" and \"" +
+                                                *out_stream + "\".");
+                    }
+                }
+            }
+
             if (out_stream)
             {
                 auto it = variables.find(*out_stream);
@@ -351,6 +376,76 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
             check_unique_members(check_unique_members, terminals_elem->nodesetval->nodeTab[i]);
     if (terminals_elem)
         xmlXPathFreeObject(terminals_elem);
+}
+
+void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::filesystem::path& path,
+                                                                xmlXPathContextPtr context, const std::string& p,
+                                                                TestResult& test)
+{
+    std::string expr = "//" + p + "TerminalGraphicalRepresentation";
+    xmlXPathObjectPtr xpath_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
+
+    if (xpath_obj && xpath_obj->nodesetval)
+    {
+        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            auto icon_base = getXmlAttribute(node, "iconBaseName");
+
+            if (icon_base)
+            {
+                // RFC 3986 relative URI constraints for iconBaseName:
+                // excluding relative URIs that move beyond the baseURI (i.e. go "up" a level via ..)
+                // no absolute URIs (start with /), no schemes (contains :)
+                if (icon_base->find("..") != std::string::npos || icon_base->starts_with("/") ||
+                    icon_base->find(":") != std::string::npos)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("iconBaseName \"" + *icon_base + "\" (line " + std::to_string(node->line) +
+                                            ") must be a relative URI and must not contain \"..\", \":\" or start with "
+                                            "\"/\".");
+                }
+                else
+                {
+                    // PNG file must be provided
+                    auto png_path = path / "terminalsAndIcons" / (*icon_base + ".png");
+                    if (!std::filesystem::exists(png_path))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Terminal icon PNG file \"" + png_path.string() +
+                                                "\" (referenced line " + std::to_string(node->line) + ") not found.");
+                    }
+                }
+            }
+            else
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("TerminalGraphicalRepresentation (line " + std::to_string(node->line) +
+                                        ") is missing mandatory 'iconBaseName'.");
+            }
+
+            auto connection_color = getXmlAttribute(node, "defaultConnectionColor");
+            if (connection_color)
+            {
+                // defaultConnectionColor should be RGB values from 0 to 255.
+                // It is a list of 3 unsigned bytes.
+                std::stringstream ss(*connection_color);
+                std::string part;
+                int count = 0;
+                while (ss >> part)
+                    count++;
+                if (count != 3)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("defaultConnectionColor \"" + *connection_color + "\" (line " +
+                                            std::to_string(node->line) + ") must have exactly 3 RGB values.");
+                }
+            }
+        }
+    }
+
+    if (xpath_obj)
+        xmlXPathFreeObject(xpath_obj);
 }
 
 void TerminalsAndIconsCheckerBase::checkStreamFlowConstraints(xmlXPathContextPtr context, const std::string& p,
