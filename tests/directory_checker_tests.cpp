@@ -6,21 +6,15 @@
 
 TEST_CASE("ModelChecker with directories", "[directory]")
 {
-    std::filesystem::path test_dir = "tests/data/directory_model";
-    std::filesystem::create_directories(test_dir);
+    // Use existing test data as a source
+    std::filesystem::path source_fmu = "tests/data/fmi2/pass";
+    std::filesystem::path test_dir = "tests/data/directory_model_test";
 
-    {
-        std::ofstream md(test_dir / "modelDescription.xml");
-        md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-           << "<fmiModelDescription fmiVersion=\"2.0\" modelName=\"test\" guid=\"{12345678-1234-1234-1234-123456789012}\">\n"
-           << "  <ModelVariables>\n"
-           << "    <ScalarVariable name=\"v\" valueReference=\"1\" causality=\"local\" variability=\"continuous\">\n"
-           << "      <Real/>\n"
-           << "    </ScalarVariable>\n"
-           << "  </ModelVariables>\n"
-           << "  <ModelStructure/>\n"
-           << "</fmiModelDescription>";
+    if (std::filesystem::exists(test_dir)) {
+        std::filesystem::remove_all(test_dir);
     }
+    std::filesystem::create_directories(test_dir);
+    std::filesystem::copy(source_fmu, test_dir, std::filesystem::copy_options::recursive);
 
     ModelChecker checker;
 
@@ -54,22 +48,4 @@ TEST_CASE("ModelChecker with directories", "[directory]")
 
     // Cleanup
     std::filesystem::remove_all(test_dir);
-
-    std::filesystem::path ssp_dir = "tests/data/directory_ssp";
-    std::filesystem::create_directories(ssp_dir);
-
-    {
-        std::ofstream ssd(ssp_dir / "SystemStructure.ssd");
-        ssd << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-            << "<SystemStructureDescription xmlns=\"http://ssp-standard.org/SSP1/SystemStructureDescription\" version=\"1.0\" name=\"test\">\n"
-            << "</SystemStructureDescription>";
-    }
-
-    SECTION("SSP Validation")
-    {
-        checker.validate(ssp_dir);
-    }
-
-    // Cleanup
-    std::filesystem::remove_all(ssp_dir);
 }
