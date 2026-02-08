@@ -17,6 +17,7 @@
 void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
 {
     cert.printSubsectionHeader("MODEL DESCRIPTION VALIDATION");
+    _fmu_root_path = path;
 
     auto model_desc_path = path / "modelDescription.xml";
 
@@ -86,9 +87,6 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkUnusedDefinitions(type_definitions, units, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
     checkDerivativeReferences(variables, cert);
-
-    // Check binaries and sources
-    checkDistribution(path, doc, model_identifiers, cert);
 
     // Perform version-specific validation
     performVersionSpecificChecks(doc, variables, type_definitions, units, cert);

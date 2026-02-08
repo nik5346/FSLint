@@ -10,6 +10,9 @@
 #include "fmi3_model_description_checker.h"
 #include "model_description_checker.h"
 
+#include "directory_checker.h"
+#include "build_description_checker.h"
+
 #include <fstream>
 #include <iostream>
 
@@ -73,6 +76,12 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     auto model_desc_checker = createModelDescriptionChecker(info);
     if (model_desc_checker)
         checkers.push_back(std::move(model_desc_checker));
+
+    if (info.standard == ModelStandard::FMI2 || info.standard == ModelStandard::FMI3)
+    {
+        checkers.push_back(std::make_unique<DirectoryChecker>());
+        checkers.push_back(std::make_unique<BuildDescriptionChecker>());
+    }
 
     return checkers;
 }

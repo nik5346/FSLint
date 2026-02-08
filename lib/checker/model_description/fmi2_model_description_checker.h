@@ -29,9 +29,6 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkAnnotations(xmlDocPtr doc, Certificate& cert) override;
     void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
 
-    void checkDistribution(const std::filesystem::path& path, xmlDocPtr doc,
-                           const std::map<std::string, std::string>& model_identifiers, Certificate& cert) override;
-
     void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
                                       const std::string& attr_name) override;
     void validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
@@ -62,4 +59,5 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void checkMultipleSetAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
     void checkContinuousStates(const std::vector<Variable>& variables, Certificate& cert);
+    void checkSourceFilesExistence(xmlDocPtr doc, Certificate& cert);
 };

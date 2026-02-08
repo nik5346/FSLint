@@ -235,11 +235,6 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("reinit_cs_only", "not allowed for Co-Simulation only FMUs");
         validate_fail("derivative_variability", "must have variability=\"continuous\"");
     }
-
-    SECTION("FMU Distribution")
-    {
-        validate_fail("dist_none", "must contain either a precompiled binary for at least one platform or source code");
-    }
 }
 
 TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
@@ -302,12 +297,6 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
     {
         validate_warning("type_unused", "Type definition \"UnusedType\" (line 4) is unused.");
     }
-
-    SECTION("FMU Distribution")
-    {
-        validate_warning("dist_sources_only", "only contains <SourceFiles> in modelDescription.xml");
-        validate_warning("dist_build_desc_only", "only contains buildDescription.xml");
-    }
 }
 
 TEST_CASE("FMI 2.0 Model Description Passing Cases", "[fmi2][pass]")
@@ -326,21 +315,6 @@ TEST_CASE("FMI 2.0 Model Description Passing Cases", "[fmi2][pass]")
         Fmi2ModelDescriptionChecker checker;
         checker.validate("tests/data/fmi2/pass/structured_naming", cert);
         CHECK_FALSE(has_fail(cert));
-    }
-
-    SECTION("FMU Distribution")
-    {
-        Fmi2ModelDescriptionChecker checker;
-        {
-            Certificate cert_both;
-            checker.validate("tests/data/fmi2/pass/dist_both", cert_both);
-            CHECK_FALSE(has_fail(cert_both));
-        }
-        {
-            Certificate cert_bin;
-            checker.validate("tests/data/fmi2/pass/dist_binaries_only", cert_bin);
-            CHECK_FALSE(has_fail(cert_bin));
-        }
     }
 }
 
@@ -509,11 +483,6 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("structure_dependencies_kind_mismatch", "has different number of elements in 'dependencies'");
         validate_fail("structure_dependencies_kind_invalid_initial", "has illegal dependencyKind 'fixed'");
         validate_fail("structure_dependencies_kind_non_float", "has dependencyKind 'constant' but unknown is not a float type");
-    }
-
-    SECTION("FMU Distribution")
-    {
-        validate_fail("dist_none", "must contain either a precompiled binary for at least one platform or source code");
     }
 }
 

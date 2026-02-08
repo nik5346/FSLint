@@ -113,6 +113,8 @@ class ModelDescriptionCheckerBase : public Checker
                                               const std::map<std::string, UnitDefinition>& units,
                                               Certificate& cert) = 0;
 
+    std::filesystem::path _fmu_root_path;
+
     virtual std::string getFmiVersion() const = 0;
 
     // Common validation methods that work the same way across FMI versions
@@ -149,11 +151,6 @@ class ModelDescriptionCheckerBase : public Checker
 
     // New: Check that derivative references point to valid variables
     void checkDerivativeReferences(const std::vector<Variable>& variables, Certificate& cert);
-
-    // Check for binaries and/or source code
-    virtual void checkDistribution(const std::filesystem::path& path, xmlDocPtr doc,
-                                   const std::map<std::string, std::string>& model_identifiers,
-                                   Certificate& cert) = 0;
 
     // Version-specific validation methods (must be implemented by derived classes)
     virtual void applyDefaultInitialValues(std::vector<Variable>& variables) = 0;
