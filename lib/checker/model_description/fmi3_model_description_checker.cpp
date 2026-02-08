@@ -1811,7 +1811,8 @@ void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
 {
     TestResult test{"Annotations Uniqueness", TestStatus::PASS, {}};
 
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//Annotations/Annotation");
+    // Find all <Annotations> containers in the document
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//Annotations");
     if (!xpath_obj || !xpath_obj->nodesetval)
     {
         if (xpath_obj)
@@ -1820,20 +1821,35 @@ void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
         return;
     }
 
-    std::set<std::string> seen_types;
     for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
     {
-        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto type = getXmlAttribute(node, "type");
-        if (type)
+        xmlNodePtr annotations_node =
+            xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::set<std::string> seen_types;
+
+        // Check each child <Annotation> element
+        for (xmlNodePtr child = annotations_node->children; child; child = child->next)
         {
-            if (seen_types.contains(*type))
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
+
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            std::string elem_name = reinterpret_cast<const char*>(child->name);
+            if (elem_name == "Annotation")
             {
-                test.status = TestStatus::WARNING; // FMI3 doesn't strictly forbid multiple annotations of same type
-                test.messages.push_back("Annotation of type \"" + *type + "\" (line " + std::to_string(node->line) +
-                                        ") is defined multiple times.");
+                auto type = getXmlAttribute(child, "type");
+                if (type)
+                {
+                    if (seen_types.contains(*type))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Annotation of type \"" + *type + "\" (line " +
+                                                std::to_string(child->line) +
+                                                ") is defined multiple times within the same container.");
+                    }
+                    seen_types.insert(*type);
+                }
             }
-            seen_types.insert(*type);
         }
     }
 
