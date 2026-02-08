@@ -55,14 +55,19 @@ jobs:
         # libxml2 might be in its build dir
         find build/_deps/libxml2-build -name "*.dll" -exec cp {} dist/ \;
 
-    - name: Test with Bouncing Ball FMU (Linux)
-      if: runner.os == 'Linux'
+    - name: Test with Bouncing Ball FMU
+      shell: bash
       run: |
-        wget https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
-        unzip Reference-FMUs-0.0.39.zip 2.0/BouncingBall.fmu -d test_fmu
+        curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
+        # Use python to unzip if unzip is not available, or just use python since it's everywhere
+        python3 -c "import zipfile; zipfile.ZipFile('Reference-FMUs.zip').extract('2.0/BouncingBall.fmu', 'test_fmu')"
         mv test_fmu/2.0/BouncingBall.fmu .
-        # Run the tool
-        ./dist/FSLint-cli BouncingBall.fmu
+
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          ./dist/FSLint-cli.exe BouncingBall.fmu
+        else
+          ./dist/FSLint-cli BouncingBall.fmu
+        fi
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
