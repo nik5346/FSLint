@@ -2,90 +2,61 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug FMU/SSP (Windows)",
+            "name": "Debug Tests",
             "request": "launch",
-            "program": "${workspaceFolder}\\build\\windows-clang-debug\\FSLint-cli.exe",
-            "args": [
-                "${input:operation}",
-                "${input:fmuFile}"
-            ],
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "type": "cppvsdbg",
+            "type": "cppdbg",
+            "linux": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "/usr/bin/gdb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ]
+            },
+            "osx": {
+                "type": "lldb"
+            },
+            "windows": {
+                "type": "cppvsdbg"
+            },
             "preLaunchTask": "Build Current Project"
         },
         {
-            "name": "Debug FMU/SSP (macOS)",
+            "name": "Debug FMU/SSP",
             "request": "launch",
-            "program": "${workspaceFolder}/build/macos-clang-debug/FSLint-cli",
+            "program": "${command:cmake.launchTargetPath}",
             "args": [
                 "${input:operation}",
                 "${input:fmuFile}"
             ],
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build Current Project",
             "console": "integratedTerminal",
-            "type": "lldb"
-        },
-        {
-            "name": "Debug FMU/SSP (Linux)",
-
-            "request": "launch",
-            "program": "${workspaceFolder}/build/linux-clang-debug/FSLint-cli",
-            "args": [
-                "${input:operation}",
-                "${input:fmuFile}"
-            ],
-            "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build Current Project",
             "type": "cppdbg",
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "Debug Tests (Windows)",
-            "request": "launch",
-            "program": "${workspaceFolder}\\build\\windows-clang-debug\\FSLint-tests.exe",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
-            "type": "cppvsdbg",
+            "linux": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "/usr/bin/gdb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ]
+            },
+            "osx": {
+                "type": "lldb"
+            },
+            "windows": {
+                "type": "cppvsdbg"
+            },
             "preLaunchTask": "Build Current Project"
-        },
-        {
-            "name": "Debug Tests (macOS)",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/macos-clang-debug/FSLint-tests",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build Current Project",
-            "console": "integratedTerminal",
-            "type": "lldb"
-        },
-        {
-            "name": "Debug Tests (Linux)",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/linux-clang-debug/FSLint-tests",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build Current Project",
-            "type": "cppdbg",
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
         }
     ],
     "inputs": [
