@@ -102,9 +102,9 @@ std::unique_ptr<Checker> CheckerFactory::createTerminalsAndIconsChecker(const Mo
     switch (info.standard)
     {
     case ModelStandard::FMI2:
-        [[fallthrough]];
+        return std::make_unique<Fmi2TerminalsAndIconsChecker>();
     case ModelStandard::FMI3:
-        return std::make_unique<TerminalsAndIconsChecker>();
+        return std::make_unique<Fmi3TerminalsAndIconsChecker>();
     default:
         return nullptr;
     }

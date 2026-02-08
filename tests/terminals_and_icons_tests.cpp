@@ -29,9 +29,9 @@ bool has_error_with_text(const Certificate& cert, const std::string& text)
 }
 } // namespace
 
-TEST_CASE("Terminals and Icons Validation", "[terminals][icons]")
+TEST_CASE("FMI 2.0 Terminals and Icons Validation", "[terminals][icons][fmi2]")
 {
-    TerminalsAndIconsChecker checker;
+    Fmi2TerminalsAndIconsChecker checker;
 
     auto validate_pass = [&](const std::string& path)
     {
@@ -50,12 +50,12 @@ TEST_CASE("Terminals and Icons Validation", "[terminals][icons]")
         CHECK(has_error_with_text(cert, expected_error));
     };
 
-    SECTION("FMI 2.0 Pass")
+    SECTION("Pass")
     {
         validate_pass("tests/data/fmi2/terminals_and_icons/pass");
     }
 
-    SECTION("FMI 2.0 Failures")
+    SECTION("Failures")
     {
         validate_fail("tests/data/fmi2/terminals_and_icons/fail/version_mismatch",
                       "fmiVersion in terminalsAndIcons.xml");
@@ -65,13 +65,35 @@ TEST_CASE("Terminals and Icons Validation", "[terminals][icons]")
         validate_fail("tests/data/fmi2/terminals_and_icons/fail/duplicate_terminal", "is not unique at its level");
         validate_fail("tests/data/fmi2/terminals_and_icons/fail/duplicate_member", "is not unique in terminal");
     }
+}
 
-    SECTION("FMI 3.0 Pass")
+TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
+{
+    Fmi3TerminalsAndIconsChecker checker;
+
+    auto validate_pass = [&](const std::string& path)
+    {
+        Certificate cert;
+        checker.validate(path, cert);
+        INFO("Checking path: " << path);
+        CHECK_FALSE(has_fail(cert));
+    };
+
+    auto validate_fail = [&](const std::string& path, const std::string& expected_error)
+    {
+        Certificate cert;
+        checker.validate(path, cert);
+        INFO("Checking path: " << path);
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, expected_error));
+    };
+
+    SECTION("Pass")
     {
         validate_pass("tests/data/fmi3/terminals_and_icons/pass");
     }
 
-    SECTION("FMI 3.0 Failures")
+    SECTION("Failures")
     {
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/version_mismatch",
                       "must match fmiVersion in modelDescription.xml");

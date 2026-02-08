@@ -6,7 +6,7 @@
 #include <libxml/xpath.h>
 #include <set>
 
-void TerminalsAndIconsChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
 {
     cert.printSubsectionHeader("TERMINALS AND ICONS VALIDATION");
 
@@ -24,102 +24,24 @@ void TerminalsAndIconsChecker::validate(const std::filesystem::path& path, Certi
     cert.printSubsectionSummary(true);
 }
 
-std::map<std::string, TerminalVariableInfo>
-TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,
-                                           std::string& fmiVersion)
+std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
-    std::map<std::string, TerminalVariableInfo> variables;
-    auto model_desc_path = path / "modelDescription.xml";
+    if (!node)
+        return std::nullopt;
 
-    if (!std::filesystem::exists(model_desc_path))
-    {
-        cert.printTestResult({"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}});
-        return variables;
-    }
+    xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
+    if (!attr)
+        return std::nullopt;
 
-    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
-    if (!doc)
-    {
-        cert.printTestResult({"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}});
-        return variables;
-    }
-
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    auto version_attr = getXmlAttribute(root, "fmiVersion");
-    if (version_attr)
-    {
-        fmiVersion = *version_attr;
-    }
-    else
-    {
-        cert.printTestResult(
-            {"FMI Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
-        xmlFreeDoc(doc);
-        return variables;
-    }
-
-    xmlXPathContextPtr context = xmlXPathNewContext(doc);
-    xmlXPathObjectPtr xpath_obj = nullptr;
-
-    if (fmiVersion.starts_with("2."))
-    {
-        xpath_obj =
-            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/ScalarVariable"), context);
-    }
-    else
-    {
-        xpath_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/*"), context);
-    }
-
-    if (xpath_obj && xpath_obj->nodesetval)
-    {
-        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
-        {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
-            TerminalVariableInfo var;
-            var.name = getXmlAttribute(node, "name").value_or("");
-            var.causality = getXmlAttribute(node, "causality").value_or("local");
-            var.variability = getXmlAttribute(node, "variability").value_or("");
-            var.sourceline = node->line;
-
-            if (fmiVersion.starts_with("2."))
-            {
-                for (xmlNodePtr child = node->children; child; child = child->next)
-                {
-                    if (child->type == XML_ELEMENT_NODE)
-                    {
-                        std::string elem_name = reinterpret_cast<const char*>(child->name);
-                        if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" ||
-                            elem_name == "String" || elem_name == "Enumeration")
-                        {
-                            var.type = elem_name;
-                            break;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                var.type = reinterpret_cast<const char*>(node->name);
-            }
-
-            if (!var.name.empty())
-                variables[var.name] = var;
-        }
-    }
-
-    if (xpath_obj)
-        xmlXPathFreeObject(xpath_obj);
-    xmlXPathFreeContext(context);
-    xmlFreeDoc(doc);
-
-    return variables;
+    std::string value(reinterpret_cast<char*>(attr));
+    xmlFree(attr);
+    return value;
 }
 
-void TerminalsAndIconsChecker::checkTerminalsAndIcons(const std::filesystem::path& path,
-                                                      const std::string& fmiModelDescriptionVersion,
-                                                      const std::map<std::string, TerminalVariableInfo>& variables,
-                                                      Certificate& cert)
+void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem::path& path,
+                                                          const std::string& fmiModelDescriptionVersion,
+                                                          const std::map<std::string, TerminalVariableInfo>& variables,
+                                                          Certificate& cert)
 {
     auto terminals_path = path / "terminalsAndIcons" / "terminalsAndIcons.xml";
 
@@ -179,8 +101,6 @@ void TerminalsAndIconsChecker::checkTerminalsAndIcons(const std::filesystem::pat
     {
         TestResult test{"Unique Terminal Names", TestStatus::PASS, {}};
 
-        // This check needs to be recursive or per level.
-        // Let's use a lambda for recursive check.
         auto check_unique_terminals = [&](auto self, xmlNodePtr parent) -> void
         {
             std::set<std::string> seen_names;
@@ -227,7 +147,6 @@ void TerminalsAndIconsChecker::checkTerminalsAndIcons(const std::filesystem::pat
             {
                 xmlNodePtr node = member_vars->nodesetval->nodeTab[i];
                 auto var_name = getXmlAttribute(node, "variableName");
-                auto member_name = getXmlAttribute(node, "memberName");
                 auto var_kind = getXmlAttribute(node, "variableKind");
 
                 if (var_name)
@@ -457,16 +376,141 @@ void TerminalsAndIconsChecker::checkTerminalsAndIcons(const std::filesystem::pat
     xmlFreeDoc(doc);
 }
 
-std::optional<std::string> TerminalsAndIconsChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
+std::map<std::string, TerminalVariableInfo>
+Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,
+                                               std::string& fmiVersion)
 {
-    if (!node)
-        return std::nullopt;
+    std::map<std::string, TerminalVariableInfo> variables;
+    auto model_desc_path = path / "modelDescription.xml";
 
-    xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
-    if (!attr)
-        return std::nullopt;
+    if (!std::filesystem::exists(model_desc_path))
+    {
+        cert.printTestResult({"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}});
+        return variables;
+    }
 
-    std::string value(reinterpret_cast<char*>(attr));
-    xmlFree(attr);
-    return value;
+    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (!doc)
+    {
+        cert.printTestResult({"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}});
+        return variables;
+    }
+
+    xmlNodePtr root = xmlDocGetRootElement(doc);
+    auto version_attr = getXmlAttribute(root, "fmiVersion");
+    if (version_attr)
+    {
+        fmiVersion = *version_attr;
+    }
+    else
+    {
+        cert.printTestResult(
+            {"FMI Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
+        xmlFreeDoc(doc);
+        return variables;
+    }
+
+    xmlXPathContextPtr context = xmlXPathNewContext(doc);
+    xmlXPathObjectPtr xpath_obj =
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/ScalarVariable"), context);
+
+    if (xpath_obj && xpath_obj->nodesetval)
+    {
+        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            TerminalVariableInfo var;
+            var.name = getXmlAttribute(node, "name").value_or("");
+            var.causality = getXmlAttribute(node, "causality").value_or("local");
+            var.variability = getXmlAttribute(node, "variability").value_or("");
+            var.sourceline = node->line;
+
+            for (xmlNodePtr child = node->children; child; child = child->next)
+            {
+                if (child->type == XML_ELEMENT_NODE)
+                {
+                    std::string elem_name = reinterpret_cast<const char*>(child->name);
+                    if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" ||
+                        elem_name == "String" || elem_name == "Enumeration")
+                    {
+                        var.type = elem_name;
+                        break;
+                    }
+                }
+            }
+
+            if (!var.name.empty())
+                variables[var.name] = var;
+        }
+    }
+
+    if (xpath_obj)
+        xmlXPathFreeObject(xpath_obj);
+    xmlXPathFreeContext(context);
+    xmlFreeDoc(doc);
+
+    return variables;
+}
+
+std::map<std::string, TerminalVariableInfo>
+Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,
+                                               std::string& fmiVersion)
+{
+    std::map<std::string, TerminalVariableInfo> variables;
+    auto model_desc_path = path / "modelDescription.xml";
+
+    if (!std::filesystem::exists(model_desc_path))
+    {
+        cert.printTestResult({"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}});
+        return variables;
+    }
+
+    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (!doc)
+    {
+        cert.printTestResult({"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}});
+        return variables;
+    }
+
+    xmlNodePtr root = xmlDocGetRootElement(doc);
+    auto version_attr = getXmlAttribute(root, "fmiVersion");
+    if (version_attr)
+    {
+        fmiVersion = *version_attr;
+    }
+    else
+    {
+        cert.printTestResult(
+            {"FMI Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
+        xmlFreeDoc(doc);
+        return variables;
+    }
+
+    xmlXPathContextPtr context = xmlXPathNewContext(doc);
+    xmlXPathObjectPtr xpath_obj =
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/*"), context);
+
+    if (xpath_obj && xpath_obj->nodesetval)
+    {
+        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            TerminalVariableInfo var;
+            var.name = getXmlAttribute(node, "name").value_or("");
+            var.causality = getXmlAttribute(node, "causality").value_or("local");
+            var.variability = getXmlAttribute(node, "variability").value_or("");
+            var.sourceline = node->line;
+            var.type = reinterpret_cast<const char*>(node->name);
+
+            if (!var.name.empty())
+                variables[var.name] = var;
+        }
+    }
+
+    if (xpath_obj)
+        xmlXPathFreeObject(xpath_obj);
+    xmlXPathFreeContext(context);
+    xmlFreeDoc(doc);
+
+    return variables;
 }

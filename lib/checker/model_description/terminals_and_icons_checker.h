@@ -16,16 +16,32 @@ struct TerminalVariableInfo
     size_t sourceline = 0;
 };
 
-class TerminalsAndIconsChecker : public Checker
+class TerminalsAndIconsCheckerBase : public Checker
 {
   public:
     void validate(const std::filesystem::path& path, Certificate& cert) override;
 
-  private:
-    std::map<std::string, TerminalVariableInfo> extractVariables(const std::filesystem::path& path, Certificate& cert,
-                                                                 std::string& fmiVersion);
-    void checkTerminalsAndIcons(const std::filesystem::path& path, const std::string& fmiModelDescriptionVersion,
-                                const std::map<std::string, TerminalVariableInfo>& variables, Certificate& cert);
+  protected:
+    virtual std::map<std::string, TerminalVariableInfo>
+    extractVariables(const std::filesystem::path& path, Certificate& cert, std::string& fmiVersion) = 0;
 
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
+
+  private:
+    void checkTerminalsAndIcons(const std::filesystem::path& path, const std::string& fmiModelDescriptionVersion,
+                                const std::map<std::string, TerminalVariableInfo>& variables, Certificate& cert);
+};
+
+class Fmi2TerminalsAndIconsChecker : public TerminalsAndIconsCheckerBase
+{
+  protected:
+    std::map<std::string, TerminalVariableInfo> extractVariables(const std::filesystem::path& path, Certificate& cert,
+                                                                 std::string& fmiVersion) override;
+};
+
+class Fmi3TerminalsAndIconsChecker : public TerminalsAndIconsCheckerBase
+{
+  protected:
+    std::map<std::string, TerminalVariableInfo> extractVariables(const std::filesystem::path& path, Certificate& cert,
+                                                                 std::string& fmiVersion) override;
 };
