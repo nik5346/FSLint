@@ -120,7 +120,7 @@ class ModelDescriptionCheckerBase : public Checker
     void checkTypeNameClashes(const std::vector<Variable>& variables,
                               const std::map<std::string, TypeDefinition>& type_definitions, Certificate& cert);
     virtual void checkUnits(xmlDocPtr doc, Certificate& cert) = 0;
-    void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert);
+    virtual void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) = 0;
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
@@ -133,7 +133,7 @@ class ModelDescriptionCheckerBase : public Checker
     void checkAuthor(const std::optional<std::string>& author, Certificate& cert);
     void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert);
     void checkLogCategories(xmlDocPtr doc, Certificate& cert);
-    void checkVendorAnnotations(xmlDocPtr doc, Certificate& cert);
+    virtual void checkAnnotations(xmlDocPtr doc, Certificate& cert) = 0;
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
                                             Certificate& cert);
     void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
@@ -149,9 +149,6 @@ class ModelDescriptionCheckerBase : public Checker
 
     // New: Check that derivative references point to valid variables
     void checkDerivativeReferences(const std::vector<Variable>& variables, Certificate& cert);
-
-    // New: Check that derivative dimensions match state dimensions
-    void checkDerivativeDimensions(const std::vector<Variable>& variables, Certificate& cert);
 
     // Version-specific validation methods (must be implemented by derived classes)
     virtual void applyDefaultInitialValues(std::vector<Variable>& variables) = 0;
@@ -201,10 +198,6 @@ class ModelDescriptionCheckerBase : public Checker
     template <typename T>
     bool validateTypeBounds(const Variable& var, const std::optional<std::string>& effective_min,
                             const std::optional<std::string>& effective_max, TestResult& test);
-
-    // Helper methods for dimension comparison
-    bool compareDimensions(const Variable& var1, const Variable& var2);
-    std::string formatDimensions(const Variable& var);
 
   private:
     std::set<std::string> _used_type_definitions;

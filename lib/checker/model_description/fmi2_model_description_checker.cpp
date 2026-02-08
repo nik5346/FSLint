@@ -1312,6 +1312,217 @@ void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult&
                             ", which is not allowed in FMI 2.0.");
 }
 
+void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Type Definitions", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/SimpleType");
+    if (!xpath_obj)
+    {
+        cert.printTestResult(test);
+        return;
+    }
+
+    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
+    if (!nodes)
+    {
+        xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
+    {
+        xmlNodePtr type_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+        if (type_node->type != XML_ELEMENT_NODE)
+            continue;
+
+        auto name_opt = getXmlAttribute(type_node, "name");
+        std::string name = name_opt.value_or("unnamed");
+
+        if (name_opt)
+        {
+            if (seen_names.contains(*name_opt))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Type definition \"" + *name_opt + "\" (line " +
+                                        std::to_string(type_node->line) + ") is defined multiple times.");
+            }
+            seen_names.insert(*name_opt);
+        }
+
+        // Check types
+        for (xmlNodePtr child = type_node->children; child; child = child->next)
+        {
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
+
+            std::string elem_name =
+                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+
+            auto min_str = getXmlAttribute(child, "min");
+            auto max_str = getXmlAttribute(child, "max");
+            auto nominal_str = getXmlAttribute(child, "nominal");
+
+            // Check for special floats (NaN, INF)
+            TypeDefinition td_for_special;
+            td_for_special.name = name;
+            td_for_special.sourceline = child->line;
+
+            if (min_str && isSpecialFloat(*min_str))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, *min_str, "min");
+            if (max_str && isSpecialFloat(*max_str))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, *max_str, "max");
+            if (nominal_str && isSpecialFloat(*nominal_str))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, *nominal_str, "nominal");
+
+            if (min_str && max_str)
+            {
+                bool special_min = isSpecialFloat(*min_str);
+                bool special_max = isSpecialFloat(*max_str);
+
+                if (!special_min && !special_max)
+                {
+                    try
+                    {
+                        if (elem_name == "Real")
+                        {
+                            double min_val = std::stod(*min_str);
+                            double max_val = std::stod(*max_str);
+                            if (max_val < min_val)
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                        std::to_string(child->line) + "): max (" + *max_str +
+                                                        ") must be >= min (" + *min_str + ").");
+                            }
+                        }
+                        else if (elem_name == "Integer" || elem_name == "Enumeration")
+                        {
+                            int64_t min_val = std::stoll(*min_str);
+                            int64_t max_val = std::stoll(*max_str);
+                            if (max_val < min_val)
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                        std::to_string(child->line) + "): max (" + *max_str +
+                                                        ") must be >= min (" + *min_str + ").");
+                            }
+                        }
+                    }
+                    catch (...)
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                std::to_string(child->line) + "): Failed to parse min/max values.");
+                    }
+                }
+            }
+
+            if (elem_name == "Enumeration")
+            {
+                bool has_items = false;
+                std::set<int32_t> item_values;
+                std::set<std::string> item_names;
+
+                for (xmlNodePtr item = child->children; item; item = item->next)
+                {
+                    if (item->type != XML_ELEMENT_NODE)
+                        continue;
+
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                    std::string item_elem_name = reinterpret_cast<const char*>(item->name);
+                    if (item_elem_name == "Item")
+                    {
+                        has_items = true;
+                        auto item_name = getXmlAttribute(item, "name");
+                        auto item_value_str = getXmlAttribute(item, "value");
+
+                        if (item_name)
+                        {
+                            if (item_names.contains(*item_name))
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back("Enumeration type \"" + name + "\" (line " +
+                                                        std::to_string(child->line) + ") has multiple items named \"" +
+                                                        *item_name + "\".");
+                            }
+                            item_names.insert(*item_name);
+                        }
+
+                        if (item_value_str)
+                        {
+                            try
+                            {
+                                int32_t val = std::stoi(*item_value_str);
+                                if (item_values.contains(val))
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(
+                                        "Enumeration type \"" + name + "\" (line " + std::to_string(child->line) +
+                                        ") has multiple items with value " + *item_value_str +
+                                        ". Item values must be unique within the same enumeration.");
+                                }
+                                item_values.insert(val);
+                            }
+                            catch (...)
+                            {
+                            }
+                        }
+                    }
+                }
+
+                if (!has_items)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Enumeration type \"" + name + "\" (line " + std::to_string(child->line) +
+                                            ") must have at least one Item.");
+                }
+            }
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Vendor Annotations Uniqueness", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//VendorAnnotations/Tool");
+    if (!xpath_obj || !xpath_obj->nodesetval)
+    {
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+    for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+    {
+        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto name = getXmlAttribute(node, "name");
+        if (name)
+        {
+            if (seen_names.contains(*name))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Vendor annotation tool \"" + *name + "\" (line " + std::to_string(node->line) +
+                                        ") is defined multiple times.");
+            }
+            seen_names.insert(*name);
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
 void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)
 {
     TestResult test{"GUID Format", TestStatus::PASS, {}};

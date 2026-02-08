@@ -858,6 +858,124 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     cert.printTestResult(test);
 }
 
+void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Derivative Dimension Matching", TestStatus::PASS, {}};
+
+    // Build a map of value_reference -> Variable for quick lookup
+    std::map<uint32_t, const Variable*> vr_to_variable;
+    for (const auto& var : variables)
+        if (var.value_reference.has_value())
+            vr_to_variable[*var.value_reference] = &var;
+
+    // Check each variable that has a derivative_of attribute
+    for (const auto& var : variables)
+    {
+        if (var.derivative_of.has_value())
+        {
+            uint32_t derivative_of_vr = *var.derivative_of;
+
+            // Find the state variable
+            auto it = vr_to_variable.find(derivative_of_vr);
+            if (it == vr_to_variable.end())
+            {
+                // This will be caught by checkDerivativeReferences, so skip here
+                continue;
+            }
+
+            const Variable* state_var = it->second;
+
+            // Compare dimensions
+            bool dimensions_match = compareDimensions(var, *state_var);
+
+            if (!dimensions_match)
+            {
+                test.status = TestStatus::FAIL;
+
+                std::string derivative_dims = formatDimensions(var);
+                std::string state_dims = formatDimensions(*state_var);
+
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") is derivative of \"" + state_var->name + "\" (line " +
+                                        std::to_string(state_var->sourceline) + ") but has different dimensions. " +
+                                        "Derivative dimensions: " + derivative_dims + ", " +
+                                        "State dimensions: " + state_dims + ".");
+            }
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+// Helper function to compare dimensions between two variables
+bool Fmi3ModelDescriptionChecker::compareDimensions(const Variable& var1, const Variable& var2)
+{
+    // If one is an array and the other is not, they don't match
+    if (var1.dimensions.empty() != var2.dimensions.empty())
+        return false;
+
+    // Both are scalars (no dimensions)
+    if (var1.dimensions.empty() && var2.dimensions.empty())
+        return true;
+
+    // Both are arrays - must have same number of dimensions
+    if (var1.dimensions.size() != var2.dimensions.size())
+        return false;
+
+    // Compare each dimension
+    for (size_t i = 0; i < var1.dimensions.size(); ++i)
+    {
+        const auto& dim1 = var1.dimensions[i];
+        const auto& dim2 = var2.dimensions[i];
+
+        // Case 1: Both have fixed start values - must be equal
+        if (dim1.start.has_value() && dim2.start.has_value())
+        {
+            if (*dim1.start != *dim2.start)
+                return false;
+        }
+        // Case 2: Both reference value references - must reference the same parameter
+        else if (dim1.value_reference.has_value() && dim2.value_reference.has_value())
+        {
+            if (*dim1.value_reference != *dim2.value_reference)
+                return false;
+        }
+        // Case 3: One has fixed start, other has reference - they don't match
+        // (even if the reference evaluates to the same value, structurally they're different)
+        else
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Helper function to format dimensions for error messages
+std::string Fmi3ModelDescriptionChecker::formatDimensions(const Variable& var)
+{
+    if (var.dimensions.empty())
+        return "scalar";
+
+    std::string result = "[";
+    for (size_t i = 0; i < var.dimensions.size(); ++i)
+    {
+        if (i > 0)
+            result += ", ";
+
+        const auto& dim = var.dimensions[i];
+        if (dim.start.has_value())
+            result += std::to_string(*dim.start);
+        else if (dim.value_reference.has_value())
+            result += "vr:" + std::to_string(*dim.value_reference);
+        else
+            result += "?";
+    }
+    result += "]";
+
+    return result;
+}
+
 void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                           Certificate& cert)
 {
@@ -1514,6 +1632,229 @@ void Fmi3ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult&
                                                                      const std::string& /*attr_name*/)
 {
     // Special floats are allowed in FMI 3.0 type definitions
+}
+
+void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Type Definitions", TestStatus::PASS, {}};
+
+    // FMI3: Type definitions are direct children of TypeDefinitions
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/*");
+    if (!xpath_obj)
+    {
+        cert.printTestResult(test);
+        return;
+    }
+
+    xmlNodeSetPtr nodes = xpath_obj->nodesetval;
+    if (!nodes)
+    {
+        xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    std::set<std::string> seen_names;
+
+    for (int32_t i = 0; i < nodes->nodeNr; ++i)
+    {
+        xmlNodePtr type_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+        if (type_node->type != XML_ELEMENT_NODE)
+            continue;
+
+        auto name_opt = getXmlAttribute(type_node, "name");
+        std::string name = name_opt.value_or("unnamed");
+
+        if (name_opt)
+        {
+            if (seen_names.contains(*name_opt))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Type definition \"" + *name_opt + "\" (line " +
+                                        std::to_string(type_node->line) + ") is defined multiple times.");
+            }
+            seen_names.insert(*name_opt);
+        }
+
+        std::string elem_name =
+            reinterpret_cast<const char*>(type_node->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+
+        auto min_str = getXmlAttribute(type_node, "min");
+        auto max_str = getXmlAttribute(type_node, "max");
+        auto nominal_str = getXmlAttribute(type_node, "nominal");
+
+        // FMI 3.0 allows special floats, so we don't need to validate them as failures here
+        // (unlike FMI 2.0)
+
+        if (min_str && max_str)
+        {
+            bool special_min = isSpecialFloat(*min_str);
+            bool special_max = isSpecialFloat(*max_str);
+
+            if (!special_min && !special_max)
+            {
+                try
+                {
+                    if (elem_name == "Float32Type" || elem_name == "Float64Type")
+                    {
+                        double min_val = std::stod(*min_str);
+                        double max_val = std::stod(*max_str);
+                        if (max_val < min_val)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                    std::to_string(type_node->line) + "): max (" + *max_str +
+                                                    ") must be >= min (" + *min_str + ").");
+                        }
+                    }
+                    else if (elem_name.find("UInt") != std::string::npos)
+                    {
+                        uint64_t min_val = std::stoull(*min_str);
+                        uint64_t max_val = std::stoull(*max_str);
+                        if (max_val < min_val)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                    std::to_string(type_node->line) + "): max (" + *max_str +
+                                                    ") must be >= min (" + *min_str + ").");
+                        }
+                    }
+                    else if (elem_name.find("Int") != std::string::npos || elem_name == "EnumerationType")
+                    {
+                        int64_t min_val = std::stoll(*min_str);
+                        int64_t max_val = std::stoll(*max_str);
+                        if (max_val < min_val)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                    std::to_string(type_node->line) + "): max (" + *max_str +
+                                                    ") must be >= min (" + *min_str + ").");
+                        }
+                    }
+                }
+                catch (...)
+                {
+                    // Parsing failed - might be due to unsigned overflow if using stoll for UInt64
+                    // but for min/max comparison it should generally work if values are within range.
+                }
+            }
+        }
+
+        if (elem_name == "EnumerationType")
+        {
+            bool has_items = false;
+            std::set<int64_t> item_values;
+            std::set<std::string> item_names;
+
+            for (xmlNodePtr item = type_node->children; item; item = item->next)
+            {
+                if (item->type != XML_ELEMENT_NODE)
+                    continue;
+
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                std::string item_elem_name = reinterpret_cast<const char*>(item->name);
+                if (item_elem_name == "Item")
+                {
+                    has_items = true;
+                    auto item_name = getXmlAttribute(item, "name");
+                    auto item_value_str = getXmlAttribute(item, "value");
+
+                    if (item_name)
+                    {
+                        if (item_names.contains(*item_name))
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Enumeration type \"" + name + "\" (line " +
+                                                    std::to_string(type_node->line) + ") has multiple items named \"" +
+                                                    *item_name + "\".");
+                        }
+                        item_names.insert(*item_name);
+                    }
+
+                    if (item_value_str)
+                    {
+                        try
+                        {
+                            int64_t val = std::stoll(*item_value_str);
+                            if (item_values.contains(val))
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back("Enumeration type \"" + name + "\" (line " +
+                                                        std::to_string(type_node->line) +
+                                                        ") has multiple items with value " + *item_value_str +
+                                                        ". Item values must be unique within the same enumeration.");
+                            }
+                            item_values.insert(val);
+                        }
+                        catch (...)
+                        {
+                        }
+                    }
+                }
+            }
+
+            if (!has_items)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Enumeration type \"" + name + "\" (line " + std::to_string(type_node->line) +
+                                        ") must have at least one Item.");
+            }
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Annotations Uniqueness", TestStatus::PASS, {}};
+
+    // Find all <Annotations> containers in the document
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//Annotations");
+    if (!xpath_obj || !xpath_obj->nodesetval)
+    {
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+    {
+        xmlNodePtr annotations_node =
+            xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::set<std::string> seen_types;
+
+        // Check each child <Annotation> element
+        for (xmlNodePtr child = annotations_node->children; child; child = child->next)
+        {
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
+
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            std::string elem_name = reinterpret_cast<const char*>(child->name);
+            if (elem_name == "Annotation")
+            {
+                auto type = getXmlAttribute(child, "type");
+                if (type)
+                {
+                    if (seen_types.contains(*type))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Annotation of type \"" + *type + "\" (line " +
+                                                std::to_string(child->line) +
+                                                ") is defined multiple times within the same container.");
+                    }
+                    seen_types.insert(*type);
+                }
+            }
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
 }
 
 void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)

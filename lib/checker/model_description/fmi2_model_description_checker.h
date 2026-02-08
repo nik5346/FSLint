@@ -25,6 +25,8 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                 Certificate& cert) override;
 
     void checkUnits(xmlDocPtr doc, Certificate& cert) override;
+    void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) override;
+    void checkAnnotations(xmlDocPtr doc, Certificate& cert) override;
     void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
 
     void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
