@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-9 -16 18 17">
+  <style>
+    .tree { fill: #000000; }
+  @media (prefers-color-scheme: dark) {
+    .tree { fill: #ffffff; }
+  }
+  </style>
+  <path id="a" class="tree" d="M.618,0Q.7,-2.5,.382,-5.5L-.382,-5.5Q-.7,-2.5,-.618,0Z"/>
+  <g id="b" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#a" transform="rotate(-38.2)"/>
+    <use xlink:href="#a" transform="rotate(61.8)"/>
+  </g>
+  <g id="c" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#b" transform="rotate(-38.2)"/>
+    <use xlink:href="#b" transform="rotate(61.8)"/>
+  </g>
+  <g id="d" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#c" transform="rotate(-38.2)"/>
+    <use xlink:href="#c" transform="rotate(61.8)"/>
+  </g>
+  <g id="e" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#d" transform="rotate(-38.2)"/>
+    <use xlink:href="#d" transform="rotate(61.8)"/>
+  </g>
+  <g id="f" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#e" transform="rotate(-38.2)"/>
+    <use xlink:href="#e" transform="rotate(61.8)"/>
+  </g>
+  <g id="g" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#f" transform="rotate(-38.2)"/>
+    <use xlink:href="#f" transform="rotate(61.8)"/>
+  </g>
+  <g id="h" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#g" transform="rotate(-38.2)"/>
+    <use xlink:href="#g" transform="rotate(61.8)"/>
+  </g>
+  <g id="i" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#h" transform="rotate(-38.2)"/>
+    <use xlink:href="#h" transform="rotate(61.8)"/>
+  </g>
+  <g id="j" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#i" transform="rotate(-38.2)"/>
+    <use xlink:href="#i" transform="rotate(61.8)"/>
+  </g>
+  <g id="k" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#j" transform="rotate(-38.2)"/>
+    <use xlink:href="#j" transform="rotate(61.8)"/>
+  </g>
+  <g id="l" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#k" transform="rotate(-38.2)"/>
+    <use xlink:href="#k" transform="rotate(61.8)"/>
+  </g>
+  <g id="m" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#l" transform="rotate(-38.2)"/>
+    <use xlink:href="#l" transform="rotate(61.8)"/>
+  </g>
+  <g id="n" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#m" transform="rotate(-38.2)"/>
+    <use xlink:href="#m" transform="rotate(61.8)"/>
+  </g>
+  <g id="o" transform="matrix(.618,0 0,.618 0-5.5)">
+    <use xlink:href="#n" transform="rotate(-38.2)"/>
+    <use xlink:href="#n" transform="rotate(61.8)"/>
+  </g>
+  <use xlink:href="#o"/>
+</svg>
