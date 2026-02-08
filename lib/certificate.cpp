@@ -122,9 +122,7 @@ void Certificate::printSubsectionSummary(bool subsection_valid)
     bool actual_valid = subsection_valid && (_current_subsection_failed == 0);
 
     if (!actual_valid && _current_subsection_failed == 0)
-    {
         _total_failed++;
-    }
 
     log("");
     log("  ────────────────────────────────────────");
