@@ -93,6 +93,7 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
     SECTION("Pass")
     {
         validate_pass("tests/data/fmi3/terminals_and_icons/pass");
+        validate_pass("tests/data/fmi3/terminals_and_icons/pass/missing_member_name_sequence");
     }
 
     SECTION("Failures")
@@ -105,5 +106,9 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
                       "Stream member name \"h\" is not unique");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/illegal_stream_causality",
                       "must have causality 'output' or 'calculatedParameter'");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/missing_member_name_plug",
+                      "is missing mandatory 'memberName' for matchingRule 'plug'");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/missing_member_name_bus",
+                      "is missing mandatory 'memberName' for matchingRule 'bus'");
     }
 }
