@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" author="" generationTool="TestTool" license="MIT" copyright="© 2024 John Doe" version="1.0.0" generationDateAndTime="2024-05-15T12:00:00Z">
+  <ModelExchange modelIdentifier="Test"/>
+  <ModelVariables>
+    <ScalarVariable name="v" valueReference="1" causality="output">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="1"/>
+    </Outputs>
+  </ModelStructure>
+</fmiModelDescription>

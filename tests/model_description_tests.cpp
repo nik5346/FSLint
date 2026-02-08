@@ -264,37 +264,42 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
     SECTION("Metadata")
     {
-        validate_warning("meta_missing", "Attribute 'author' is missing");
-        validate_warning("meta_missing", "Attribute 'generationTool' is missing");
-        validate_warning("meta_missing", "Attribute 'license' is missing");
-        validate_warning("meta_missing", "Attribute 'copyright' is missing");
+        validate_warning("author_missing", "Attribute 'author' is missing");
+        validate_warning("author_empty", "Attribute 'author' is empty");
+        validate_warning("generation_tool_missing", "Attribute 'generationTool' is missing");
+        validate_warning("generation_tool_empty", "Attribute 'generationTool' is empty");
+        validate_warning("license_missing", "Attribute 'license' is missing");
+        validate_warning("license_empty", "Attribute 'license' is empty");
+        validate_warning("copyright_missing", "Attribute 'copyright' is missing");
+        validate_warning("copyright_empty", "Copyright attribute is empty");
+        validate_warning("copyright_format_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
+        validate_warning("copyright_format_no_year", "should include the year of publication");
+        validate_warning("copyright_format_no_holder", "should include the name of the copyright holder");
         validate_warning("model_version_missing", "Model version attribute is missing");
         validate_warning("model_version_empty", "Model version attribute is empty");
-        validate_warning("date_missing", "Attribute 'generationDateAndTime' is missing");
-        validate_warning("date_old", "is before the first FMI standard release");
-        validate_warning("copyright_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
-        validate_warning("copyright_no_year", "should include the year of publication");
-        validate_warning("copyright_no_holder", "should include the name of the copyright holder");
+        validate_warning("generation_date_and_time_missing", "Attribute 'generationDateAndTime' is missing");
+        validate_warning("generation_date_and_time_empty", "Attribute 'generationDateAndTime' is empty");
+        validate_warning("generation_date_and_time_old", "is before the first FMI standard release");
     }
 
     SECTION("Interfaces")
     {
-        validate_warning("id_long", "longer than recommended");
+        validate_warning("model_identifier_long", "longer than recommended");
     }
 
     SECTION("Unit definitions")
     {
-        validate_warning("unused_definitions", "Unit \"s\" is unused");
+        validate_warning("unit_unused", "Unit \"s\" is unused");
     }
 
     SECTION("Type definitions")
     {
-        validate_warning("unused_definitions", "Type definition \"UnusedType\" (line 11) is unused");
+        validate_warning("type_unused", "Type definition \"UnusedType\" (line 4) is unused.");
     }
 
     SECTION("Structure")
     {
-        validate_warning("derivative_non_continuous", "which has variability \"discrete\" (expected \"continuous\")");
+        validate_warning("derivative_variability", "which has variability \"discrete\" (expected \"continuous\")");
     }
 }
 
