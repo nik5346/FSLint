@@ -7,7 +7,9 @@
 #include "ssp2_schema_checker.h"
 
 #include "fmi2_model_description_checker.h"
+#include "fmi2_terminals_and_icons_checker.h"
 #include "fmi3_model_description_checker.h"
+#include "fmi3_terminals_and_icons_checker.h"
 #include "model_description_checker.h"
 #include "terminals_and_icons_checker.h"
 

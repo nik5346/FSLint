@@ -4,6 +4,7 @@
 #include <iostream>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <libxml/xpathInternals.h>
 #include <set>
 
 void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
@@ -19,9 +20,9 @@ void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, C
         return;
     }
 
-    checkTerminalsAndIcons(path, fmiModelDescriptionVersion, variables, cert);
+    bool success = checkTerminalsAndIcons(path, fmiModelDescriptionVersion, variables, cert);
 
-    cert.printSubsectionSummary(true);
+    cert.printSubsectionSummary(success);
 }
 
 std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
@@ -38,7 +39,7 @@ std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNode
     return value;
 }
 
-void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem::path& path,
+bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem::path& path,
                                                           const std::string& fmiModelDescriptionVersion,
                                                           const std::map<std::string, TerminalVariableInfo>& variables,
                                                           Certificate& cert)
@@ -50,7 +51,7 @@ void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
         TestResult test{
             "Terminals and Icons File", TestStatus::PASS, {"terminalsAndIcons.xml not present (optional)."}};
         cert.printTestResult(test);
-        return;
+        return true;
     }
 
     xmlDocPtr doc = xmlReadFile(terminals_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
@@ -58,8 +59,15 @@ void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     {
         TestResult test{"Parse terminalsAndIcons.xml", TestStatus::FAIL, {"Failed to parse terminalsAndIcons.xml."}};
         cert.printTestResult(test);
-        return;
+        return false;
     }
+
+    bool all_passed = true;
+    auto print_test = [&](TestResult& test) {
+        if (test.status == TestStatus::FAIL)
+            all_passed = false;
+        cert.printTestResult(test);
+    };
 
     xmlNodePtr root = xmlDocGetRootElement(doc);
 
@@ -72,30 +80,26 @@ void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
             test.status = TestStatus::FAIL;
             test.messages.push_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
         }
-        else if (fmiModelDescriptionVersion.starts_with("3."))
+        else
         {
-            if (*version_attr != fmiModelDescriptionVersion)
+            // FMI 3.0 specification: fmiVersion must be "3.0"
+            if (*version_attr != "3.0")
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("fmiVersion in terminalsAndIcons.xml ('" + *version_attr +
-                                        "') must match fmiVersion in modelDescription.xml ('" +
-                                        fmiModelDescriptionVersion + "') for FMI 3.0.");
+                test.messages.push_back("fmiVersion in terminalsAndIcons.xml must be '3.0' (found '" + *version_attr +
+                                        "').");
             }
         }
-        else if (fmiModelDescriptionVersion.starts_with("2."))
-        {
-            // For FMI 2, it should be 3.0 or higher as it uses the FMI 3.0 definition
-            if (version_attr->starts_with("1.") || version_attr->starts_with("2."))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("fmiVersion in terminalsAndIcons.xml ('" + *version_attr +
-                                        "') should be '3.0' or higher when used with FMI 2.x.");
-            }
-        }
-        cert.printTestResult(test);
+        print_test(test);
     }
 
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
+    std::string p = "";
+    if (root->ns && root->ns->href)
+    {
+        xmlXPathRegisterNs(context, reinterpret_cast<const xmlChar*>("f"), root->ns->href);
+        p = "f:";
+    }
 
     // 2. Check uniqueness of terminal names on each level
     {
@@ -125,22 +129,23 @@ void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
             }
         };
 
+        std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals";
         xmlXPathObjectPtr terminals_elem =
-            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("/fmiTerminalsAndIcons/Terminals"), context);
+            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
         if (terminals_elem && terminals_elem->nodesetval && terminals_elem->nodesetval->nodeNr > 0)
             check_unique_terminals(check_unique_terminals, terminals_elem->nodesetval->nodeTab[0]);
         if (terminals_elem)
             xmlXPathFreeObject(terminals_elem);
 
-        cert.printTestResult(test);
+        print_test(test);
     }
 
     // 3. Variable references and constraints
     {
         TestResult test{"Terminal Member Variables", TestStatus::PASS, {}};
 
-        xmlXPathObjectPtr member_vars =
-            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//TerminalMemberVariable"), context);
+        std::string expr = "//" + p + "TerminalMemberVariable";
+        xmlXPathObjectPtr member_vars = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
         if (member_vars && member_vars->nodesetval)
         {
             for (int i = 0; i < member_vars->nodesetval->nodeNr; ++i)
@@ -183,8 +188,8 @@ void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
         if (member_vars)
             xmlXPathFreeObject(member_vars);
 
-        xmlXPathObjectPtr stream_vars =
-            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//TerminalStreamMemberVariable"), context);
+        expr = "//" + p + "TerminalStreamMemberVariable";
+        xmlXPathObjectPtr stream_vars = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
         if (stream_vars && stream_vars->nodesetval)
         {
             for (int i = 0; i < stream_vars->nodesetval->nodeNr; ++i)
@@ -235,7 +240,7 @@ void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
         if (stream_vars)
             xmlXPathFreeObject(stream_vars);
 
-        cert.printTestResult(test);
+        print_test(test);
     }
 
     // 4. Member name uniqueness within a terminal
@@ -309,15 +314,15 @@ void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
             }
         };
 
-        xmlXPathObjectPtr terminals_elem = xmlXPathEvalExpression(
-            reinterpret_cast<const xmlChar*>("/fmiTerminalsAndIcons/Terminals/Terminal"), context);
+        std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals//" + p + "Terminal";
+        xmlXPathObjectPtr terminals_elem = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
         if (terminals_elem && terminals_elem->nodesetval)
             for (int i = 0; i < terminals_elem->nodesetval->nodeNr; ++i)
                 check_unique_members(check_unique_members, terminals_elem->nodesetval->nodeTab[i]);
         if (terminals_elem)
             xmlXPathFreeObject(terminals_elem);
 
-        cert.printTestResult(test);
+        print_test(test);
     }
 
     // 5. Stream and inflow/outflow constraint
@@ -361,156 +366,18 @@ void TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
             }
         };
 
-        xmlXPathObjectPtr terminals_elem = xmlXPathEvalExpression(
-            reinterpret_cast<const xmlChar*>("/fmiTerminalsAndIcons/Terminals/Terminal"), context);
+        std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals//" + p + "Terminal";
+        xmlXPathObjectPtr terminals_elem = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
         if (terminals_elem && terminals_elem->nodesetval)
             for (int i = 0; i < terminals_elem->nodesetval->nodeNr; ++i)
                 check_stream_flow_constraint(check_stream_flow_constraint, terminals_elem->nodesetval->nodeTab[i]);
         if (terminals_elem)
             xmlXPathFreeObject(terminals_elem);
 
-        cert.printTestResult(test);
+        print_test(test);
     }
 
     xmlXPathFreeContext(context);
     xmlFreeDoc(doc);
-}
-
-std::map<std::string, TerminalVariableInfo>
-Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,
-                                               std::string& fmiVersion)
-{
-    std::map<std::string, TerminalVariableInfo> variables;
-    auto model_desc_path = path / "modelDescription.xml";
-
-    if (!std::filesystem::exists(model_desc_path))
-    {
-        cert.printTestResult({"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}});
-        return variables;
-    }
-
-    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
-    if (!doc)
-    {
-        cert.printTestResult({"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}});
-        return variables;
-    }
-
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    auto version_attr = getXmlAttribute(root, "fmiVersion");
-    if (version_attr)
-    {
-        fmiVersion = *version_attr;
-    }
-    else
-    {
-        cert.printTestResult(
-            {"FMI Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
-        xmlFreeDoc(doc);
-        return variables;
-    }
-
-    xmlXPathContextPtr context = xmlXPathNewContext(doc);
-    xmlXPathObjectPtr xpath_obj =
-        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/ScalarVariable"), context);
-
-    if (xpath_obj && xpath_obj->nodesetval)
-    {
-        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
-        {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
-            TerminalVariableInfo var;
-            var.name = getXmlAttribute(node, "name").value_or("");
-            var.causality = getXmlAttribute(node, "causality").value_or("local");
-            var.variability = getXmlAttribute(node, "variability").value_or("");
-            var.sourceline = node->line;
-
-            for (xmlNodePtr child = node->children; child; child = child->next)
-            {
-                if (child->type == XML_ELEMENT_NODE)
-                {
-                    std::string elem_name = reinterpret_cast<const char*>(child->name);
-                    if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" ||
-                        elem_name == "String" || elem_name == "Enumeration")
-                    {
-                        var.type = elem_name;
-                        break;
-                    }
-                }
-            }
-
-            if (!var.name.empty())
-                variables[var.name] = var;
-        }
-    }
-
-    if (xpath_obj)
-        xmlXPathFreeObject(xpath_obj);
-    xmlXPathFreeContext(context);
-    xmlFreeDoc(doc);
-
-    return variables;
-}
-
-std::map<std::string, TerminalVariableInfo>
-Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,
-                                               std::string& fmiVersion)
-{
-    std::map<std::string, TerminalVariableInfo> variables;
-    auto model_desc_path = path / "modelDescription.xml";
-
-    if (!std::filesystem::exists(model_desc_path))
-    {
-        cert.printTestResult({"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}});
-        return variables;
-    }
-
-    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
-    if (!doc)
-    {
-        cert.printTestResult({"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}});
-        return variables;
-    }
-
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    auto version_attr = getXmlAttribute(root, "fmiVersion");
-    if (version_attr)
-    {
-        fmiVersion = *version_attr;
-    }
-    else
-    {
-        cert.printTestResult(
-            {"FMI Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
-        xmlFreeDoc(doc);
-        return variables;
-    }
-
-    xmlXPathContextPtr context = xmlXPathNewContext(doc);
-    xmlXPathObjectPtr xpath_obj =
-        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/*"), context);
-
-    if (xpath_obj && xpath_obj->nodesetval)
-    {
-        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
-        {
-            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
-            TerminalVariableInfo var;
-            var.name = getXmlAttribute(node, "name").value_or("");
-            var.causality = getXmlAttribute(node, "causality").value_or("local");
-            var.variability = getXmlAttribute(node, "variability").value_or("");
-            var.sourceline = node->line;
-            var.type = reinterpret_cast<const char*>(node->name);
-
-            if (!var.name.empty())
-                variables[var.name] = var;
-        }
-    }
-
-    if (xpath_obj)
-        xmlXPathFreeObject(xpath_obj);
-    xmlXPathFreeContext(context);
-    xmlFreeDoc(doc);
-
-    return variables;
+    return all_passed;
 }

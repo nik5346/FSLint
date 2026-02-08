@@ -1,0 +1,67 @@
+#include "fmi3_terminals_and_icons_checker.h"
+#include "certificate.h"
+#include <libxml/parser.h>
+#include <libxml/xpath.h>
+
+std::map<std::string, TerminalVariableInfo>
+Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,
+                                               std::string& fmiVersion)
+{
+    std::map<std::string, TerminalVariableInfo> variables;
+    auto model_desc_path = path / "modelDescription.xml";
+
+    if (!std::filesystem::exists(model_desc_path))
+    {
+        cert.printTestResult({"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}});
+        return variables;
+    }
+
+    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (!doc)
+    {
+        cert.printTestResult({"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}});
+        return variables;
+    }
+
+    xmlNodePtr root = xmlDocGetRootElement(doc);
+    auto version_attr = getXmlAttribute(root, "fmiVersion");
+    if (version_attr)
+    {
+        fmiVersion = *version_attr;
+    }
+    else
+    {
+        cert.printTestResult(
+            {"FMI Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
+        xmlFreeDoc(doc);
+        return variables;
+    }
+
+    xmlXPathContextPtr context = xmlXPathNewContext(doc);
+    xmlXPathObjectPtr xpath_obj =
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/*"), context);
+
+    if (xpath_obj && xpath_obj->nodesetval)
+    {
+        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            TerminalVariableInfo var;
+            var.name = getXmlAttribute(node, "name").value_or("");
+            var.causality = getXmlAttribute(node, "causality").value_or("local");
+            var.variability = getXmlAttribute(node, "variability").value_or("");
+            var.sourceline = node->line;
+            var.type = reinterpret_cast<const char*>(node->name);
+
+            if (!var.name.empty())
+                variables[var.name] = var;
+        }
+    }
+
+    if (xpath_obj)
+        xmlXPathFreeObject(xpath_obj);
+    xmlXPathFreeContext(context);
+    xmlFreeDoc(doc);
+
+    return variables;
+}

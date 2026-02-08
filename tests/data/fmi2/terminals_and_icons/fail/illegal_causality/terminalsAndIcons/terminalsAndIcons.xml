@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiTerminalsAndIcons fmiVersion="3.0">
+<fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
   <Terminals>
     <Terminal name="PortA">
       <TerminalMemberVariable variableName="v_local" memberName="v_member" variableKind="signal"/>

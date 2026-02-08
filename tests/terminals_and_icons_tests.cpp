@@ -1,4 +1,6 @@
 #include "certificate.h"
+#include "fmi2_terminals_and_icons_checker.h"
+#include "fmi3_terminals_and_icons_checker.h"
 #include "terminals_and_icons_checker.h"
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
@@ -96,7 +98,7 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
     SECTION("Failures")
     {
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/version_mismatch",
-                      "must match fmiVersion in modelDescription.xml");
+                      "fmiVersion in terminalsAndIcons.xml must be '3.0'");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/stream_flow_constraint",
                       "has multiple inflow/outflow variables and a stream variable");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/duplicate_stream_member",
