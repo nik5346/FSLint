@@ -1,6 +1,8 @@
-# FSLint
+<div align="center">
+  <img width="400" src="./images/banner.svg" alt="FSLint">
+</div>
 
-FSLint is a comprehensive linting and validation tool for Functional Mock-up Units (FMUs) and System Structure and Parameterization (SSP) files. It ensures that your models comply with the FMI (2.0, 3.0) and SSP (1.0, 2.0) standards, checking for both structural correctness and semantic validity.
+FSLint is a comprehensive linting and validation tool for Functional Mock-up Units (FMUs) and System Structure and Parameterization (SSP) files. It ensures that your models comply with the [FMI](https://fmi-standard.org/) (2.0, 3.0) and [SSP](https://ssp-standard.org/) (1.0, 2.0) standards, checking for both structural correctness and semantic validity.
 
 ## Features
 
