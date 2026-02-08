@@ -76,10 +76,8 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
             std::stringstream ss(s);
             std::string token;
             while (ss >> token)
-            {
                 if (!token.empty())
                     var.num_start_values++;
-            }
         }
 
         var.min = getXmlAttribute(node, "min");
@@ -233,7 +231,8 @@ void Fmi3ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
                                     "Float64 can be continuous.");
         }
 
-        // FMI3: causality="parameter", "calculatedParameter" or "structuralParameter" must have variability="fixed" or "tunable"
+        // FMI3: causality="parameter", "calculatedParameter" or "structuralParameter" must have variability="fixed" or
+        // "tunable"
         if ((var.causality == "parameter" || var.causality == "calculatedParameter" ||
              var.causality == "structuralParameter") &&
             (var.variability != "fixed" && var.variability != "tunable"))
@@ -1273,7 +1272,7 @@ std::string Fmi3ModelDescriptionChecker::formatDimensions(const Variable& var)
 }
 
 void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                             Certificate& cert)
+                                                            Certificate& cert)
 {
     TestResult test{"Variable Dependencies (FMI3)", TestStatus::PASS, {}};
 
@@ -1361,7 +1360,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
                     }
 
                     // 4. 'fixed', 'tunable', 'discrete' only for floating point unknowns AND NOT for InitialUnknown
-                    if ((k == "fixed" || k == "tunable" || k == "discrete"))
+                    if (k == "fixed" || k == "tunable" || k == "discrete")
                     {
                         if (is_initial_unknown)
                         {
