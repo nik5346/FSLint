@@ -70,14 +70,17 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     if (schema_checker)
         checkers.push_back(std::move(schema_checker));
 
-    // Create model description checker (FMI only)
-    auto model_desc_checker = createModelDescriptionChecker(info);
-    if (model_desc_checker)
-        checkers.push_back(std::move(model_desc_checker));
-
-    // Create terminals and icons checker (FMI only)
+    // Create FMI-specific checkers
     if (info.standard == ModelStandard::FMI2 || info.standard == ModelStandard::FMI3)
+    {
+        // Create model description checker
+        auto model_desc_checker = createModelDescriptionChecker(info);
+        if (model_desc_checker)
+            checkers.push_back(std::move(model_desc_checker));
+
+        // Create terminals and icons checker
         checkers.push_back(std::make_unique<TerminalsAndIconsChecker>());
+    }
 
     return checkers;
 }
