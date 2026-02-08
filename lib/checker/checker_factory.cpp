@@ -66,21 +66,16 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     std::vector<std::unique_ptr<Checker>> checkers;
 
     // Create schema checker
-    auto schema_checker = createSchemaChecker(info);
-    if (schema_checker)
-        checkers.push_back(std::move(schema_checker));
+    if (auto checker = createSchemaChecker(info))
+        checkers.push_back(std::move(checker));
 
-    // Create FMI-specific checkers
-    if (info.standard == ModelStandard::FMI2 || info.standard == ModelStandard::FMI3)
-    {
-        // Create model description checker
-        auto model_desc_checker = createModelDescriptionChecker(info);
-        if (model_desc_checker)
-            checkers.push_back(std::move(model_desc_checker));
+    // Create model description checker
+    if (auto checker = createModelDescriptionChecker(info))
+        checkers.push_back(std::move(checker));
 
-        // Create terminals and icons checker
-        checkers.push_back(std::make_unique<TerminalsAndIconsChecker>());
-    }
+    // Create terminals and icons checker
+    if (auto checker = createTerminalsAndIconsChecker(info))
+        checkers.push_back(std::move(checker));
 
     return checkers;
 }
@@ -97,6 +92,19 @@ std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const Mod
         [[fallthrough]]; // No model description checker for SSP
     case ModelStandard::SSP2:
         [[fallthrough]]; // No model description checker for SSP
+    default:
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Checker> CheckerFactory::createTerminalsAndIconsChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI2:
+        [[fallthrough]];
+    case ModelStandard::FMI3:
+        return std::make_unique<TerminalsAndIconsChecker>();
     default:
         return nullptr;
     }
