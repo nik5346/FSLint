@@ -482,8 +482,10 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("event_indicator_bad_causality", "does not have causality='local' or 'output'");
         validate_fail("event_indicator_bad_type", "is used as an event indicator but is of type Int32");
         validate_fail("event_indicator_bad_variability", "does not have variability='continuous'");
-        validate_fail("structure_initial_unknown_duplicate", "is listed multiple times in ModelStructure/InitialUnknown");
-        validate_fail("structure_event_indicator_duplicate", "is listed multiple times in ModelStructure/EventIndicator");
+        validate_fail("structure_initial_unknown_duplicate",
+                      "is listed multiple times in ModelStructure/InitialUnknown");
+        validate_fail("structure_event_indicator_duplicate",
+                      "is listed multiple times in ModelStructure/EventIndicator");
     }
 
     SECTION("Dependencies")
