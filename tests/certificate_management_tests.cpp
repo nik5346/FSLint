@@ -4,19 +4,14 @@
 #include <fstream>
 #include <iostream>
 
-TEST_CASE("ModelChecker with directories", "[directory]")
+TEST_CASE("Certificate Management on Directories", "[certificate][directory]")
 {
-    // Use existing test data as a source
-    std::filesystem::path source_fmu = "tests/data/fmi2/pass";
-    std::filesystem::path test_dir = "tests/data/directory_model_test";
-
-    if (std::filesystem::exists(test_dir)) {
-        std::filesystem::remove_all(test_dir);
-    }
-    std::filesystem::create_directories(test_dir);
-    std::filesystem::copy(source_fmu, test_dir, std::filesystem::copy_options::recursive);
-
+    // Use existing test data directly
+    std::filesystem::path test_dir = "tests/data/fmi2/pass";
     ModelChecker checker;
+
+    // Ensure clean state before starting
+    checker.removeCertificate(test_dir);
 
     SECTION("Validation")
     {
@@ -24,7 +19,7 @@ TEST_CASE("ModelChecker with directories", "[directory]")
         checker.validate(test_dir);
     }
 
-    SECTION("Certificate Management")
+    SECTION("Certificate Operations")
     {
         // Add
         bool added = checker.addCertificate(test_dir);
@@ -46,6 +41,6 @@ TEST_CASE("ModelChecker with directories", "[directory]")
         CHECK_FALSE(std::filesystem::exists(test_dir / "extra/validation_certificate.txt"));
     }
 
-    // Cleanup
-    std::filesystem::remove_all(test_dir);
+    // Final cleanup to ensure no side effects on other tests
+    checker.removeCertificate(test_dir);
 }
