@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <CoSimulation modelIdentifier="test">
+    <SourceFiles>
+      <File name="test.c"/>
+    </SourceFiles>
+  </CoSimulation>
+  <ModelVariables>
+    <ScalarVariable name="v" valueReference="1" causality="output">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="1"/>
+    </Outputs>
+    <InitialUnknowns>
+      <Unknown index="1"/>
+    </InitialUnknowns>
+  </ModelStructure>
+</fmiModelDescription>

@@ -87,6 +87,9 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkMinMaxStartValues(variables, type_definitions, cert);
     checkDerivativeReferences(variables, cert);
 
+    // Check binaries and sources
+    checkDistribution(path, doc, model_identifiers, cert);
+
     // Perform version-specific validation
     performVersionSpecificChecks(doc, variables, type_definitions, units, cert);
 

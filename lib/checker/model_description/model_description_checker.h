@@ -150,6 +150,11 @@ class ModelDescriptionCheckerBase : public Checker
     // New: Check that derivative references point to valid variables
     void checkDerivativeReferences(const std::vector<Variable>& variables, Certificate& cert);
 
+    // Check for binaries and/or source code
+    virtual void checkDistribution(const std::filesystem::path& path, xmlDocPtr doc,
+                                   const std::map<std::string, std::string>& model_identifiers,
+                                   Certificate& cert) = 0;
+
     // Version-specific validation methods (must be implemented by derived classes)
     virtual void applyDefaultInitialValues(std::vector<Variable>& variables) = 0;
     virtual void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
