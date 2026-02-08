@@ -9,6 +9,7 @@
 #include "fmi2_model_description_checker.h"
 #include "fmi3_model_description_checker.h"
 #include "model_description_checker.h"
+#include "terminals_and_icons_checker.h"
 
 #include <fstream>
 #include <iostream>
@@ -73,6 +74,10 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     auto model_desc_checker = createModelDescriptionChecker(info);
     if (model_desc_checker)
         checkers.push_back(std::move(model_desc_checker));
+
+    // Create terminals and icons checker (FMI only)
+    if (info.standard == ModelStandard::FMI2 || info.standard == ModelStandard::FMI3)
+        checkers.push_back(std::make_unique<TerminalsAndIconsChecker>());
 
     return checkers;
 }

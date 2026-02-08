@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiTerminalsAndIcons fmiVersion="3.0">
+  <Terminals>
+    <Terminal name="PortA">
+      <TerminalMemberVariable variableName="u" memberName="u_member"/>
+      <TerminalMemberVariable variableName="u" memberName="u_member"/>
+    </Terminal>
+  </Terminals>
+</fmiTerminalsAndIcons>
