@@ -7,8 +7,11 @@
 #include "ssp2_schema_checker.h"
 
 #include "fmi2_model_description_checker.h"
+#include "fmi2_terminals_and_icons_checker.h"
 #include "fmi3_model_description_checker.h"
+#include "fmi3_terminals_and_icons_checker.h"
 #include "model_description_checker.h"
+#include "terminals_and_icons_checker.h"
 
 #include "build_description_checker.h"
 #include "fmi2_directory_checker.h"
@@ -69,14 +72,16 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     std::vector<std::unique_ptr<Checker>> checkers;
 
     // Create schema checker
-    auto schema_checker = createSchemaChecker(info);
-    if (schema_checker)
-        checkers.push_back(std::move(schema_checker));
+    if (auto checker = createSchemaChecker(info))
+        checkers.push_back(std::move(checker));
 
-    // Create model description checker (FMI only)
-    auto model_desc_checker = createModelDescriptionChecker(info);
-    if (model_desc_checker)
-        checkers.push_back(std::move(model_desc_checker));
+    // Create model description checker
+    if (auto checker = createModelDescriptionChecker(info))
+        checkers.push_back(std::move(checker));
+
+    // Create terminals and icons checker
+    if (auto checker = createTerminalsAndIconsChecker(info))
+        checkers.push_back(std::move(checker));
 
     if (info.standard == ModelStandard::FMI2)
     {
@@ -104,6 +109,19 @@ std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const Mod
         [[fallthrough]]; // No model description checker for SSP
     case ModelStandard::SSP2:
         [[fallthrough]]; // No model description checker for SSP
+    default:
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Checker> CheckerFactory::createTerminalsAndIconsChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI2:
+        return std::make_unique<Fmi2TerminalsAndIconsChecker>();
+    case ModelStandard::FMI3:
+        return std::make_unique<Fmi3TerminalsAndIconsChecker>();
     default:
         return nullptr;
     }

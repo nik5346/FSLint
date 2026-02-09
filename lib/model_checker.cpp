@@ -6,6 +6,7 @@
 
 #include "picosha2.h"
 
+#include <algorithm>
 #include <ctime>
 #include <fstream>
 #include <iostream>
