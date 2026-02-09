@@ -57,8 +57,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
                     continue;
 
                 // Only check typical source files
-                static const std::set<std::string> source_extensions = {".c",    ".cc",  ".cpp", ".cxx", ".C",
-                                                                        ".c++",  ".cp",  ".cppm", ".ixx"};
+                static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
                 std::string ext = entry.path().extension().string();
 
                 if (source_extensions.contains(ext))
@@ -195,9 +194,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
         static const std::set<std::string> suggested_languages = {
             "C89",   "C90",   "C99",   "C11",   "C17",   "C18",   "C23",  "C++98",
             "C++03", "C++11", "C++14", "C++17", "C++20", "C++23", "C++26"};
-        static const std::set<std::string> suggested_compilers = {
-            "gcc",     "clang++", "clang",      "intel",        "msvc",
-            "borland", "watcom",  "metrowerks", "digital_mars", "armcc"};
+        static const std::set<std::string> suggested_compilers = {"gcc", "clang", "msvc"};
 
         for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)
         {
@@ -246,7 +243,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                         test.status = TestStatus::WARNING;
                     test.messages.push_back("Compiler '" + *compiler_opt + "' in BuildConfiguration (line " +
                                             std::to_string(node->line) +
-                                            ") is not one of the suggested values (e.g. gcc, clang++, msvc).");
+                                            ") is not one of the suggested values (e.g. gcc, clang, msvc).");
                 }
             }
         }

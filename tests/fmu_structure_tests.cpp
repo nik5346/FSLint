@@ -212,21 +212,6 @@ TEST_CASE("BuildDescriptionChecker validation", "[build_description]")
             fs::remove_all(path);
         }
 
-        SECTION("Accepts watcom compiler")
-        {
-            auto path = fs::temp_directory_path() / "bd_watcom_test";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"test\" compiler=\"watcom\"/></fmiBuildDescription>";
-            }
-            Certificate cert;
-            checker.validate(path, cert);
-            CHECK(has_pass(cert, "Build Description Semantic Validation"));
-            fs::remove_all(path);
-        }
-
         SECTION("Accepts C++26 language")
         {
             auto path = fs::temp_directory_path() / "bd_cpp26_test";
@@ -249,44 +234,6 @@ TEST_CASE("BuildDescriptionChecker validation", "[build_description]")
         auto path = fs::temp_directory_path() / "bd_ext_test";
         fs::remove_all(path);
         fs::create_directories(path / "sources");
-
-        SECTION("Accepts .cppm and .ixx")
-        {
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"><BuildConfiguration><SourceFile name=\"mod.cppm\"/><SourceFile name=\"mod.ixx\"/></BuildConfiguration></fmiBuildDescription>";
-            }
-            {
-                std::ofstream ofs(path / "sources/mod.cppm");
-                ofs << "export module m;";
-            }
-            {
-                std::ofstream ofs(path / "sources/mod.ixx");
-                ofs << "export module m2;";
-            }
-            Certificate cert;
-            checker.validate(path, cert);
-            // Should pass semantic validation (files exist)
-            CHECK(has_pass(cert, "Build Description Semantic Validation"));
-
-            // Ensure they are not flagged in reverse check (if they are listed they are not flagged)
-            // But if we remove one from the XML, it should be flagged.
-        }
-
-        SECTION("Reverse check flags unlisted .cppm")
-        {
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"/>";
-            }
-            {
-                std::ofstream ofs(path / "sources/mod.cppm");
-                ofs << "export module m;";
-            }
-            Certificate cert;
-            checker.validate(path, cert);
-            CHECK(has_warn(cert, "Build Description Semantic Validation"));
-        }
 
         SECTION("Fails if version mismatch")
         {
