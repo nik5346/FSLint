@@ -84,11 +84,11 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
 
                 // Only check typical source files
+                static const std::set<std::string> source_extensions = {".c",    ".cc",  ".cpp", ".cxx", ".C",
+                                                                        ".c++",  ".cp",  ".cppm", ".ixx"};
                 std::string ext = entry.path().extension().string();
-                for (auto& c : ext)
-                    c = static_cast<char>(std::tolower(c));
 
-                if (ext == ".c" || ext == ".cpp" || ext == ".cxx" || ext == ".cc")
+                if (source_extensions.contains(ext))
                 {
                     if (!listed_sources_in_md.contains(filename))
                     {
