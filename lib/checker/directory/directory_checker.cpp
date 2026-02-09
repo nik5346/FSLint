@@ -1,9 +1,9 @@
-#include "directory_checker_base.h"
+#include "directory_checker.h"
 #include "certificate.h"
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
-void DirectoryCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
+void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
     cert.printSubsectionHeader("FMU DIRECTORY STRUCTURE");
 
@@ -73,7 +73,7 @@ void DirectoryCheckerBase::validate(const std::filesystem::path& path, Certifica
     performVersionSpecificChecks(path, cert, model_identifiers, listed_sources_in_md);
 }
 
-std::optional<std::string> DirectoryCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
+std::optional<std::string> DirectoryChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
     if (!node)
         return std::nullopt;
