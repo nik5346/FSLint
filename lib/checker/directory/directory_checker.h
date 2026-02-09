@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-class DirectoryCheckerBase : public Checker
+class DirectoryChecker : public Checker
 {
   public:
     void validate(const std::filesystem::path& path, Certificate& cert) override;

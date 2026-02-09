@@ -1,8 +1,8 @@
 #pragma once
 
-#include "directory_checker_base.h"
+#include "directory_checker.h"
 
-class Fmi3DirectoryChecker : public DirectoryCheckerBase
+class Fmi3DirectoryChecker : public DirectoryChecker
 {
   protected:
     void performVersionSpecificChecks(const std::filesystem::path& path, Certificate& cert,
