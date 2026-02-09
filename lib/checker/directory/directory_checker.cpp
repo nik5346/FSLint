@@ -1,9 +1,8 @@
 #include "directory_checker.h"
 #include "certificate.h"
+#include <algorithm>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-#include <algorithm>
-#include <iostream>
 #include <set>
 
 void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
@@ -45,7 +44,6 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
         cert.printSubsectionSummary(false);
         return;
     }
-    std::string fmi_version = *fmi_version_opt;
 
     std::map<std::string, std::string> model_identifiers;
     std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
@@ -73,9 +71,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
         xmlXPathObjectPtr sources_xpath =
             xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFiles/File"), xpath_context);
         if (sources_xpath && sources_xpath->nodesetval && sources_xpath->nodesetval->nodeNr > 0)
-        {
             has_sources_in_md = true;
-        }
         if (sources_xpath)
             xmlXPathFreeObject(sources_xpath);
 
@@ -120,10 +116,17 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     }
 
     // Check for standard directories/files and warn about unknown ones
-    std::set<std::string> standard_entries = {"modelDescription.xml", "model.png",        "documentation",
-                                              "licenses",             "sources",          "binaries",
-                                              "resources",            "extra",            "terminalsAndIcons",
-                                              "model.svg",            "fmi3Terminals.xml"}; // SVG is also common
+    std::set<std::string> standard_entries = {"modelDescription.xml",
+                                              "model.png",
+                                              "documentation",
+                                              "licenses",
+                                              "sources",
+                                              "binaries",
+                                              "resources",
+                                              "extra",
+                                              "terminalsAndIcons",
+                                              "model.svg",
+                                              "fmi3Terminals.xml"};
 
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {

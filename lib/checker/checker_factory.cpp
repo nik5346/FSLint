@@ -10,8 +10,8 @@
 #include "fmi3_model_description_checker.h"
 #include "model_description_checker.h"
 
-#include "directory_checker.h"
 #include "build_description_checker.h"
+#include "directory_checker.h"
 
 #include <fstream>
 #include <iostream>

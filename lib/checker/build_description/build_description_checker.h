@@ -8,9 +8,9 @@
 
 class BuildDescriptionChecker : public Checker
 {
-public:
+  public:
     void validate(const std::filesystem::path& path, Certificate& cert) override;
 
-private:
+  private:
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 };

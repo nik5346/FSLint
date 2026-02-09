@@ -1,285 +1,150 @@
-#include "certificate.h"
-#include "directory_checker.h"
 #include "build_description_checker.h"
+#include "certificate.h"
+#include "checker_factory.h"
+#include "directory_checker.h"
+#include "fmi2_model_description_checker.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
-#include <fstream>
+#include <iostream>
 
 namespace fs = std::filesystem;
 
-void create_fmu_dir(const fs::path& root, const std::string& fmi_version, const std::string& model_id) {
-    fs::create_directories(root);
-    std::ofstream md(root / "modelDescription.xml");
-    md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    md << "<fmiModelDescription fmiVersion=\"" << fmi_version << "\" modelName=\"test\" guid=\"{123}\">\n";
-    md << "  <CoSimulation modelIdentifier=\"" << model_id << "\"/>\n";
-    md << "  <ModelVariables>\n";
-    md << "    <ScalarVariable name=\"v\" valueReference=\"1\" causality=\"output\"><Real/></ScalarVariable>\n";
-    md << "  </ModelVariables>\n";
-    md << "  <ModelStructure><Outputs><Unknown index=\"1\"/></Outputs></ModelStructure>\n";
-    md << "</fmiModelDescription>\n";
+bool has_test_with_status(const Certificate& cert, const std::string& test_name, TestStatus status)
+{
+    const auto& results = cert.getResults();
+    std::cout << "DEBUG: Searching for '" << test_name << "' with status " << (int)status << std::endl;
+    for (const auto& r : results)
+    {
+        std::cout << "DEBUG: Found '" << r.test_name << "' with status " << (int)r.status << std::endl;
+        if (r.test_name == test_name && r.status == status)
+            return true;
+    }
+    return false;
 }
 
-TEST_CASE("DirectoryChecker distribution validation", "[directory]") {
+bool has_fail(const Certificate& cert, const std::string& test_name)
+{
+    return has_test_with_status(cert, test_name, TestStatus::FAIL);
+}
+
+bool has_warn(const Certificate& cert, const std::string& test_name)
+{
+    return has_test_with_status(cert, test_name, TestStatus::WARNING);
+}
+
+bool has_pass(const Certificate& cert, const std::string& test_name)
+{
+    return has_test_with_status(cert, test_name, TestStatus::PASS);
+}
+
+TEST_CASE("DirectoryChecker validation", "[directory]")
+{
     DirectoryChecker checker;
-    fs::path test_dir = fs::current_path() / "test_fmu_structure";
 
-    SECTION("Fails if neither binaries nor sources") {
-        create_fmu_dir(test_dir, "2.0", "test");
+    SECTION("Fails if neither binaries nor sources")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_fail = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL) {
-                for (const auto& msg : res.messages) {
-                    if (msg.find("must contain either a precompiled binary for at least one platform or source code") != std::string::npos) {
-                        has_fail = true;
-                    }
-                }
-            }
-        }
-        CHECK(has_fail);
-        fs::remove_all(test_dir);
+        checker.validate("tests/data/directory/fail/no_impl", cert);
+        CHECK(has_fail(cert, "FMU Structure"));
     }
 
-    SECTION("Passes with binaries") {
-        create_fmu_dir(test_dir, "2.0", "test");
-        fs::create_directories(test_dir / "binaries" / "win64");
-        std::ofstream bin(test_dir / "binaries" / "win64" / "test.dll");
-        bin << "dummy";
-
+    SECTION("Passes with binaries")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_fail = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL) has_fail = true;
-        }
-        CHECK_FALSE(has_fail);
-        fs::remove_all(test_dir);
+        checker.validate("tests/data/directory/pass/binaries", cert);
+        CHECK(has_pass(cert, "FMU Structure"));
     }
 
-    SECTION("Passes with sources in MD") {
-        fs::create_directories(test_dir);
-        std::ofstream md(test_dir / "modelDescription.xml");
-        md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-           << "<fmiModelDescription fmiVersion=\"2.0\" modelName=\"test\" guid=\"{123}\">\n"
-           << "  <CoSimulation modelIdentifier=\"test\">\n"
-           << "    <SourceFiles><File name=\"test.c\"/></SourceFiles>\n"
-           << "  </CoSimulation>\n"
-           << "  <ModelVariables>\n"
-           << "    <ScalarVariable name=\"v\" valueReference=\"1\" causality=\"output\"><Real/></ScalarVariable>\n"
-           << "  </ModelVariables>\n"
-           << "  <ModelStructure><Outputs><Unknown index=\"1\"/></Outputs></ModelStructure>\n"
-           << "</fmiModelDescription>\n";
-        md.close();
-
+    SECTION("Passes with sources")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_fail = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL) has_fail = true;
-        }
-        CHECK_FALSE(has_fail);
-        fs::remove_all(test_dir);
+        checker.validate("tests/data/directory/pass/sources", cert);
+        CHECK(has_pass(cert, "FMU Structure"));
     }
 
-    SECTION("Passes with buildDescription.xml") {
-        create_fmu_dir(test_dir, "2.0", "test");
-        fs::create_directories(test_dir / "sources");
-        std::ofstream bd(test_dir / "sources" / "buildDescription.xml");
-        bd << "dummy";
-
+    SECTION("Warns about unknown entry in root")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_fail = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL) has_fail = true;
-        }
-        CHECK_FALSE(has_fail);
-        fs::remove_all(test_dir);
+        checker.validate("tests/data/directory/warn/unknown_entry", cert);
+        CHECK(has_warn(cert, "FMU Structure"));
     }
 }
 
-TEST_CASE("BuildDescriptionChecker validation", "[build_description]") {
+TEST_CASE("BuildDescriptionChecker validation", "[build_description]")
+{
     BuildDescriptionChecker checker;
-    fs::path test_dir = fs::current_path() / "test_fmu_build_desc";
-    fs::create_directories(test_dir / "sources");
 
-    SECTION("Fails if listed source file is missing") {
-        std::ofstream bd(test_dir / "sources" / "buildDescription.xml");
-        bd << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-           << "<fmiBuildDescription fmiVersion=\"3.0\">\n"
-           << "  <SourceFileSet>\n"
-           << "    <SourceFile name=\"missing.c\"/>\n"
-           << "  </SourceFileSet>\n"
-           << "</fmiBuildDescription>\n";
-        bd.close();
-
+    SECTION("Fails if listed source file is missing")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_fail = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL) {
-                for (const auto& msg : res.messages) {
-                    if (msg.find("Source file 'missing.c' listed in 'buildDescription.xml'") != std::string::npos) {
-                        has_fail = true;
-                    }
-                }
-            }
-        }
-        CHECK(has_fail);
+        checker.validate("tests/data/build_description/fail/missing_file", cert);
+        CHECK(has_fail(cert, "Build Description Semantic Validation"));
     }
 
-    SECTION("Fails if listed include directory is missing") {
-        std::ofstream bd(test_dir / "sources" / "buildDescription.xml");
-        bd << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-           << "<fmiBuildDescription fmiVersion=\"3.0\">\n"
-           << "  <SourceFileSet>\n"
-           << "    <IncludeDirectory name=\"missing_inc\"/>\n"
-           << "  </SourceFileSet>\n"
-           << "</fmiBuildDescription>\n";
-        bd.close();
-
+    SECTION("Fails if listed include directory is missing")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_fail = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL) {
-                for (const auto& msg : res.messages) {
-                    if (msg.find("Include directory 'missing_inc' listed in 'buildDescription.xml'") != std::string::npos) {
-                        has_fail = true;
-                    }
-                }
-            }
-        }
-        CHECK(has_fail);
+        checker.validate("tests/data/build_description/fail/missing_dir", cert);
+        CHECK(has_fail(cert, "Build Description Semantic Validation"));
     }
 
-    SECTION("Passes if all listed entries exist") {
-        std::ofstream bd(test_dir / "sources" / "buildDescription.xml");
-        bd << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-           << "<fmiBuildDescription fmiVersion=\"3.0\">\n"
-           << "  <SourceFileSet>\n"
-           << "    <SourceFile name=\"exists.c\"/>\n"
-           << "    <IncludeDirectory name=\"exists_inc\"/>\n"
-           << "  </SourceFileSet>\n"
-           << "</fmiBuildDescription>\n";
-        bd.close();
-
-        std::ofstream src(test_dir / "sources" / "exists.c");
-        src << "int x;";
-        src.close();
-        fs::create_directories(test_dir / "sources" / "exists_inc");
-
+    SECTION("Passes if all listed entries exist")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_fail = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL) has_fail = true;
-        }
-        CHECK_FALSE(has_fail);
+        checker.validate("tests/data/build_description/pass/valid", cert);
+        CHECK(has_pass(cert, "Build Description Semantic Validation"));
     }
 
-    fs::remove_all(test_dir);
+    SECTION("Warns about unlisted source file on disk")
+    {
+        std::filesystem::path path = "tests/data/build_description/warn/unlisted_file";
+        auto info = CheckerFactory::detectModel(path);
+        BuildDescriptionChecker checker;
+        Certificate cert;
+        checker.validate(path, cert);
+        CHECK(has_warn(cert, "Build Description Semantic Validation"));
+    }
 }
 
-#include "fmi2_model_description_checker.h"
-
-TEST_CASE("Fmi2ModelDescriptionChecker source files validation", "[fmi2_sources]") {
+TEST_CASE("FMI 2.0 source files and distribution validation", "[fmi2][sources]")
+{
     Fmi2ModelDescriptionChecker checker;
-    fs::path test_dir = fs::current_path() / "test_fmi2_sources";
-    fs::create_directories(test_dir / "sources");
 
-    SECTION("Fails if listed source file in MD is missing") {
-        std::ofstream md(test_dir / "modelDescription.xml");
-        md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-           << "<fmiModelDescription fmiVersion=\"2.0\" modelName=\"test\" guid=\"{123}\">\n"
-           << "  <CoSimulation modelIdentifier=\"test\">\n"
-           << "    <SourceFiles><File name=\"missing.c\"/></SourceFiles>\n"
-           << "  </CoSimulation>\n"
-           << "  <ModelVariables><ScalarVariable name=\"v\" valueReference=\"1\"><Real/></ScalarVariable></ModelVariables>\n"
-           << "  <ModelStructure/>\n"
-           << "</fmiModelDescription>\n";
-        md.close();
-
+    SECTION("Fails if listed source file in MD is missing")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_fail = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL && res.test_name == "Source Files Existence (FMI2)") {
-                for (const auto& msg : res.messages) {
-                    if (msg.find("Source file 'missing.c' listed in 'modelDescription.xml'") != std::string::npos) {
-                        has_fail = true;
-                    }
-                }
-            }
-        }
-        CHECK(has_fail);
+        checker.validate("tests/data/fmi2/fail/missing_source", cert);
+        CHECK(has_fail(cert, "FMU Distribution"));
     }
 
-    SECTION("Warns if only SourceFiles is present") {
-        std::ofstream md(test_dir / "modelDescription.xml");
-        md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-           << "<fmiModelDescription fmiVersion=\"2.0\" modelName=\"test\" guid=\"{123}\">\n"
-           << "  <CoSimulation modelIdentifier=\"test\">\n"
-           << "    <SourceFiles><File name=\"exists.c\"/></SourceFiles>\n"
-           << "  </CoSimulation>\n"
-           << "  <ModelVariables><ScalarVariable name=\"v\" valueReference=\"1\"><Real/></ScalarVariable></ModelVariables>\n"
-           << "  <ModelStructure/>\n"
-           << "</fmiModelDescription>\n";
-        md.close();
-        std::ofstream src(test_dir / "sources" / "exists.c"); src << "int x;"; src.close();
-
+    SECTION("Warns if only SourceFiles is present")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_warn = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::WARNING && res.test_name == "Source Files Existence (FMI2)") {
-                for (const auto& msg : res.messages) {
-                    if (msg.find("only contains <SourceFiles> in modelDescription.xml") != std::string::npos) {
-                        has_warn = true;
-                    }
-                }
-            }
-        }
-        CHECK(has_warn);
+        checker.validate("tests/data/fmi2/warn/dist_sources_only", cert);
+        CHECK(has_warn(cert, "FMU Distribution"));
     }
 
-    SECTION("Warns if only buildDescription.xml is present") {
-        std::ofstream md(test_dir / "modelDescription.xml");
-        md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-           << "<fmiModelDescription fmiVersion=\"2.0\" modelName=\"test\" guid=\"{123}\">\n"
-           << "  <CoSimulation modelIdentifier=\"test\"/>\n"
-           << "  <ModelVariables><ScalarVariable name=\"v\" valueReference=\"1\"><Real/></ScalarVariable></ModelVariables>\n"
-           << "  <ModelStructure/>\n"
-           << "</fmiModelDescription>\n";
-        md.close();
-        std::ofstream bd(test_dir / "sources" / "buildDescription.xml"); bd << "dummy"; bd.close();
-
+    SECTION("Warns if only buildDescription.xml is present")
+    {
         Certificate cert;
-        checker.validate(test_dir, cert);
-
-        bool has_warn = false;
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::WARNING && res.test_name == "Source Files Existence (FMI2)") {
-                for (const auto& msg : res.messages) {
-                    if (msg.find("only contains buildDescription.xml") != std::string::npos) {
-                        has_warn = true;
-                    }
-                }
-            }
-        }
-        CHECK(has_warn);
+        checker.validate("tests/data/fmi2/warn/dist_build_desc_only", cert);
+        CHECK(has_warn(cert, "FMU Distribution"));
     }
 
-    fs::remove_all(test_dir);
+    SECTION("Passes if both are present")
+    {
+        Certificate cert;
+        checker.validate("tests/data/fmi2/pass/dist_both", cert);
+        CHECK(has_pass(cert, "FMU Distribution"));
+    }
+
+    SECTION("Warns about unlisted legacy source file on disk")
+    {
+        std::filesystem::path path = "tests/data/fmi2/warn/legacy_unlisted_file";
+        auto info = CheckerFactory::detectModel(path);
+        Fmi2ModelDescriptionChecker checker;
+        Certificate cert;
+        checker.validate(path, cert);
+        CHECK(has_warn(cert, "FMU Distribution"));
+    }
 }
