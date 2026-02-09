@@ -1,35 +1,8 @@
 #include "certificate.h"
 #include "fmi2_terminals_and_icons_checker.h"
 #include "fmi3_terminals_and_icons_checker.h"
-#include "terminals_and_icons_checker.h"
-#include <algorithm>
+#include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
-
-namespace
-{
-bool has_fail(const Certificate& cert)
-{
-    const auto& results = cert.getResults();
-    return std::any_of(results.begin(), results.end(),
-                       [](const TestResult& r) { return r.status == TestStatus::FAIL; });
-}
-
-bool has_error_with_text(const Certificate& cert, const std::string& text)
-{
-    const auto& results = cert.getResults();
-    for (const auto& r : results)
-    {
-        if (r.status != TestStatus::FAIL)
-            continue;
-        if (r.test_name.find(text) != std::string::npos)
-            return true;
-        for (const auto& msg : r.messages)
-            if (msg.find(text) != std::string::npos)
-                return true;
-    }
-    return false;
-}
-} // namespace
 
 TEST_CASE("FMI 2.0 Terminals and Icons Validation", "[terminals][icons][fmi2]")
 {
@@ -48,16 +21,29 @@ TEST_CASE("FMI 2.0 Terminals and Icons Validation", "[terminals][icons][fmi2]")
         Certificate cert;
         checker.validate(path, cert);
         INFO("Checking path: " << path);
+        if (!has_error_with_text(cert, expected_error))
+        {
+            UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
+                {
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
+                }
+            }
+        }
         REQUIRE(has_fail(cert));
         CHECK(has_error_with_text(cert, expected_error));
     };
 
-    SECTION("Pass")
+    SECTION("Passing Cases")
     {
         validate_pass("tests/data/fmi2/terminals_and_icons/pass");
     }
 
-    SECTION("Failures")
+    SECTION("Failure Cases")
     {
         validate_fail("tests/data/fmi2/terminals_and_icons/fail/version_mismatch",
                       "fmiVersion in terminalsAndIcons.xml");
@@ -86,17 +72,30 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
         Certificate cert;
         checker.validate(path, cert);
         INFO("Checking path: " << path);
+        if (!has_error_with_text(cert, expected_error))
+        {
+            UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
+                {
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
+                }
+            }
+        }
         REQUIRE(has_fail(cert));
         CHECK(has_error_with_text(cert, expected_error));
     };
 
-    SECTION("Pass")
+    SECTION("Passing Cases")
     {
         validate_pass("tests/data/fmi3/terminals_and_icons/pass");
         validate_pass("tests/data/fmi3/terminals_and_icons/pass/missing_member_name_sequence");
     }
 
-    SECTION("Failures")
+    SECTION("Failure Cases")
     {
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/version_mismatch",
                       "fmiVersion in terminalsAndIcons.xml must be '3.0'");
