@@ -14,19 +14,6 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
     [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
 {
-    // Distribution check for FMI 3.0
-    TestResult test_dist{"FMU Distribution", TestStatus::PASS, {}};
-    bool has_binaries = std::filesystem::exists(_fmu_root_path / "binaries");
-    bool has_sources_dir = std::filesystem::exists(_fmu_root_path / "sources");
-
-    if (!has_binaries && !has_sources_dir)
-    {
-        test_dist.status = TestStatus::FAIL;
-        test_dist.messages.push_back(
-            "FMU must contain either a precompiled binary for at least one platform or source code.");
-    }
-    cert.printTestResult(test_dist);
-
     // FMI3-specific checks
     checkEnumerationVariables(variables, cert);
     checkIndependentVariable(variables, cert);

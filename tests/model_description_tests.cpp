@@ -236,10 +236,6 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("derivative_variability", "must have variability=\"continuous\"");
     }
 
-    SECTION("FMU Distribution")
-    {
-        validate_fail("dist_none", "must contain either a precompiled binary for at least one platform or source code");
-    }
 }
 
 TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
@@ -491,10 +487,6 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
                       "has dependencyKind 'constant' but unknown is not a float type");
     }
 
-    SECTION("FMU Distribution")
-    {
-        validate_fail("dist_none", "must contain either a precompiled binary for at least one platform or source code");
-    }
 }
 
 TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")

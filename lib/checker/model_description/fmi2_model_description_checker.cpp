@@ -33,8 +33,8 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     // Check continuous-time states
     checkContinuousStates(variables, cert);
 
-    // Check SourceFiles and distribution warnings
-    checkSourceFilesExistence(doc, cert);
+    // Check SourceFiles semantic validation (existence of listed files)
+    checkSourceFilesSemantic(doc, cert);
 
     // Run FMI2-specific model structure checks (should be last)
     checkModelStructure(doc, variables, cert);
@@ -1743,33 +1743,19 @@ std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDe
     return units;
 }
 
-void Fmi2ModelDescriptionChecker::checkSourceFilesExistence(xmlDocPtr doc, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certificate& cert)
 {
-    TestResult test{"FMU Distribution", TestStatus::PASS, {}};
+    TestResult test{"Source Files Semantic Validation (FMI2)", TestStatus::PASS, {}};
 
-    bool has_binaries = std::filesystem::exists(_fmu_root_path / "binaries");
-    bool has_sources_dir = std::filesystem::exists(_fmu_root_path / "sources");
-
-    if (!has_binaries && !has_sources_dir)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back(
-            "FMU must contain either a precompiled binary for at least one platform or source code.");
-    }
-
-    bool has_sources_in_md = false;
-    std::set<std::string> listed_files;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//SourceFiles/File");
     if (xpath_obj && xpath_obj->nodesetval)
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            has_sources_in_md = true;
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             auto name_opt = getXmlAttribute(node, "name");
             if (name_opt)
             {
-                listed_files.insert(*name_opt);
                 auto file_path = _fmu_root_path / "sources" / (*name_opt);
                 if (!std::filesystem::exists(file_path))
                 {
@@ -1783,59 +1769,6 @@ void Fmi2ModelDescriptionChecker::checkSourceFilesExistence(xmlDocPtr doc, Certi
     }
     if (xpath_obj)
         xmlXPathFreeObject(xpath_obj);
-
-    bool has_build_description = std::filesystem::exists(_fmu_root_path / "sources" / "buildDescription.xml");
-
-    // Reverse check for FMI 2.0 legacy sources
-    if (has_sources_dir && !has_build_description)
-    {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(_fmu_root_path / "sources"))
-        {
-            if (entry.is_regular_file())
-            {
-                auto rel_path = std::filesystem::relative(entry.path(), _fmu_root_path / "sources");
-                std::string filename = rel_path.string();
-                std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
-
-                // Only check typical source files
-                std::string ext = entry.path().extension().string();
-                for (auto& c : ext)
-                    c = static_cast<char>(std::tolower(c));
-
-                if (ext == ".c" || ext == ".cpp" || ext == ".cxx" || ext == ".cc")
-                {
-                    if (!listed_files.contains(filename))
-                    {
-                        if (test.status == TestStatus::PASS)
-                            test.status = TestStatus::WARNING;
-                        test.messages.push_back("Source file '" + filename +
-                                                "' exists in 'sources/' directory but is not listed in "
-                                                "'modelDescription.xml'.");
-                    }
-                }
-            }
-        }
-    }
-
-    if (has_sources_in_md || has_build_description)
-    {
-        if (has_sources_in_md && !has_build_description)
-        {
-            if (test.status == TestStatus::PASS)
-                test.status = TestStatus::WARNING;
-            test.messages.push_back("FMI 2.0 source code FMU only contains <SourceFiles> in modelDescription.xml. "
-                                    "It is recommended to also provide a buildDescription.xml for FMI 2.0.4+ "
-                                    "compatibility.");
-        }
-        else if (!has_sources_in_md && has_build_description)
-        {
-            if (test.status == TestStatus::PASS)
-                test.status = TestStatus::WARNING;
-            test.messages.push_back("FMI 2.0 source code FMU only contains buildDescription.xml. For backwards "
-                                    "compatibility with older FMI 2.0 importers, it is recommended to also provide "
-                                    "<SourceFiles> in modelDescription.xml.");
-        }
-    }
 
     cert.printTestResult(test);
 }

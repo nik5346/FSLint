@@ -79,8 +79,8 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
 
     if (info.standard == ModelStandard::FMI2 || info.standard == ModelStandard::FMI3)
     {
-        checkers.push_back(std::make_unique<DirectoryChecker>());
-        checkers.push_back(std::make_unique<BuildDescriptionChecker>());
+        checkers.push_back(std::make_unique<DirectoryChecker>(info.version));
+        checkers.push_back(std::make_unique<BuildDescriptionChecker>(info.version));
     }
 
     return checkers;

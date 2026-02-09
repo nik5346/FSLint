@@ -5,6 +5,7 @@
 #include "fmi2_model_description_checker.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 
 namespace fs = std::filesystem;
@@ -12,10 +13,8 @@ namespace fs = std::filesystem;
 bool has_test_with_status(const Certificate& cert, const std::string& test_name, TestStatus status)
 {
     const auto& results = cert.getResults();
-    std::cout << "DEBUG: Searching for '" << test_name << "' with status " << (int)status << std::endl;
     for (const auto& r : results)
     {
-        std::cout << "DEBUG: Found '" << r.test_name << "' with status " << (int)r.status << std::endl;
         if (r.test_name == test_name && r.status == status)
             return true;
     }
@@ -39,74 +38,181 @@ bool has_pass(const Certificate& cert, const std::string& test_name)
 
 TEST_CASE("DirectoryChecker validation", "[directory]")
 {
-    DirectoryChecker checker;
-
-    SECTION("Fails if neither binaries nor sources")
+    SECTION("FMI 2.0 distribution")
     {
-        Certificate cert;
-        checker.validate("tests/data/directory/fail/no_impl", cert);
-        CHECK(has_fail(cert, "FMU Structure"));
+        DirectoryChecker checker("2.0");
+
+        SECTION("Fails if neither binaries nor sources")
+        {
+            Certificate cert;
+            checker.validate("tests/data/directory/fail/no_impl", cert);
+            CHECK(has_fail(cert, "FMU Structure"));
+        }
+
+        SECTION("Passes with binaries (with warning for missing model.png)")
+        {
+            Certificate cert;
+            checker.validate("tests/data/directory/pass/binaries", cert);
+            CHECK(has_warn(cert, "FMU Structure"));
+        }
+
+        SECTION("Passes with sources (with warnings)")
+        {
+            Certificate cert;
+            checker.validate("tests/data/directory/pass/sources", cert);
+            CHECK(has_warn(cert, "FMU Structure"));
+        }
+
+        SECTION("Warns about unknown entry in root")
+        {
+            Certificate cert;
+            checker.validate("tests/data/directory/warn/unknown_entry", cert);
+            CHECK(has_warn(cert, "FMU Structure"));
+        }
+
+        SECTION("Compatibility warnings for sources")
+        {
+            SECTION("Warns if only SourceFiles is present in MD")
+            {
+                Certificate cert;
+                checker.validate("tests/data/fmi2/warn/dist_sources_only", cert);
+                CHECK(has_warn(cert, "FMU Structure"));
+            }
+
+            SECTION("Warns if only buildDescription.xml is present")
+            {
+                Certificate cert;
+                checker.validate("tests/data/fmi2/warn/dist_build_desc_only", cert);
+                CHECK(has_warn(cert, "FMU Structure"));
+            }
+
+            SECTION("Passes if both are present (still warns about model.png)")
+            {
+                Certificate cert;
+                checker.validate("tests/data/fmi2/pass/dist_both", cert);
+                CHECK(has_warn(cert, "FMU Structure"));
+            }
+        }
     }
 
-    SECTION("Passes with binaries")
+    SECTION("FMI 3.0 distribution")
     {
-        Certificate cert;
-        checker.validate("tests/data/directory/pass/binaries", cert);
-        CHECK(has_pass(cert, "FMU Structure"));
-    }
+        DirectoryChecker checker("3.0");
 
-    SECTION("Passes with sources")
-    {
-        Certificate cert;
-        checker.validate("tests/data/directory/pass/sources", cert);
-        CHECK(has_pass(cert, "FMU Structure"));
-    }
+        SECTION("Warns if diagram.svg is present but diagram.png is missing")
+        {
+            auto path = fs::temp_directory_path() / "fmi3_diag_test";
+            fs::remove_all(path);
+            fs::create_directories(path / "documentation");
+            {
+                std::ofstream ofs(path / "modelDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                    << "<fmiModelDescription fmiVersion=\"3.0\" modelName=\"test\" instantiationToken=\"{...}\">"
+                    << "<CoSimulation modelIdentifier=\"test\"/>"
+                    << "</fmiModelDescription>";
+            }
+            {
+                std::ofstream ofs(path / "documentation" / "diagram.svg");
+                ofs << "<svg/>";
+            }
+            fs::create_directories(path / "binaries/x86_64-windows");
+            {
+                std::ofstream ofs(path / "binaries/x86_64-windows/test.dll");
+                ofs << "bin";
+            }
 
-    SECTION("Warns about unknown entry in root")
-    {
-        Certificate cert;
-        checker.validate("tests/data/directory/warn/unknown_entry", cert);
-        CHECK(has_warn(cert, "FMU Structure"));
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_warn(cert, "FMU Structure"));
+            fs::remove_all(path);
+        }
     }
 }
 
 TEST_CASE("BuildDescriptionChecker validation", "[build_description]")
 {
-    BuildDescriptionChecker checker;
-
-    SECTION("Fails if listed source file is missing")
+    SECTION("FMI 3.0")
     {
-        Certificate cert;
-        checker.validate("tests/data/build_description/fail/missing_file", cert);
-        CHECK(has_fail(cert, "Build Description Semantic Validation"));
+        BuildDescriptionChecker checker("3.0");
+
+        SECTION("Fails if listed source file is missing")
+        {
+            Certificate cert;
+            checker.validate("tests/data/build_description/fail/missing_file", cert);
+            CHECK(has_fail(cert, "Build Description Semantic Validation"));
+        }
+
+        SECTION("Fails if listed include directory is missing")
+        {
+            Certificate cert;
+            checker.validate("tests/data/build_description/fail/missing_dir", cert);
+            CHECK(has_fail(cert, "Build Description Semantic Validation"));
+        }
+
+        SECTION("Passes if all listed entries exist")
+        {
+            Certificate cert;
+            checker.validate("tests/data/build_description/pass/valid", cert);
+            CHECK(has_pass(cert, "Build Description Semantic Validation"));
+        }
+
+        SECTION("Warns about unlisted source file on disk")
+        {
+            std::filesystem::path path = "tests/data/build_description/warn/unlisted_file";
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_warn(cert, "Build Description Semantic Validation"));
+        }
+
+        SECTION("Fails if version mismatch")
+        {
+            auto path = fs::temp_directory_path() / "fmi_version_mismatch";
+            fs::remove_all(path);
+            fs::create_directories(path / "sources");
+            {
+                std::ofstream ofs(path / "sources/buildDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"2.0\"/>";
+            }
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_fail(cert, "Build Description Semantic Validation"));
+            fs::remove_all(path);
+        }
     }
 
-    SECTION("Fails if listed include directory is missing")
+    SECTION("Attributes validation")
     {
-        Certificate cert;
-        checker.validate("tests/data/build_description/fail/missing_dir", cert);
-        CHECK(has_fail(cert, "Build Description Semantic Validation"));
-    }
+        BuildDescriptionChecker checker("3.0");
+        auto path = fs::temp_directory_path() / "bd_attr_test";
+        fs::remove_all(path);
+        fs::create_directories(path / "sources");
 
-    SECTION("Passes if all listed entries exist")
-    {
-        Certificate cert;
-        checker.validate("tests/data/build_description/pass/valid", cert);
-        CHECK(has_pass(cert, "Build Description Semantic Validation"));
-    }
+        SECTION("Warns about unknown language")
+        {
+            {
+                std::ofstream ofs(path / "sources/buildDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"test\" language=\"rust\"/></fmiBuildDescription>";
+            }
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_warn(cert, "Build Description Semantic Validation"));
+        }
 
-    SECTION("Warns about unlisted source file on disk")
-    {
-        std::filesystem::path path = "tests/data/build_description/warn/unlisted_file";
-        auto info = CheckerFactory::detectModel(path);
-        BuildDescriptionChecker checker;
-        Certificate cert;
-        checker.validate(path, cert);
-        CHECK(has_warn(cert, "Build Description Semantic Validation"));
+        SECTION("Warns about unknown compiler")
+        {
+            {
+                std::ofstream ofs(path / "sources/buildDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"test\" compiler=\"mycc\"/></fmiBuildDescription>";
+            }
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_warn(cert, "Build Description Semantic Validation"));
+        }
+        fs::remove_all(path);
     }
 }
 
-TEST_CASE("FMI 2.0 source files and distribution validation", "[fmi2][sources]")
+TEST_CASE("FMI 2.0 legacy source files validation", "[fmi2][sources]")
 {
     Fmi2ModelDescriptionChecker checker;
 
@@ -114,37 +220,6 @@ TEST_CASE("FMI 2.0 source files and distribution validation", "[fmi2][sources]")
     {
         Certificate cert;
         checker.validate("tests/data/fmi2/fail/missing_source", cert);
-        CHECK(has_fail(cert, "FMU Distribution"));
-    }
-
-    SECTION("Warns if only SourceFiles is present")
-    {
-        Certificate cert;
-        checker.validate("tests/data/fmi2/warn/dist_sources_only", cert);
-        CHECK(has_warn(cert, "FMU Distribution"));
-    }
-
-    SECTION("Warns if only buildDescription.xml is present")
-    {
-        Certificate cert;
-        checker.validate("tests/data/fmi2/warn/dist_build_desc_only", cert);
-        CHECK(has_warn(cert, "FMU Distribution"));
-    }
-
-    SECTION("Passes if both are present")
-    {
-        Certificate cert;
-        checker.validate("tests/data/fmi2/pass/dist_both", cert);
-        CHECK(has_pass(cert, "FMU Distribution"));
-    }
-
-    SECTION("Warns about unlisted legacy source file on disk")
-    {
-        std::filesystem::path path = "tests/data/fmi2/warn/legacy_unlisted_file";
-        auto info = CheckerFactory::detectModel(path);
-        Fmi2ModelDescriptionChecker checker;
-        Certificate cert;
-        checker.validate(path, cert);
-        CHECK(has_warn(cert, "FMU Distribution"));
+        CHECK(has_fail(cert, "Source Files Semantic Validation (FMI2)"));
     }
 }

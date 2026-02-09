@@ -8,9 +8,12 @@
 
 void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
-    auto build_desc_path = path / "sources" / "buildDescription.xml";
+    auto sources_path = path / "sources";
+    auto build_desc_path = sources_path / "buildDescription.xml";
     if (!std::filesystem::exists(build_desc_path))
+    {
         return; // Optional
+    }
 
     cert.printSubsectionHeader("BUILD DESCRIPTION VALIDATION");
     TestResult test{"Build Description Semantic Validation", TestStatus::PASS, {}};
@@ -25,86 +28,27 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
         return;
     }
 
-    // Check fmiVersion in buildDescription.xml
     xmlNodePtr root = xmlDocGetRootElement(doc);
-    auto bd_fmi_version = getXmlAttribute(root, "fmiVersion");
-    if (bd_fmi_version)
-    {
-        // For FMI 2.0, buildDescription.xml (backported) should probably have fmiVersion="2.0" or "3.0"?
-        // Actually, the backport says it's from FMI 3.0.
-        // But usually it should match the FMU's version.
-        // I'll skip strict version matching for now as it might be ambiguous for backports.
-    }
+    checkFmiVersion(root, test);
 
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     std::set<std::string> listed_files;
     if (xpath_context)
     {
-        // 1. Check SourceFile existence
-        xmlXPathObjectPtr sources_xpath =
-            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFile"), xpath_context);
-        if (sources_xpath && sources_xpath->nodesetval)
-        {
-            for (int i = 0; i < sources_xpath->nodesetval->nodeNr; ++i)
-            {
-                auto node =
-                    sources_xpath->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                auto name_opt = getXmlAttribute(node, "name");
-                if (name_opt)
-                {
-                    listed_files.insert(*name_opt);
-                    auto file_path = path / "sources" / (*name_opt);
-                    if (!std::filesystem::exists(file_path))
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back(
-                            "Source file '" + (*name_opt) + "' listed in 'buildDescription.xml' (line " +
-                            std::to_string(node->line) + ") does not exist in 'sources/' directory.");
-                    }
-                }
-            }
-        }
-        if (sources_xpath)
-            xmlXPathFreeObject(sources_xpath);
-
-        // 2. Check IncludeDirectory existence
-        xmlXPathObjectPtr includes_xpath =
-            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//IncludeDirectory"), xpath_context);
-        if (includes_xpath && includes_xpath->nodesetval)
-        {
-            for (int i = 0; i < includes_xpath->nodesetval->nodeNr; ++i)
-            {
-                auto node =
-                    includes_xpath->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                auto name_opt = getXmlAttribute(node, "name");
-                if (name_opt)
-                {
-                    auto dir_path = path / "sources" / (*name_opt);
-                    if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Include directory '" + (*name_opt) +
-                                                "' listed in 'buildDescription.xml' (line " +
-                                                std::to_string(node->line) +
-                                                ") does not exist or is not a directory in 'sources/' directory.");
-                    }
-                }
-            }
-        }
-        if (includes_xpath)
-            xmlXPathFreeObject(includes_xpath);
-
+        checkBuildConfigurationAttributes(xpath_context, test);
+        checkSourceFiles(xpath_context, sources_path, test, listed_files);
+        checkIncludeDirectories(xpath_context, sources_path, test);
         xmlXPathFreeContext(xpath_context);
     }
 
     // Reverse check: check if every source file on disk is listed
-    if (std::filesystem::exists(path / "sources"))
+    if (std::filesystem::exists(sources_path))
     {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(path / "sources"))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(sources_path))
         {
             if (entry.is_regular_file())
             {
-                auto rel_path = std::filesystem::relative(entry.path(), path / "sources");
+                auto rel_path = std::filesystem::relative(entry.path(), sources_path);
                 std::string filename = rel_path.string();
                 std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
 
@@ -134,6 +78,145 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
     xmlFreeDoc(doc);
     cert.printTestResult(test);
     cert.printSubsectionSummary(test.status != TestStatus::FAIL);
+}
+
+void BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
+{
+    auto bd_fmi_version = getXmlAttribute(root, "fmiVersion");
+    if (!bd_fmi_version)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Missing 'fmiVersion' attribute in 'buildDescription.xml'.");
+    }
+    else if (*bd_fmi_version != _fmi_version)
+    {
+        // For FMI 3.0, it must match.
+        // For FMI 2.0, it's a backport, the user said "fmi2 reuses the fmi3 rules for the build description and also the schema itself. all future versions should have then matching versions in the build description."
+        if (_fmi_version.starts_with("3."))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
+                                    ") does not match FMU version (" + _fmi_version + ").");
+        }
+        else
+        {
+            // For FMI 2.0, maybe warn?
+            if (test.status == TestStatus::PASS)
+                test.status = TestStatus::WARNING;
+            test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
+                                    ") does not match FMU version (" + _fmi_version + ").");
+        }
+    }
+}
+
+void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
+                                               TestResult& test, std::set<std::string>& listed_files)
+{
+    xmlXPathObjectPtr sources_xpath = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFile"), xpath_context);
+    if (sources_xpath && sources_xpath->nodesetval)
+    {
+        for (int i = 0; i < sources_xpath->nodesetval->nodeNr; ++i)
+        {
+            auto node = sources_xpath->nodesetval->nodeTab[i];
+            auto name_opt = getXmlAttribute(node, "name");
+            if (name_opt)
+            {
+                listed_files.insert(*name_opt);
+                auto file_path = sources_path / (*name_opt);
+                if (!std::filesystem::exists(file_path))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Source file '" + (*name_opt) + "' listed in 'buildDescription.xml' (line " +
+                                            std::to_string(node->line) + ") does not exist in 'sources/' directory.");
+                }
+            }
+        }
+    }
+    if (sources_xpath)
+        xmlXPathFreeObject(sources_xpath);
+}
+
+void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_context,
+                                                      const std::filesystem::path& sources_path, TestResult& test)
+{
+    xmlXPathObjectPtr includes_xpath =
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//IncludeDirectory"), xpath_context);
+    if (includes_xpath && includes_xpath->nodesetval)
+    {
+        for (int i = 0; i < includes_xpath->nodesetval->nodeNr; ++i)
+        {
+            auto node = includes_xpath->nodesetval->nodeTab[i];
+            auto name_opt = getXmlAttribute(node, "name");
+            if (name_opt)
+            {
+                auto dir_path = sources_path / (*name_opt);
+                if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Include directory '" + (*name_opt) +
+                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
+                                            ") does not exist or is not a directory in 'sources/' directory.");
+                }
+            }
+        }
+    }
+    if (includes_xpath)
+        xmlXPathFreeObject(includes_xpath);
+}
+
+void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context, TestResult& test)
+{
+    xmlXPathObjectPtr configs_xpath =
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//BuildConfiguration"), xpath_context);
+    if (configs_xpath && configs_xpath->nodesetval)
+    {
+        static const std::set<std::string> well_known_languages = {"c", "cpp", "c++"};
+        static const std::set<std::string> well_known_compilers = {"gcc", "msvc", "clang", "icc"};
+
+        for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)
+        {
+            auto node = configs_xpath->nodesetval->nodeTab[i];
+
+            auto lang_opt = getXmlAttribute(node, "language");
+            if (lang_opt)
+            {
+                std::string lang = *lang_opt;
+                std::transform(lang.begin(), lang.end(), lang.begin(), ::tolower);
+                if (!well_known_languages.contains(lang))
+                {
+                    if (test.status == TestStatus::PASS)
+                        test.status = TestStatus::WARNING;
+                    test.messages.push_back("Unknown language '" + *lang_opt +
+                                            "' in BuildConfiguration (line " + std::to_string(node->line) + ").");
+                }
+            }
+
+            auto compiler_opt = getXmlAttribute(node, "compiler");
+            if (compiler_opt)
+            {
+                std::string compiler = *compiler_opt;
+                std::transform(compiler.begin(), compiler.end(), compiler.begin(), ::tolower);
+                bool known = false;
+                for (const auto& well_known : well_known_compilers)
+                {
+                    if (compiler.find(well_known) != std::string::npos)
+                    {
+                        known = true;
+                        break;
+                    }
+                }
+                if (!known)
+                {
+                    if (test.status == TestStatus::PASS)
+                        test.status = TestStatus::WARNING;
+                    test.messages.push_back("Unknown compiler '" + *compiler_opt +
+                                            "' in BuildConfiguration (line " + std::to_string(node->line) + ").");
+                }
+            }
+        }
+    }
+    if (configs_xpath)
+        xmlXPathFreeObject(configs_xpath);
 }
 
 std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
