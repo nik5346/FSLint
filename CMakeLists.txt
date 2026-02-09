@@ -272,6 +272,7 @@ endforeach()
 file(GLOB_RECURSE LIB_SOURCES "lib/*.cpp")
 include_directories(lib/checker/directory)
 include_directories(lib/checker/build_description)
+include_directories(lib/checker/terminals_and_icons)
 add_library(FSLint-lib STATIC ${LIB_SOURCES})
 
 file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "lib/*")
