@@ -115,57 +115,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
     SECTION("Warning Cases")
     {
-        SECTION("diagram.png missing")
-        {
-            auto path = fs::temp_directory_path() / "fmi3_diag_test";
-            fs::remove_all(path);
-            fs::create_directories(path / "documentation");
-            {
-                std::ofstream ofs(path / "modelDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                    << "<fmiModelDescription fmiVersion=\"3.0\" modelName=\"test\" instantiationToken=\"{...}\">"
-                    << "<CoSimulation modelIdentifier=\"test\"/>"
-                    << "</fmiModelDescription>";
-            }
-            {
-                std::ofstream ofs(path / "documentation" / "diagram.svg");
-                ofs << "<svg/>";
-            }
-            fs::create_directories(path / "binaries/x86_64-windows");
-            {
-                std::ofstream ofs(path / "binaries/x86_64-windows/test.dll");
-                ofs << "bin";
-            }
-
-            validate_warning(path, "diagram.png is missing");
-            fs::remove_all(path);
-        }
-
-        SECTION("Unknown entry in root")
-        {
-            auto path = fs::temp_directory_path() / "fmi3_unknown_entry";
-            fs::remove_all(path);
-            fs::create_directories(path);
-            {
-                std::ofstream ofs(path / "modelDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                    << "<fmiModelDescription fmiVersion=\"3.0\" modelName=\"test\" instantiationToken=\"{...}\">"
-                    << "<CoSimulation modelIdentifier=\"test\"/>"
-                    << "</fmiModelDescription>";
-            }
-            {
-                std::ofstream ofs(path / "unknown_file.txt");
-                ofs << "test";
-            }
-            fs::create_directories(path / "binaries/x86_64-windows");
-            {
-                std::ofstream ofs(path / "binaries/x86_64-windows/test.dll");
-                ofs << "bin";
-            }
-
-            validate_warning(path, "Unknown entry");
-            fs::remove_all(path);
-        }
+        validate_warning("tests/data/fmi3/warn/diagram_png_missing", "diagram.png is missing");
+        validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown entry");
     }
 }
 
@@ -230,140 +181,25 @@ TEST_CASE("Build Description Validation", "[build_description]")
         validate_fail("tests/data/build_description/fail/missing_file", "does not exist in 'sources/' directory");
         validate_fail("tests/data/build_description/fail/missing_dir",
                       "does not exist or is not a directory in 'sources/' directory");
-
-        SECTION("version mismatch")
-        {
-            auto path = fs::temp_directory_path() / "fmi_version_mismatch";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"2.0\"/>";
-            }
-            validate_fail(path, "does not match FMU version");
-            fs::remove_all(path);
-        }
-
-        SECTION("modelIdentifier mismatch")
-        {
-            auto path = fs::temp_directory_path() / "id_mismatch";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "modelDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiModelDescription fmiVersion=\"3.0\" "
-                       "modelName=\"test\" instantiationToken=\"{...}\"><CoSimulation "
-                       "modelIdentifier=\"real_id\"/></fmiModelDescription>";
-            }
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription "
-                       "fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"wrong_id\"/></fmiBuildDescription>";
-            }
-            validate_fail(path, "does not match any modelIdentifier");
-            fs::remove_all(path);
-        }
-
-        SECTION("path contains ..")
-        {
-            auto path = fs::temp_directory_path() / "dotdot_test";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription "
-                       "fmiVersion=\"3.0\"><BuildConfiguration><SourceFile "
-                       "name=\"../secret.c\"/></BuildConfiguration></fmiBuildDescription>";
-            }
-            validate_fail(path, "contains illegal '..' sequence");
-            fs::remove_all(path);
-        }
+        validate_fail("tests/data/build_description/fail/version_mismatch", "does not match FMU version");
+        validate_fail("tests/data/build_description/fail/id_mismatch", "does not match any modelIdentifier");
+        validate_fail("tests/data/build_description/fail/dotdot", "contains illegal '..' sequence");
     }
 
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/build_description/warn/unlisted_file", "is not listed in 'buildDescription.xml'");
-
-        SECTION("Reverse check flags unlisted .C (uppercase)")
-        {
-            auto path = fs::temp_directory_path() / "bd_ext_C_test";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"/>";
-            }
-            {
-                std::ofstream ofs(path / "sources/File.C");
-                ofs << "int x;";
-            }
-            validate_warning(path, "is not listed in 'buildDescription.xml'");
-            fs::remove_all(path);
-        }
-
-        SECTION("unknown language")
-        {
-            auto path = fs::temp_directory_path() / "bd_attr_test_lang";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"test\" language=\"rust\"/></fmiBuildDescription>";
-            }
-            validate_warning(path, "is not one of the suggested values");
-            fs::remove_all(path);
-        }
-
-        SECTION("unknown compiler")
-        {
-            auto path = fs::temp_directory_path() / "bd_attr_test_comp";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"test\" compiler=\"mycc\"/></fmiBuildDescription>";
-            }
-            validate_warning(path, "is not one of the suggested values");
-            fs::remove_all(path);
-        }
+        validate_warning("tests/data/build_description/warn/unlisted_uppercase_c",
+                         "is not listed in 'buildDescription.xml'");
+        validate_warning("tests/data/build_description/warn/unknown_language", "is not one of the suggested values");
+        validate_warning("tests/data/build_description/warn/unknown_compiler", "is not one of the suggested values");
     }
 
     SECTION("Passing Cases")
     {
         validate_pass("tests/data/build_description/pass/valid");
-
-        SECTION("Accepts C++26 language")
-        {
-            auto path = fs::temp_directory_path() / "bd_cpp26_test";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"test\" language=\"C++26\"/></fmiBuildDescription>";
-            }
-            validate_pass(path);
-            fs::remove_all(path);
-        }
-
-        SECTION("modelIdentifier matches one of many")
-        {
-            auto path = fs::temp_directory_path() / "multi_id_match";
-            fs::remove_all(path);
-            fs::create_directories(path / "sources");
-            {
-                std::ofstream ofs(path / "modelDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiModelDescription fmiVersion=\"3.0\" "
-                       "modelName=\"test\" instantiationToken=\"{...}\"><ModelExchange "
-                       "modelIdentifier=\"me_id\"/><CoSimulation modelIdentifier=\"cs_id\"/></fmiModelDescription>";
-            }
-            {
-                std::ofstream ofs(path / "sources/buildDescription.xml");
-                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription "
-                       "fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"me_id\"/></fmiBuildDescription>";
-            }
-            validate_pass(path);
-            fs::remove_all(path);
-        }
+        validate_pass("tests/data/build_description/pass/cpp26");
+        validate_pass("tests/data/build_description/pass/multi_id_match");
     }
 }
 
