@@ -26,5 +26,8 @@ class BuildDescriptionChecker : public Checker
                           std::set<std::string>& listed_files);
     void checkIncludeDirectories(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
                                  TestResult& test);
-    void checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context, TestResult& test);
+    void checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context, const std::set<std::string>& valid_ids,
+                                           TestResult& test);
+
+    std::set<std::string> getValidModelIdentifiers(const std::filesystem::path& path);
 };

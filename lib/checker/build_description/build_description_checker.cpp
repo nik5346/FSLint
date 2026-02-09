@@ -35,7 +35,8 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
     std::set<std::string> listed_files;
     if (xpath_context)
     {
-        checkBuildConfigurationAttributes(xpath_context, test);
+        auto valid_ids = getValidModelIdentifiers(path);
+        checkBuildConfigurationAttributes(xpath_context, valid_ids, test);
         checkSourceFiles(xpath_context, sources_path, test, listed_files);
         checkIncludeDirectories(xpath_context, sources_path, test);
         xmlXPathFreeContext(xpath_context);
@@ -112,7 +113,8 @@ void BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
 void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
                                                TestResult& test, std::set<std::string>& listed_files)
 {
-    xmlXPathObjectPtr sources_xpath = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFile"), xpath_context);
+    xmlXPathObjectPtr sources_xpath =
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFile"), xpath_context);
     if (sources_xpath && sources_xpath->nodesetval)
     {
         for (int i = 0; i < sources_xpath->nodesetval->nodeNr; ++i)
@@ -121,6 +123,14 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
             auto name_opt = getXmlAttribute(node, "name");
             if (name_opt)
             {
+                if (name_opt->find("..") != std::string::npos)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Source file '" + (*name_opt) + "' listed in 'buildDescription.xml' (line " +
+                                            std::to_string(node->line) + ") contains illegal '..' sequence.");
+                    continue;
+                }
+
                 listed_files.insert(*name_opt);
                 auto file_path = sources_path / (*name_opt);
                 if (!std::filesystem::exists(file_path))
@@ -149,6 +159,15 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
             auto name_opt = getXmlAttribute(node, "name");
             if (name_opt)
             {
+                if (name_opt->find("..") != std::string::npos)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Include directory '" + (*name_opt) +
+                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
+                                            ") contains illegal '..' sequence.");
+                    continue;
+                }
+
                 auto dir_path = sources_path / (*name_opt);
                 if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
                 {
@@ -164,42 +183,55 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
         xmlXPathFreeObject(includes_xpath);
 }
 
-void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context, TestResult& test)
+void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context,
+                                                                const std::set<std::string>& valid_ids, TestResult& test)
 {
     xmlXPathObjectPtr configs_xpath =
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//BuildConfiguration"), xpath_context);
     if (configs_xpath && configs_xpath->nodesetval)
     {
-        static const std::set<std::string> well_known_languages = {"c", "cpp", "c++"};
-        static const std::set<std::string> well_known_compilers = {"gcc", "msvc", "clang", "icc"};
+        // Suggested in FMI 3.0: VisualC, gcc, clang++
+        // Suggested in FMI 3.0: C99, C++11
+        static const std::set<std::string> suggested_languages = {"C89", "C90", "C99", "C11", "C17", "C18", "C23",
+                                                                  "C++98", "C++03", "C++11", "C++14", "C++17", "C++20", "C++23"};
+        static const std::set<std::string> suggested_compilers = {"VisualC", "gcc", "clang++", "clang", "intel", "msvc"};
 
         for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)
         {
             auto node = configs_xpath->nodesetval->nodeTab[i];
 
+            auto model_id = getXmlAttribute(node, "modelIdentifier");
+            if (model_id && !valid_ids.empty())
+            {
+                if (!valid_ids.contains(*model_id))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("BuildConfiguration (line " + std::to_string(node->line) +
+                                            ") has modelIdentifier '" + *model_id +
+                                            "' which does not match any modelIdentifier in modelDescription.xml.");
+                }
+            }
+
             auto lang_opt = getXmlAttribute(node, "language");
             if (lang_opt)
             {
-                std::string lang = *lang_opt;
-                std::transform(lang.begin(), lang.end(), lang.begin(), ::tolower);
-                if (!well_known_languages.contains(lang))
+                if (!suggested_languages.contains(*lang_opt))
                 {
                     if (test.status == TestStatus::PASS)
                         test.status = TestStatus::WARNING;
-                    test.messages.push_back("Unknown language '" + *lang_opt +
-                                            "' in BuildConfiguration (line " + std::to_string(node->line) + ").");
+                    test.messages.push_back("Language '" + *lang_opt + "' in BuildConfiguration (line " +
+                                            std::to_string(node->line) +
+                                            ") is not one of the suggested values (e.g. C99, C++11).");
                 }
             }
 
             auto compiler_opt = getXmlAttribute(node, "compiler");
             if (compiler_opt)
             {
-                std::string compiler = *compiler_opt;
-                std::transform(compiler.begin(), compiler.end(), compiler.begin(), ::tolower);
                 bool known = false;
-                for (const auto& well_known : well_known_compilers)
+                for (const auto& suggested : suggested_compilers)
                 {
-                    if (compiler.find(well_known) != std::string::npos)
+                    if (compiler_opt->find(suggested) != std::string::npos)
                     {
                         known = true;
                         break;
@@ -209,14 +241,55 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 {
                     if (test.status == TestStatus::PASS)
                         test.status = TestStatus::WARNING;
-                    test.messages.push_back("Unknown compiler '" + *compiler_opt +
-                                            "' in BuildConfiguration (line " + std::to_string(node->line) + ").");
+                    test.messages.push_back("Compiler '" + *compiler_opt + "' in BuildConfiguration (line " +
+                                            std::to_string(node->line) +
+                                            ") is not one of the suggested values (e.g. VisualC, gcc, clang++).");
                 }
             }
         }
     }
     if (configs_xpath)
         xmlXPathFreeObject(configs_xpath);
+}
+
+std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const std::filesystem::path& path)
+{
+    std::set<std::string> ids;
+    auto md_path = path / "modelDescription.xml";
+    if (!std::filesystem::exists(md_path))
+        return ids;
+
+    xmlDocPtr doc = xmlReadFile(md_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (!doc)
+        return ids;
+
+    xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
+    if (xpath_context)
+    {
+        // FMI2 and FMI3 tags
+        static const std::vector<std::string> tags = {"ModelExchange", "CoSimulation", "ScheduledExecution"};
+        for (const auto& tag : tags)
+        {
+            std::string expr = "//" + tag;
+            xmlXPathObjectPtr xpath_obj =
+                xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), xpath_context);
+            if (xpath_obj && xpath_obj->nodesetval)
+            {
+                for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+                {
+                    auto node = xpath_obj->nodesetval->nodeTab[i];
+                    auto id = getXmlAttribute(node, "modelIdentifier");
+                    if (id)
+                        ids.insert(*id);
+                }
+            }
+            if (xpath_obj)
+                xmlXPathFreeObject(xpath_obj);
+        }
+        xmlXPathFreeContext(xpath_context);
+    }
+    xmlFreeDoc(doc);
+    return ids;
 }
 
 std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)

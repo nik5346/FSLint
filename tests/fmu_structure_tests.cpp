@@ -178,6 +178,67 @@ TEST_CASE("BuildDescriptionChecker validation", "[build_description]")
             CHECK(has_fail(cert, "Build Description Semantic Validation"));
             fs::remove_all(path);
         }
+
+        SECTION("Fails if modelIdentifier mismatch")
+        {
+            auto path = fs::temp_directory_path() / "id_mismatch";
+            fs::remove_all(path);
+            fs::create_directories(path / "sources");
+            {
+                std::ofstream ofs(path / "modelDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiModelDescription fmiVersion=\"3.0\" "
+                       "modelName=\"test\" instantiationToken=\"{...}\"><CoSimulation "
+                       "modelIdentifier=\"real_id\"/></fmiModelDescription>";
+            }
+            {
+                std::ofstream ofs(path / "sources/buildDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription "
+                       "fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"wrong_id\"/></fmiBuildDescription>";
+            }
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_fail(cert, "Build Description Semantic Validation"));
+            fs::remove_all(path);
+        }
+
+        SECTION("Passes if modelIdentifier matches one of many")
+        {
+            auto path = fs::temp_directory_path() / "multi_id_match";
+            fs::remove_all(path);
+            fs::create_directories(path / "sources");
+            {
+                std::ofstream ofs(path / "modelDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiModelDescription fmiVersion=\"3.0\" "
+                       "modelName=\"test\" instantiationToken=\"{...}\"><ModelExchange "
+                       "modelIdentifier=\"me_id\"/><CoSimulation modelIdentifier=\"cs_id\"/></fmiModelDescription>";
+            }
+            {
+                std::ofstream ofs(path / "sources/buildDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription "
+                       "fmiVersion=\"3.0\"><BuildConfiguration modelIdentifier=\"me_id\"/></fmiBuildDescription>";
+            }
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_pass(cert, "Build Description Semantic Validation"));
+            fs::remove_all(path);
+        }
+
+        SECTION("Fails if path contains ..")
+        {
+            auto path = fs::temp_directory_path() / "dotdot_test";
+            fs::remove_all(path);
+            fs::create_directories(path / "sources");
+            {
+                std::ofstream ofs(path / "sources/buildDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><fmiBuildDescription "
+                       "fmiVersion=\"3.0\"><BuildConfiguration><SourceFile "
+                       "name=\"../secret.c\"/></BuildConfiguration></fmiBuildDescription>";
+            }
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_fail(cert, "Build Description Semantic Validation"));
+            fs::remove_all(path);
+        }
     }
 
     SECTION("Attributes validation")
