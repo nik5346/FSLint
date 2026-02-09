@@ -235,6 +235,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("reinit_cs_only", "not allowed for Co-Simulation only FMUs");
         validate_fail("derivative_variability", "must have variability=\"continuous\"");
     }
+
 }
 
 TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
@@ -482,8 +483,10 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("structure_dependencies_missing", "has 'dependenciesKind' but 'dependencies' is missing");
         validate_fail("structure_dependencies_kind_mismatch", "has different number of elements in 'dependencies'");
         validate_fail("structure_dependencies_kind_invalid_initial", "has illegal dependencyKind 'fixed'");
-        validate_fail("structure_dependencies_kind_non_float", "has dependencyKind 'constant' but unknown is not a float type");
+        validate_fail("structure_dependencies_kind_non_float",
+                      "has dependencyKind 'constant' but unknown is not a float type");
     }
+
 }
 
 TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")

@@ -270,6 +270,8 @@ endforeach()
 # Core library
 # ============================================================================
 file(GLOB_RECURSE LIB_SOURCES "lib/*.cpp")
+include_directories(lib/checker/directory)
+include_directories(lib/checker/build_description)
 add_library(FSLint-lib STATIC ${LIB_SOURCES})
 
 file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "lib/*")
@@ -331,6 +333,7 @@ add_executable(FSLint-tests
     tests/model_description_tests.cpp
     tests/certificate_tests.cpp
     tests/certificate_management_tests.cpp
+    tests/fmu_structure_tests.cpp
     tests/terminals_and_icons_tests.cpp
 )
 

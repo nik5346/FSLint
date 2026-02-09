@@ -6,6 +6,7 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
+#include <filesystem>
 #include <iostream>
 #include <tuple>
 

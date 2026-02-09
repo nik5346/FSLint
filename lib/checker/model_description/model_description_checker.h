@@ -113,6 +113,8 @@ class ModelDescriptionCheckerBase : public Checker
                                               const std::map<std::string, UnitDefinition>& units,
                                               Certificate& cert) = 0;
 
+    std::filesystem::path _fmu_root_path;
+
     virtual std::string getFmiVersion() const = 0;
 
     // Common validation methods that work the same way across FMI versions

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="both" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f9e0}" author="Jules" license="MIT" generationDateAndTime="2023-01-01T12:00:00Z" variableNamingConvention="flat">
+  <CoSimulation modelIdentifier="both">
+    <SourceFiles>
+      <File name="source.c"/>
+    </SourceFiles>
+  </CoSimulation>
+  <ModelVariables/>
+  <ModelStructure/>
+</fmiModelDescription>
