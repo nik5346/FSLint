@@ -17,8 +17,12 @@
 #include "fmi2_directory_checker.h"
 #include "fmi3_directory_checker.h"
 
-#include <fstream>
+#include <filesystem>
 #include <iostream>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
 {

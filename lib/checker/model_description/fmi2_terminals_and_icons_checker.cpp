@@ -1,5 +1,9 @@
 #include "fmi2_terminals_and_icons_checker.h"
 #include "certificate.h"
+#include <filesystem>
+#include <map>
+#include <string>
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 

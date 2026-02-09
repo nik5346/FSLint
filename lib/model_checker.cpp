@@ -1,16 +1,23 @@
 #include "model_checker.h"
 
 #include "archive_checker.h"
+#include "certificate.h"
+#include "checker.h"
 #include "checker_factory.h"
+#include "model_info.h"
 #include "zipper.h"
 
 #include "picosha2.h"
 
 #include <algorithm>
 #include <ctime>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <sstream>
+#include <string>
+#include <vector>
 
 void ModelChecker::validate(const std::filesystem::path& path) const
 {

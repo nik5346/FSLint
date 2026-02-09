@@ -7,7 +7,6 @@
 #include <optional>
 #include <set>
 #include <string>
-#include <vector>
 
 class DirectoryCheckerBase : public Checker
 {

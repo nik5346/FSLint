@@ -1,9 +1,13 @@
 #include "certificate.h"
 #include <array>
+#include <chrono>
 #include <ctime>
+#include <format>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 void Certificate::log(const std::string& message)
 {

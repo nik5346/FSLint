@@ -1,14 +1,20 @@
 #include "fmi3_model_description_checker.h"
 #include "certificate.h"
 #include <algorithm>
+#include <cstdint>
+#include <filesystem>
+#include <iostream>
+#include <map>
 #include <regex>
+#include <set>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-
-#include <filesystem>
-#include <iostream>
-#include <tuple>
 
 void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,
