@@ -10,13 +10,13 @@
 #include <cmath>
 #include <cstdint>
 #include <iomanip>
-#include <iostream>
 #include <regex>
 #include <sstream>
 
 void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
 {
     cert.printSubsectionHeader("MODEL DESCRIPTION VALIDATION");
+    _fmu_root_path = path;
 
     auto model_desc_path = path / "modelDescription.xml";
 

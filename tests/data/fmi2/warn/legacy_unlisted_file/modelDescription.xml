@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="legacy_unlisted" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f9e0}" variableNamingConvention="flat">
+  <CoSimulation modelIdentifier="legacy_unlisted">
+    <SourceFiles>
+      <File name="listed.c"/>
+    </SourceFiles>
+  </CoSimulation>
+  <ModelVariables/>
+  <ModelStructure/>
+</fmiModelDescription>

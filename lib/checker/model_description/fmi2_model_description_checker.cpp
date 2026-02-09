@@ -6,6 +6,7 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <tuple>
@@ -32,6 +33,9 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
 
     // Check continuous-time states
     checkContinuousStates(variables, cert);
+
+    // Check SourceFiles semantic validation (existence of listed files)
+    checkSourceFilesSemantic(doc, cert);
 
     // Run FMI2-specific model structure checks (should be last)
     checkModelStructure(doc, variables, cert);
@@ -1738,4 +1742,34 @@ std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDe
 
     xmlXPathFreeObject(xpath_obj);
     return units;
+}
+
+void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certificate& cert)
+{
+    TestResult test{"Source Files Semantic Validation (FMI2)", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//SourceFiles/File");
+    if (xpath_obj && xpath_obj->nodesetval)
+    {
+        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            auto name_opt = getXmlAttribute(node, "name");
+            if (name_opt)
+            {
+                auto file_path = _fmu_root_path / "sources" / (*name_opt);
+                if (!std::filesystem::exists(file_path))
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Source file '" + (*name_opt) +
+                                            "' listed in 'modelDescription.xml' (line " + std::to_string(node->line) +
+                                            ") does not exist in 'sources/' directory.");
+                }
+            }
+        }
+    }
+    if (xpath_obj)
+        xmlXPathFreeObject(xpath_obj);
+
+    cert.printTestResult(test);
 }
