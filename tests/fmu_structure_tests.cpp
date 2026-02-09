@@ -1,7 +1,8 @@
 #include "build_description_checker.h"
 #include "certificate.h"
 #include "checker_factory.h"
-#include "directory_checker.h"
+#include "fmi2_directory_checker.h"
+#include "fmi3_directory_checker.h"
 #include "fmi2_model_description_checker.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
@@ -40,7 +41,7 @@ TEST_CASE("DirectoryChecker validation", "[directory]")
 {
     SECTION("FMI 2.0 distribution")
     {
-        DirectoryChecker checker("2.0");
+        Fmi2DirectoryChecker checker;
 
         SECTION("Fails if neither binaries nor sources")
         {
@@ -97,7 +98,7 @@ TEST_CASE("DirectoryChecker validation", "[directory]")
 
     SECTION("FMI 3.0 distribution")
     {
-        DirectoryChecker checker("3.0");
+        Fmi3DirectoryChecker checker;
 
         SECTION("Warns if diagram.svg is present but diagram.png is missing")
         {
@@ -114,6 +115,34 @@ TEST_CASE("DirectoryChecker validation", "[directory]")
             {
                 std::ofstream ofs(path / "documentation" / "diagram.svg");
                 ofs << "<svg/>";
+            }
+            fs::create_directories(path / "binaries/x86_64-windows");
+            {
+                std::ofstream ofs(path / "binaries/x86_64-windows/test.dll");
+                ofs << "bin";
+            }
+
+            Certificate cert;
+            checker.validate(path, cert);
+            CHECK(has_warn(cert, "FMU Structure"));
+            fs::remove_all(path);
+        }
+
+        SECTION("Warns about unknown entry in root")
+        {
+            auto path = fs::temp_directory_path() / "fmi3_unknown_entry";
+            fs::remove_all(path);
+            fs::create_directories(path);
+            {
+                std::ofstream ofs(path / "modelDescription.xml");
+                ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                    << "<fmiModelDescription fmiVersion=\"3.0\" modelName=\"test\" instantiationToken=\"{...}\">"
+                    << "<CoSimulation modelIdentifier=\"test\"/>"
+                    << "</fmiModelDescription>";
+            }
+            {
+                std::ofstream ofs(path / "unknown_file.txt");
+                ofs << "test";
             }
             fs::create_directories(path / "binaries/x86_64-windows");
             {
