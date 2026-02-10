@@ -2,6 +2,7 @@
 #include "certificate.h"
 #include "fmi2_directory_checker.h"
 #include "fmi2_model_description_checker.h"
+#include "fmi3_build_description_checker.h"
 #include "fmi3_directory_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
@@ -122,7 +123,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
 TEST_CASE("Build Description Validation", "[build_description]")
 {
-    BuildDescriptionChecker checker("3.0");
+    Fmi3BuildDescriptionChecker checker("3.0");
 
     auto validate_pass = [&](const fs::path& path)
     {

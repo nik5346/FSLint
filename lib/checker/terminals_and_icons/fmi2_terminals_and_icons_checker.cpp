@@ -2,6 +2,28 @@
 #include "certificate.h"
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <regex>
+
+void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
+{
+    auto version_attr = getXmlAttribute(root, "fmiVersion");
+    if (!version_attr)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
+    }
+    else
+    {
+        // terminalsAndIcons.xml always follows FMI 3.0 versioning rules
+        std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
+        if (!std::regex_match(*version_attr, fmi3_pattern))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("fmiVersion in terminalsAndIcons.xml must match FMI 3.0 format (found '" +
+                                    *version_attr + "').");
+        }
+    }
+}
 
 std::map<std::string, TerminalVariableInfo>
 Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,

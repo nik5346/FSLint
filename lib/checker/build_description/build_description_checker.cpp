@@ -80,54 +80,6 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
     cert.printSubsectionSummary(true);
 }
 
-void BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& cert)
-{
-    TestResult test{"Build Description FMI Version", TestStatus::PASS, {}};
-    auto bd_fmi_version = getXmlAttribute(root, "fmiVersion");
-    if (!bd_fmi_version)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Missing 'fmiVersion' attribute in 'buildDescription.xml'.");
-    }
-    else
-    {
-        bool is_fmi3 = _fmi_version.starts_with("3.");
-
-        if (is_fmi3)
-        {
-            // FMI 3.0 regex from XSD: 3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?
-            std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
-            if (!std::regex_match(*bd_fmi_version, fmi3_pattern))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
-                                        ") must match FMI 3.0 format.");
-            }
-        }
-
-        if (*bd_fmi_version != _fmi_version)
-        {
-            // For FMI 3.0, it must match.
-            // For FMI 2.0, it's a backport, the user said "fmi2 reuses the fmi3 rules for the build description and
-            // also the schema itself. all future versions should have then matching versions in the build description."
-            if (is_fmi3)
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
-                                        ") does not match FMU version (" + _fmi_version + ").");
-            }
-            else
-            {
-                // For FMI 2.0, maybe warn?
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
-                                        ") does not match FMU version (" + _fmi_version + ").");
-            }
-        }
-    }
-    cert.printTestResult(test);
-}
-
 void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                                                const std::filesystem::path& sources_path, Certificate& cert,
                                                std::set<std::string>& listed_files)

@@ -439,29 +439,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
         return;
     }
 
-    bool is_fmi3 = getFmiVersion().starts_with("3.");
-
-    if (is_fmi3)
-    {
-        // FMI 3.0 regex from XSD: 3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?
-        std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
-        if (!std::regex_match(*fmi_version, fmi3_pattern))
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("FMI version \"" + *fmi_version +
-                                    "\" does not match FMI 3.0 format (expected 3.x.y or 3.x.y-suffix).");
-        }
-    }
-    else
-    {
-        // FMI 2.0: must be exactly "2.0"
-        if (*fmi_version != "2.0")
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("FMI version \"" + *fmi_version +
-                                    "\" is invalid for FMI 2.0 (must be exactly \"2.0\").");
-        }
-    }
+    validateFmiVersionValue(*fmi_version, test);
 
     cert.printTestResult(test);
 }

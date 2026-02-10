@@ -19,6 +19,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                                       Certificate& cert) override;
     void checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) override;
     void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) override;
+    void validateFmiVersionValue(const std::string& version, TestResult& test) override;
     void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) override;
     void checkMinMaxStartValues(const std::vector<Variable>& variables,
                                 const std::map<std::string, TypeDefinition>& type_definitions,

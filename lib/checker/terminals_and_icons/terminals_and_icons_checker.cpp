@@ -127,27 +127,6 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     return all_passed;
 }
 
-void TerminalsAndIconsCheckerBase::checkFmiVersion(xmlNodePtr root, TestResult& test)
-{
-    auto version_attr = getXmlAttribute(root, "fmiVersion");
-    if (!version_attr)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
-    }
-    else
-    {
-        // FMI 3.0 regex from XSD: 3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?
-        std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
-        if (!std::regex_match(*version_attr, fmi3_pattern))
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("fmiVersion in terminalsAndIcons.xml must match FMI 3.0 format (found '" +
-                                    *version_attr + "').");
-        }
-    }
-}
-
 void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr context, const std::string& p,
                                                             TestResult& test)
 {

@@ -287,6 +287,18 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
     cert.printTestResult(test);
 }
 
+void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
+{
+    // FMI 3.0 regex from XSD: 3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?
+    std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
+    if (!std::regex_match(version, fmi3_pattern))
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("FMI version \"" + version +
+                                "\" does not match FMI 3.0 format (expected 3.x.y or 3.x.y-suffix).");
+    }
+}
+
 void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
     TestResult test{"Required Start Values (FMI3)", TestStatus::PASS, {}};
