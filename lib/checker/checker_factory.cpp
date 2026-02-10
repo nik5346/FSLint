@@ -13,6 +13,7 @@
 #include "model_description_checker.h"
 #include "terminals_and_icons_checker.h"
 
+#include "binary_checker.h"
 #include "build_description_checker.h"
 #include "fmi2_directory_checker.h"
 #include "fmi3_directory_checker.h"
@@ -89,11 +90,13 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     {
         checkers.push_back(std::make_unique<Fmi2DirectoryChecker>());
         checkers.push_back(std::make_unique<BuildDescriptionChecker>(info.version));
+        checkers.push_back(std::make_unique<BinaryChecker>());
     }
     else if (info.standard == ModelStandard::FMI3)
     {
         checkers.push_back(std::make_unique<Fmi3DirectoryChecker>());
         checkers.push_back(std::make_unique<BuildDescriptionChecker>(info.version));
+        checkers.push_back(std::make_unique<BinaryChecker>());
     }
 
     return checkers;
