@@ -1,10 +1,10 @@
 #include "binary_checker.h"
 #include "binary_parser.h"
 #include "certificate.h"
-#include <algorithm>
-#include <filesystem>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <filesystem>
+#include <algorithm>
 #include <map>
 #include <set>
 
@@ -43,9 +43,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     }
 
     std::map<std::string, std::string> model_identifiers;
-    std::set<std::string> interfaces;
     std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
-    Capabilities caps;
 
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     if (xpath_context)
@@ -57,22 +55,10 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
             if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
             {
-                auto node = xpath_obj->nodesetval->nodeTab[0];
-                auto model_id = getXmlAttribute(node, "modelIdentifier");
+                auto model_id = getXmlAttribute(xpath_obj->nodesetval->nodeTab[0], "modelIdentifier");
                 if (model_id)
                 {
                     model_identifiers[elem] = *model_id;
-                    interfaces.insert(elem);
-
-                    // Extract capabilities
-                    if (getXmlAttribute(node, "canGetAndSetFMUstate") == "true")
-                        caps.canGetAndSetFMUstate = true;
-                    if (getXmlAttribute(node, "canSerializeFMUstate") == "true")
-                        caps.canSerializeFMUstate = true;
-                    if (getXmlAttribute(node, "providesDirectionalDerivative") == "true")
-                        caps.providesDirectionalDerivative = true;
-                    if (getXmlAttribute(node, "providesAdjointDerivative") == "true")
-                        caps.providesAdjointDerivative = true;
                 }
             }
             if (xpath_obj)
@@ -88,7 +74,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
         return;
     }
 
-    std::vector<std::string> expected_functions = getExpectedFunctions(fmi_version, interfaces, caps);
+    std::vector<std::string> expected_functions = getExpectedFunctions(fmi_version);
 
     auto binaries_path = path / "binaries";
     if (std::filesystem::exists(binaries_path))
@@ -130,139 +116,134 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     cert.printSubsectionSummary(true);
 }
 
-std::vector<std::string> BinaryChecker::getExpectedFunctions(const std::string& version,
-                                                             const std::set<std::string>& interfaces,
-                                                             const Capabilities& caps)
+std::vector<std::string> BinaryChecker::getExpectedFunctions(const std::string& version)
 {
-    std::vector<std::string> functions;
     if (version.starts_with("2."))
     {
-        functions = {"fmi2GetTypesPlatform",
-                     "fmi2GetVersion",
-                     "fmi2SetDebugLogging",
-                     "fmi2Instantiate",
-                     "fmi2FreeInstance",
-                     "fmi2SetupExperiment",
-                     "fmi2EnterInitializationMode",
-                     "fmi2ExitInitializationMode",
-                     "fmi2Terminate",
-                     "fmi2Reset",
-                     "fmi2GetReal",
-                     "fmi2GetInteger",
-                     "fmi2GetBoolean",
-                     "fmi2GetString",
-                     "fmi2SetReal",
-                     "fmi2SetInteger",
-                     "fmi2SetBoolean",
-                     "fmi2SetString"};
-
-        if (caps.canGetAndSetFMUstate)
-            functions.insert(functions.end(), {"fmi2GetFMUstate", "fmi2SetFMUstate", "fmi2FreeFMUstate"});
-        if (caps.canSerializeFMUstate)
-        {
-            functions.insert(functions.end(),
-                             {"fmi2SerializedFMUstateSize", "fmi2SerializeFMUstate", "fmi2DeSerializeFMUstate"});
-        }
-        if (caps.providesDirectionalDerivative)
-            functions.push_back("fmi2GetDirectionalDerivative");
-
-        if (interfaces.contains("ModelExchange"))
-        {
-            functions.insert(functions.end(),
-                             {"fmi2EnterEventMode", "fmi2NewDiscreteStates", "fmi2EnterContinuousTimeMode",
-                              "fmi2CompletedIntegratorStep", "fmi2SetTime", "fmi2SetContinuousStates",
-                              "fmi2GetDerivatives", "fmi2GetEventIndicators", "fmi2GetContinuousStates",
-                              "fmi2GetNominalsOfContinuousStates"});
-        }
-        if (interfaces.contains("CoSimulation"))
-        {
-            functions.insert(functions.end(), {"fmi2SetRealInputDerivatives", "fmi2GetRealOutputDerivatives",
-                                               "fmi2DoStep", "fmi2CancelStep", "fmi2GetStatus", "fmi2GetRealStatus",
-                                               "fmi2GetIntegerStatus", "fmi2GetBooleanStatus", "fmi2GetStringStatus"});
-        }
+        return {"fmi2GetTypesPlatform",
+                "fmi2GetVersion",
+                "fmi2SetDebugLogging",
+                "fmi2Instantiate",
+                "fmi2FreeInstance",
+                "fmi2SetupExperiment",
+                "fmi2EnterInitializationMode",
+                "fmi2ExitInitializationMode",
+                "fmi2Terminate",
+                "fmi2Reset",
+                "fmi2GetReal",
+                "fmi2GetInteger",
+                "fmi2GetBoolean",
+                "fmi2GetString",
+                "fmi2SetReal",
+                "fmi2SetInteger",
+                "fmi2SetBoolean",
+                "fmi2SetString",
+                "fmi2GetFMUstate",
+                "fmi2SetFMUstate",
+                "fmi2FreeFMUstate",
+                "fmi2SerializedFMUstateSize",
+                "fmi2SerializeFMUstate",
+                "fmi2DeSerializeFMUstate",
+                "fmi2GetDirectionalDerivative",
+                "fmi2EnterEventMode",
+                "fmi2NewDiscreteStates",
+                "fmi2EnterContinuousTimeMode",
+                "fmi2CompletedIntegratorStep",
+                "fmi2SetTime",
+                "fmi2SetContinuousStates",
+                "fmi2GetDerivatives",
+                "fmi2GetEventIndicators",
+                "fmi2GetContinuousStates",
+                "fmi2GetNominalsOfContinuousStates",
+                "fmi2SetRealInputDerivatives",
+                "fmi2GetRealOutputDerivatives",
+                "fmi2DoStep",
+                "fmi2CancelStep",
+                "fmi2GetStatus",
+                "fmi2GetRealStatus",
+                "fmi2GetIntegerStatus",
+                "fmi2GetBooleanStatus",
+                "fmi2GetStringStatus"};
     }
     else if (version.starts_with("3."))
     {
-        functions = {"fmi3GetVersion",
-                     "fmi3SetDebugLogging",
-                     "fmi3FreeInstance",
-                     "fmi3EnterInitializationMode",
-                     "fmi3ExitInitializationMode",
-                     "fmi3EnterEventMode",
-                     "fmi3Terminate",
-                     "fmi3Reset",
-                     "fmi3GetFloat32",
-                     "fmi3GetFloat64",
-                     "fmi3GetInt8",
-                     "fmi3GetUInt8",
-                     "fmi3GetInt16",
-                     "fmi3GetUInt16",
-                     "fmi3GetInt32",
-                     "fmi3GetUInt32",
-                     "fmi3GetInt64",
-                     "fmi3GetUInt64",
-                     "fmi3GetBoolean",
-                     "fmi3GetString",
-                     "fmi3GetBinary",
-                     "fmi3GetClock",
-                     "fmi3SetFloat32",
-                     "fmi3SetFloat64",
-                     "fmi3SetInt8",
-                     "fmi3SetUInt8",
-                     "fmi3SetInt16",
-                     "fmi3SetUInt16",
-                     "fmi3SetInt32",
-                     "fmi3SetUInt32",
-                     "fmi3SetInt64",
-                     "fmi3SetUInt64",
-                     "fmi3SetBoolean",
-                     "fmi3SetString",
-                     "fmi3SetBinary",
-                     "fmi3SetClock",
-                     "fmi3GetNumberOfVariableDependencies",
-                     "fmi3GetVariableDependencies",
-                     "fmi3EnterConfigurationMode",
-                     "fmi3ExitConfigurationMode",
-                     "fmi3GetIntervalDecimal",
-                     "fmi3GetIntervalFraction",
-                     "fmi3GetShiftDecimal",
-                     "fmi3GetShiftFraction",
-                     "fmi3SetIntervalDecimal",
-                     "fmi3SetIntervalFraction",
-                     "fmi3SetShiftDecimal",
-                     "fmi3SetShiftFraction",
-                     "fmi3EvaluateDiscreteStates",
-                     "fmi3UpdateDiscreteStates"};
-
-        if (caps.canGetAndSetFMUstate)
-            functions.insert(functions.end(), {"fmi3GetFMUState", "fmi3SetFMUState", "fmi3FreeFMUState"});
-        if (caps.canSerializeFMUstate)
-        {
-            functions.insert(functions.end(),
-                             {"fmi3SerializedFMUStateSize", "fmi3SerializeFMUState", "fmi3DeserializeFMUState"});
-        }
-        if (caps.providesDirectionalDerivative)
-            functions.push_back("fmi3GetDirectionalDerivative");
-        if (caps.providesAdjointDerivative)
-            functions.push_back("fmi3GetAdjointDerivative");
-
-        if (interfaces.contains("ModelExchange"))
-        {
-            functions.insert(functions.end(), {"fmi3InstantiateModelExchange", "fmi3EnterContinuousTimeMode",
-                                               "fmi3CompletedIntegratorStep", "fmi3SetTime", "fmi3SetContinuousStates",
-                                               "fmi3GetContinuousStateDerivatives", "fmi3GetEventIndicators",
-                                               "fmi3GetContinuousStates", "fmi3GetNominalsOfContinuousStates",
-                                               "fmi3GetNumberOfEventIndicators", "fmi3GetNumberOfContinuousStates"});
-        }
-        if (interfaces.contains("CoSimulation"))
-        {
-            functions.insert(functions.end(), {"fmi3InstantiateCoSimulation", "fmi3EnterStepMode",
-                                               "fmi3GetOutputDerivatives", "fmi3DoStep"});
-        }
-        if (interfaces.contains("ScheduledExecution"))
-            functions.insert(functions.end(), {"fmi3InstantiateScheduledExecution", "fmi3ActivateModelPartition"});
+        return {"fmi3GetVersion",
+                "fmi3SetDebugLogging",
+                "fmi3InstantiateModelExchange",
+                "fmi3InstantiateCoSimulation",
+                "fmi3InstantiateScheduledExecution",
+                "fmi3FreeInstance",
+                "fmi3EnterInitializationMode",
+                "fmi3ExitInitializationMode",
+                "fmi3EnterEventMode",
+                "fmi3Terminate",
+                "fmi3Reset",
+                "fmi3GetFloat32",
+                "fmi3GetFloat64",
+                "fmi3GetInt8",
+                "fmi3GetUInt8",
+                "fmi3GetInt16",
+                "fmi3GetUInt16",
+                "fmi3GetInt32",
+                "fmi3GetUInt32",
+                "fmi3GetInt64",
+                "fmi3GetUInt64",
+                "fmi3GetBoolean",
+                "fmi3GetString",
+                "fmi3GetBinary",
+                "fmi3GetClock",
+                "fmi3SetFloat32",
+                "fmi3SetFloat64",
+                "fmi3SetInt8",
+                "fmi3SetUInt8",
+                "fmi3SetInt16",
+                "fmi3SetUInt16",
+                "fmi3SetInt32",
+                "fmi3SetUInt32",
+                "fmi3SetInt64",
+                "fmi3SetUInt64",
+                "fmi3SetBoolean",
+                "fmi3SetString",
+                "fmi3SetBinary",
+                "fmi3SetClock",
+                "fmi3GetNumberOfVariableDependencies",
+                "fmi3GetVariableDependencies",
+                "fmi3GetFMUState",
+                "fmi3SetFMUState",
+                "fmi3FreeFMUState",
+                "fmi3SerializedFMUStateSize",
+                "fmi3SerializeFMUState",
+                "fmi3DeserializeFMUState",
+                "fmi3GetDirectionalDerivative",
+                "fmi3GetAdjointDerivative",
+                "fmi3EnterConfigurationMode",
+                "fmi3ExitConfigurationMode",
+                "fmi3GetIntervalDecimal",
+                "fmi3GetIntervalFraction",
+                "fmi3GetShiftDecimal",
+                "fmi3GetShiftFraction",
+                "fmi3SetIntervalDecimal",
+                "fmi3SetIntervalFraction",
+                "fmi3SetShiftDecimal",
+                "fmi3SetShiftFraction",
+                "fmi3EvaluateDiscreteStates",
+                "fmi3UpdateDiscreteStates",
+                "fmi3EnterContinuousTimeMode",
+                "fmi3CompletedIntegratorStep",
+                "fmi3SetTime",
+                "fmi3SetContinuousStates",
+                "fmi3GetContinuousStateDerivatives",
+                "fmi3GetEventIndicators",
+                "fmi3GetContinuousStates",
+                "fmi3GetNominalsOfContinuousStates",
+                "fmi3GetNumberOfEventIndicators",
+                "fmi3GetNumberOfContinuousStates",
+                "fmi3EnterStepMode",
+                "fmi3GetOutputDerivatives",
+                "fmi3DoStep",
+                "fmi3ActivateModelPartition"};
     }
-    return functions;
+    return {};
 }
 
 std::optional<std::string> BinaryChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
