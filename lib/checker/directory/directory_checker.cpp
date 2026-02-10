@@ -11,8 +11,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
     {
-        TestResult test{"FMU Structure", TestStatus::FAIL,
-                        {"Mandatory file 'modelDescription.xml' is missing from the FMU root."}};
+        TestResult test{
+            "FMU Structure", TestStatus::FAIL, {"Mandatory file 'modelDescription.xml' is missing from the FMU root."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -22,7 +22,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        TestResult test{"FMU Structure", TestStatus::FAIL,
+        TestResult test{"FMU Structure",
+                        TestStatus::FAIL,
                         {"Failed to parse 'modelDescription.xml' to verify directory structure."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);

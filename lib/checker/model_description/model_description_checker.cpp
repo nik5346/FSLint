@@ -60,14 +60,20 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Perform interface checks
     std::vector<std::string> interface_elements;
     if (metadata.fmiVersion && metadata.fmiVersion->starts_with("2."))
+    {
         interface_elements = {"CoSimulation", "ModelExchange"};
+    }
     else
+    {
         interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
+    }
 
     auto model_identifiers = extractModelIdentifiers(doc, interface_elements);
     checkNumberOfImplementedInterfaces(model_identifiers, cert);
     for (const auto& [interface_name, model_id] : model_identifiers)
+    {
         checkModelIdentifier(model_id, interface_name, cert);
+    }
 
     checkUnits(doc, cert);
     checkTypeDefinitions(doc, cert);
@@ -124,7 +130,9 @@ void ModelDescriptionCheckerBase::checkTypeNameClashes(const std::vector<Variabl
 
     std::set<std::string> variable_names;
     for (const auto& var : variables)
+    {
         variable_names.insert(var.name);
+    }
 
     for (const auto& [name, type_def] : type_definitions)
     {
@@ -328,8 +336,12 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
             tm_time.tm_min = minute;
             tm_time.tm_sec = second;
 
-            // Convert to time_t (UTC)
-            std::time_t generation_time = std::mktime(&tm_time);
+            // Convert to time_t (UTC) using portable function
+#ifdef _WIN32
+            std::time_t generation_time = _mkgmtime(&tm_time);
+#else
+            std::time_t generation_time = timegm(&tm_time);
+#endif
 
             // Adjust for timezone if not UTC
             if (timezone != "Z")
@@ -648,7 +660,9 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
     if (!xpath_obj || !xpath_obj->nodesetval)
     {
         if (xpath_obj)
+        {
             xmlXPathFreeObject(xpath_obj);
+        }
         cert.printTestResult(test);
         return;
     }
@@ -793,10 +807,14 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::v
                 xpath->nodesetval->nodeTab[0], // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 "modelIdentifier");
             if (model_id.has_value())
+            {
                 model_identifiers[elem] = *model_id;
+            }
         }
         if (xpath)
+        {
             xmlXPathFreeObject(xpath);
+        }
     }
 
     return model_identifiers;
@@ -805,12 +823,16 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::v
 std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
     if (!node)
+    {
         return std::nullopt;
+    }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
     if (!attr)
+    {
         return std::nullopt;
+    }
 
     std::string value(reinterpret_cast<char*>(attr));
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -819,51 +841,68 @@ std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodeP
     return value;
 }
 
-bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
+std::string ModelDescriptionCheckerBase::normalizeFloatString(const std::string& value)
 {
     std::string s = value;
     // Remove leading/trailing whitespace
     s.erase(0, s.find_first_not_of(" \t\n\r"));
     size_t last = s.find_last_not_of(" \t\n\r");
     if (last != std::string::npos)
+    {
         s.erase(last + 1);
+    }
 
     if (s.empty())
-        return false;
+    {
+        return "";
+    }
 
     std::string lower = s;
     std::transform(lower.begin(), lower.end(), lower.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return lower;
+}
+
+bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
+{
+    std::string lower = normalizeFloatString(value);
+
+    if (lower.empty())
+    {
+        return false;
+    }
 
     if (lower == "nan")
+    {
         return true;
+    }
 
     if (lower == "inf" || lower == "+inf" || lower == "-inf")
+    {
         return true;
+    }
 
     return false;
 }
 
 std::string ModelDescriptionCheckerBase::getSpecialFloatDescription(const std::string& value)
 {
-    std::string s = value;
-    s.erase(0, s.find_first_not_of(" \t\n\r"));
-    size_t last = s.find_last_not_of(" \t\n\r");
-    if (last != std::string::npos)
-        s.erase(last + 1);
+    std::string lower = normalizeFloatString(value);
 
-    if (s.empty())
+    if (lower.empty())
+    {
         return "NaN or Infinity";
-
-    std::string lower = s;
-    std::transform(lower.begin(), lower.end(), lower.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    }
 
     if (lower == "nan")
+    {
         return "NaN";
+    }
 
     if (lower == "inf" || lower == "+inf" || lower == "-inf")
+    {
         return "Infinity";
+    }
 
     return "NaN or Infinity";
 }
@@ -893,7 +932,9 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     {
         // DefaultExperiment is optional, so this is not an error
         if (xpath_obj)
+        {
             xmlXPathFreeObject(xpath_obj);
+        }
         cert.printTestResult(test);
         return;
     }
@@ -1213,10 +1254,16 @@ void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Va
     // Build lookup map: for FMI2 it's index -> Variable, for FMI3 it's valueReference -> Variable
     std::map<uint32_t, const Variable*> lookup_map;
     for (const auto& var : variables)
+    {
         if (is_fmi2)
+        {
             lookup_map[var.index] = &var;
+        }
         else if (var.value_reference.has_value())
+        {
             lookup_map[*var.value_reference] = &var;
+        }
+    }
 
     // Check each variable that has a derivative_of attribute
     for (const auto& var : variables)

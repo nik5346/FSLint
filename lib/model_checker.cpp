@@ -72,7 +72,9 @@ void ModelChecker::validate(const std::filesystem::path& path) const
     auto checkers = CheckerFactory::createCheckers(model_info);
 
     for (auto& checker : checkers)
+    {
         checker->validate(extract_dir, cert);
+    }
 
     cert.printFooter();
 
@@ -138,7 +140,9 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 
     auto checkers = CheckerFactory::createCheckers(model_info);
     for (auto& checker : checkers)
+    {
         checker->validate(extract_dir, cert);
+    }
 
     cert.printFooter();
 

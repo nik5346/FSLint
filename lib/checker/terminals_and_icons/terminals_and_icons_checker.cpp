@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <iostream>
 #include <libxml/parser.h>
-#include <sstream>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 #include <set>
+#include <sstream>
 
 void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
 {

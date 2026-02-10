@@ -1,9 +1,13 @@
 #include "certificate.h"
 #include <array>
+#include <chrono>
 #include <ctime>
+#include <format>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 void Certificate::log(const std::string& message)
 {
@@ -114,7 +118,9 @@ void Certificate::printTestResult(const TestResult& test)
     log(ss.str());
 
     for (const auto& msg : test.messages)
+    {
         log("      └─ " + msg);
+    }
 }
 
 void Certificate::printSubsectionSummary(bool subsection_valid)

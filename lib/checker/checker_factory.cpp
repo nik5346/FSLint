@@ -19,6 +19,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <utility>
 
 ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
 {
