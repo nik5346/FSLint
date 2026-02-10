@@ -18,7 +18,8 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
     xmlDocPtr doc = xmlReadFile(build_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        TestResult test{"Parse buildDescription.xml", TestStatus::FAIL, {"Failed to parse 'sources/buildDescription.xml'."}};
+        TestResult test{
+            "Parse buildDescription.xml", TestStatus::FAIL, {"Failed to parse 'sources/buildDescription.xml'."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;

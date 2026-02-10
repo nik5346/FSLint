@@ -78,7 +78,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         }
 
         has_build_description = std::filesystem::exists(sources_path / "buildDescription.xml") ||
-                                 std::filesystem::exists(path / "buildDescription.xml");
+                                std::filesystem::exists(path / "buildDescription.xml");
         bool has_sources = !listed_sources_in_md.empty() || has_build_description ||
                            (std::filesystem::exists(sources_path) && !std::filesystem::is_empty(sources_path));
 
