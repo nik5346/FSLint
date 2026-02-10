@@ -22,13 +22,13 @@ class BuildDescriptionChecker : public Checker
     std::string _fmi_version;
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 
-    void checkFmiVersion(xmlNodePtr root, TestResult& test);
-    void checkSourceFiles(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path, TestResult& test,
-                          std::set<std::string>& listed_files);
+    void checkFmiVersion(xmlNodePtr root, Certificate& cert);
+    void checkSourceFiles(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
+                          Certificate& cert, std::set<std::string>& listed_files);
     void checkIncludeDirectories(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
-                                 TestResult& test);
+                                 Certificate& cert);
     void checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context, const std::set<std::string>& valid_ids,
-                                           TestResult& test);
+                                           Certificate& cert);
 
     std::set<std::string> getValidModelIdentifiers(const std::filesystem::path& path);
 };

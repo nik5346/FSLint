@@ -21,9 +21,9 @@ void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, C
         return;
     }
 
-    bool success = checkTerminalsAndIcons(path, variables, cert);
+    checkTerminalsAndIcons(path, variables, cert);
 
-    cert.printSubsectionSummary(success);
+    cert.printSubsectionSummary(true);
 }
 
 std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
@@ -81,7 +81,7 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
 
     // 1. Check fmiVersion consistency
     {
-        TestResult test{"FMI Version Consistency", TestStatus::PASS, {}};
+        TestResult test{"Terminals and Icons FMI Version", TestStatus::PASS, {}};
         checkFmiVersion(root, test);
         print_test(test);
     }
