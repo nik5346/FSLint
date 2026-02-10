@@ -1,6 +1,6 @@
-#include "binary_checker.h"
 #include "binary_parser.h"
 #include "certificate.h"
+#include "fmi2_binary_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
@@ -152,7 +152,7 @@ TEST_CASE("Binary Checker Validation", "[binary][checker]")
     bin << "not a real elf";
     bin.close();
 
-    BinaryChecker checker;
+    Fmi2BinaryChecker checker;
     Certificate cert;
     checker.validate("test_fmu", cert);
 
