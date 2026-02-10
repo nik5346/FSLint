@@ -14,72 +14,74 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
         return; // Optional
 
     cert.printSubsectionHeader("BUILD DESCRIPTION VALIDATION");
-    TestResult test{"Build Description Semantic Validation", TestStatus::PASS, {}};
 
     xmlDocPtr doc = xmlReadFile(build_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to parse 'sources/buildDescription.xml'.");
+        TestResult test{
+            "Parse buildDescription.xml", TestStatus::FAIL, {"Failed to parse 'sources/buildDescription.xml'."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
     }
 
     xmlNodePtr root = xmlDocGetRootElement(doc);
-    checkFmiVersion(root, test);
+    checkFmiVersion(root, cert);
 
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     std::set<std::string> listed_files;
     if (xpath_context)
     {
         auto valid_ids = getValidModelIdentifiers(path);
-        checkBuildConfigurationAttributes(xpath_context, valid_ids, test);
-        checkSourceFiles(xpath_context, sources_path, test, listed_files);
-        checkIncludeDirectories(xpath_context, sources_path, test);
+        checkBuildConfigurationAttributes(xpath_context, valid_ids, cert);
+        checkSourceFiles(xpath_context, sources_path, cert, listed_files);
+        checkIncludeDirectories(xpath_context, sources_path, cert);
         xmlXPathFreeContext(xpath_context);
     }
 
     // Reverse check: check if every source file on disk is listed
-    if (std::filesystem::exists(sources_path))
     {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(sources_path))
+        TestResult test{"Build Description Consistency", TestStatus::PASS, {}};
+        if (std::filesystem::exists(sources_path))
         {
-            if (entry.is_regular_file())
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(sources_path))
             {
-                auto rel_path = std::filesystem::relative(entry.path(), sources_path);
-                std::string filename = rel_path.string();
-                std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
-
-                if (filename == "buildDescription.xml")
-                    continue;
-
-                // Only check typical source files
-                static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
-                std::string ext = entry.path().extension().string();
-
-                if (source_extensions.contains(ext))
+                if (entry.is_regular_file())
                 {
-                    if (!listed_files.contains(filename))
+                    auto rel_path = std::filesystem::relative(entry.path(), sources_path);
+                    std::string filename = rel_path.string();
+                    std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
+
+                    if (filename == "buildDescription.xml")
+                        continue;
+
+                    // Only check typical source files
+                    static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
+                    std::string ext = entry.path().extension().string();
+
+                    if (source_extensions.contains(ext))
                     {
-                        if (test.status == TestStatus::PASS)
+                        if (!listed_files.contains(filename))
+                        {
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back("Source file '" + filename +
-                                                "' exists in 'sources/' directory but is not listed in "
-                                                "'buildDescription.xml'.");
+                            test.messages.push_back("Source file '" + filename +
+                                                    "' exists in 'sources/' directory but is not listed in "
+                                                    "'buildDescription.xml'.");
+                        }
                     }
                 }
             }
         }
+        cert.printTestResult(test);
     }
 
     xmlFreeDoc(doc);
-    cert.printTestResult(test);
-    cert.printSubsectionSummary(test.status != TestStatus::FAIL);
+    cert.printSubsectionSummary(true);
 }
 
-void BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
+void BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& cert)
 {
+    TestResult test{"Build Description FMI Version", TestStatus::PASS, {}};
     auto bd_fmi_version = getXmlAttribute(root, "fmiVersion");
     if (!bd_fmi_version)
     {
@@ -100,18 +102,19 @@ void BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
         else
         {
             // For FMI 2.0, maybe warn?
-            if (test.status == TestStatus::PASS)
-                test.status = TestStatus::WARNING;
+            test.status = TestStatus::WARNING;
             test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
                                     ") does not match FMU version (" + _fmi_version + ").");
         }
     }
+    cert.printTestResult(test);
 }
 
 void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
-                                               const std::filesystem::path& sources_path, TestResult& test,
+                                               const std::filesystem::path& sources_path, Certificate& cert,
                                                std::set<std::string>& listed_files)
 {
+    TestResult test{"Build Description Source Files", TestStatus::PASS, {}};
     xmlXPathObjectPtr sources_xpath =
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFile"), xpath_context);
     if (sources_xpath && sources_xpath->nodesetval)
@@ -145,11 +148,13 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
     }
     if (sources_xpath)
         xmlXPathFreeObject(sources_xpath);
+    cert.printTestResult(test);
 }
 
 void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_context,
-                                                      const std::filesystem::path& sources_path, TestResult& test)
+                                                      const std::filesystem::path& sources_path, Certificate& cert)
 {
+    TestResult test{"Build Description Include Directories", TestStatus::PASS, {}};
     xmlXPathObjectPtr includes_xpath =
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//IncludeDirectory"), xpath_context);
     if (includes_xpath && includes_xpath->nodesetval)
@@ -182,12 +187,14 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
     }
     if (includes_xpath)
         xmlXPathFreeObject(includes_xpath);
+    cert.printTestResult(test);
 }
 
 void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context,
                                                                 const std::set<std::string>& valid_ids,
-                                                                TestResult& test)
+                                                                Certificate& cert)
 {
+    TestResult test{"Build Configuration Attributes", TestStatus::PASS, {}};
     xmlXPathObjectPtr configs_xpath =
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//BuildConfiguration"), xpath_context);
     if (configs_xpath && configs_xpath->nodesetval)
@@ -253,6 +260,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
     }
     if (configs_xpath)
         xmlXPathFreeObject(configs_xpath);
+    cert.printTestResult(test);
 }
 
 std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const std::filesystem::path& path)
