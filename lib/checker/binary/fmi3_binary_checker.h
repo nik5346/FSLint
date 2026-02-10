@@ -1,8 +1,8 @@
 #pragma once
 
-#include "binary_checker_base.h"
+#include "binary_checker.h"
 
-class Fmi3BinaryChecker : public BinaryCheckerBase
+class Fmi3BinaryChecker : public BinaryChecker
 {
   protected:
     std::vector<std::string> getExpectedFunctions() override;

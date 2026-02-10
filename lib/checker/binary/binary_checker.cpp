@@ -1,4 +1,4 @@
-#include "binary_checker_base.h"
+#include "binary_checker.h"
 #include "binary_parser.h"
 #include "certificate.h"
 #include <algorithm>
@@ -8,7 +8,7 @@
 #include <map>
 #include <set>
 
-void BinaryCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
+void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
     cert.printSubsectionHeader("FMU BINARY EXPORTS");
 
@@ -98,7 +98,7 @@ void BinaryCheckerBase::validate(const std::filesystem::path& path, Certificate&
     cert.printSubsectionSummary(true);
 }
 
-std::optional<std::string> BinaryCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
+std::optional<std::string> BinaryChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
     if (!node)
         return std::nullopt;
