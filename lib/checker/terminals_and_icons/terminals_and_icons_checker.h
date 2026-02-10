@@ -41,9 +41,10 @@ class TerminalsAndIconsCheckerBase : public Checker
     extractVariables(const std::filesystem::path& path, Certificate& cert, std::string& fmiVersion) = 0;
 
     bool checkTerminalsAndIcons(const std::filesystem::path& path,
-                                const std::map<std::string, TerminalVariableInfo>& variables, Certificate& cert);
+                                const std::map<std::string, TerminalVariableInfo>& variables, Certificate& cert,
+                                const std::string& fmiModelDescriptionVersion);
 
-    void checkFmiVersion(xmlNodePtr root, TestResult& test);
+    void checkFmiVersion(xmlNodePtr root, TestResult& test, const std::string& fmiModelDescriptionVersion);
     void checkUniqueTerminalNames(xmlXPathContextPtr context, const std::string& p, TestResult& test);
     void checkVariableReferences(xmlXPathContextPtr context, const std::string& p,
                                  const std::map<std::string, TerminalVariableInfo>& variables, TestResult& test);
