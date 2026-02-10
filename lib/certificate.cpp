@@ -118,9 +118,7 @@ void Certificate::printTestResult(const TestResult& test)
     log(ss.str());
 
     for (const auto& msg : test.messages)
-    {
         log("      └─ " + msg);
-    }
 }
 
 void Certificate::printSubsectionSummary(bool subsection_valid)
