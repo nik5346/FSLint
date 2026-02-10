@@ -12,7 +12,8 @@
 class BuildDescriptionChecker : public Checker
 {
   public:
-    explicit BuildDescriptionChecker(std::string fmi_version) : _fmi_version(std::move(fmi_version))
+    explicit BuildDescriptionChecker(std::string fmi_version)
+        : _fmi_version(std::move(fmi_version))
     {
     }
     void validate(const std::filesystem::path& path, Certificate& cert) override;
