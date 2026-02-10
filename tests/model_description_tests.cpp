@@ -528,3 +528,14 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
         CHECK_FALSE(has_fail(cert));
     }
 }
+
+TEST_CASE("FMI 2.0 Type and Unit Usage", "[fmi2][usage]")
+{
+    Fmi2ModelDescriptionChecker checker;
+    Certificate cert;
+    checker.validate("tests/data/fmi2/pass/type_usage", cert);
+
+    // Should NOT have warning about unused definitions
+    CHECK_FALSE(has_warning_with_text(cert, "Type definition \"Position\""));
+    CHECK_FALSE(has_warning_with_text(cert, "Unit \"m\" is unused."));
+}
