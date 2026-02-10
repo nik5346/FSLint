@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
+  <GraphicalRepresentation>
+    <CoordinateSystem x1="-100" y1="-100" x2="100" y2="100" suggestedScalingFactorTo_mm="0.1"/>
+    <Icon x1="-100" y1="-100" x2="100" y2="100"/>
+  </GraphicalRepresentation>
+</fmiTerminalsAndIcons>
