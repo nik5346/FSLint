@@ -9,9 +9,15 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 {
     TestResult test{"FMU Structure", TestStatus::PASS, {}};
 
-    static const std::set<std::string> fmi2_standard_entries = {"modelDescription.xml", "model.png", "documentation",
-                                                                "licenses",             "sources",   "binaries",
-                                                                "resources",            "extra",     "terminalsAndIcons",
+    static const std::set<std::string> fmi2_standard_entries = {"modelDescription.xml",
+                                                                "model.png",
+                                                                "documentation",
+                                                                "licenses",
+                                                                "sources",
+                                                                "binaries",
+                                                                "resources",
+                                                                "extra",
+                                                                "terminalsAndIcons",
                                                                 "buildDescription.xml"};
 
     for (const auto& entry : std::filesystem::directory_iterator(path))
@@ -61,15 +67,16 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     }
 
     auto sources_path = path / "sources";
-    bool has_build_description =
-        std::filesystem::exists(sources_path / "buildDescription.xml") || std::filesystem::exists(path / "buildDescription.xml");
+    bool has_build_description = std::filesystem::exists(sources_path / "buildDescription.xml") ||
+                                 std::filesystem::exists(path / "buildDescription.xml");
     bool has_sources = !listed_sources_in_md.empty() || has_build_description ||
                        (std::filesystem::exists(sources_path) && !std::filesystem::is_empty(sources_path));
 
     if (!has_binaries && !has_sources)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("FMU must contain either a precompiled binary for at least one platform or source code.");
+        test.messages.push_back(
+            "FMU must contain either a precompiled binary for at least one platform or source code.");
     }
 
     // Reverse check for FMI 2.0 legacy sources (only if no buildDescription.xml)

@@ -176,6 +176,7 @@ class ModelDescriptionCheckerBase : public Checker
     // Helper to check for special float values (NaN, INF)
     bool isSpecialFloat(const std::string& value);
     std::string getSpecialFloatDescription(const std::string& value);
+    std::string normalizeFloatString(const std::string& value);
 
     // Version-specific special float validation hooks
     virtual void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,

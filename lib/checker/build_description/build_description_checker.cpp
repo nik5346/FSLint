@@ -11,9 +11,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
     auto sources_path = path / "sources";
     auto build_desc_path = sources_path / "buildDescription.xml";
     if (!std::filesystem::exists(build_desc_path))
-    {
         return; // Optional
-    }
 
     cert.printSubsectionHeader("BUILD DESCRIPTION VALIDATION");
     TestResult test{"Build Description Semantic Validation", TestStatus::PASS, {}};
@@ -91,7 +89,8 @@ void BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
     else if (*bd_fmi_version != _fmi_version)
     {
         // For FMI 3.0, it must match.
-        // For FMI 2.0, it's a backport, the user said "fmi2 reuses the fmi3 rules for the build description and also the schema itself. all future versions should have then matching versions in the build description."
+        // For FMI 2.0, it's a backport, the user said "fmi2 reuses the fmi3 rules for the build description and also
+        // the schema itself. all future versions should have then matching versions in the build description."
         if (_fmi_version.starts_with("3."))
         {
             test.status = TestStatus::FAIL;
@@ -109,8 +108,9 @@ void BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
     }
 }
 
-void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
-                                               TestResult& test, std::set<std::string>& listed_files)
+void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
+                                               const std::filesystem::path& sources_path, TestResult& test,
+                                               std::set<std::string>& listed_files)
 {
     xmlXPathObjectPtr sources_xpath =
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFile"), xpath_context);
@@ -125,8 +125,9 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                 if (name_opt->find("..") != std::string::npos)
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Source file '" + (*name_opt) + "' listed in 'buildDescription.xml' (line " +
-                                            std::to_string(node->line) + ") contains illegal '..' sequence.");
+                    test.messages.push_back("Source file '" + (*name_opt) +
+                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
+                                            ") contains illegal '..' sequence.");
                     continue;
                 }
 
@@ -135,8 +136,9 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                 if (!std::filesystem::exists(file_path))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Source file '" + (*name_opt) + "' listed in 'buildDescription.xml' (line " +
-                                            std::to_string(node->line) + ") does not exist in 'sources/' directory.");
+                    test.messages.push_back("Source file '" + (*name_opt) +
+                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
+                                            ") does not exist in 'sources/' directory.");
                 }
             }
         }
@@ -183,7 +185,8 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
 }
 
 void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context,
-                                                                const std::set<std::string>& valid_ids, TestResult& test)
+                                                                const std::set<std::string>& valid_ids,
+                                                                TestResult& test)
 {
     xmlXPathObjectPtr configs_xpath =
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//BuildConfiguration"), xpath_context);
@@ -191,9 +194,9 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
     {
         // Suggested in FMI 3.0: gcc, clang++
         // Suggested in FMI 3.0: C99, C++11
-        static const std::set<std::string> suggested_languages = {
-            "C89",   "C90",   "C99",   "C11",   "C17",   "C18",   "C23",  "C++98",
-            "C++03", "C++11", "C++14", "C++17", "C++20", "C++23", "C++26"};
+        static const std::set<std::string> suggested_languages = {"C89",   "C90",   "C99",   "C11",   "C17",
+                                                                  "C18",   "C23",   "C++98", "C++03", "C++11",
+                                                                  "C++14", "C++17", "C++20", "C++23", "C++26"};
         static const std::set<std::string> suggested_compilers = {"gcc", "clang", "msvc"};
 
         for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)

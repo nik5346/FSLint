@@ -1,8 +1,8 @@
 #include "build_description_checker.h"
 #include "certificate.h"
 #include "fmi2_directory_checker.h"
-#include "fmi3_directory_checker.h"
 #include "fmi2_model_description_checker.h"
+#include "fmi3_directory_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
@@ -231,6 +231,7 @@ TEST_CASE("FMI 2.0 legacy source files validation", "[fmi2][sources]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/fmi2/fail/missing_source", "listed in 'modelDescription.xml' (line 5) does not exist");
+        validate_fail("tests/data/fmi2/fail/missing_source",
+                      "listed in 'modelDescription.xml' (line 5) does not exist");
     }
 }
