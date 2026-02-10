@@ -5,6 +5,7 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
+#include <regex>
 #include <set>
 #include <sstream>
 
@@ -136,12 +137,13 @@ void TerminalsAndIconsCheckerBase::checkFmiVersion(xmlNodePtr root, TestResult& 
     }
     else
     {
-        // FMI 3.0 specification: fmiVersion must be "3.0"
-        if (*version_attr != "3.0")
+        // FMI 3.0 regex from XSD: 3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?
+        std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
+        if (!std::regex_match(*version_attr, fmi3_pattern))
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("fmiVersion in terminalsAndIcons.xml must be '3.0' (found '" + *version_attr +
-                                    "').");
+            test.messages.push_back("fmiVersion in terminalsAndIcons.xml must match FMI 3.0 format (found '" +
+                                    *version_attr + "').");
         }
     }
 }
