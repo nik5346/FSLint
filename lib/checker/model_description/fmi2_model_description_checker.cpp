@@ -441,6 +441,9 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 var.unit = getXmlAttribute(child, "unit");
                 var.display_unit = getXmlAttribute(child, "displayUnit");
 
+                if (!var.declared_type.has_value())
+                    var.declared_type = getXmlAttribute(child, "declaredType");
+
                 // FMI2: derivative and reinit attributes are on the Real element
                 if (elem_name == "Real")
                 {
