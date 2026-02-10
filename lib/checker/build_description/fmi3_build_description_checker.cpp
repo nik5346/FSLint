@@ -1,6 +1,6 @@
 #include "fmi3_build_description_checker.h"
 #include "certificate.h"
-#include <regex>
+#include "fmi_version_utils.h"
 
 void Fmi3BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& cert)
 {
@@ -13,9 +13,7 @@ void Fmi3BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& 
     }
     else
     {
-        // FMI 3.0 regex from XSD: 3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?
-        std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
-        if (!std::regex_match(*bd_fmi_version, fmi3_pattern))
+        if (!FmiVersionUtils::isValidFmi3Version(*bd_fmi_version))
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +

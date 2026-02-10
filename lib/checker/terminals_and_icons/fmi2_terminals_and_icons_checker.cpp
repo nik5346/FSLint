@@ -1,8 +1,8 @@
 #include "fmi2_terminals_and_icons_checker.h"
 #include "certificate.h"
+#include "fmi_version_utils.h"
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-#include <regex>
 
 void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
 {
@@ -15,8 +15,7 @@ void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& 
     else
     {
         // terminalsAndIcons.xml always follows FMI 3.0 versioning rules
-        std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
-        if (!std::regex_match(*version_attr, fmi3_pattern))
+        if (!FmiVersionUtils::isValidFmi3Version(*version_attr))
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("fmiVersion in terminalsAndIcons.xml must match FMI 3.0 format (found '" +

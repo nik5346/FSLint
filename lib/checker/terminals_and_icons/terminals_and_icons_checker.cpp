@@ -5,7 +5,6 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
-#include <regex>
 #include <set>
 #include <sstream>
 

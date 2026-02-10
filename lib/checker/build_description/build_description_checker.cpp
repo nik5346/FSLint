@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-#include <regex>
 #include <set>
 
 void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certificate& cert)

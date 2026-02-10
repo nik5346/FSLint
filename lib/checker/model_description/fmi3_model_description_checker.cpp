@@ -1,7 +1,7 @@
 #include "fmi3_model_description_checker.h"
 #include "certificate.h"
+#include "fmi_version_utils.h"
 #include <algorithm>
-#include <regex>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -289,9 +289,7 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
 
 void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
 {
-    // FMI 3.0 regex from XSD: 3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?
-    std::regex fmi3_pattern(R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)");
-    if (!std::regex_match(version, fmi3_pattern))
+    if (!FmiVersionUtils::isValidFmi3Version(version))
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("FMI version \"" + version +
