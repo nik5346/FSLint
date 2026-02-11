@@ -58,9 +58,7 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
 
         Zipper zipper;
         if (!zipper.open(path))
-        {
             return;
-        }
 
         if (!zipper.extractAll(extract_dir))
         {

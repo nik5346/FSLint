@@ -15,10 +15,8 @@ TestStatus Certificate::getOverallStatus() const
         return TestStatus::FAIL;
 
     for (const auto& result : _results)
-    {
         if (result.status == TestStatus::WARNING)
             return TestStatus::WARNING;
-    }
 
     for (const auto& nested : _nested_models)
     {
@@ -165,9 +163,7 @@ void Certificate::addNestedModelResult(const NestedModelResult& result)
 {
     _nested_models.push_back(result);
     if (result.status == TestStatus::FAIL)
-    {
         _total_failed++;
-    }
 }
 
 static void printTree(Certificate& cert, const std::vector<NestedModelResult>& models, const std::string& prefix)

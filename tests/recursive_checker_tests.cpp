@@ -1,5 +1,5 @@
-#include "model_checker.h"
 #include "certificate.h"
+#include "model_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
@@ -21,6 +21,9 @@ TEST_CASE("Recursive Model Validation", "[recursive]")
 
         REQUIRE(nested[0].nested_models.size() == 1);
         CHECK(nested[0].nested_models[0].name == "even_inner.fmu");
+
+        REQUIRE(nested[0].nested_models[0].nested_models.size() == 1);
+        CHECK(nested[0].nested_models[0].nested_models[0].name == "deep_inner.fmu");
     }
 
     SECTION("SSP structure")

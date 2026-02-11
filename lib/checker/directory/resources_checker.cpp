@@ -8,9 +8,7 @@ void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& 
 {
     auto resources_dir = path / "resources";
     if (!std::filesystem::exists(resources_dir) || !std::filesystem::is_directory(resources_dir))
-    {
         return;
-    }
 
     scanResources(resources_dir, cert);
 }

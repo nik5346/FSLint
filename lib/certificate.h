@@ -43,8 +43,14 @@ class Certificate
     size_t _total_failed = 0;
 
   public:
-    void setQuiet(bool quiet) { _quiet = quiet; }
-    bool isQuiet() const { return _quiet; }
+    void setQuiet(bool quiet)
+    {
+        _quiet = quiet;
+    }
+    bool isQuiet() const
+    {
+        return _quiet;
+    }
 
     bool isFailed() const
     {
