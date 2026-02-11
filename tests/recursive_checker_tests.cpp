@@ -8,7 +8,6 @@ TEST_CASE("Recursive Model Validation", "[recursive]")
 {
     ModelChecker checker;
 
-    /* Binary FMUs removed - disabling sections
     SECTION("Nested FMU structure")
     {
         // Use the test data created earlier
@@ -37,5 +36,4 @@ TEST_CASE("Recursive Model Validation", "[recursive]")
         REQUIRE(nested.size() == 1);
         CHECK(nested[0].name == "inner.fmu");
     }
-    */
 }
