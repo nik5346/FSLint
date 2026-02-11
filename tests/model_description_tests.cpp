@@ -43,8 +43,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     {
         validate_fail("fmi_version_missing", "attribute is missing");
         validate_fail("fmi_version_empty", "attribute is empty");
-        validate_fail("fmi_version_invalid", "does not match expected format");
-        validate_fail("fmi_version_patch", "does not match expected format");
+        validate_fail("fmi_version_invalid", "is invalid for FMI 2.0");
+        validate_fail("fmi_version_patch", "is invalid for FMI 2.0");
 
         validate_fail("model_name_missing", "modelName attribute is missing");
         validate_fail("model_name_empty", "modelName attribute is empty");
@@ -309,8 +309,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     {
         validate_fail("fmi_version_missing", "attribute is missing");
         validate_fail("fmi_version_empty", "attribute is empty");
-        validate_fail("fmi_version_invalid", "does not match expected format");
-        validate_fail("fmi_version_patch", "does not match expected format");
+        validate_fail("fmi_version_invalid", "does not match FMI 3.0 format");
 
         validate_fail("instantiation_token_missing", "instantiationToken attribute is missing");
         validate_fail("instantiation_token_empty", "instantiationToken attribute is empty");
@@ -518,6 +517,13 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
     {
         Fmi3ModelDescriptionChecker checker;
         checker.validate("tests/data/fmi3/pass", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("FMI 3.0 Patch Version")
+    {
+        Fmi3ModelDescriptionChecker checker;
+        checker.validate("tests/data/fmi3/pass/fmi_version_patch", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
