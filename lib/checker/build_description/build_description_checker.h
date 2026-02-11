@@ -12,17 +12,16 @@
 class BuildDescriptionChecker : public Checker
 {
   public:
-    explicit BuildDescriptionChecker(std::string fmi_version)
-        : _fmi_version(std::move(fmi_version))
+    explicit BuildDescriptionChecker(std::string fmi_version) : _fmi_version(std::move(fmi_version))
     {
     }
     void validate(const std::filesystem::path& path, Certificate& cert) override;
 
-  private:
+  protected:
     std::string _fmi_version;
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 
-    void checkFmiVersion(xmlNodePtr root, Certificate& cert);
+    virtual void checkFmiVersion(xmlNodePtr root, Certificate& cert) = 0;
     void checkSourceFiles(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
                           Certificate& cert, std::set<std::string>& listed_files);
     void checkIncludeDirectories(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,

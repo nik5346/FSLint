@@ -439,17 +439,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
         return;
     }
 
-    // Version format: X.Y or X.Y-suffix (e.g., "2.0", "3.0", "3.0-alpha.2")
-    // Note: Patch versions (X.Y.Z) should NOT be used - all patch releases use X.Y for compatibility
-    std::regex version_pattern(R"(^(\d+)\.(\d+)(?:-([a-zA-Z0-9.-]+))?$)");
-
-    if (!std::regex_match(*fmi_version, version_pattern))
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back(
-            "FMI version \"" + *fmi_version +
-            "\" does not match expected format (X.Y or X.Y-suffix, patch versions should be omitted).");
-    }
+    validateFmiVersionValue(*fmi_version, test);
 
     cert.printTestResult(test);
 }

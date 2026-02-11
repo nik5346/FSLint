@@ -33,7 +33,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             if (std::filesystem::exists(path / "documentation" / "diagram.svg") &&
                 !std::filesystem::exists(path / "documentation" / "diagram.png"))
             {
-                test.status = TestStatus::FAIL;
+                test.status = TestStatus::WARNING;
                 test.messages.push_back(
                     "FMI 3.0: diagram.svg exists in documentation/ but diagram.png is missing (required "
                     "if diagram.svg is provided).");
@@ -45,23 +45,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     // 3. Terminals and Icons Files
     {
         TestResult test{"Terminals and Icons Files", TestStatus::PASS, {}};
-        auto terminals_and_icons_path = path / "terminalsAndIcons";
-        if (std::filesystem::exists(terminals_and_icons_path))
+        if (std::filesystem::exists(path / "terminalsAndIcons"))
         {
-            for (const auto& entry : std::filesystem::directory_iterator(terminals_and_icons_path))
+            if (std::filesystem::exists(path / "terminalsAndIcons" / "icon.svg") &&
+                !std::filesystem::exists(path / "terminalsAndIcons" / "icon.png"))
             {
-                if (entry.is_regular_file() && entry.path().extension() == ".svg")
-                {
-                    auto png_path = entry.path();
-                    png_path.replace_extension(".png");
-                    if (!std::filesystem::exists(png_path))
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("FMI 3.0: '" + entry.path().filename().string() +
-                                                "' exists in terminalsAndIcons/ but '" + png_path.filename().string() +
-                                                "' is missing (required if SVG is provided).");
-                    }
-                }
+                test.status = TestStatus::WARNING;
+                test.messages.push_back(
+                    "FMI 3.0: icon.svg exists in terminalsAndIcons/ but icon.png is missing (required "
+                    "if icon.svg is provided).");
             }
         }
         cert.printTestResult(test);

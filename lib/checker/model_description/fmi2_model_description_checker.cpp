@@ -560,6 +560,16 @@ void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
     cert.printTestResult(test);
 }
 
+void Fmi2ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
+{
+    // FMI 2.0: must be exactly "2.0"
+    if (version != "2.0")
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("FMI version \"" + version + "\" is invalid for FMI 2.0 (must be exactly \"2.0\").");
+    }
+}
+
 void Fmi2ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
     TestResult test{"Required Start Values (FMI2)", TestStatus::PASS, {}};

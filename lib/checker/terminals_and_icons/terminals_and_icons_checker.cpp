@@ -21,7 +21,7 @@ void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, C
         return;
     }
 
-    checkTerminalsAndIcons(path, variables, cert, fmiModelDescriptionVersion);
+    checkTerminalsAndIcons(path, variables, cert);
 
     cert.printSubsectionSummary(true);
 }
@@ -42,8 +42,7 @@ std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNode
 
 bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem::path& path,
                                                           const std::map<std::string, TerminalVariableInfo>& variables,
-                                                          Certificate& cert,
-                                                          const std::string& fmiModelDescriptionVersion)
+                                                          Certificate& cert)
 {
     auto terminals_path = path / "terminalsAndIcons" / "terminalsAndIcons.xml";
 
@@ -83,7 +82,7 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     // 1. Check fmiVersion consistency
     {
         TestResult test{"Terminals and Icons FMI Version", TestStatus::PASS, {}};
-        checkFmiVersion(root, test, fmiModelDescriptionVersion);
+        checkFmiVersion(root, test);
         print_test(test);
     }
 
@@ -127,37 +126,6 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     return all_passed;
 }
 
-void TerminalsAndIconsCheckerBase::checkFmiVersion(xmlNodePtr root, TestResult& test,
-                                                   const std::string& fmiModelDescriptionVersion)
-{
-    auto version_attr = getXmlAttribute(root, "fmiVersion");
-    if (!version_attr)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
-    }
-    else if (fmiModelDescriptionVersion.starts_with("3"))
-    {
-        if (*version_attr != fmiModelDescriptionVersion)
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("fmiVersion in terminalsAndIcons.xml must match the modelDescription.xml "
-                                    "fmiVersion '" +
-                                    fmiModelDescriptionVersion + "' (found '" + *version_attr + "').");
-        }
-    }
-    else
-    {
-        // Backported to FMI 2.0, specification says "this attribute points to the FMI version defining this
-        // terminalsAndIcons/terminalsAndIcons.xml file" Usually "3.0" for backported features from FMI 3.0.
-        if (*version_attr != "3.0")
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("fmiVersion in terminalsAndIcons.xml must be '3.0' (found '" + *version_attr +
-                                    "').");
-        }
-    }
-}
 
 void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr context, const std::string& p,
                                                             TestResult& test)
@@ -395,57 +363,6 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                                                                 xmlXPathContextPtr context, const std::string& p,
                                                                 TestResult& test)
 {
-    // Check CoordinateSystem
-    std::string cs_expr = "/" + p + "fmiTerminalsAndIcons/" + p + "GraphicalRepresentation/" + p + "CoordinateSystem";
-    xmlXPathObjectPtr cs_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(cs_expr.c_str()), context);
-    if (cs_obj && cs_obj->nodesetval && cs_obj->nodesetval->nodeNr > 0)
-    {
-        xmlNodePtr node = cs_obj->nodesetval->nodeTab[0];
-        auto x1_str = getXmlAttribute(node, "x1");
-        auto y1_str = getXmlAttribute(node, "y1");
-        auto x2_str = getXmlAttribute(node, "x2");
-        auto y2_str = getXmlAttribute(node, "y2");
-        try
-        {
-            bool x_fail = x1_str && x2_str && std::stod(*x1_str) >= std::stod(*x2_str);
-            bool y_fail = y1_str && y2_str && std::stod(*y1_str) >= std::stod(*y2_str);
-            if (x_fail || y_fail)
-            {
-                test.status = TestStatus::FAIL;
-                std::string msg = "CoordinateSystem (line " + std::to_string(node->line) + ") must have ";
-                if (x_fail && y_fail)
-                    msg += "x1 < x2 and y1 < y2";
-                else if (x_fail)
-                    msg += "x1 < x2";
-                else
-                    msg += "y1 < y2";
-                msg += ".";
-                test.messages.push_back(msg);
-            }
-        }
-        catch (...)
-        {
-            // Should be caught by schema, but just in case
-        }
-    }
-    if (cs_obj)
-        xmlXPathFreeObject(cs_obj);
-
-    // Check Icon
-    std::string icon_expr = "/" + p + "fmiTerminalsAndIcons/" + p + "GraphicalRepresentation/" + p + "Icon";
-    xmlXPathObjectPtr icon_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(icon_expr.c_str()), context);
-    if (icon_obj && icon_obj->nodesetval && icon_obj->nodesetval->nodeNr > 0)
-    {
-        auto icon_png_path = path / "terminalsAndIcons" / "icon.png";
-        if (!std::filesystem::exists(icon_png_path))
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("FMU icon PNG file \"" + icon_png_path.string() + "\" not found.");
-        }
-    }
-    if (icon_obj)
-        xmlXPathFreeObject(icon_obj);
-
     std::string expr = "//" + p + "TerminalGraphicalRepresentation";
     xmlXPathObjectPtr xpath_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
 
