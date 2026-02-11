@@ -98,7 +98,7 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
     SECTION("Failure Cases")
     {
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/version_mismatch",
-                      "fmiVersion in terminalsAndIcons.xml must be '3.0'");
+                      "fmiVersion in terminalsAndIcons.xml must match FMI 3.0 format");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/stream_flow_constraint",
                       "has multiple inflow/outflow variables and a stream variable");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/duplicate_stream_member",

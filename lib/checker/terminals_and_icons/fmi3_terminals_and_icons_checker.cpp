@@ -1,7 +1,27 @@
 #include "fmi3_terminals_and_icons_checker.h"
 #include "certificate.h"
+#include "fmi_version_utils.h"
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+
+void Fmi3TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
+{
+    auto version_attr = getXmlAttribute(root, "fmiVersion");
+    if (!version_attr)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
+    }
+    else
+    {
+        if (!FmiVersionUtils::isValidFmi3Version(*version_attr))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("fmiVersion in terminalsAndIcons.xml must match FMI 3.0 format (found '" +
+                                    *version_attr + "').");
+        }
+    }
+}
 
 std::map<std::string, TerminalVariableInfo>
 Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,

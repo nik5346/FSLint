@@ -127,6 +127,7 @@ class ModelDescriptionCheckerBase : public Checker
                                        Certificate& cert);
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
     void checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert);
+    virtual void validateFmiVersionValue(const std::string& version, TestResult& test) = 0;
     void checkModelName(const std::optional<std::string>& model_name, Certificate& cert);
     virtual void checkGuid(const std::optional<std::string>& guid, Certificate& cert) = 0;
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
