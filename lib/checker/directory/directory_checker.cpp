@@ -33,6 +33,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
 
     std::map<std::string, std::string> model_identifiers;
     std::set<std::string> listed_sources_in_md;
+    bool needs_execution_tool = false;
 
     std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
@@ -45,9 +46,17 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
             if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
             {
-                auto model_id = getXmlAttribute(xpath_obj->nodesetval->nodeTab[0], "modelIdentifier");
+                auto node = xpath_obj->nodesetval->nodeTab[0];
+                auto model_id = getXmlAttribute(node, "modelIdentifier");
                 if (model_id)
                     model_identifiers[elem] = *model_id;
+
+                if (elem != "ScheduledExecution")
+                {
+                    auto needs_exec = getXmlAttribute(node, "needsExecutionTool");
+                    if (needs_exec == "true")
+                        needs_execution_tool = true;
+                }
             }
             if (xpath_obj)
                 xmlXPathFreeObject(xpath_obj);
@@ -72,7 +81,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     }
     xmlFreeDoc(doc);
 
-    performVersionSpecificChecks(path, cert, model_identifiers, listed_sources_in_md);
+    performVersionSpecificChecks(path, cert, model_identifiers, listed_sources_in_md, needs_execution_tool);
 
     cert.printSubsectionSummary(true);
 }

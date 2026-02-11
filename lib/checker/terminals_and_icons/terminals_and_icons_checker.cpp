@@ -126,7 +126,6 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     return all_passed;
 }
 
-
 void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr context, const std::string& p,
                                                             TestResult& test)
 {

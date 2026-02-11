@@ -24,12 +24,20 @@ inline bool has_error_with_text(const Certificate& cert, const std::string& text
     for (const auto& r : results)
     {
         if (r.status != TestStatus::FAIL)
+        {
             continue;
+        }
         if (r.test_name.find(text) != std::string::npos)
+        {
             return true;
+        }
         for (const auto& msg : r.messages)
+        {
             if (msg.find(text) != std::string::npos)
+            {
                 return true;
+            }
+        }
     }
     return false;
 }
