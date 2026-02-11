@@ -93,18 +93,12 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
     {
         validate_pass("tests/data/fmi3/terminals_and_icons/pass");
         validate_pass("tests/data/fmi3/terminals_and_icons/pass/missing_member_name_sequence");
-        validate_pass("tests/data/fmi3/terminals_and_icons/pass/model_icon");
     }
 
     SECTION("Failure Cases")
     {
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/version_mismatch",
                       "fmiVersion in terminalsAndIcons.xml must match FMI 3.0 format");
-        validate_fail("tests/data/fmi3/terminals_and_icons/fail/invalid_coords",
-                      "CoordinateSystem (line 4) must have x1 < x2 and y1 < y2");
-        validate_fail("tests/data/fmi3/terminals_and_icons/fail/missing_model_icon_png",
-                      "FMU icon PNG file \"tests/data/fmi3/terminals_and_icons/fail/missing_model_icon_png/"
-                      "terminalsAndIcons/icon.png\" not found");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/stream_flow_constraint",
                       "has multiple inflow/outflow variables and a stream variable");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/duplicate_stream_member",

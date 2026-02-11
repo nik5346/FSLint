@@ -79,6 +79,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
     cert.printSubsectionSummary(true);
 }
 
+
 void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                                                const std::filesystem::path& sources_path, Certificate& cert,
                                                std::set<std::string>& listed_files)

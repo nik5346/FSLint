@@ -14,7 +14,6 @@ void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& 
     }
     else
     {
-        // terminalsAndIcons.xml always follows FMI 3.0 versioning rules
         if (!FmiVersionUtils::isValidFmi3Version(*version_attr))
         {
             test.status = TestStatus::FAIL;
