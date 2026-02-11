@@ -5,7 +5,8 @@
 
 void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::path& path, Certificate& cert,
                                                         const std::map<std::string, std::string>& model_identifiers,
-                                                        const std::set<std::string>& listed_sources_in_md)
+                                                        const std::set<std::string>& listed_sources_in_md,
+                                                        [[maybe_unused]] bool needs_execution_tool)
 {
     // 1. FMU Root Entries
     {
@@ -28,7 +29,14 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             if (!fmi2_standard_entries.contains(name))
             {
                 test.status = TestStatus::WARNING;
-                test.messages.push_back("Unknown entry in FMU root: '" + name + "'.");
+                std::string type = entry.is_directory() ? "directory" : "file";
+                test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
+            }
+
+            if (entry.is_directory() && fmi2_standard_entries.contains(name) && std::filesystem::is_empty(entry.path()))
+            {
+                test.status = TestStatus::WARNING;
+                test.messages.push_back("Standard directory '" + name + "' is empty.");
             }
         }
         cert.printTestResult(test);
@@ -45,7 +53,39 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         cert.printTestResult(test);
     }
 
-    // 3. Distribution (Binaries and Sources)
+    // 3. Documentation and Licenses
+    {
+        TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
+        auto doc_path = path / "documentation";
+
+        if (needs_execution_tool)
+        {
+            if (!std::filesystem::exists(doc_path / "externalDependencies.txt") &&
+                !std::filesystem::exists(doc_path / "externalDependencies.html"))
+            {
+                if (test.status != TestStatus::FAIL)
+                    test.status = TestStatus::WARNING;
+                test.messages.push_back("FMI 2.0: needsExecutionTool is true, but "
+                                        "'documentation/externalDependencies.{txt|html}' is missing.");
+            }
+        }
+
+        auto licenses_path = path / "licenses";
+        if (std::filesystem::exists(licenses_path))
+        {
+            if (!std::filesystem::exists(licenses_path / "license.txt") &&
+                !std::filesystem::exists(licenses_path / "license.html"))
+            {
+                if (test.status != TestStatus::FAIL)
+                    test.status = TestStatus::WARNING;
+                test.messages.push_back("FMI 2.0: 'licenses/' exists but does not contain "
+                                        "a 'license.txt' or 'license.html' entry point.");
+            }
+        }
+        cert.printTestResult(test);
+    }
+
+    // 4. Distribution (Binaries and Sources)
     bool has_binaries = false;
     bool has_build_description = false;
     auto sources_path = path / "sources";
@@ -91,7 +131,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         cert.printTestResult(test);
     }
 
-    // 4. Source Files Consistency
+    // 5. Source Files Consistency
     {
         TestResult test{"Source Files Consistency", TestStatus::PASS, {}};
         if (std::filesystem::exists(sources_path) && !has_build_description)
@@ -124,7 +164,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         cert.printTestResult(test);
     }
 
-    // 5. FMI 2.0.4 Compatibility
+    // 6. FMI 2.0.4 Compatibility
     {
         bool has_build_description_anywhere = has_build_description;
         bool has_sources = !listed_sources_in_md.empty() || has_build_description_anywhere ||

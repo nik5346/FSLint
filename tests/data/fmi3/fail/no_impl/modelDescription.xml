@@ -1,0 +1,3 @@
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="123">
+  <CoSimulation modelIdentifier="Test"/>
+</fmiModelDescription>

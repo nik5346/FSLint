@@ -17,7 +17,8 @@ class DirectoryChecker : public Checker
   protected:
     virtual void performVersionSpecificChecks(const std::filesystem::path& path, Certificate& cert,
                                               const std::map<std::string, std::string>& model_identifiers,
-                                              const std::set<std::string>& listed_sources_in_md) = 0;
+                                              const std::set<std::string>& listed_sources_in_md,
+                                              bool needs_execution_tool) = 0;
 
     static std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 };
