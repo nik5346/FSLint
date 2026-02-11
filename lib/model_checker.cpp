@@ -7,6 +7,7 @@
 #include "picosha2.h"
 
 #include <algorithm>
+#include <chrono>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -20,6 +21,22 @@ void ModelChecker::validate(const std::filesystem::path& path) const
     std::string hash = calculateSHA256(path);
     cert.printMainHeader(path.string(), hash);
 
+    validateInternal(path, cert);
+
+    cert.printNestedModelsTree();
+    cert.printFooter();
+}
+
+Certificate ModelChecker::validateCore(const std::filesystem::path& path) const
+{
+    Certificate cert;
+    cert.setQuiet(true);
+    validateInternal(path, cert);
+    return cert;
+}
+
+void ModelChecker::validateInternal(const std::filesystem::path& path, Certificate& cert) const
+{
     std::filesystem::path extract_dir;
     bool is_temporary = false;
 
@@ -34,21 +51,20 @@ void ModelChecker::validate(const std::filesystem::path& path) const
         archive_checker.validate(path, cert);
 
         // Step 2: Extract to temporary directory
-        extract_dir =
-            std::filesystem::temp_directory_path() / ("model_validation_" + std::to_string(std::time(nullptr)));
+        auto now = std::chrono::high_resolution_clock::now();
+        auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+        extract_dir = std::filesystem::temp_directory_path() / ("model_validation_" + std::to_string(nanos));
         is_temporary = true;
 
         Zipper zipper;
         if (!zipper.open(path))
         {
-            cert.printFooter();
             return;
         }
 
         if (!zipper.extractAll(extract_dir))
         {
             zipper.close();
-            cert.printFooter();
             if (std::filesystem::exists(extract_dir))
                 std::filesystem::remove_all(extract_dir);
             return;
@@ -61,8 +77,6 @@ void ModelChecker::validate(const std::filesystem::path& path) const
 
     if (model_info.standard == ModelStandard::UNKNOWN)
     {
-        std::cerr << "Error: Could not detect model standard\n";
-        cert.printFooter();
         if (is_temporary && std::filesystem::exists(extract_dir))
             std::filesystem::remove_all(extract_dir);
         return;
@@ -73,8 +87,6 @@ void ModelChecker::validate(const std::filesystem::path& path) const
 
     for (auto& checker : checkers)
         checker->validate(extract_dir, cert);
-
-    cert.printFooter();
 
     // Cleanup temporary directory
     if (is_temporary && std::filesystem::exists(extract_dir))

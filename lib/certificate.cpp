@@ -9,10 +9,35 @@
 #include <sstream>
 #include <string>
 
+TestStatus Certificate::getOverallStatus() const
+{
+    if (isFailed())
+        return TestStatus::FAIL;
+
+    for (const auto& result : _results)
+    {
+        if (result.status == TestStatus::WARNING)
+            return TestStatus::WARNING;
+    }
+
+    for (const auto& nested : _nested_models)
+    {
+        if (nested.status == TestStatus::FAIL)
+            return TestStatus::FAIL;
+        if (nested.status == TestStatus::WARNING)
+            return TestStatus::WARNING;
+    }
+
+    return TestStatus::PASS;
+}
+
 void Certificate::log(const std::string& message)
 {
-    std::cout << message;
-    std::cout << "\n";
+    if (!_quiet)
+    {
+        std::cout << message;
+        std::cout << "\n";
+    }
 
     _report_buffer << message;
     _report_buffer << "\n";
@@ -134,6 +159,56 @@ void Certificate::printSubsectionSummary(bool subsection_valid)
         std::to_string(_current_subsection_failed) + " Failed");
     log("  Result: " + std::string(actual_valid ? "PASSED" : "FAILED"));
     log("  ────────────────────────────────────────");
+}
+
+void Certificate::addNestedModelResult(const NestedModelResult& result)
+{
+    _nested_models.push_back(result);
+    if (result.status == TestStatus::FAIL)
+    {
+        _total_failed++;
+    }
+}
+
+static void printTree(Certificate& cert, const std::vector<NestedModelResult>& models, const std::string& prefix)
+{
+    for (size_t i = 0; i < models.size(); ++i)
+    {
+        bool is_last = (i == models.size() - 1);
+        const auto& model = models[i];
+
+        std::string marker = is_last ? "└─ " : "├─ ";
+        std::string status_str;
+        switch (model.status)
+        {
+        case TestStatus::PASS:
+            status_str = "[✓ PASS]";
+            break;
+        case TestStatus::WARNING:
+            status_str = "[⚠ WARN]";
+            break;
+        case TestStatus::FAIL:
+            status_str = "[✗ FAIL]";
+            break;
+        }
+
+        cert.log(prefix + marker + model.name + " " + status_str);
+
+        if (!model.nested_models.empty())
+        {
+            std::string new_prefix = prefix + (is_last ? "   " : "│  ");
+            printTree(cert, model.nested_models, new_prefix);
+        }
+    }
+}
+
+void Certificate::printNestedModelsTree()
+{
+    if (_nested_models.empty())
+        return;
+
+    printSubsectionHeader("NESTED MODELS");
+    printTree(*this, _nested_models, "  ");
 }
 
 void Certificate::printFooter()

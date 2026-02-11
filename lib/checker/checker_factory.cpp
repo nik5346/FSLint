@@ -20,6 +20,7 @@
 #include "fmi3_binary_checker.h"
 #include "fmi3_build_description_checker.h"
 #include "fmi3_directory_checker.h"
+#include "resources_checker.h"
 
 #include <fstream>
 #include <iostream>
@@ -76,6 +77,9 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
 std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const ModelInfo& info)
 {
     std::vector<std::unique_ptr<Checker>> checkers;
+
+    // Add resources checker for all models
+    checkers.push_back(std::make_unique<ResourcesChecker>());
 
     // Create schema checker
     if (auto checker = createSchemaChecker(info))
