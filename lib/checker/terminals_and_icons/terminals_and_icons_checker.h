@@ -26,14 +26,14 @@ struct TerminalVariableInfo
     std::string causality;
     std::string variability;
     std::string type;
-    int sourceline;
+    int sourceline = 0;
     std::vector<TerminalDimension> dimensions;
 };
 
 class TerminalsAndIconsCheckerBase : public Checker
 {
   public:
-    virtual ~TerminalsAndIconsCheckerBase() = default;
+    ~TerminalsAndIconsCheckerBase() override = default;
     void validate(const std::filesystem::path& path, Certificate& cert) override;
 
   protected:

@@ -78,11 +78,11 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
 
         ZipFileEntry entry;
         entry.filename = filename.data();
-        entry.compression_method = file_info.compression_method;
-        entry.version_needed = file_info.version_needed;
-        entry.flags = file_info.flag;
-        entry.compressed_size = file_info.compressed_size;
-        entry.uncompressed_size = file_info.uncompressed_size;
+        entry.compression_method = static_cast<uint16_t>(file_info.compression_method);
+        entry.version_needed = static_cast<uint16_t>(file_info.version_needed);
+        entry.flags = static_cast<uint16_t>(file_info.flag);
+        entry.compressed_size = static_cast<uint32_t>(file_info.compressed_size);
+        entry.uncompressed_size = static_cast<uint32_t>(file_info.uncompressed_size);
         entry.is_encrypted = (file_info.flag & 0x01) != 0;
 
         // Unix file attribute constants

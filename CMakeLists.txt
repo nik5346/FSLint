@@ -6,16 +6,24 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+option(FSLINT_WERROR "Treat warnings as errors" OFF)
+
 # ============================================================================
 # Compiler-specific options
 # ============================================================================
 if(MSVC)
     # MSVC (also applies to Clang-CL)
-    add_compile_options(/W4 /permissive- /EHsc /WX)
+    add_compile_options(/W4 /permissive- /EHsc)
+    if(FSLINT_WERROR)
+        add_compile_options(/WX)
+    endif()
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
     # GCC, Clang, and Clang on Unix-like systems
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+    add_compile_options(-Wall -Wextra -Wpedantic)
+    if(FSLINT_WERROR)
+        add_compile_options(-Werror)
+    endif()
 endif()
 
 # ============================================================================
