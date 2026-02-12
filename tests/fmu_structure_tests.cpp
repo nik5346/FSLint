@@ -35,9 +35,9 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? std::string("PASS")
-                                                    : (res.status == TestStatus::FAIL ? std::string("FAIL")
-                                                                                      : std::string("WARN")));
+                    (res.status == TestStatus::PASS
+                         ? std::string("PASS")
+                         : (res.status == TestStatus::FAIL ? std::string("FAIL") : std::string("WARN")));
                 UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
                 for (const auto& msg : res.messages)
                     UNSCOPED_INFO("    - " << msg);
@@ -58,9 +58,9 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? std::string("PASS")
-                                                    : (res.status == TestStatus::FAIL ? std::string("FAIL")
-                                                                                      : std::string("WARN")));
+                    (res.status == TestStatus::PASS
+                         ? std::string("PASS")
+                         : (res.status == TestStatus::FAIL ? std::string("FAIL") : std::string("WARN")));
                 UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
                 for (const auto& msg : res.messages)
                     UNSCOPED_INFO("    - " << msg);
@@ -118,9 +118,9 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? std::string("PASS")
-                                                    : (res.status == TestStatus::FAIL ? std::string("FAIL")
-                                                                                      : std::string("WARN")));
+                    (res.status == TestStatus::PASS
+                         ? std::string("PASS")
+                         : (res.status == TestStatus::FAIL ? std::string("FAIL") : std::string("WARN")));
                 UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
                 for (const auto& msg : res.messages)
                     UNSCOPED_INFO("    - " << msg);
@@ -141,9 +141,9 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? std::string("PASS")
-                                                    : (res.status == TestStatus::FAIL ? std::string("FAIL")
-                                                                                      : std::string("WARN")));
+                    (res.status == TestStatus::PASS
+                         ? std::string("PASS")
+                         : (res.status == TestStatus::FAIL ? std::string("FAIL") : std::string("WARN")));
                 UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
                 for (const auto& msg : res.messages)
                     UNSCOPED_INFO("    - " << msg);
