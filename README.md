@@ -6,15 +6,11 @@ FSLint is a comprehensive linting and validation tool for Functional Mock-up Uni
 
 ## Features
 
-- **FMI Validation**: Supports FMI 2.0 and 3.0 standards.
-  - XML Schema validation.
-  - Semantic checks for variables, units, and types.
-  - Validation of ModelStructure and variable dependencies.
-  - Array and clock validation for FMI 3.0.
-- **SSP Validation**: Supports SSP 1.0 and 2.0 standards.
-  - XML Schema validation for SystemStructure.ssd.
-- **Detailed Reporting**: Generates a clear "Certificate" of validation with passed tests, warnings, and detailed error messages including line numbers.
-- **Cross-Platform**: Built using CMake, supporting Linux, Windows, and macOS.
+- **FMI Validation**: Structural and semantic validation for FMI 2.0.x and 3.0.x.
+- **SSP Validation**: Structural validation for SSP 1.0 and 2.0.
+- **Recursive Validation**: Automatically discovers and recursively validates nested FMUs and SSPs within the `resources/` directory.
+- **Detailed Reporting**: Generates a validation "Certificate" with hierarchical reporting for nested components.
+- **Cross-Platform**: Support for Linux, Windows, and macOS.
 
 ## Getting Started
 
@@ -34,11 +30,20 @@ make -j
 
 ### Usage
 
-Run the `FSLint-cli` tool on an FMU file or an extracted directory:
+Run the `FSLint-cli` tool on an FMU file, an SSP file, or an extracted directory:
 
 ```bash
 ./FSLint-cli path/to/your_model.fmu
 ```
+
+#### Certificate Management
+
+FSLint can manage validation certificates embedded within the models:
+
+- `-s, --save`: Validate and add a certificate to the FMU/SSP.
+- `-u, --update`: Re-validate and update the certificate in the FMU/SSP.
+- `-r, --remove`: Remove the certificate from the FMU/SSP.
+- `-d, --display`: Display the certificate information from the FMU/SSP.
 
 Example output:
 ```text
@@ -65,12 +70,26 @@ SHA256:     0ad0a8b1ac49c7808aad524b171c1534c3ace783cdc1f2681dd13b0b54b8e889
 ╚════════════════════════════════════════════════════════════╝
 ```
 
+## Standard Compliance
+
+FSLint aims for full compliance with the following standards:
+
+- **FMI (Functional Mock-up Interface)**:
+  - Version 2.0.x (2.0 through 2.0.5).
+  - Version 3.0.x (3.0 and 3.0.1).
+- **SSP (System Structure and Parameterization)**:
+  - Version 1.0.
+  - Version 2.0.
+
 ## Project Structure
 
 - `cli/`: Command-line interface implementation.
 - `lib/`: Core logic for model extraction and validation.
   - `checker/`: Individual validation engines for FMI and SSP.
 - `standard/`: XSD schema files for FMI and SSP standards.
+- `scripts/`: Utility scripts for development and CI (e.g., encoding checks).
+- `images/`: Documentation assets and banners.
+- `tests/`: Comprehensive test suite and test data.
 
 ## Contributing
 
