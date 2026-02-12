@@ -12,6 +12,7 @@ if(WIN32)
 endif()
 
 option(FSLINT_WERROR "Treat warnings as errors" OFF)
+option(FSLINT_CLANG_TIDY_WERROR "Treat clang-tidy warnings as errors" OFF)
 
 # ============================================================================
 # Compiler-specific options
@@ -48,9 +49,15 @@ if(CLANG_TIDY_EXE)
         ${CMAKE_SOURCE_DIR}/tests/*.h
     )
 
+    set(CLANG_TIDY_EXTRA_ARGS "")
+    if(FSLINT_CLANG_TIDY_WERROR)
+        set(CLANG_TIDY_EXTRA_ARGS "--warnings-as-errors=*")
+    endif()
+
     # Add custom target to run clang-tidy
     add_custom_target(clang-tidy
         COMMAND ${CLANG_TIDY_EXE}
+            ${CLANG_TIDY_EXTRA_ARGS}
             -p ${CMAKE_BINARY_DIR}
             --config-file=${CMAKE_SOURCE_DIR}/.clang-tidy
             "--header-filter=(lib|cli|tests)/.*"
@@ -216,6 +223,7 @@ FetchContent_Declare(
 )
 
 set(LIBXML2_WITH_TESTS OFF CACHE BOOL "" FORCE)
+set(LIBXML2_INSTALL OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_PROGRAMS OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_ICONV OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_PYTHON OFF CACHE BOOL "" FORCE)

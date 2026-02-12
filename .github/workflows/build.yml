@@ -24,14 +24,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y clang-tidy clang-format
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DFSLINT_WERROR=ON
+      run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DFSLINT_WERROR=ON -DFSLINT_CLANG_TIDY_WERROR=ON
     - name: Check Formatting
       run: cmake --build build --target check-format
     - name: Clang-Tidy
-      run: |
-        # We use --warnings-as-errors='*' to make tidy warnings mandatory on the pipeline
-        # while keeping them as warnings during local development.
-        cmake --build build --target clang-tidy -- --warnings-as-errors='*'
+      run: cmake --build build --target clang-tidy
 
   build:
     name: Build on ${{ matrix.os }}

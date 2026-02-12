@@ -55,6 +55,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
     }
 
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlXPathObjectPtr xpath_obj =
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/ScalarVariable"), context);
 
@@ -62,6 +63,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             TerminalVariableInfo var;
             var.name = getXmlAttribute(node, "name").value_or("");
@@ -73,6 +75,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
             {
                 if (child->type == XML_ELEMENT_NODE)
                 {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     std::string elem_name = reinterpret_cast<const char*>(child->name);
                     if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" ||
                         elem_name == "String" || elem_name == "Enumeration")

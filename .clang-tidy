@@ -1,5 +1,5 @@
 ---
-Checks: 'cert-*,cppcoreguidelines-*,misc-include-cleaner,-clang-analyzer-*,-cppcoreguidelines-avoid-magic-numbers,-cppcoreguidelines-pro-type-reinterpret-cast,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-non-private-member-variables-in-classes,-cppcoreguidelines-pro-bounds-constant-array-index,-cppcoreguidelines-special-member-functions,-cppcoreguidelines-explicit-virtual-functions'
+Checks: 'cert-*,cppcoreguidelines-*,misc-include-cleaner,-clang-analyzer-*'
 WarningsAsErrors: ''
 HeaderFilterRegex: '^(?!.*(_deps|build)).*/(lib|cli|tests)/.*'
 SystemHeaders: false

@@ -374,6 +374,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     ssize_t len = readlink("/proc/self/exe", path.data(), path.size() - 1);
     if (len != -1)
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         path[static_cast<size_t>(len)] = '\0';
         bin_dir = std::filesystem::path(path.data()).parent_path();
     }
@@ -514,8 +515,11 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
     va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     va_start(args, msg);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     va_end(args);
 
     if (written < 0)
@@ -544,8 +548,11 @@ void SchemaCheckerBase::warningCallback(void* ctx, const char* msg, ...)
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
     va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     va_start(args, msg);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     va_end(args);
 
     if (written < 0)

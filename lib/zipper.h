@@ -8,13 +8,13 @@
 struct ZipFileEntry
 {
     std::string filename;
-    uint16_t compression_method;
-    uint16_t version_needed;
-    uint16_t flags;
-    uint32_t compressed_size;
-    uint32_t uncompressed_size;
-    bool is_encrypted;
-    bool is_symlink;
+    uint16_t compression_method = 0;
+    uint16_t version_needed = 0;
+    uint16_t flags = 0;
+    uint32_t compressed_size = 0;
+    uint32_t uncompressed_size = 0;
+    bool is_encrypted = false;
+    bool is_symlink = false;
 };
 
 class Zipper

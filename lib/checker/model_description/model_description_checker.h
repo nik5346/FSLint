@@ -113,7 +113,14 @@ class ModelDescriptionCheckerBase : public Checker
                                               const std::map<std::string, UnitDefinition>& units,
                                               Certificate& cert) = 0;
 
+  private:
     std::filesystem::path _fmu_root_path;
+
+  protected:
+    const std::filesystem::path& getFmuRootPath() const
+    {
+        return _fmu_root_path;
+    }
 
     virtual std::string getFmiVersion() const = 0;
 

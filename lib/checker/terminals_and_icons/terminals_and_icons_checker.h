@@ -28,12 +28,21 @@ struct TerminalVariableInfo
     std::string type;
     int sourceline = 0;
     std::vector<TerminalDimension> dimensions;
+
+    TerminalVariableInfo() = default;
 };
 
 class TerminalsAndIconsCheckerBase : public Checker
 {
   public:
+    TerminalsAndIconsCheckerBase() = default;
     ~TerminalsAndIconsCheckerBase() override = default;
+
+    TerminalsAndIconsCheckerBase(const TerminalsAndIconsCheckerBase&) = delete;
+    TerminalsAndIconsCheckerBase& operator=(const TerminalsAndIconsCheckerBase&) = delete;
+    TerminalsAndIconsCheckerBase(TerminalsAndIconsCheckerBase&&) = delete;
+    TerminalsAndIconsCheckerBase& operator=(TerminalsAndIconsCheckerBase&&) = delete;
+
     void validate(const std::filesystem::path& path, Certificate& cert) override;
 
   protected:

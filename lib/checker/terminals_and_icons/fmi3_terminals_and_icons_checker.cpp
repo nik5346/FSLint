@@ -55,6 +55,7 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
     }
 
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlXPathObjectPtr xpath_obj =
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/*"), context);
 
@@ -62,16 +63,19 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             TerminalVariableInfo var;
             var.name = getXmlAttribute(node, "name").value_or("");
             var.causality = getXmlAttribute(node, "causality").value_or("local");
             var.variability = getXmlAttribute(node, "variability").value_or("");
             var.sourceline = node->line;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             var.type = reinterpret_cast<const char*>(node->name);
 
             for (xmlNodePtr child = node->children; child; child = child->next)
             {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 if (child->type == XML_ELEMENT_NODE &&
                     xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Dimension")) == 0)
                 {
