@@ -1,5 +1,5 @@
 ---
-Checks: 'cert-*,cppcoreguidelines-*,misc-include-cleaner,-clang-analyzer-*'
-WarningsAsErrors: ''
+Checks: 'cert-*,cppcoreguidelines-*,-clang-analyzer-*'
+WarningsAsErrors: '*'
 HeaderFilterRegex: '^(?!.*(_deps|build)).*/(lib|cli|tests)/.*'
 SystemHeaders: false

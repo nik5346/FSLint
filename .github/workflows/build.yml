@@ -9,7 +9,7 @@ on:
 
 jobs:
   lint:
-    name: Lint and Encoding Check
+    name: Lint and Formatting
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -19,6 +19,16 @@ jobs:
         python-version: '3.x'
     - name: Check Encodings
       run: python3 scripts/check_encodings.py
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-tidy clang-format
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    - name: Check Formatting
+      run: cmake --build build --target check-format
+    - name: Clang-Tidy
+      run: cmake --build build --target clang-tidy
 
   build:
     name: Build on ${{ matrix.os }}
@@ -35,7 +45,10 @@ jobs:
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
-      run: cmake --build build --config Release --target FSLint-cli
+      run: cmake --build build --config Release
+
+    - name: Run Tests
+      run: cd build && ctest -C Release --output-on-failure
 
     - name: Prepare Artifact (Linux)
       if: runner.os == 'Linux'

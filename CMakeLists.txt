@@ -11,11 +11,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ============================================================================
 if(MSVC)
     # MSVC (also applies to Clang-CL)
-    add_compile_options(/W4 /permissive- /EHsc)
+    add_compile_options(/W4 /permissive- /EHsc /WX)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
     # GCC, Clang, and Clang on Unix-like systems
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
 # ============================================================================
@@ -73,6 +73,15 @@ if(CLANG_FORMAT_EXE)
         -style=file
         ${ALL_SOURCE_FILES}
         COMMENT "Running clang-format on source files"
+    )
+
+    add_custom_target(check-format
+        COMMAND ${CLANG_FORMAT_EXE}
+        --dry-run
+        --Werror
+        -style=file
+        ${ALL_SOURCE_FILES}
+        COMMENT "Checking clang-format on source files"
     )
 else()
     message(WARNING "clang-format not found")

@@ -21,4 +21,6 @@ class DirectoryChecker : public Checker
                                               bool needs_execution_tool) = 0;
 
     static std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
+
+    static bool is_effectively_empty(const std::filesystem::path& path);
 };

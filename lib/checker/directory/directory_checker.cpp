@@ -99,3 +99,13 @@ std::optional<std::string> DirectoryChecker::getXmlAttribute(xmlNodePtr node, co
     xmlFree(attr);
     return value;
 }
+
+bool DirectoryChecker::is_effectively_empty(const std::filesystem::path& path)
+{
+    if (!std::filesystem::is_directory(path))
+        return false;
+    for (const auto& entry : std::filesystem::directory_iterator(path))
+        if (entry.path().filename() != ".gitkeep")
+            return false;
+    return true;
+}
