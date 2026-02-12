@@ -6,20 +6,11 @@ FSLint is a comprehensive linting and validation tool for Functional Mock-up Uni
 
 ## Features
 
-- **FMI Validation**: Supports FMI 2.0.x and 3.0.x standards.
-  - XML Schema validation for `modelDescription.xml`.
-  - Semantic checks for variables, units, and types.
-  - Validation of ModelStructure and variable dependencies.
-  - Terminals and Icons validation (FMI 3.0 and backport to 2.0.4+).
-  - Build Description validation (`sources/buildDescription.xml`).
-  - Binary integrity and export checks (ELF, PE, Mach-O).
-  - Distribution requirements (licenses, documentation, platform-specific binaries).
-  - SVG fallback and graphical representation rules.
-- **SSP Validation**: Supports SSP 1.0 and 2.0 standards.
-  - XML Schema validation for `SystemStructure.ssd`.
-- **Recursive Validation**: Automatically discovers and validates nested FMUs and SSPs within the `resources/` directory.
-- **Detailed Reporting**: Generates a clear "Certificate" of validation with passed tests, warnings, and detailed error messages including line numbers. Supports hierarchical reporting for nested models.
-- **Cross-Platform**: Built using CMake, supporting Linux, Windows, and macOS.
+- **FMI Validation**: Structural and semantic validation for FMI 2.0.x and 3.0.x.
+- **SSP Validation**: Structural validation for SSP 1.0 and 2.0.
+- **Recursive Validation**: Automatically discovers and recursively validates nested FMUs and SSPs within the `resources/` directory.
+- **Detailed Reporting**: Generates a validation "Certificate" with hierarchical reporting for nested components.
+- **Cross-Platform**: Support for Linux, Windows, and macOS.
 
 ## Getting Started
 
