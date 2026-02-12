@@ -49,7 +49,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                 Certificate nested_cert = nested_checker.validateCore(entry.path());
 
                 NestedModelResult result;
-                result.name = entry.path().filename().string() + "/";
+                result.name = entry.path().filename().string();
                 result.status = nested_cert.getOverallStatus();
                 result.nested_models = nested_cert.getNestedModels();
 
