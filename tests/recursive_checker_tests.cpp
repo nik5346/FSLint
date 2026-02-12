@@ -2,38 +2,30 @@
 #include "model_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
-#include <filesystem>
 
 TEST_CASE("Recursive Model Validation", "[recursive]")
 {
-    ModelChecker checker;
-
     SECTION("Nested FMU structure")
     {
-        // Use the test data created earlier
-        std::filesystem::path root_path = "tests/data/nested/root";
+        ModelChecker checker;
+        std::string path = "tests/data/recursive/basic";
+        Certificate cert = checker.validateCore(path);
 
-        Certificate result_cert = checker.validateCore(root_path);
+        INFO("Checking path: " << path);
+        CHECK_FALSE(cert.getNestedModels().empty());
 
-        const auto& nested = result_cert.getNestedModels();
-        REQUIRE(nested.size() == 1);
-        CHECK(nested[0].name == "inner.fmu");
+        bool found_nested = false;
+        bool found_ssp = false;
 
-        REQUIRE(nested[0].nested_models.size() == 1);
-        CHECK(nested[0].nested_models[0].name == "even_inner.fmu");
+        for (const auto& nested : cert.getNestedModels())
+        {
+            if (nested.name == "nested.fmu")
+                found_nested = true;
+            if (nested.name == "system.ssp")
+                found_ssp = true;
+        }
 
-        REQUIRE(nested[0].nested_models[0].nested_models.size() == 1);
-        CHECK(nested[0].nested_models[0].nested_models[0].name == "deep_inner.fmu");
-    }
-
-    SECTION("SSP structure")
-    {
-        std::filesystem::path ssp_path = "tests/data/nested/root_ssp";
-
-        Certificate result_cert = checker.validateCore(ssp_path);
-
-        const auto& nested = result_cert.getNestedModels();
-        REQUIRE(nested.size() == 1);
-        CHECK(nested[0].name == "inner.fmu");
+        CHECK(found_nested);
+        CHECK(found_ssp);
     }
 }

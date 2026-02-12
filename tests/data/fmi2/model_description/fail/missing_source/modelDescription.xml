@@ -1,0 +1,13 @@
+<fmiModelDescription fmiVersion="2.0" modelName="T" guid="{12345678-1234-1234-1234-123456789012}">
+  <CoSimulation modelIdentifier="T">
+    <SourceFiles>
+      <File name="missing.c"/>
+    </SourceFiles>
+  </CoSimulation>
+  <ModelVariables>
+    <ScalarVariable name="v" valueReference="1">
+      <Real/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure/>
+</fmiModelDescription>

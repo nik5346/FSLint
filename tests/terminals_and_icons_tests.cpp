@@ -40,7 +40,7 @@ TEST_CASE("FMI 2.0 Terminals and Icons Validation", "[terminals][icons][fmi2]")
 
     SECTION("Passing Cases")
     {
-        validate_pass("tests/data/fmi2/terminals_and_icons/pass");
+        validate_pass("tests/data/fmi2/terminals_and_icons/pass/basic");
     }
 
     SECTION("Failure Cases")
@@ -91,8 +91,8 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
 
     SECTION("Passing Cases")
     {
-        validate_pass("tests/data/fmi3/terminals_and_icons/pass");
-        validate_pass("tests/data/fmi3/terminals_and_icons/pass/missing_member_name_sequence");
+        validate_pass("tests/data/fmi3/terminals_and_icons/pass/basic");
+        validate_pass("tests/data/fmi3/terminals_and_icons/pass/sequence");
     }
 
     SECTION("Failure Cases")

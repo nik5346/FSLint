@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="2.0" modelName="no_impl" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f9e0}">
-  <CoSimulation modelIdentifier="no_impl"/>
-  <ModelVariables/>
-  <ModelStructure/>
-</fmiModelDescription>

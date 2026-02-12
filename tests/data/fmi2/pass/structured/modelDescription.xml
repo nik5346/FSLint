@@ -1,0 +1,6 @@
+<fmiModelDescription fmiVersion="2.0" modelName="T" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" variableNamingConvention="structured">
+  <CoSimulation modelIdentifier="T"/>
+  <ModelVariables>
+    <Real name="a.b" valueReference="1"/>
+  </ModelVariables>
+</fmiModelDescription>

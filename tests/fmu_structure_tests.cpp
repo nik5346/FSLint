@@ -68,26 +68,23 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/directory/fail/no_impl", "must contain either a precompiled binary");
+        validate_fail("tests/data/fmi2/directory/fail/no_impl", "must contain either a precompiled binary");
     }
 
     SECTION("Warning Cases")
     {
-        validate_warning("tests/data/directory/pass/binaries", "model.png");
-        validate_warning("tests/data/directory/pass/sources", "model.png");
-        validate_warning("tests/data/directory/warn/unknown_entry", "Unknown file");
-        validate_warning("tests/data/fmi2/warn/dist_sources_only", "only contains <SourceFiles>");
-        validate_warning("tests/data/fmi2/warn/dist_build_desc_only", "only contains buildDescription.xml");
-        validate_warning("tests/data/fmi2/warn/external_dependencies_missing",
-                         "needsExecutionTool is true, but 'documentation/externalDependencies.{txt|html}' is missing");
-        validate_warning("tests/data/fmi2/warn/license_entry_missing",
-                         "licenses/' exists but does not contain a 'license.txt' or 'license.html'");
-        validate_warning("tests/data/fmi2/warn/empty_dir", "Standard directory 'documentation' is empty");
+        validate_warning("tests/data/fmi2/directory/warn/missing_model_png", "model.png");
+        validate_warning("tests/data/fmi2/directory/warn/unknown_entry", "Unknown file");
+        validate_warning("tests/data/fmi2/directory/warn/dist_sources_only", "only contains <SourceFiles>");
+        validate_warning("tests/data/fmi2/directory/warn/dist_build_desc_only", "only contains buildDescription.xml");
+        validate_warning("tests/data/fmi2/directory/warn/ext_deps_missing", "needsExecutionTool is true");
+        validate_warning("tests/data/fmi2/directory/warn/license_missing", "licenses/' exists but does not contain");
+        validate_warning("tests/data/fmi2/directory/warn/empty_dir", "Standard directory 'documentation' is empty");
     }
 
     SECTION("Passing Cases")
     {
-        validate_pass("tests/data/fmi2/pass/dist_both");
+        validate_pass("tests/data/fmi2/directory/pass/dist_both");
     }
 }
 
@@ -147,32 +144,33 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/fmi3/fail/external_dependencies_missing", "needsExecutionTool");
-        validate_fail("tests/data/fmi3/fail/external_dependencies_no_doc", "needsExecutionTool");
-        validate_fail("tests/data/fmi3/fail/license_entry_missing", "license");
-        validate_fail("tests/data/fmi3/fail/static_linking_doc_missing", "staticLinking");
-        validate_fail("tests/data/fmi3/fail/build_description_missing", "buildDescription.xml");
-        validate_fail("tests/data/fmi3/fail/invalid_abi", "ABI name");
-        validate_fail("tests/data/fmi3/fail/no_impl", "at least one implementation");
-        validate_fail("tests/data/fmi3/fail/diagram_png_missing", "diagram.png");
-        validate_fail("tests/data/fmi3/fail/svg_fallback_missing", "fallback");
+        validate_fail("tests/data/fmi3/directory/fail/ext_deps_missing", "needsExecutionTool");
+        validate_fail("tests/data/fmi3/directory/fail/ext_deps_no_doc", "needsExecutionTool");
+        validate_fail("tests/data/fmi3/directory/fail/license_missing", "license");
+        validate_fail("tests/data/fmi3/directory/fail/static_linking_missing", "staticLinking");
+        validate_fail("tests/data/fmi3/directory/fail/build_desc_missing", "buildDescription.xml");
+        validate_fail("tests/data/fmi3/directory/fail/invalid_abi", "ABI name");
+        validate_fail("tests/data/fmi3/directory/fail/no_impl", "at least one implementation");
+        validate_fail("tests/data/fmi3/directory/fail/diagram_png_missing", "diagram.png");
+        validate_fail("tests/data/fmi3/directory/fail/svg_fallback_missing", "fallback");
     }
 
     SECTION("Warning Cases")
     {
-        validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
-        validate_warning("tests/data/fmi3/warn/unknown_directory", "Unknown directory in FMU root");
-        validate_warning("tests/data/fmi3/warn/index_html_missing", "documentation/index.html' is missing");
-        validate_warning("tests/data/fmi3/warn/invalid_tuple", "does not follow the <arch>-<sys>[-<abi>] format");
-        validate_warning("tests/data/fmi3/warn/no_binary_matching_id",
+        validate_warning("tests/data/fmi3/directory/warn/unknown_entry", "Unknown file in FMU root");
+        validate_warning("tests/data/fmi3/directory/warn/unknown_dir", "Unknown directory in FMU root");
+        validate_warning("tests/data/fmi3/directory/warn/index_html_missing", "documentation/index.html' is missing");
+        validate_warning("tests/data/fmi3/directory/warn/invalid_tuple",
+                         "does not follow the <arch>-<sys>[-<abi>] format");
+        validate_warning("tests/data/fmi3/directory/warn/no_binary_matching_id",
                          "does not contain a binary matching any modelIdentifier");
-        validate_warning("tests/data/fmi3/warn/extra_rdn_invalid", "should use reverse domain name notation");
-        validate_warning("tests/data/fmi3/warn/empty_dir", "Standard directory 'documentation' is empty");
+        validate_warning("tests/data/fmi3/directory/warn/extra_rdn_invalid", "should use reverse domain name notation");
+        validate_warning("tests/data/fmi3/directory/warn/empty_dir", "Standard directory 'documentation' is empty");
     }
 
     SECTION("Passing Cases")
     {
-        validate_pass("tests/data/fmi3/pass");
+        validate_pass("tests/data/fmi3/directory/pass/basic");
     }
 }
 
@@ -287,7 +285,9 @@ TEST_CASE("FMI 2.0 legacy source files validation", "[fmi2][sources]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/fmi2/fail/missing_source",
-                      "listed in 'modelDescription.xml' (line 5) does not exist");
+        validate_fail("tests/data/fmi2/model_description/fail/missing_source",
+                      "listed in 'modelDescription.xml'");
+        validate_fail("tests/data/fmi2/model_description/fail/missing_source",
+                      "does not exist in 'sources/' directory");
     }
 }

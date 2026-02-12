@@ -1,0 +1,5 @@
+<fmiModelDescription fmiVersion="2.0" modelName="T" guid="1">
+  <CoSimulation modelIdentifier="Test"/>
+  <ModelVariables/>
+  <ModelStructure/>
+</fmiModelDescription>

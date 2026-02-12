@@ -1,0 +1,7 @@
+<fmiTerminalsAndIcons fmiVersion="3.0">
+    <Terminals>
+        <Terminal name="t">
+            <TerminalMemberVariable memberName="m" variableName="v"/>
+        </Terminal>
+    </Terminals>
+</fmiTerminalsAndIcons>

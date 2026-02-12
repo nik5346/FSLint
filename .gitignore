@@ -1,2 +1,3 @@
 build
 models
+tests/reference_fmus/

@@ -1,0 +1,7 @@
+<fmiModelDescription fmiVersion="2.0" modelName="T" guid="1">
+    <ModelVariables>
+        <ScalarVariable name="v" valueReference="1" causality="input">
+            <Real/>
+        </ScalarVariable>
+    </ModelVariables>
+</fmiModelDescription>
