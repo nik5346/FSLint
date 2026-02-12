@@ -6,6 +6,11 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+if(WIN32)
+    # Prefer static linking on Windows to avoid DLL issues during test discovery
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+endif()
+
 option(FSLINT_WERROR "Treat warnings as errors" OFF)
 
 # ============================================================================
