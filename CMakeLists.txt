@@ -136,6 +136,9 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
+# We skip install rules for fetched dependencies to avoid export conflicts on Windows
+set(CMAKE_SKIP_INSTALL_RULES ON)
+
 FetchContent_MakeAvailable(zlib)
 
 # Restore warning flags after zlib
@@ -223,7 +226,6 @@ FetchContent_Declare(
 )
 
 set(LIBXML2_WITH_TESTS OFF CACHE BOOL "" FORCE)
-set(LIBXML2_INSTALL OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_PROGRAMS OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_ICONV OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_PYTHON OFF CACHE BOOL "" FORCE)
@@ -276,6 +278,8 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(picosha2 Catch2)
+
+set(CMAKE_SKIP_INSTALL_RULES OFF)
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
