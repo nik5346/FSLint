@@ -2,6 +2,8 @@
 
 #include "certificate.h"
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <string>
 
 inline bool has_fail(const Certificate& cert)
@@ -56,4 +58,11 @@ inline bool has_warning_with_text(const Certificate& cert, const std::string& te
                 return true;
     }
     return false;
+}
+
+inline void create_dummy_binary(const std::filesystem::path& path)
+{
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream ofs(path);
+    ofs << "DUMMY BINARY STUB";
 }

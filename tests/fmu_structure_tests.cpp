@@ -9,11 +9,104 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 namespace fs = std::filesystem;
 
+static void setup_dummy_binaries()
+{
+    // FMI 2.0
+    create_dummy_binary("tests/data/fmi2/pass/dist_binaries_only/binaries/win64/test.dll");
+    create_dummy_binary("tests/data/fmi2/pass/structured_naming/binaries/win64/Test.dll");
+    create_dummy_binary("tests/data/fmi2/pass/binaries/win64/ValidFMI2.dll");
+    create_dummy_binary("tests/data/fmi2/warn/license_entry_missing/binaries/linux64/Test.so");
+    create_dummy_binary("tests/data/fmi2/warn/external_dependencies_missing/binaries/linux64/Test.so");
+    create_dummy_binary("tests/data/fmi2/warn/empty_dir/binaries/linux64/Test.so");
+
+    fs::create_directories("tests/data/fmi2/warn/license_entry_missing/licenses");
+    fs::create_directories("tests/data/fmi2/warn/empty_dir/documentation");
+
+    // FMI 3.0
+    create_dummy_binary("tests/data/fmi3/pass/stop_time_inf/binaries/win64/Test.dll");
+    create_dummy_binary("tests/data/fmi3/pass/binaries/win64/ValidFMI3.dll");
+    create_dummy_binary("tests/data/fmi3/warn/unknown_entry/binaries/x86_64-windows/test.dll");
+    create_dummy_binary("tests/data/fmi3/warn/index_html_missing/binaries/x86_64-linux/ValidFMI3.so");
+    create_dummy_binary("tests/data/fmi3/warn/no_binary_matching_id/binaries/x86_64-windows/wrong.dll");
+    create_dummy_binary("tests/data/fmi3/warn/extra_rdn_invalid/binaries/x86_64-linux/ValidFMI3.so");
+    create_dummy_binary("tests/data/fmi3/warn/empty_dir/binaries/x86_64-linux/ValidFMI3.so");
+    create_dummy_binary("tests/data/fmi3/warn/unknown_directory/binaries/x86_64-linux/ValidFMI3.so");
+    create_dummy_binary("tests/data/fmi3/warn/invalid_tuple/binaries/win64/ValidFMI3.dll");
+    create_dummy_binary("tests/data/fmi3/fail/license_entry_missing/binaries/x86_64-linux/ValidFMI3.so");
+    create_dummy_binary("tests/data/fmi3/fail/external_dependencies_missing/binaries/x86_64-linux/Test.so");
+    create_dummy_binary("tests/data/fmi3/fail/diagram_png_missing/binaries/x86_64-linux/ValidFMI3.so");
+    create_dummy_binary("tests/data/fmi3/fail/diagram_png_missing/binaries/x86_64-windows/test.dll");
+    create_dummy_binary("tests/data/fmi3/fail/invalid_abi/binaries/x86_64-linux-123/ValidFMI3.so");
+    create_dummy_binary("tests/data/fmi3/fail/static_linking_doc_missing/binaries/x86_64-windows-msvc/Test.dll");
+    create_dummy_binary("tests/data/fmi3/fail/svg_fallback_missing/binaries/x86_64-linux/ValidFMI3.so");
+    create_dummy_binary("tests/data/fmi3/fail/external_dependencies_no_doc/binaries/x86_64-linux/ValidFMI3.so");
+
+    fs::create_directories("tests/data/fmi3/fail/license_entry_missing/documentation/licenses");
+    fs::create_directories("tests/data/fmi3/warn/empty_dir/documentation");
+    fs::create_directories("tests/data/fmi3/warn/index_html_missing/documentation");
+    fs::create_directories("tests/data/fmi3/warn/unknown_directory/unknown_dir");
+    fs::create_directories("tests/data/fmi3/warn/extra_rdn_invalid/extra/invalid_rdn");
+
+    // Other
+    create_dummy_binary("tests/data/directory/pass/binaries/binaries/win64/binaries.dll");
+}
+
+static void cleanup_dummy_binaries()
+{
+    std::vector<std::string> dirs_to_clean = {
+        "tests/data/fmi2/pass/dist_binaries_only/binaries",
+        "tests/data/fmi2/pass/structured_naming/binaries",
+        "tests/data/fmi2/pass/binaries/binaries",
+        "tests/data/fmi2/warn/license_entry_missing/binaries",
+        "tests/data/fmi2/warn/license_entry_missing/licenses",
+        "tests/data/fmi2/warn/external_dependencies_missing/binaries",
+        "tests/data/fmi2/warn/empty_dir/binaries",
+        "tests/data/fmi2/warn/empty_dir/documentation",
+        "tests/data/fmi3/pass/stop_time_inf/binaries",
+        "tests/data/fmi3/pass/binaries/binaries",
+        "tests/data/fmi3/warn/unknown_entry/binaries",
+        "tests/data/fmi3/warn/index_html_missing/binaries",
+        "tests/data/fmi3/warn/index_html_missing/documentation",
+        "tests/data/fmi3/warn/no_binary_matching_id/binaries",
+        "tests/data/fmi3/warn/extra_rdn_invalid/binaries",
+        "tests/data/fmi3/warn/extra_rdn_invalid/extra",
+        "tests/data/fmi3/warn/empty_dir/binaries",
+        "tests/data/fmi3/warn/empty_dir/documentation",
+        "tests/data/fmi3/warn/unknown_directory/binaries",
+        "tests/data/fmi3/warn/unknown_directory/unknown_dir",
+        "tests/data/fmi3/warn/invalid_tuple/binaries",
+        "tests/data/fmi3/fail/license_entry_missing/binaries",
+        "tests/data/fmi3/fail/license_entry_missing/documentation",
+        "tests/data/fmi3/fail/external_dependencies_missing/binaries",
+        "tests/data/fmi3/fail/diagram_png_missing/binaries",
+        "tests/data/fmi3/fail/invalid_abi/binaries",
+        "tests/data/fmi3/fail/static_linking_doc_missing/binaries",
+        "tests/data/fmi3/fail/svg_fallback_missing/binaries",
+        "tests/data/fmi3/fail/external_dependencies_no_doc/binaries",
+        "tests/data/directory/pass/binaries/binaries"
+    };
+
+    for (const auto& dir : dirs_to_clean)
+    {
+        if (fs::exists(dir))
+        {
+            fs::remove_all(dir);
+        }
+    }
+}
+
+struct ScopedTestSetup {
+    ScopedTestSetup() { setup_dummy_binaries(); }
+    ~ScopedTestSetup() { cleanup_dummy_binaries(); }
+};
+
 TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 {
+    ScopedTestSetup setup;
     Fmi2DirectoryChecker checker;
 
     auto validate_pass = [&](const std::string& path)
@@ -93,6 +186,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 
 TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 {
+    ScopedTestSetup setup;
     Fmi3DirectoryChecker checker;
 
     auto validate_pass = [&](const fs::path& path)
@@ -229,7 +323,7 @@ TEST_CASE("Build Description Validation", "[build_description]")
             }
         }
         REQUIRE(has_warning(cert));
-        CHECK(has_warning_with_text(cert, expected_warning));
+        REQUIRE(has_warning_with_text(cert, expected_warning));
     };
 
     SECTION("Failure Cases")

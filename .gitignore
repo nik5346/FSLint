@@ -1,2 +1,6 @@
 build
 models
+*.so
+*.dll
+*.dylib
+tests/reference_fmus/
