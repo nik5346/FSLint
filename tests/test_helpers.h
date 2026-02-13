@@ -2,6 +2,8 @@
 
 #include "certificate.h"
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <string>
 
 inline bool has_fail(const Certificate& cert)

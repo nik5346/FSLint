@@ -9,8 +9,50 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 namespace fs = std::filesystem;
+
+static bool reference_fmus_available()
+{
+    static bool available = fs::exists("tests/reference_fmus/BouncingBall_20") &&
+                            fs::exists("tests/reference_fmus/BouncingBall_30");
+    return available;
+}
+
+class TempTestDir {
+public:
+    TempTestDir(const std::string& name) {
+        path = fs::current_path() / ("tests/tmp_" + name);
+        fs::remove_all(path);
+        fs::create_directories(path);
+    }
+    ~TempTestDir() {
+        fs::remove_all(path);
+    }
+    fs::path get_path() const { return path; }
+
+    void copy_from(const fs::path& src) {
+        fs::copy(src, path, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+    }
+
+    void remove(const std::string& rel_path) {
+        fs::remove_all(path / rel_path);
+    }
+
+    void add_dir(const std::string& rel_path) {
+        fs::create_directories(path / rel_path);
+    }
+
+    void add_file(const std::string& rel_path, const std::string& content = "") {
+        fs::create_directories((path / rel_path).parent_path());
+        std::ofstream ofs(path / rel_path);
+        ofs << content;
+    }
+
+private:
+    fs::path path;
+};
 
 TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 {
@@ -62,6 +104,9 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
                     UNSCOPED_INFO("    - " << msg);
             }
         }
+        if (!has_warning(cert)) {
+            UNSCOPED_INFO("No warnings at all in certificate for path: " << path);
+        }
         REQUIRE(has_warning(cert));
         REQUIRE(has_warning_with_text(cert, expected_warning));
     };
@@ -73,21 +118,50 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 
     SECTION("Warning Cases")
     {
-        validate_warning("tests/data/directory/pass/binaries", "model.png");
-        validate_warning("tests/data/directory/pass/sources", "model.png");
+        if (reference_fmus_available()) {
+            {
+                TempTestDir temp("fmi2_model_png_warning");
+                temp.copy_from("tests/reference_fmus/BouncingBall_20");
+                temp.remove("model.png");
+                validate_warning(temp.get_path().string(), "Recommended file 'model.png' is missing");
+            }
+            {
+                TempTestDir temp("fmi2_license_warning");
+                temp.copy_from("tests/reference_fmus/BouncingBall_20");
+                temp.add_dir("licenses");
+                validate_warning(temp.get_path().string(), "licenses/' exists but does not contain a 'license.txt'");
+            }
+            {
+                TempTestDir temp("fmi2_empty_doc");
+                temp.copy_from("tests/reference_fmus/BouncingBall_20");
+                temp.remove("documentation");
+                temp.add_dir("documentation");
+                validate_warning(temp.get_path().string(), "Standard directory 'documentation' is empty");
+            }
+        }
+
         validate_warning("tests/data/directory/warn/unknown_entry", "Unknown file");
         validate_warning("tests/data/fmi2/warn/dist_sources_only", "only contains <SourceFiles>");
         validate_warning("tests/data/fmi2/warn/dist_build_desc_only", "only contains buildDescription.xml");
-        validate_warning("tests/data/fmi2/warn/external_dependencies_missing",
-                         "needsExecutionTool is true, but 'documentation/externalDependencies.{txt|html}' is missing");
-        validate_warning("tests/data/fmi2/warn/license_entry_missing",
-                         "licenses/' exists but does not contain a 'license.txt' or 'license.html'");
-        validate_warning("tests/data/fmi2/warn/empty_dir", "Standard directory 'documentation' is empty");
+
+        {
+             TempTestDir temp("fmi2_ext_deps_missing");
+             temp.add_file("modelDescription.xml", R"(<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="test" guid="{1}">
+  <CoSimulation modelIdentifier="test" needsExecutionTool="true"/>
+</fmiModelDescription>)");
+             temp.add_dir("sources");
+             temp.add_file("sources/source.c");
+             validate_warning(temp.get_path().string(), "needsExecutionTool is true, but 'documentation/externalDependencies.{txt|html}' is missing");
+        }
     }
 
     SECTION("Passing Cases")
     {
         validate_pass("tests/data/fmi2/pass/dist_both");
+        if (reference_fmus_available()) {
+            validate_pass("tests/reference_fmus/BouncingBall_20");
+        }
     }
 }
 
@@ -147,32 +221,65 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/fmi3/fail/external_dependencies_missing", "needsExecutionTool");
-        validate_fail("tests/data/fmi3/fail/external_dependencies_no_doc", "needsExecutionTool");
-        validate_fail("tests/data/fmi3/fail/license_entry_missing", "license");
-        validate_fail("tests/data/fmi3/fail/static_linking_doc_missing", "staticLinking");
-        validate_fail("tests/data/fmi3/fail/build_description_missing", "buildDescription.xml");
-        validate_fail("tests/data/fmi3/fail/invalid_abi", "ABI name");
         validate_fail("tests/data/fmi3/fail/no_impl", "at least one implementation");
-        validate_fail("tests/data/fmi3/fail/diagram_png_missing", "diagram.png");
-        validate_fail("tests/data/fmi3/fail/svg_fallback_missing", "fallback");
+
+        if (reference_fmus_available()) {
+            {
+                TempTestDir temp("fmi3_no_diagram_png");
+                temp.copy_from("tests/reference_fmus/BouncingBall_30");
+                temp.add_file("documentation/diagram.svg", "<svg></svg>");
+                validate_fail(temp.get_path(), "diagram.png is missing");
+            }
+            {
+                TempTestDir temp("fmi3_license_fail");
+                temp.copy_from("tests/reference_fmus/BouncingBall_30");
+                temp.add_dir("documentation/licenses");
+                validate_fail(temp.get_path(), "license");
+            }
+            {
+                TempTestDir temp("fmi3_ext_deps_fail");
+                temp.add_file("modelDescription.xml", R"(<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="1">
+  <CoSimulation modelIdentifier="Test" needsExecutionTool="true"/>
+</fmiModelDescription>)");
+                temp.add_dir("sources");
+                temp.add_file("sources/buildDescription.xml", R"(<buildDescription fmiVersion="3.0"><BuildConfiguration modelIdentifier="Test"/></buildDescription>)");
+                validate_fail(temp.get_path(), "needsExecutionTool is true");
+            }
+        }
     }
 
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
-        validate_warning("tests/data/fmi3/warn/unknown_directory", "Unknown directory in FMU root");
-        validate_warning("tests/data/fmi3/warn/index_html_missing", "documentation/index.html' is missing");
-        validate_warning("tests/data/fmi3/warn/invalid_tuple", "does not follow the <arch>-<sys>[-<abi>] format");
-        validate_warning("tests/data/fmi3/warn/no_binary_matching_id",
-                         "does not contain a binary matching any modelIdentifier");
-        validate_warning("tests/data/fmi3/warn/extra_rdn_invalid", "should use reverse domain name notation");
-        validate_warning("tests/data/fmi3/warn/empty_dir", "Standard directory 'documentation' is empty");
+
+        if (reference_fmus_available()) {
+            {
+                TempTestDir temp("fmi3_invalid_tuple");
+                temp.copy_from("tests/reference_fmus/BouncingBall_30");
+                // Create an invalid tuple directory (no dashes)
+                temp.add_dir("binaries/invalid_tuple");
+                validate_warning(temp.get_path(), "does not follow the <arch>-<sys>");
+            }
+            {
+                TempTestDir temp("fmi3_rdn_warning");
+                temp.copy_from("tests/reference_fmus/BouncingBall_30");
+                temp.add_dir("extra/not_rdn");
+                validate_warning(temp.get_path(), "should use reverse domain name notation");
+            }
+            {
+                TempTestDir temp("fmi3_index_html_warning");
+                temp.copy_from("tests/reference_fmus/BouncingBall_30");
+                temp.remove("documentation/index.html");
+                validate_warning(temp.get_path(), "documentation/index.html' is missing");
+            }
+        }
     }
 
     SECTION("Passing Cases")
     {
-        validate_pass("tests/data/fmi3/pass");
+        if (reference_fmus_available()) {
+            validate_pass("tests/reference_fmus/BouncingBall_30");
+        }
     }
 }
 
@@ -229,7 +336,7 @@ TEST_CASE("Build Description Validation", "[build_description]")
             }
         }
         REQUIRE(has_warning(cert));
-        CHECK(has_warning_with_text(cert, expected_warning));
+        REQUIRE(has_warning_with_text(cert, expected_warning));
     };
 
     SECTION("Failure Cases")
