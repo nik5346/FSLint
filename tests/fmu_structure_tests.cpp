@@ -57,10 +57,11 @@ static void setup_dummy_binaries()
 
 static void cleanup_dummy_binaries()
 {
-    std::vector<std::string> dirs_to_clean = {
+    // List of directories that might have been created and need to be removed completely
+    std::vector<std::string> dirs_to_remove = {
         "tests/data/fmi2/pass/dist_binaries_only/binaries",
         "tests/data/fmi2/pass/structured_naming/binaries",
-        "tests/data/fmi2/pass/binaries/binaries",
+        "tests/data/fmi2/pass/binaries/win64", // This was created directly inTurn 1
         "tests/data/fmi2/warn/license_entry_missing/binaries",
         "tests/data/fmi2/warn/license_entry_missing/licenses",
         "tests/data/fmi2/warn/external_dependencies_missing/binaries",
@@ -90,11 +91,27 @@ static void cleanup_dummy_binaries()
         "tests/data/directory/pass/binaries/binaries"
     };
 
-    for (const auto& dir : dirs_to_clean)
+    for (const auto& dir : dirs_to_remove)
     {
         if (fs::exists(dir))
         {
             fs::remove_all(dir);
+        }
+    }
+
+    // Final sweep for any remaining binaries in tests/data
+    if (fs::exists("tests/data"))
+    {
+        for (const auto& entry : fs::recursive_directory_iterator("tests/data"))
+        {
+            if (entry.is_regular_file())
+            {
+                auto ext = entry.path().extension().string();
+                if (ext == ".so" || ext == ".dll" || ext == ".dylib")
+                {
+                    fs::remove(entry.path());
+                }
+            }
         }
     }
 }
