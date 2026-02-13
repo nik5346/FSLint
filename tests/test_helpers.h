@@ -59,10 +59,3 @@ inline bool has_warning_with_text(const Certificate& cert, const std::string& te
     }
     return false;
 }
-
-inline void create_dummy_binary(const std::filesystem::path& path)
-{
-    std::filesystem::create_directories(path.parent_path());
-    std::ofstream ofs(path);
-    ofs << "DUMMY BINARY STUB";
-}

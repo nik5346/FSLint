@@ -63,7 +63,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
         }
 
         xmlXPathObjectPtr sources_xpath =
-            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFiles/File"), xpath_context);
+            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//*[local-name()='SourceFiles']/*[local-name()='File']"), xpath_context);
+
         if (sources_xpath && sources_xpath->nodesetval)
         {
             for (int i = 0; i < sources_xpath->nodesetval->nodeNr; ++i)

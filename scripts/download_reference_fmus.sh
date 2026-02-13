@@ -13,6 +13,10 @@ echo "Extracting Reference-FMUs.zip..."
 unzip -q -o "$DEST/Reference-FMUs.zip" -d "$DEST"
 rm "$DEST/Reference-FMUs.zip"
 
+echo "Extracting BouncingBall 1.0..."
+mkdir -p "$DEST/BouncingBall_10"
+unzip -q -o "$DEST/1.0/cs/BouncingBall.fmu" -d "$DEST/BouncingBall_10"
+
 echo "Extracting BouncingBall 2.0..."
 mkdir -p "$DEST/BouncingBall_20"
 unzip -q -o "$DEST/2.0/BouncingBall.fmu" -d "$DEST/BouncingBall_20"
