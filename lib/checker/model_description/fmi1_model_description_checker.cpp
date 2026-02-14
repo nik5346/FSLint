@@ -16,6 +16,15 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     checkRequiredStartValues(variables, cert);
     checkIllegalStartValues(variables, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
+
+    // FMI 1.0 ME consistency check
+    auto ids = extractModelIdentifiers(doc, {});
+    if (ids.contains("ModelExchange"))
+    {
+        xmlNodePtr root = xmlDocGetRootElement(doc);
+        auto metadata = extractMetadata(root);
+        checkMeConsistency(variables, metadata, cert);
+    }
 }
 
 void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
@@ -35,6 +44,34 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         test.status = TestStatus::FAIL;
         test.messages.push_back("guid attribute is missing or empty.");
     }
+    cert.printTestResult(test);
+}
+
+void Fmi1ModelDescriptionChecker::checkMeConsistency(const std::vector<Variable>& variables,
+                                                     const ModelMetadata& metadata, Certificate& cert)
+{
+    TestResult test{"FMI 1.0 ME Consistency", TestStatus::PASS, {}};
+
+    uint32_t nx = metadata.numberOfContinuousStates.value_or(0);
+    uint32_t ni = metadata.numberOfEventIndicators.value_or(0);
+
+    size_t count_continuous_real = 0;
+    for (const auto& var : variables)
+    {
+        if (var.type == "Real" && var.variability == "continuous")
+            count_continuous_real++;
+    }
+
+    size_t required = 2 * nx + ni;
+    if (count_continuous_real < required)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("For Model Exchange, the number of ScalarVariables with type='Real' and "
+                                "variability='continuous' must be at least 2*numberOfContinuousStates + "
+                                "numberOfEventIndicators = " +
+                                std::to_string(required) + ". Found " + std::to_string(count_continuous_real) + ".");
+    }
+
     cert.printTestResult(test);
 }
 
@@ -209,8 +246,16 @@ ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
     metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
 
     auto num_states = getXmlAttribute(root, "numberOfContinuousStates");
-    // We don't have a place for numberOfContinuousStates in metadata currently, but it's used in directory check?
-    // Actually ModelMetadata doesn't have it.
+    if (num_states)
+    {
+        try
+        {
+            metadata.numberOfContinuousStates = std::stoul(*num_states);
+        }
+        catch (...)
+        {
+        }
+    }
 
     auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
     if (num_event_ind)
@@ -337,6 +382,10 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.declared_type = getXmlAttribute(scalar_var_node, "declaredType");
         var.sourceline = scalar_var_node->line;
         var.index = static_cast<uint32_t>(i + 1);
+
+        auto alias = getXmlAttribute(scalar_var_node, "alias");
+        if (alias)
+            var.is_alias = (*alias != "no");
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
         if (vr)

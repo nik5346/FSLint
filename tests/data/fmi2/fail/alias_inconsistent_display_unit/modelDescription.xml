@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="test" guid="{12345678-1234-1234-1234-123456789012}">
+  <ModelExchange modelIdentifier="test" />
+  <UnitDefinitions>
+    <Unit name="m">
+      <DisplayUnit name="cm" factor="100" />
+      <DisplayUnit name="mm" factor="1000" />
+    </Unit>
+  </UnitDefinitions>
+  <ModelVariables>
+    <ScalarVariable name="v1" valueReference="0" causality="output">
+      <Real unit="m" displayUnit="cm" />
+    </ScalarVariable>
+    <ScalarVariable name="v2" valueReference="0" causality="output">
+      <Real unit="m" displayUnit="mm" />
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="1" />
+      <Unknown index="2" />
+    </Outputs>
+  </ModelStructure>
+</fmiModelDescription>

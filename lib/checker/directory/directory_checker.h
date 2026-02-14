@@ -23,5 +23,7 @@ class DirectoryChecker : public Checker
     void checkStandardHeaders(const std::filesystem::path& path, Certificate& cert,
                               const std::set<std::string>& headers);
 
+    bool isDirectoryEffectivelyEmpty(const std::filesystem::path& path);
+
     static std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 };

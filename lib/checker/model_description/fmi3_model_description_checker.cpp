@@ -674,7 +674,17 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                     "\" is " + var->variability + " but \"" + first->name + "\" is " + first->variability + ".");
             }
 
-            // 5. Same dimensions
+            // 5. Same clocks
+            if (var->clocks != first->clocks)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
+                                        " must have the same clocks attribute. \"" + var->name + "\" has clocks \"" +
+                                        var->clocks.value_or("(none)") + "\" but \"" + first->name +
+                                        "\" has clocks \"" + first->clocks.value_or("(none)") + "\".");
+            }
+
+            // 6. Same dimensions
             if (!compareDimensions(*var, *first))
             {
                 test.status = TestStatus::FAIL;
@@ -1538,6 +1548,12 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     std::set<uint32_t> expected_vrs;
     std::map<uint32_t, std::string> vr_to_name;
 
+    // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
+    std::set<uint32_t> state_vrs;
+    for (const auto& var : variables)
+        if (var.derivative_of.has_value())
+            state_vrs.insert(*var.derivative_of);
+
     for (const auto& var : variables)
     {
         if (!var.value_reference.has_value())
@@ -1545,37 +1561,28 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
         bool is_required = false;
 
-        // (1) Outputs with initial="approx" or "calculated" (not clocked)
+        // FMI 3.0 mandatory InitialUnknowns (Section 2.2.8.2):
+
+        // 1. Non-clocked variables with causality="output" and initial="approx" or "calculated"
         if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
-            !var.clocks.has_value())
+            (!var.clocks.has_value() || var.clocks->empty()))
         {
             is_required = true;
         }
-        // (2) Calculated parameters
+        // 2. Variables with causality="calculatedParameter"
         else if (var.causality == "calculatedParameter")
         {
             is_required = true;
         }
-        // (3) State derivatives with initial="approx" or "calculated"
-        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
+        // 3. Continuous-time states with initial="approx" or "calculated"
+        else if (state_vrs.contains(*var.value_reference) && (var.initial == "approx" || var.initial == "calculated"))
         {
             is_required = true;
         }
-        // (4) States with initial="approx" or "calculated"
-        // Identifying states: variables referenced by 'derivative' attribute of some other variable
-        else
+        // 4. Continuous-time state derivatives with initial="approx" or "calculated"
+        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
         {
-            for (const auto& other : variables)
-            {
-                if (other.derivative_of.has_value() && *other.derivative_of == *var.value_reference)
-                {
-                    if (var.initial == "approx" || var.initial == "calculated")
-                    {
-                        is_required = true;
-                        break;
-                    }
-                }
-            }
+            is_required = true;
         }
 
         if (is_required)

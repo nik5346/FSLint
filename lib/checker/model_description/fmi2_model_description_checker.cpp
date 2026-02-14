@@ -332,10 +332,13 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             }
         }
 
-        // Rule 4: All variables in the same alias set must have the same unit
+        // Rule 4: All variables in the same alias set must have the same unit and displayUnit
         const Variable* first_with_unit = nullptr;
+        const Variable* first_with_display_unit = nullptr;
+
         for (const auto* var : alias_set)
         {
+            // Check Unit
             if (var->unit.has_value())
             {
                 if (!first_with_unit)
@@ -348,7 +351,23 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                                             first_with_unit->name + "\" has unit \"" + *first_with_unit->unit + "\".");
                 }
             }
+
+            // Check DisplayUnit
+            if (var->display_unit.has_value())
+            {
+                if (!first_with_display_unit)
+                    first_with_display_unit = var;
+                else if (var->display_unit != first_with_display_unit->display_unit)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("All variables in an alias set must have the same displayUnit. Variable \"" +
+                                            var->name + "\" has displayUnit \"" + *var->display_unit + "\" but \"" +
+                                            first_with_display_unit->name + "\" has displayUnit \"" +
+                                            *first_with_display_unit->display_unit + "\".");
+                }
+            }
         }
+
         if (first_with_unit)
         {
             for (const auto* var : alias_set)
@@ -359,6 +378,20 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                     test.messages.push_back("All variables in an alias set must have the same unit. Variable \"" +
                                             var->name + "\" has no unit but \"" + first_with_unit->name +
                                             "\" has unit \"" + *first_with_unit->unit + "\".");
+                }
+            }
+        }
+
+        if (first_with_display_unit)
+        {
+            for (const auto* var : alias_set)
+            {
+                if (!var->display_unit.has_value())
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("All variables in an alias set must have the same displayUnit. Variable \"" +
+                                            var->name + "\" has no displayUnit but \"" + first_with_display_unit->name +
+                                            "\" has displayUnit \"" + *first_with_display_unit->display_unit + "\".");
                 }
             }
         }

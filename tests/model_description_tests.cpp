@@ -31,6 +31,11 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("implementation/entry_point_missing_file", "references missing file in FMU: 'resources/non_existent.mdl'");
         validate_fail("implementation/file_missing_file", "references missing file in FMU: 'resources/missing_extra.txt'");
     }
+
+    SECTION("ME Consistency")
+    {
+        validate_fail("me_consistency_count", "must be at least 2*numberOfContinuousStates + numberOfEventIndicators");
+    }
 }
 
 TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
@@ -197,6 +202,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     {
         validate_fail("alias_conflicting_start", "At most one variable in an alias set");
         validate_fail("alias_inconsistent_unit", "All variables in an alias set must have the same unit");
+        validate_fail("alias_inconsistent_display_unit", "All variables in an alias set must have the same displayUnit");
         validate_fail("alias_constant_conflicting_start", "have different start values");
     }
 
@@ -435,6 +441,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     SECTION("Aliases")
     {
         validate_fail("alias_multiple_non_local", "multiple variables with causality other than 'local'");
+        validate_fail("alias_inconsistent_clocks", "must have the same clocks attribute");
     }
 
     SECTION("References")

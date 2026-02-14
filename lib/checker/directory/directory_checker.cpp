@@ -125,3 +125,16 @@ void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, C
     }
     cert.printTestResult(test);
 }
+
+bool DirectoryChecker::isDirectoryEffectivelyEmpty(const std::filesystem::path& path)
+{
+    if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
+        return true;
+
+    for (const auto& entry : std::filesystem::directory_iterator(path))
+    {
+        if (entry.path().filename() != ".gitkeep")
+            return false;
+    }
+    return true;
+}

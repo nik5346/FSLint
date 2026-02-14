@@ -33,7 +33,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
             }
 
-            if (entry.is_directory() && fmi2_standard_entries.contains(name) && std::filesystem::is_empty(entry.path()))
+            if (entry.is_directory() && fmi2_standard_entries.contains(name) && isDirectoryEffectivelyEmpty(entry.path()))
             {
                 test.status = TestStatus::WARNING;
                 test.messages.push_back("Standard directory '" + name + "' is empty.");
@@ -120,7 +120,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         has_build_description = std::filesystem::exists(sources_path / "buildDescription.xml") ||
                                 std::filesystem::exists(path / "buildDescription.xml");
         bool has_sources = !listed_sources_in_md.empty() || has_build_description ||
-                           (std::filesystem::exists(sources_path) && !std::filesystem::is_empty(sources_path));
+                           (std::filesystem::exists(sources_path) && !isDirectoryEffectivelyEmpty(sources_path));
 
         if (!has_binaries && !has_sources)
         {
@@ -168,7 +168,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     {
         bool has_build_description_anywhere = has_build_description;
         bool has_sources = !listed_sources_in_md.empty() || has_build_description_anywhere ||
-                           (std::filesystem::exists(sources_path) && !std::filesystem::is_empty(sources_path));
+                           (std::filesystem::exists(sources_path) && !isDirectoryEffectivelyEmpty(sources_path));
 
         if (has_sources)
         {
