@@ -1594,7 +1594,7 @@ ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
     {
         try
         {
-            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
+            metadata.numberOfEventIndicators = static_cast<uint32_t>(std::stoul(*num_event_ind));
         }
         catch (...)
         {

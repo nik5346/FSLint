@@ -98,6 +98,7 @@ struct ModelMetadata
     std::optional<std::string> generationTool;
     std::optional<std::string> generationDateAndTime;
     std::string variableNamingConvention = "flat";
+    std::optional<uint32_t> numberOfContinuousStates;
     std::optional<uint32_t> numberOfEventIndicators;
 };
 
