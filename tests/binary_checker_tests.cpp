@@ -51,7 +51,8 @@ TEST_CASE("Binary Parser Mach-O", "[binary][macho]")
     if (!reference_fmus_available())
         SKIP("Reference FMUs not available");
 
-    auto exports = BinaryParser::getExports("tests/reference_fmus/BouncingBall_20/binaries/darwin64/BouncingBall.dylib");
+    auto exports =
+        BinaryParser::getExports("tests/reference_fmus/BouncingBall_20/binaries/darwin64/BouncingBall.dylib");
     CHECK(exports.contains("fmi2Instantiate"));
 }
 
@@ -82,14 +83,16 @@ TEST_CASE("Binary Checker Validation Failure", "[binary][checker]")
     fs::create_directories(temp_path);
 
     // Copy modelDescription.xml from a FMI 2.0 pass case
-    fs::copy_file("tests/data/fmi2/pass/dist_binaries_only/modelDescription.xml", temp_path / "modelDescription.xml", fs::copy_options::overwrite_existing);
+    fs::copy_file("tests/data/fmi2/pass/dist_binaries_only/modelDescription.xml", temp_path / "modelDescription.xml",
+                  fs::copy_options::overwrite_existing);
 
     // Create binaries dir
     fs::path binaries_dir = temp_path / "binaries" / "linux64";
     fs::create_directories(binaries_dir);
 
     // Copy FMI 1.0 binary and rename it to match modelIdentifier 'test'
-    fs::copy_file("tests/reference_fmus/BouncingBall_10/binaries/linux64/BouncingBall.so", binaries_dir / "test.so", fs::copy_options::overwrite_existing);
+    fs::copy_file("tests/reference_fmus/BouncingBall_10/binaries/linux64/BouncingBall.so", binaries_dir / "test.so",
+                  fs::copy_options::overwrite_existing);
 
     Fmi2BinaryChecker checker;
     Certificate cert;

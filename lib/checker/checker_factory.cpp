@@ -46,12 +46,10 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
 
             // Determine FMI1, FMI2 vs FMI3 based on version
             if (version == "1.0")
-            {
                 if (SchemaCheckerBase::hasElement(model_desc_path, "Implementation"))
                     info.standard = ModelStandard::FMI1_CS;
                 else
                     info.standard = ModelStandard::FMI1_ME;
-            }
             else if (version->starts_with("2."))
                 info.standard = ModelStandard::FMI2;
             else if (version->starts_with("3."))
