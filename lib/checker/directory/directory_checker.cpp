@@ -100,3 +100,28 @@ std::optional<std::string> DirectoryChecker::getXmlAttribute(xmlNodePtr node, co
     xmlFree(attr);
     return value;
 }
+
+void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, Certificate& cert,
+                                            const std::set<std::string>& headers)
+{
+    auto sources_path = path / "sources";
+    if (!std::filesystem::exists(sources_path) || !std::filesystem::is_directory(sources_path))
+        return;
+
+    TestResult test{"Standard FMI Headers", TestStatus::PASS, {}};
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(sources_path))
+    {
+        if (entry.is_regular_file())
+        {
+            std::string filename = entry.path().filename().string();
+            if (headers.contains(filename))
+            {
+                test.status = TestStatus::WARNING;
+                test.messages.push_back("Standard FMI header file '" + filename +
+                                        "' found in 'sources/' directory. This is not recommended as these headers "
+                                        "should be provided by the environment.");
+            }
+        }
+    }
+    cert.printTestResult(test);
+}

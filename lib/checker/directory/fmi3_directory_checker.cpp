@@ -247,4 +247,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         }
         cert.printTestResult(test);
     }
+
+    // 8. Standard Headers
+    static const std::set<std::string> fmi3_headers = {"fmi3Functions.h", "fmi3FunctionTypes.h", "fmi3PlatformTypes.h"};
+    checkStandardHeaders(path, cert, fmi3_headers);
 }

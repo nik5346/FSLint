@@ -146,6 +146,8 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/directory/warn/unknown_entry", "Unknown file");
         validate_warning("tests/data/fmi2/warn/dist_sources_only", "only contains <SourceFiles>");
         validate_warning("tests/data/fmi2/warn/dist_build_desc_only", "only contains buildDescription.xml");
+        validate_warning("tests/data/fmi2/warn/fmi_header_in_sources",
+                         "Standard FMI header file 'fmi2Functions.h' found in 'sources/' directory");
     }
 
     SECTION("Passing Cases")
