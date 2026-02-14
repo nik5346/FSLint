@@ -1,5 +1,6 @@
 #include "binary_parser.h"
 #include "certificate.h"
+#include "fmi1_binary_checker.h"
 #include "fmi2_binary_checker.h"
 #include "fmi3_binary_checker.h"
 #include "test_helpers.h"
@@ -54,6 +55,20 @@ TEST_CASE("Binary Parser Mach-O", "[binary][macho]")
     auto exports =
         BinaryParser::getExports("tests/reference_fmus/BouncingBall_20/binaries/darwin64/BouncingBall.dylib");
     CHECK(exports.contains("fmi2Instantiate"));
+}
+
+TEST_CASE("FMI 1.0 Binary Exports", "[binary][fmi1]")
+{
+    if (!reference_fmus_available())
+        SKIP("Reference FMUs not available");
+
+    SECTION("ME")
+    {
+        Fmi1BinaryChecker checker;
+        Certificate cert;
+        checker.validate("tests/reference_fmus/BouncingBall_10", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
 }
 
 TEST_CASE("FMI 3.0 Binary Exports", "[binary][fmi3]")
