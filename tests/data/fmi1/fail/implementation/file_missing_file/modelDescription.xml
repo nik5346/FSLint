@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="FailCSToolFile" modelIdentifier="FailCSToolFile" guid="789" numberOfContinuousStates="0" numberOfEventIndicators="0">
+  <ModelVariables>
+    <ScalarVariable name="u" valueReference="1" causality="input">
+      <Real start="0.0" />
+    </ScalarVariable>
+  </ModelVariables>
+  <Implementation>
+    <CoSimulation_Tool>
+      <Capabilities />
+      <Model entryPoint="http://example.com/model.mdl" type="Modelica">
+        <File file="fmu://resources/missing_extra.txt" />
+      </Model>
+    </CoSimulation_Tool>
+  </Implementation>
+</fmiModelDescription>

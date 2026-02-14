@@ -1,6 +1,7 @@
 #include "fmi1_model_description_checker.h"
 #include "certificate.h"
 #include <algorithm>
+#include <filesystem>
 #include <regex>
 
 void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
@@ -40,7 +41,7 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
 void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert)
 {
     TestResult test{"Vendor Annotations Uniqueness", TestStatus::PASS, {}};
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//VendorAnnotations/Tool");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/VendorAnnotations/Tool");
     if (xpath_obj && xpath_obj->nodesetval)
     {
         std::set<std::string> seen_names;
@@ -181,7 +182,7 @@ std::map<std::string, std::string> Fmi1ModelDescriptionChecker::extractModelIden
     if (model_id)
     {
         bool is_cs = false;
-        xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//Implementation");
+        xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/Implementation");
         if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
             is_cs = true;
         if (xpath_obj)
@@ -228,7 +229,7 @@ ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
 std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDefinitions(xmlDocPtr doc)
 {
     std::map<std::string, UnitDefinition> units;
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/BaseUnit");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/UnitDefinitions/BaseUnit");
     if (!xpath_obj || !xpath_obj->nodesetval)
     {
         if (xpath_obj)
@@ -273,7 +274,7 @@ std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDe
 std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDefinitions(xmlDocPtr doc)
 {
     std::map<std::string, TypeDefinition> type_definitions;
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/Type");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/TypeDefinitions/Type");
     if (!xpath_obj || !xpath_obj->nodesetval)
     {
         if (xpath_obj)
@@ -318,7 +319,7 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
 std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
 {
     std::vector<Variable> variables;
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelVariables/ScalarVariable");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/ModelVariables/ScalarVariable");
     if (!xpath_obj || !xpath_obj->nodesetval)
     {
         if (xpath_obj)
@@ -396,7 +397,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
 void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/BaseUnit");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/UnitDefinitions/BaseUnit");
     if (xpath_obj && xpath_obj->nodesetval)
     {
         std::set<std::string> seen_names;
@@ -424,7 +425,7 @@ void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
 void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert)
 {
     TestResult test{"Type Definitions", TestStatus::PASS, {}};
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/Type");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/TypeDefinitions/Type");
     if (xpath_obj && xpath_obj->nodesetval)
     {
         std::set<std::string> seen_names;
@@ -524,12 +525,13 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
 {
     // If it's CS, Implementation should be present
     // Implementation can be CoSimulation_StandAlone or CoSimulation_Tool
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//Implementation");
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/Implementation");
     if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
     {
         TestResult test{"CS Implementation", TestStatus::PASS, {}};
         xmlNodePtr impl_node = xpath_obj->nodesetval->nodeTab[0];
-        bool found = false;
+        xmlNodePtr tool_node = nullptr;
+
         for (xmlNodePtr child = impl_node->children; child; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
@@ -537,18 +539,94 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
             std::string name = reinterpret_cast<const char*>(child->name);
             if (name == "CoSimulation_StandAlone" || name == "CoSimulation_Tool")
             {
-                found = true;
+                if (name == "CoSimulation_Tool")
+                    tool_node = child;
                 break;
             }
         }
-        if (!found)
+
+        if (tool_node)
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back(
-                "Implementation element must contain either CoSimulation_StandAlone or CoSimulation_Tool.");
+            // For CoSimulation_Tool, check Model element and its attributes
+            xmlNodePtr model_node = nullptr;
+            for (xmlNodePtr child = tool_node->children; child; child = child->next)
+            {
+                if (child->type != XML_ELEMENT_NODE)
+                    continue;
+                if (reinterpret_cast<const char*>(child->name) == std::string("Model"))
+                {
+                    model_node = child;
+                    break;
+                }
+            }
+
+            if (model_node)
+            {
+                auto entry_point = getXmlAttribute(model_node, "entryPoint");
+                if (entry_point)
+                    checkUri(*entry_point, "entryPoint", model_node->line, test);
+
+                // Check additional files
+                for (xmlNodePtr child = model_node->children; child; child = child->next)
+                {
+                    if (child->type != XML_ELEMENT_NODE)
+                        continue;
+                    if (reinterpret_cast<const char*>(child->name) == std::string("File"))
+                    {
+                        auto file_uri = getXmlAttribute(child, "file");
+                        if (file_uri)
+                            checkUri(*file_uri, "file", child->line, test);
+                    }
+                }
+            }
         }
+        else
+        {
+            // If Implementation is present but no CoSimulation_StandAlone/Tool, it's malformed according to schema
+            // but we check for it anyway if it's not handled by schema checker.
+            // Actually, if tool_node is null and it's not StandAlone, it's an error.
+            bool is_standalone = false;
+            for (xmlNodePtr child = impl_node->children; child; child = child->next)
+            {
+                if (child->type != XML_ELEMENT_NODE)
+                    continue;
+                if (reinterpret_cast<const char*>(child->name) == std::string("CoSimulation_StandAlone"))
+                {
+                    is_standalone = true;
+                    break;
+                }
+            }
+            if (!is_standalone)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(
+                    "Implementation element must contain either CoSimulation_StandAlone or CoSimulation_Tool.");
+            }
+        }
+
         cert.printTestResult(test);
     }
     if (xpath_obj)
         xmlXPathFreeObject(xpath_obj);
+}
+
+void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::string& attr_name, int line,
+                                           TestResult& test)
+{
+    if (uri.compare(0, 6, "fmu://") == 0)
+    {
+        std::string relative_path = uri.substr(6); // Remove "fmu://"
+        // The path in fmu:// scheme is relative to the FMU root.
+        // We remove any leading slash if present after fmu:// (e.g., fmu:///resources/...)
+        if (!relative_path.empty() && relative_path[0] == '/')
+            relative_path.erase(0, 1);
+
+        std::filesystem::path full_path = _fmu_root_path / relative_path;
+        if (!std::filesystem::exists(full_path))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                    ") references missing file in FMU: '" + relative_path + "'.");
+        }
+    }
 }

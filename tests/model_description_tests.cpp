@@ -25,6 +25,12 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
     {
         validate_fail("metadata/fmi_version_invalid", "is invalid for FMI 1.0");
     }
+
+    SECTION("Implementation")
+    {
+        validate_fail("implementation/entry_point_missing_file", "references missing file in FMU: 'resources/non_existent.mdl'");
+        validate_fail("implementation/file_missing_file", "references missing file in FMU: 'resources/missing_extra.txt'");
+    }
 }
 
 TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
@@ -41,6 +47,12 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
     SECTION("FMI 1.0 CS Valid")
     {
         checker.validate("tests/data/fmi1/pass/cs", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("FMI 1.0 CS Tool Valid")
+    {
+        checker.validate("tests/data/fmi1/pass/cs_tool", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }
