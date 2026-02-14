@@ -5,6 +5,8 @@
 
 enum class ModelStandard
 {
+    FMI1_ME,
+    FMI1_CS,
     FMI2,
     FMI3,
     SSP1,

@@ -15,42 +15,52 @@ namespace fs = std::filesystem;
 
 static bool reference_fmus_available()
 {
-    static bool available = fs::exists("tests/reference_fmus/BouncingBall_20") &&
-                            fs::exists("tests/reference_fmus/BouncingBall_30");
+    static bool available =
+        fs::exists("tests/reference_fmus/BouncingBall_20") && fs::exists("tests/reference_fmus/BouncingBall_30");
     return available;
 }
 
-class TempTestDir {
-public:
-    TempTestDir(const std::string& name) {
+class TempTestDir
+{
+  public:
+    TempTestDir(const std::string& name)
+    {
         path = fs::current_path() / ("tests/tmp_" + name);
         fs::remove_all(path);
         fs::create_directories(path);
     }
-    ~TempTestDir() {
+    ~TempTestDir()
+    {
         fs::remove_all(path);
     }
-    fs::path get_path() const { return path; }
+    fs::path get_path() const
+    {
+        return path;
+    }
 
-    void copy_from(const fs::path& src) {
+    void copy_from(const fs::path& src)
+    {
         fs::copy(src, path, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
     }
 
-    void remove(const std::string& rel_path) {
+    void remove(const std::string& rel_path)
+    {
         fs::remove_all(path / rel_path);
     }
 
-    void add_dir(const std::string& rel_path) {
+    void add_dir(const std::string& rel_path)
+    {
         fs::create_directories(path / rel_path);
     }
 
-    void add_file(const std::string& rel_path, const std::string& content = "") {
+    void add_file(const std::string& rel_path, const std::string& content = "")
+    {
         fs::create_directories((path / rel_path).parent_path());
         std::ofstream ofs(path / rel_path);
         ofs << content;
     }
 
-private:
+  private:
     fs::path path;
 };
 
@@ -104,9 +114,8 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
                     UNSCOPED_INFO("    - " << msg);
             }
         }
-        if (!has_warning(cert)) {
+        if (!has_warning(cert))
             UNSCOPED_INFO("No warnings at all in certificate for path: " << path);
-        }
         REQUIRE(has_warning(cert));
         REQUIRE(has_warning_with_text(cert, expected_warning));
     };
@@ -118,7 +127,8 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 
     SECTION("Warning Cases")
     {
-        if (reference_fmus_available()) {
+        if (reference_fmus_available())
+        {
             {
                 TempTestDir temp("fmi2_model_png_warning");
                 temp.copy_from("tests/reference_fmus/BouncingBall_20");
@@ -145,23 +155,24 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/fmi2/warn/dist_build_desc_only", "only contains buildDescription.xml");
 
         {
-             TempTestDir temp("fmi2_ext_deps_missing");
-             temp.add_file("modelDescription.xml", R"(<?xml version="1.0" encoding="UTF-8"?>
+            TempTestDir temp("fmi2_ext_deps_missing");
+            temp.add_file("modelDescription.xml", R"(<?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="test" guid="{1}">
   <CoSimulation modelIdentifier="test" needsExecutionTool="true"/>
 </fmiModelDescription>)");
-             temp.add_dir("sources");
-             temp.add_file("sources/source.c");
-             validate_warning(temp.get_path().string(), "needsExecutionTool is true, but 'documentation/externalDependencies.{txt|html}' is missing");
+            temp.add_dir("sources");
+            temp.add_file("sources/source.c");
+            validate_warning(
+                temp.get_path().string(),
+                "needsExecutionTool is true, but 'documentation/externalDependencies.{txt|html}' is missing");
         }
     }
 
     SECTION("Passing Cases")
     {
         validate_pass("tests/data/fmi2/pass/dist_both");
-        if (reference_fmus_available()) {
+        if (reference_fmus_available())
             validate_pass("tests/reference_fmus/BouncingBall_20");
-        }
     }
 }
 
@@ -223,7 +234,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     {
         validate_fail("tests/data/fmi3/fail/no_impl", "at least one implementation");
 
-        if (reference_fmus_available()) {
+        if (reference_fmus_available())
+        {
             {
                 TempTestDir temp("fmi3_no_diagram_png");
                 temp.copy_from("tests/reference_fmus/BouncingBall_30");
@@ -238,11 +250,14 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
             }
             {
                 TempTestDir temp("fmi3_ext_deps_fail");
-                temp.add_file("modelDescription.xml", R"(<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="1">
+                temp.add_file("modelDescription.xml",
+                              R"(<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="1">
   <CoSimulation modelIdentifier="Test" needsExecutionTool="true"/>
 </fmiModelDescription>)");
                 temp.add_dir("sources");
-                temp.add_file("sources/buildDescription.xml", R"(<buildDescription fmiVersion="3.0"><BuildConfiguration modelIdentifier="Test"/></buildDescription>)");
+                temp.add_file(
+                    "sources/buildDescription.xml",
+                    R"(<buildDescription fmiVersion="3.0"><BuildConfiguration modelIdentifier="Test"/></buildDescription>)");
                 validate_fail(temp.get_path(), "needsExecutionTool is true");
             }
         }
@@ -252,7 +267,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     {
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
 
-        if (reference_fmus_available()) {
+        if (reference_fmus_available())
+        {
             {
                 TempTestDir temp("fmi3_invalid_tuple");
                 temp.copy_from("tests/reference_fmus/BouncingBall_30");
@@ -277,9 +293,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
     SECTION("Passing Cases")
     {
-        if (reference_fmus_available()) {
+        if (reference_fmus_available())
             validate_pass("tests/reference_fmus/BouncingBall_30");
-        }
     }
 }
 

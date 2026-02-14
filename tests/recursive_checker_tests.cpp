@@ -23,9 +23,7 @@ static void create_test_fmu(const std::filesystem::path& path, const std::string
     zip.create(path);
     zip.addFileFromDisk("modelDescription.xml", tmp_xml);
     for (const auto& [name, src] : resources)
-    {
         zip.addFileFromDisk("resources/" + name, src);
-    }
     zip.close();
     std::filesystem::remove(tmp_xml);
 }

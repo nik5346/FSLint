@@ -2,11 +2,11 @@
   <img width="400" src="./images/banner.svg" alt="FSLint">
 </div>
 
-FSLint is a comprehensive linting and validation tool for Functional Mock-up Units (FMUs) and System Structure and Parameterization (SSP) files. It ensures that your models comply with the [FMI](https://fmi-standard.org/) (2.0, 3.0) and [SSP](https://ssp-standard.org/) (1.0, 2.0) standards, checking for both structural correctness and semantic validity.
+FSLint is a comprehensive linting and validation tool for Functional Mock-up Units (FMUs) and System Structure and Parameterization (SSP) files. It ensures that your models comply with the [FMI](https://fmi-standard.org/) (1.0, 2.0, 3.0) and [SSP](https://ssp-standard.org/) (1.0, 2.0) standards, checking for both structural correctness and semantic validity.
 
 ## Features
 
-- **FMI Validation**: Structural and semantic validation for FMI 2.0.x and 3.0.x.
+- **FMI Validation**: Structural and semantic validation for FMI 1.0.x, 2.0.x and 3.0.x.
 - **SSP Validation**: Structural validation for SSP 1.0 and 2.0.
 - **Recursive Validation**: Automatically discovers and recursively validates nested FMUs and SSPs within the `resources/` directory.
 - **Detailed Reporting**: Generates a validation "Certificate" with hierarchical reporting for nested components.
@@ -75,8 +75,9 @@ SHA256:     0ad0a8b1ac49c7808aad524b171c1534c3ace783cdc1f2681dd13b0b54b8e889
 FSLint aims for full compliance with the following standards:
 
 - **FMI (Functional Mock-up Interface)**:
-  - Version 2.0.x (2.0 through 2.0.5).
-  - Version 3.0.x (3.0 and 3.0.1).
+  - Version 1.0.x (1.0.0 and 1.0.1).
+  - Version 2.0.x (2.0.0 through 2.0.5).
+  - Version 3.0.x (3.0.0 through 3.0.2).
 - **SSP (System Structure and Parameterization)**:
   - Version 1.0.
   - Version 2.0.

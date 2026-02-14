@@ -431,6 +431,35 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
     return version_str;
 }
 
+bool SchemaCheckerBase::hasElement(const std::filesystem::path& xml_path, const std::string& element_name)
+{
+    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (!doc)
+        return false;
+
+    xmlNodePtr root = xmlDocGetRootElement(doc);
+    if (!root)
+    {
+        xmlFreeDoc(doc);
+        return false;
+    }
+
+    bool found = false;
+    for (xmlNodePtr child = root->children; child != nullptr; child = child->next)
+    {
+        if (child->type == XML_ELEMENT_NODE &&
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>(element_name.c_str())) == 0)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    xmlFreeDoc(doc);
+    return found;
+}
+
 void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, const std::filesystem::path& schema_path,
                                         const std::string& validation_name, Certificate& cert)
 {
