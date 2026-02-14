@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="inner" guid="{1}">
-  <ModelExchange modelIdentifier="inner"/>
+  <ModelExchange modelIdentifier="inner" />
 </fmiModelDescription>
