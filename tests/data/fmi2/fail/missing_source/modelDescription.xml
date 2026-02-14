@@ -2,9 +2,9 @@
 <fmiModelDescription fmiVersion="2.0" modelName="missing_source" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f9e0}" author="Jules" license="MIT" generationDateAndTime="2023-01-01T12:00:00Z" variableNamingConvention="flat">
   <CoSimulation modelIdentifier="missing_source">
     <SourceFiles>
-      <File name="missing.c"/>
+      <File name="missing.c" />
     </SourceFiles>
   </CoSimulation>
-  <ModelVariables/>
-  <ModelStructure/>
+  <ModelVariables />
+  <ModelStructure />
 </fmiModelDescription>

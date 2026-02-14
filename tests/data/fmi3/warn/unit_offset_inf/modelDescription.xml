@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
-  <ModelExchange modelIdentifier="Test"/>
+  <ModelExchange modelIdentifier="Test" />
   <UnitDefinitions>
-    <Unit name="m" offset="INF"/>
+    <Unit name="m" offset="INF" />
   </UnitDefinitions>
   <ModelVariables>
-    <Float64 name="time" valueReference="1" causality="independent" variability="continuous"/>
+    <Float64 name="time" valueReference="1" causality="independent" variability="continuous" />
   </ModelVariables>
-  <ModelStructure/>
+  <ModelStructure />
 </fmiModelDescription>

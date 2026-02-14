@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="test" guid="{12345678-1234-1234-1234-123456781234}">
-  <ModelExchange modelIdentifier="test"/>
+  <ModelExchange modelIdentifier="test" />
   <ModelVariables>
     <ScalarVariable name="u" valueReference="1" causality="input">
-      <Boolean start="false"/>
+      <Boolean start="false" />
     </ScalarVariable>
     <ScalarVariable name="y" valueReference="2" causality="output">
-      <Boolean/>
+      <Boolean />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
     <Outputs>
-      <Unknown index="2" dependencies="1" dependenciesKind="constant"/>
+      <Unknown index="2" dependencies="1" dependenciesKind="constant" />
     </Outputs>
     <InitialUnknowns>
-      <Unknown index="2" dependencies="1" dependenciesKind="dependent"/>
+      <Unknown index="2" dependencies="1" dependenciesKind="dependent" />
     </InitialUnknowns>
   </ModelStructure>
 </fmiModelDescription>

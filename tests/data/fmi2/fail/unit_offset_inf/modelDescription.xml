@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
-  <ModelExchange modelIdentifier="Test"/>
+  <ModelExchange modelIdentifier="Test" />
   <UnitDefinitions>
     <Unit name="m">
-      <BaseUnit offset="INF"/>
+      <BaseUnit offset="INF" />
     </Unit>
   </UnitDefinitions>
   <ModelVariables>
     <ScalarVariable name="v" valueReference="1" causality="output">
-      <Real unit="m"/>
+      <Real unit="m" />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
     <Outputs>
-      <Unknown index="1"/>
+      <Unknown index="1" />
     </Outputs>
   </ModelStructure>
 </fmiModelDescription>

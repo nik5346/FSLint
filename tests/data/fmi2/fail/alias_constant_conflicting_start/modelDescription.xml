@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="AliasConstantConflictingStart" guid="123">
-  <ModelExchange modelIdentifier="AliasConstantConflictingStart"/>
+  <ModelExchange modelIdentifier="AliasConstantConflictingStart" />
   <ModelVariables>
     <ScalarVariable name="c1" valueReference="1" causality="local" variability="constant">
-      <Real start="1.0"/>
+      <Real start="1.0" />
     </ScalarVariable>
     <ScalarVariable name="c2" valueReference="1" causality="local" variability="constant">
-      <Real start="2.0"/>
+      <Real start="2.0" />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
-    <InitialUnknowns/>
+    <InitialUnknowns />
   </ModelStructure>
 </fmiModelDescription>

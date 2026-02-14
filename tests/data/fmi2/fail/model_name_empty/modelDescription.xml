@@ -2,12 +2,12 @@
 <fmiModelDescription fmiVersion="2.0" modelName="" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <ModelVariables>
     <ScalarVariable name="v" valueReference="0" causality="output">
-      <Real/>
+      <Real />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
     <Outputs>
-      <Unknown index="1"/>
+      <Unknown index="1" />
     </Outputs>
   </ModelStructure>
 </fmiModelDescription>

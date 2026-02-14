@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="test" guid="{123}">
-  <CoSimulation modelIdentifier="test"/>
+  <CoSimulation modelIdentifier="test" />
   <ModelVariables>
-    <ScalarVariable name="v" valueReference="1"><Real/></ScalarVariable>
+    <ScalarVariable name="v" valueReference="1">
+      <Real />
+    </ScalarVariable>
   </ModelVariables>
-  <ModelStructure/>
+  <ModelStructure />
 </fmiModelDescription>

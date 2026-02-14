@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
-  <CoSimulation modelIdentifier="Test"/>
+  <CoSimulation modelIdentifier="Test" />
   <ModelVariables>
     <ScalarVariable name="x" valueReference="1" causality="output">
-      <Real/>
+      <Real />
     </ScalarVariable>
     <ScalarVariable name="der_x" valueReference="2">
-      <Real derivative="1" reinit="true"/>
+      <Real derivative="1" reinit="true" />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
     <Outputs>
-      <Unknown index="1"/>
+      <Unknown index="1" />
     </Outputs>
     <Derivatives>
-      <Unknown index="2"/>
+      <Unknown index="2" />
     </Derivatives>
   </ModelStructure>
 </fmiModelDescription>

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="test" instantiationToken="123">
-  <CoSimulation modelIdentifier="test"/>
+  <CoSimulation modelIdentifier="test" />
   <ModelVariables>
-    <Float64 name="u" valueReference="1" causality="input"/>
+    <Float64 name="u" valueReference="1" causality="input" />
   </ModelVariables>
-  <ModelStructure/>
+  <ModelStructure />
 </fmiModelDescription>

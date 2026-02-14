@@ -1,1 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><fmiBuildDescription fmiVersion="3.0"><BuildConfiguration modelIdentifier="wrong_id"/></fmiBuildDescription>
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiBuildDescription fmiVersion="3.0">
+  <BuildConfiguration modelIdentifier="wrong_id" />
+</fmiBuildDescription>

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" generationTool="Handwritten">
-  <ModelExchange modelIdentifier="Test"/>
+  <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
-    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
     <Float64 name="v" valueReference="1" causality="output" variability="continuous" start="1.0 2.0">
-      <Dimension start="3"/>
+      <Dimension start="3" />
     </Float64>
   </ModelVariables>
   <ModelStructure>
-    <Output valueReference="1"/>
+    <Output valueReference="1" />
   </ModelStructure>
 </fmiModelDescription>

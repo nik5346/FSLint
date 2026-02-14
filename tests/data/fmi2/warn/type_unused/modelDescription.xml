@@ -2,14 +2,14 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <TypeDefinitions>
     <SimpleType name="UnusedType">
-      <Real/>
+      <Real />
     </SimpleType>
   </TypeDefinitions>
-  <ModelExchange modelIdentifier="Test"/>
+  <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
     <ScalarVariable name="v" valueReference="1">
-      <Real/>
+      <Real />
     </ScalarVariable>
   </ModelVariables>
-  <ModelStructure/>
+  <ModelStructure />
 </fmiModelDescription>

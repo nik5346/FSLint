@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{123}">
-  <CoSimulation modelIdentifier="Test"/>
+  <CoSimulation modelIdentifier="Test" />
   <ModelVariables>
-    <Float64 name="m_flow" valueReference="1" causality="output"/>
-    <Float64 name="h_outflow" valueReference="2" causality="output"/>
-    <Float64 name="h_inflow" valueReference="3" causality="input"/>
-    <Float64 name="p" valueReference="4" causality="output"/>
+    <Float64 name="m_flow" valueReference="1" causality="output" />
+    <Float64 name="h_outflow" valueReference="2" causality="output" />
+    <Float64 name="h_inflow" valueReference="3" causality="input" />
+    <Float64 name="p" valueReference="4" causality="output" />
   </ModelVariables>
-  <ModelStructure/>
+  <ModelStructure />
 </fmiModelDescription>
