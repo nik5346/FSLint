@@ -1,7 +1,7 @@
 #include "certificate.h"
 #include "checker_factory.h"
-#include "fmi1_directory_checker.h"
 #include "fmi1_binary_checker.h"
+#include "fmi1_directory_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
 
@@ -18,8 +18,10 @@ TEST_CASE("FMI 1.0 Factory Detection", "[fmi1][factory]")
         bool found_bin = false;
         for (const auto& c : checkers)
         {
-            if (dynamic_cast<Fmi1DirectoryChecker*>(c.get())) found_dir = true;
-            if (dynamic_cast<Fmi1BinaryChecker*>(c.get())) found_bin = true;
+            if (dynamic_cast<Fmi1DirectoryChecker*>(c.get()))
+                found_dir = true;
+            if (dynamic_cast<Fmi1BinaryChecker*>(c.get()))
+                found_bin = true;
         }
         CHECK(found_dir);
         CHECK(found_bin);

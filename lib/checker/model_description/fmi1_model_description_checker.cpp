@@ -53,8 +53,8 @@ void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
                 if (seen_names.contains(*name))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Vendor annotation tool \"" + *name + "\" (line " + std::to_string(node->line) +
-                                            ") is defined multiple times.");
+                    test.messages.push_back("Vendor annotation tool \"" + *name + "\" (line " +
+                                            std::to_string(node->line) + ") is defined multiple times.");
                 }
                 seen_names.insert(*name);
             }
@@ -76,9 +76,7 @@ void Fmi1ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
         // Table in 3.3 says for Real: "fixed: ... = true: ... this is the default."
         // But it's only allowed if causality is NOT input.
         if (var.causality != "input")
-        {
             var.initial = "exact";
-        }
     }
 }
 
@@ -131,9 +129,12 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
     for (const auto& var : variables)
     {
         bool needs_start = false;
-        if (var.causality == "input") needs_start = true;
-        if (var.variability == "constant") needs_start = true;
-        if (var.causality == "parameter" && (var.initial == "exact" || var.initial.empty())) needs_start = true; // Most parameters need start
+        if (var.causality == "input")
+            needs_start = true;
+        if (var.variability == "constant")
+            needs_start = true;
+        if (var.causality == "parameter" && (var.initial == "exact" || var.initial.empty()))
+            needs_start = true; // Most parameters need start
 
         if (needs_start && !var.start.has_value())
         {
@@ -171,7 +172,8 @@ void Fmi1ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
     cert.printTestResult(test);
 }
 
-std::map<std::string, std::string> Fmi1ModelDescriptionChecker::extractModelIdentifiers(xmlDocPtr doc, [[maybe_unused]] const std::vector<std::string>& interface_elements)
+std::map<std::string, std::string> Fmi1ModelDescriptionChecker::extractModelIdentifiers(
+    xmlDocPtr doc, [[maybe_unused]] const std::vector<std::string>& interface_elements)
 {
     std::map<std::string, std::string> model_identifiers;
     xmlNodePtr root = xmlDocGetRootElement(doc);
@@ -181,13 +183,14 @@ std::map<std::string, std::string> Fmi1ModelDescriptionChecker::extractModelIden
         bool is_cs = false;
         xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//Implementation");
         if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
-        {
             is_cs = true;
-        }
-        if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
 
-        if (is_cs) model_identifiers["CoSimulation"] = *model_id;
-        else model_identifiers["ModelExchange"] = *model_id;
+        if (is_cs)
+            model_identifiers["CoSimulation"] = *model_id;
+        else
+            model_identifiers["ModelExchange"] = *model_id;
     }
     return model_identifiers;
 }
@@ -211,7 +214,13 @@ ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
     auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
     if (num_event_ind)
     {
-        try { metadata.numberOfEventIndicators = std::stoul(*num_event_ind); } catch (...) {}
+        try
+        {
+            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
+        }
+        catch (...)
+        {
+        }
     }
     return metadata;
 }
@@ -222,7 +231,8 @@ std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDe
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/BaseUnit");
     if (!xpath_obj || !xpath_obj->nodesetval)
     {
-        if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
         return units;
     }
 
@@ -232,11 +242,13 @@ std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDe
         UnitDefinition unit_def;
         unit_def.name = getXmlAttribute(unit_node, "unit").value_or("");
         unit_def.sourceline = unit_node->line;
-        if (unit_def.name.empty()) continue;
+        if (unit_def.name.empty())
+            continue;
 
         for (xmlNodePtr child = unit_node->children; child; child = child->next)
         {
-            if (child->type != XML_ELEMENT_NODE) continue;
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
             std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "DisplayUnitDefinition")
             {
@@ -264,7 +276,8 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/Type");
     if (!xpath_obj || !xpath_obj->nodesetval)
     {
-        if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
         return type_definitions;
     }
 
@@ -277,7 +290,8 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
 
         for (xmlNodePtr child = type_node->children; child; child = child->next)
         {
-            if (child->type != XML_ELEMENT_NODE) continue;
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
             std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "RealType" || elem_name == "IntegerType" || elem_name == "BooleanType" ||
                 elem_name == "StringType" || elem_name == "EnumerationType")
@@ -289,11 +303,13 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
                 type_def.unit = getXmlAttribute(child, "unit");
                 type_def.display_unit = getXmlAttribute(child, "displayUnit");
                 auto rel_q = getXmlAttribute(child, "relativeQuantity");
-                if (rel_q) type_def.relative_quantity = (*rel_q == "true");
+                if (rel_q)
+                    type_def.relative_quantity = (*rel_q == "true");
                 break;
             }
         }
-        if (!type_def.name.empty()) type_definitions[type_def.name] = type_def;
+        if (!type_def.name.empty())
+            type_definitions[type_def.name] = type_def;
     }
     xmlXPathFreeObject(xpath_obj);
     return type_definitions;
@@ -305,7 +321,8 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelVariables/ScalarVariable");
     if (!xpath_obj || !xpath_obj->nodesetval)
     {
-        if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
         return variables;
     }
 
@@ -321,14 +338,24 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.index = static_cast<uint32_t>(i + 1);
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
-        if (vr) { try { var.value_reference = std::stoul(*vr); } catch (...) {} }
+        if (vr)
+        {
+            try
+            {
+                var.value_reference = std::stoul(*vr);
+            }
+            catch (...)
+            {
+            }
+        }
 
         for (xmlNodePtr child = scalar_var_node->children; child; child = child->next)
         {
-            if (child->type != XML_ELEMENT_NODE) continue;
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
             std::string elem_name = reinterpret_cast<const char*>(child->name);
-            if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" ||
-                elem_name == "String" || elem_name == "Enumeration")
+            if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" || elem_name == "String" ||
+                elem_name == "Enumeration")
             {
                 var.type = elem_name;
                 var.start = getXmlAttribute(child, "start");
@@ -339,12 +366,14 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 var.display_unit = getXmlAttribute(child, "displayUnit");
 
                 auto fixed = getXmlAttribute(child, "fixed");
-                if (fixed) var.initial = (*fixed == "true" ? "exact" : "approx");
+                if (fixed)
+                    var.initial = (*fixed == "true" ? "exact" : "approx");
 
                 if (elem_name == "Real")
                 {
                     auto rel_q = getXmlAttribute(child, "relativeQuantity");
-                    if (rel_q) var.relative_quantity = (*rel_q == "true");
+                    if (rel_q)
+                        var.relative_quantity = (*rel_q == "true");
                 }
                 break;
             }
@@ -352,8 +381,10 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
         if (var.variability.empty())
         {
-            if (var.type == "Real") var.variability = "continuous";
-            else var.variability = "discrete";
+            if (var.type == "Real")
+                var.variability = "continuous";
+            else
+                var.variability = "discrete";
         }
 
         variables.push_back(var);
@@ -378,13 +409,15 @@ void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
                 if (seen_names.contains(*name))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Unit \"" + *name + "\" (line " + std::to_string(node->line) + ") is defined multiple times.");
+                    test.messages.push_back("Unit \"" + *name + "\" (line " + std::to_string(node->line) +
+                                            ") is defined multiple times.");
                 }
                 seen_names.insert(*name);
             }
         }
     }
-    if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+    if (xpath_obj)
+        xmlXPathFreeObject(xpath_obj);
     cert.printTestResult(test);
 }
 
@@ -404,49 +437,64 @@ void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                 if (seen_names.contains(*name))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Type definition \"" + *name + "\" (line " + std::to_string(node->line) + ") is defined multiple times.");
+                    test.messages.push_back("Type definition \"" + *name + "\" (line " + std::to_string(node->line) +
+                                            ") is defined multiple times.");
                 }
                 seen_names.insert(*name);
             }
         }
     }
-    if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+    if (xpath_obj)
+        xmlXPathFreeObject(xpath_obj);
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val, const std::string& attr_name)
+void Fmi1ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test, const Variable& var,
+                                                               const std::string& val, const std::string& attr_name)
 {
     if (isSpecialFloat(val))
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): " + attr_name + " value \"" + val + "\" is a special float which is not explicitly supported in FMI 1.0.");
+        test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                "): " + attr_name + " value \"" + val +
+                                "\" is a special float which is not explicitly supported in FMI 1.0.");
     }
 }
 
-void Fmi1ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val, const std::string& attr_name)
+void Fmi1ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
+                                                                        const std::string& attr_name)
 {
     if (isSpecialFloat(val))
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back(attr_name + " value \"" + val + "\" is a special float which is not explicitly supported in FMI 1.0.");
+        test.messages.push_back(attr_name + " value \"" + val +
+                                "\" is a special float which is not explicitly supported in FMI 1.0.");
     }
 }
 
-void Fmi1ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val, const std::string& attr_name, const std::string& unit_name, size_t line)
+void Fmi1ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
+                                                           const std::string& attr_name, const std::string& unit_name,
+                                                           size_t line)
 {
     if (isSpecialFloat(val))
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Unit \"" + unit_name + "\" (line " + std::to_string(line) + "): " + attr_name + " value \"" + val + "\" is a special float which is not explicitly supported in FMI 1.0.");
+        test.messages.push_back("Unit \"" + unit_name + "\" (line " + std::to_string(line) + "): " + attr_name +
+                                " value \"" + val +
+                                "\" is a special float which is not explicitly supported in FMI 1.0.");
     }
 }
 
-void Fmi1ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def, const std::string& val, const std::string& attr_name)
+void Fmi1ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
+                                                                     const std::string& val,
+                                                                     const std::string& attr_name)
 {
     if (isSpecialFloat(val))
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Type definition \"" + type_def.name + "\" (line " + std::to_string(type_def.sourceline) + "): " + attr_name + " value \"" + val + "\" is a special float which is not explicitly supported in FMI 1.0.");
+        test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
+                                std::to_string(type_def.sourceline) + "): " + attr_name + " value \"" + val +
+                                "\" is a special float which is not explicitly supported in FMI 1.0.");
     }
 }
 
@@ -465,7 +513,8 @@ void Fmi1ModelDescriptionChecker::checkModelIdentifierFormat(xmlDocPtr doc, Cert
         if (!std::regex_match(*model_id, id_pattern))
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("modelIdentifier \"" + *model_id + "\" is invalid. It must be a valid C identifier.");
+            test.messages.push_back("modelIdentifier \"" + *model_id +
+                                    "\" is invalid. It must be a valid C identifier.");
         }
     }
     cert.printTestResult(test);
@@ -483,7 +532,8 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
         bool found = false;
         for (xmlNodePtr child = impl_node->children; child; child = child->next)
         {
-            if (child->type != XML_ELEMENT_NODE) continue;
+            if (child->type != XML_ELEMENT_NODE)
+                continue;
             std::string name = reinterpret_cast<const char*>(child->name);
             if (name == "CoSimulation_StandAlone" || name == "CoSimulation_Tool")
             {
@@ -494,9 +544,11 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
         if (!found)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("Implementation element must contain either CoSimulation_StandAlone or CoSimulation_Tool.");
+            test.messages.push_back(
+                "Implementation element must contain either CoSimulation_StandAlone or CoSimulation_Tool.");
         }
         cert.printTestResult(test);
     }
-    if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+    if (xpath_obj)
+        xmlXPathFreeObject(xpath_obj);
 }

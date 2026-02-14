@@ -1,7 +1,7 @@
 #include "fmi1_directory_checker.h"
 #include "certificate.h"
-#include <libxml/xpath.h>
 #include <algorithm>
+#include <libxml/xpath.h>
 #include <set>
 
 void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
@@ -35,17 +35,19 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
         xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
         if (xpath_context)
         {
-            xmlXPathObjectPtr xpath_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
+            xmlXPathObjectPtr xpath_obj =
+                xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
             if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
-            {
                 is_cs = true;
-            }
-            if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+            if (xpath_obj)
+                xmlXPathFreeObject(xpath_obj);
             xmlXPathFreeContext(xpath_context);
         }
 
-        if (is_cs) model_identifiers["CoSimulation"] = *model_id;
-        else model_identifiers["ModelExchange"] = *model_id;
+        if (is_cs)
+            model_identifiers["CoSimulation"] = *model_id;
+        else
+            model_identifiers["ModelExchange"] = *model_id;
     }
     xmlFreeDoc(doc);
 
@@ -53,10 +55,9 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     cert.printSubsectionSummary(true);
 }
 
-void Fmi1DirectoryChecker::performVersionSpecificChecks(const std::filesystem::path& path, Certificate& cert,
-                                                        const std::map<std::string, std::string>& model_identifiers,
-                                                        [[maybe_unused]] const std::set<std::string>& listed_sources_in_md,
-                                                        [[maybe_unused]] bool needs_execution_tool)
+void Fmi1DirectoryChecker::performVersionSpecificChecks(
+    const std::filesystem::path& path, Certificate& cert, const std::map<std::string, std::string>& model_identifiers,
+    [[maybe_unused]] const std::set<std::string>& listed_sources_in_md, [[maybe_unused]] bool needs_execution_tool)
 {
     // 1. FMU Root Entries
     {
@@ -68,7 +69,8 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         {
             std::string name = entry.path().filename().string();
             // Ignore .gitkeep
-            if (name == ".gitkeep") continue;
+            if (name == ".gitkeep")
+                continue;
 
             if (!fmi1_standard_entries.contains(name))
             {
@@ -115,10 +117,12 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                                 break;
                             }
                         }
-                        if (has_binaries) break;
+                        if (has_binaries)
+                            break;
                     }
                 }
-                if (has_binaries) break;
+                if (has_binaries)
+                    break;
             }
         }
 
@@ -128,7 +132,8 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         if (!has_binaries && !has_sources)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("FMU must contain either a precompiled binary for at least one platform or source code.");
+            test.messages.push_back(
+                "FMU must contain either a precompiled binary for at least one platform or source code.");
         }
         cert.printTestResult(test);
     }

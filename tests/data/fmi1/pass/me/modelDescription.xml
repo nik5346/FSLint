@@ -2,7 +2,7 @@
 <fmiModelDescription fmiVersion="1.0" modelName="TestME" modelIdentifier="TestME" guid="123">
   <ModelVariables>
     <ScalarVariable name="x" valueReference="1" causality="internal">
-      <Real start="0.0"/>
+      <Real start="0.0" />
     </ScalarVariable>
   </ModelVariables>
 </fmiModelDescription>

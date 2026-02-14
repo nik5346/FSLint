@@ -33,12 +33,12 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     if (xpath_context)
     {
-        xmlXPathObjectPtr xpath_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
+        xmlXPathObjectPtr xpath_obj =
+            xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
         if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
-        {
             is_cs = true;
-        }
-        if (xpath_obj) xmlXPathFreeObject(xpath_obj);
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
         xmlXPathFreeContext(xpath_context);
     }
     xmlFreeDoc(doc);
@@ -52,27 +52,58 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
     std::vector<std::string> base_functions;
     if (is_cs)
     {
-        base_functions = {
-            "fmiGetTypesPlatform", "fmiGetVersion", "fmiInstantiateSlave", "fmiInitializeSlave",
-            "fmiTerminateSlave", "fmiResetSlave", "fmiFreeSlaveInstance", "fmiSetDebugLogging",
-            "fmiSetReal", "fmiSetInteger", "fmiSetBoolean", "fmiSetString",
-            "fmiSetRealInputDerivatives", "fmiGetReal", "fmiGetInteger", "fmiGetBoolean",
-            "fmiGetString", "fmiGetRealOutputDerivatives", "fmiDoStep", "fmiCancelStep",
-            "fmiGetStatus", "fmiGetRealStatus", "fmiGetIntegerStatus", "fmiGetBooleanStatus",
-            "fmiGetStringStatus"
-        };
+        base_functions = {"fmiGetTypesPlatform",
+                          "fmiGetVersion",
+                          "fmiInstantiateSlave",
+                          "fmiInitializeSlave",
+                          "fmiTerminateSlave",
+                          "fmiResetSlave",
+                          "fmiFreeSlaveInstance",
+                          "fmiSetDebugLogging",
+                          "fmiSetReal",
+                          "fmiSetInteger",
+                          "fmiSetBoolean",
+                          "fmiSetString",
+                          "fmiSetRealInputDerivatives",
+                          "fmiGetReal",
+                          "fmiGetInteger",
+                          "fmiGetBoolean",
+                          "fmiGetString",
+                          "fmiGetRealOutputDerivatives",
+                          "fmiDoStep",
+                          "fmiCancelStep",
+                          "fmiGetStatus",
+                          "fmiGetRealStatus",
+                          "fmiGetIntegerStatus",
+                          "fmiGetBooleanStatus",
+                          "fmiGetStringStatus"};
     }
     else
     {
-        base_functions = {
-            "fmiGetModelTypesPlatform", "fmiGetVersion", "fmiInstantiateModel", "fmiFreeModelInstance",
-            "fmiSetDebugLogging", "fmiSetTime", "fmiSetContinuousStates", "fmiCompletedIntegratorStep",
-            "fmiSetReal", "fmiSetInteger", "fmiSetBoolean", "fmiSetString",
-            "fmiInitialize", "fmiGetDerivatives", "fmiGetEventIndicators", "fmiGetReal",
-            "fmiGetInteger", "fmiGetBoolean", "fmiGetString", "fmiEventUpdate",
-            "fmiGetContinuousStates", "fmiGetNominalContinuousStates", "fmiGetStateValueReferences",
-            "fmiTerminate"
-        };
+        base_functions = {"fmiGetModelTypesPlatform",
+                          "fmiGetVersion",
+                          "fmiInstantiateModel",
+                          "fmiFreeModelInstance",
+                          "fmiSetDebugLogging",
+                          "fmiSetTime",
+                          "fmiSetContinuousStates",
+                          "fmiCompletedIntegratorStep",
+                          "fmiSetReal",
+                          "fmiSetInteger",
+                          "fmiSetBoolean",
+                          "fmiSetString",
+                          "fmiInitialize",
+                          "fmiGetDerivatives",
+                          "fmiGetEventIndicators",
+                          "fmiGetReal",
+                          "fmiGetInteger",
+                          "fmiGetBoolean",
+                          "fmiGetString",
+                          "fmiEventUpdate",
+                          "fmiGetContinuousStates",
+                          "fmiGetNominalContinuousStates",
+                          "fmiGetStateValueReferences",
+                          "fmiTerminate"};
     }
 
     auto binaries_path = path / "binaries";
@@ -80,7 +111,8 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
     {
         for (const auto& platform_entry : std::filesystem::directory_iterator(binaries_path))
         {
-            if (!platform_entry.is_directory()) continue;
+            if (!platform_entry.is_directory())
+                continue;
             std::string platform = platform_entry.path().filename().string();
 
             for (const auto& ext : {".dll", ".so", ".dylib"})

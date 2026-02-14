@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" modelIdentifier="Test" guid="123">
-  <ModelVariables/>
+  <ModelVariables />
 </fmiModelDescription>

@@ -7,8 +7,7 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
   protected:
     void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
                                       const std::map<std::string, TypeDefinition>& type_definitions,
-                                      const std::map<std::string, UnitDefinition>& units,
-                                      Certificate& cert) override;
+                                      const std::map<std::string, UnitDefinition>& units, Certificate& cert) override;
 
     std::string getFmiVersion() const override
     {
@@ -21,7 +20,7 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
 
     void applyDefaultInitialValues(std::vector<Variable>& variables) override;
     void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
-                                                       Certificate& cert) override;
+                                                      Certificate& cert) override;
     void checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) override;
     void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) override;
     void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) override;
@@ -30,7 +29,8 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                 Certificate& cert) override;
 
     ModelMetadata extractMetadata(xmlNodePtr root) override;
-    std::map<std::string, std::string> extractModelIdentifiers(xmlDocPtr doc, const std::vector<std::string>& interface_elements) override;
+    std::map<std::string, std::string>
+    extractModelIdentifiers(xmlDocPtr doc, const std::vector<std::string>& interface_elements) override;
     std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) override;
     std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) override;
     std::vector<Variable> extractVariables(xmlDocPtr doc) override;

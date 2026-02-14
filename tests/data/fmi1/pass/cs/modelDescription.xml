@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="1.0" modelName="TestCS" modelIdentifier="TestCS" guid="456">
   <Implementation>
-    <CoSimulation_StandAlone/>
+    <CoSimulation_StandAlone />
   </Implementation>
   <ModelVariables>
     <ScalarVariable name="u" valueReference="1" causality="input">
-      <Real start="0.0"/>
+      <Real start="0.0" />
     </ScalarVariable>
   </ModelVariables>
 </fmiModelDescription>
