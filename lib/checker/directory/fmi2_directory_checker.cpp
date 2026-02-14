@@ -191,4 +191,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             cert.printTestResult(test);
         }
     }
+
+    // 7. Standard Headers
+    static const std::set<std::string> fmi2_headers = {"fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"};
+    checkStandardHeaders(path, cert, fmi2_headers);
 }

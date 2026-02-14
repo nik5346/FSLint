@@ -20,5 +20,8 @@ class DirectoryChecker : public Checker
                                               const std::set<std::string>& listed_sources_in_md,
                                               bool needs_execution_tool) = 0;
 
+    void checkStandardHeaders(const std::filesystem::path& path, Certificate& cert,
+                              const std::set<std::string>& headers);
+
     static std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 };
