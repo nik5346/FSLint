@@ -25,7 +25,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 std::string type = entry.is_directory() ? "directory" : "file";
                 test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
             }
-            else if (entry.is_directory() && std::filesystem::is_empty(entry.path()))
+
+            if (entry.is_directory() && fmi3_standard_entries.contains(name) && std::filesystem::is_empty(entry.path()))
             {
                 test.status = TestStatus::WARNING;
                 test.messages.push_back("Standard directory '" + name + "' is empty.");

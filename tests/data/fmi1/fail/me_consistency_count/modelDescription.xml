@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="Test" guid="123" modelIdentifier="Test" numberOfContinuousStates="10" numberOfEventIndicators="10">
+  <ModelVariables>
+    <ScalarVariable name="x" valueReference="1" causality="internal" variability="continuous">
+      <Real />
+    </ScalarVariable>
+  </ModelVariables>
+</fmiModelDescription>

@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="3.0" modelName="test" instantiationToken="{12345678-1234-1234-1234-123456789012}">
-  <ModelExchange modelIdentifier="test" />
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <CoSimulation modelIdentifier="Test" />
   <ModelVariables>
-    <Clock name="c1" valueReference="10" causality="input" variability="discrete" />
-    <Clock name="c2" valueReference="11" causality="input" variability="discrete" />
-    <Float64 name="v1" valueReference="1" causality="output" variability="discrete" clocks="10" />
-    <Float64 name="v2" valueReference="1" causality="output" variability="discrete" clocks="11" />
+    <Clock name="c1" valueReference="1" causality="input" />
+    <Clock name="c2" valueReference="2" causality="input" />
+    <Float64 name="v1" valueReference="10" clocks="1" causality="local" variability="discrete" />
+    <Float64 name="v2" valueReference="10" clocks="2" causality="local" variability="discrete" />
   </ModelVariables>
-  <ModelStructure>
-    <Output valueReference="1" />
-  </ModelStructure>
+  <ModelStructure />
 </fmiModelDescription>

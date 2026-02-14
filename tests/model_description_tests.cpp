@@ -31,6 +31,11 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("implementation/entry_point_missing_file", "references missing file in FMU: 'resources/non_existent.mdl'");
         validate_fail("implementation/file_missing_file", "references missing file in FMU: 'resources/missing_extra.txt'");
     }
+
+    SECTION("ME Consistency")
+    {
+        validate_fail("me_consistency_count", "must be at least 2*numberOfContinuousStates + numberOfEventIndicators");
+    }
 }
 
 TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")

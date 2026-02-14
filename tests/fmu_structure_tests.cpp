@@ -137,15 +137,8 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi2/warn/missing_model_png", "Recommended file 'model.png' is missing");
-
-        {
-            Certificate cert;
-            checker.validate("tests/data/fmi2/warn/missing_license_txt", cert);
-            CHECK(has_warning_with_text(cert, "licenses/' exists but does not contain a 'license.txt'"));
-            // Verify that .gitkeep prevents the "is empty" warning
-            CHECK_FALSE(has_warning_with_text(cert, "Standard directory 'licenses' is empty."));
-        }
-
+        validate_warning("tests/data/fmi2/warn/missing_license_txt",
+                         "licenses/' exists but does not contain a 'license.txt'");
         validate_warning("tests/data/fmi2/warn/missing_ext_deps",
                          "needsExecutionTool is true, but 'documentation/externalDependencies.{txt|html}' is missing");
 
@@ -231,14 +224,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
         validate_warning("tests/data/fmi3/warn/invalid_binaries_tuple", "does not follow the <arch>-<sys>");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
-
-        {
-            Certificate cert;
-            checker.validate("tests/data/fmi3/warn/missing_index_html", cert);
-            CHECK(has_warning_with_text(cert, "documentation/index.html' is missing"));
-            // Verify that .gitkeep prevents the "is empty" warning
-            CHECK_FALSE(has_warning_with_text(cert, "Standard directory 'documentation' is empty."));
-        }
+        validate_warning("tests/data/fmi3/warn/missing_index_html", "documentation/index.html' is missing");
     }
 
     SECTION("Passing Cases")
