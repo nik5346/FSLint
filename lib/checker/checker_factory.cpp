@@ -1,5 +1,6 @@
 #include "checker_factory.h"
 
+#include "fmi1_schema_checker.h"
 #include "fmi2_schema_checker.h"
 #include "fmi3_schema_checker.h"
 #include "schema_checker.h"
@@ -43,8 +44,15 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
         {
             info.version = *version;
 
-            // Determine FMI2 vs FMI3 based on version
-            if (version->starts_with("2."))
+            // Determine FMI1, FMI2 vs FMI3 based on version
+            if (version == "1.0")
+            {
+                if (SchemaCheckerBase::hasElement(model_desc_path, "Implementation"))
+                    info.standard = ModelStandard::FMI1_CS;
+                else
+                    info.standard = ModelStandard::FMI1_ME;
+            }
+            else if (version->starts_with("2."))
                 info.standard = ModelStandard::FMI2;
             else if (version->starts_with("3."))
                 info.standard = ModelStandard::FMI3;
@@ -143,6 +151,10 @@ std::unique_ptr<Checker> CheckerFactory::createSchemaChecker(const ModelInfo& in
 {
     switch (info.standard)
     {
+    case ModelStandard::FMI1_ME:
+        return std::make_unique<Fmi1MeSchemaChecker>();
+    case ModelStandard::FMI1_CS:
+        return std::make_unique<Fmi1CsSchemaChecker>();
     case ModelStandard::FMI2:
         return std::make_unique<Fmi2SchemaChecker>();
     case ModelStandard::FMI3:

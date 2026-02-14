@@ -25,6 +25,8 @@ class SchemaCheckerBase : public Checker
                                                             const std::string& root_element,
                                                             const std::string& version_attribute);
 
+    static bool hasElement(const std::filesystem::path& xml_path, const std::string& element_name);
+
   protected:
     // Each derived class implements these
     virtual std::vector<XmlFileRule> getXmlRules(const std::filesystem::path& path) const = 0;
