@@ -139,7 +139,6 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/fmi2/warn/missing_model_png", "Recommended file 'model.png' is missing");
         validate_warning("tests/data/fmi2/warn/missing_license_txt",
                          "licenses/' exists but does not contain a 'license.txt'");
-        validate_warning("tests/data/fmi2/warn/empty_documentation", "Standard directory 'documentation' is empty");
         validate_warning("tests/data/fmi2/warn/missing_ext_deps",
                          "needsExecutionTool is true, but 'documentation/externalDependencies.{txt|html}' is missing");
 

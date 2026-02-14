@@ -33,11 +33,6 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
             }
 
-            if (entry.is_directory() && fmi2_standard_entries.contains(name) && std::filesystem::is_empty(entry.path()))
-            {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Standard directory '" + name + "' is empty.");
-            }
         }
         cert.printTestResult(test);
     }

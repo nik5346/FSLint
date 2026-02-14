@@ -48,7 +48,6 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                             const std::string& attr_name) override;
 
   private:
-    void checkMeConsistency(const std::vector<Variable>& variables, const ModelMetadata& metadata, Certificate& cert);
     void checkModelIdentifierFormat(xmlDocPtr doc, Certificate& cert);
     void checkImplementation(xmlDocPtr doc, Certificate& cert);
     void checkUri(const std::string& uri, const std::string& attr_name, int line, TestResult& test);
