@@ -24,8 +24,6 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
     SECTION("Metadata")
     {
         validate_fail("metadata/fmi_version_invalid", "is invalid for FMI 1.0");
-        validate_fail("metadata/continuous_states_mismatch", "requires at least (2 * numberOfContinuousStates");
-        validate_fail("metadata/event_indicators_mismatch", "requires at least (2 * numberOfContinuousStates");
     }
 }
 

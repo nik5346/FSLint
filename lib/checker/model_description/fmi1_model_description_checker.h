@@ -50,6 +50,4 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
   private:
     void checkModelIdentifierFormat(xmlDocPtr doc, Certificate& cert);
     void checkImplementation(xmlDocPtr doc, Certificate& cert);
-    void checkContinuousStatesAndEventIndicators(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                 Certificate& cert);
 };

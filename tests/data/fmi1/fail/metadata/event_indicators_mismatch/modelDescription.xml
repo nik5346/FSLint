@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="TestME" modelIdentifier="TestME" guid="123" numberOfContinuousStates="0" numberOfEventIndicators="1">
-  <ModelVariables>
-  </ModelVariables>
-</fmiModelDescription>

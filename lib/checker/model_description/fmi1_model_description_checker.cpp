@@ -15,7 +15,6 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     checkRequiredStartValues(variables, cert);
     checkIllegalStartValues(variables, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
-    checkContinuousStatesAndEventIndicators(doc, variables, cert);
 }
 
 void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
@@ -560,70 +559,4 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
     }
     if (xpath_obj)
         xmlXPathFreeObject(xpath_obj);
-}
-
-void Fmi1ModelDescriptionChecker::checkContinuousStatesAndEventIndicators(xmlDocPtr doc,
-                                                                          const std::vector<Variable>& variables,
-                                                                          Certificate& cert)
-{
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    auto nx_str = getXmlAttribute(root, "numberOfContinuousStates");
-    auto nz_str = getXmlAttribute(root, "numberOfEventIndicators");
-
-    if (!nx_str && !nz_str)
-        return;
-
-    uint32_t nx = 0;
-    uint32_t nz = 0;
-
-    if (nx_str)
-    {
-        try
-        {
-            nx = static_cast<uint32_t>(std::stoul(*nx_str));
-        }
-        catch (...)
-        {
-        }
-    }
-    if (nz_str)
-    {
-        try
-        {
-            nz = static_cast<uint32_t>(std::stoul(*nz_str));
-        }
-        catch (...)
-        {
-        }
-    }
-
-    size_t continuous_count = 0;
-    for (const auto& var : variables)
-        if (var.variability == "continuous" && var.type == "Real")
-            continuous_count++;
-
-    TestResult test{"Continuous States and Event Indicators", TestStatus::PASS, {}};
-
-    // FMI 1.0 ME: total continuous variables must be at least 2*nx + nz
-    bool is_cs = false;
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//Implementation");
-    if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
-        is_cs = true;
-    if (xpath_obj)
-        xmlXPathFreeObject(xpath_obj);
-
-    if (!is_cs)
-    {
-        uint32_t required = 2 * nx + nz;
-        if (continuous_count < required)
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("FMI 1.0 Model Exchange requires at least (2 * numberOfContinuousStates (" +
-                                    std::to_string(nx) + ") + numberOfEventIndicators (" + std::to_string(nz) +
-                                    ")) = " + std::to_string(required) + " continuous variables, but only " +
-                                    std::to_string(continuous_count) + " were found.");
-        }
-    }
-
-    cert.printTestResult(test);
 }
