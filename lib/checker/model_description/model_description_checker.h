@@ -166,8 +166,8 @@ class ModelDescriptionCheckerBase : public Checker
 
     // XML parsing helpers
     virtual ModelMetadata extractMetadata(xmlNodePtr root) = 0;
-    std::map<std::string, std::string> extractModelIdentifiers(xmlDocPtr doc,
-                                                               const std::vector<std::string>& interface_elements);
+    virtual std::map<std::string, std::string>
+    extractModelIdentifiers(xmlDocPtr doc, const std::vector<std::string>& interface_elements);
     virtual std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) = 0;
     virtual std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) = 0;
     virtual std::vector<Variable> extractVariables(xmlDocPtr doc) = 0;

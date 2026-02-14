@@ -7,6 +7,7 @@
 #include "ssp1_schema_checker.h"
 #include "ssp2_schema_checker.h"
 
+#include "fmi1_model_description_checker.h"
 #include "fmi2_model_description_checker.h"
 #include "fmi2_terminals_and_icons_checker.h"
 #include "fmi3_model_description_checker.h"
@@ -15,6 +16,8 @@
 #include "terminals_and_icons_checker.h"
 
 #include "build_description_checker.h"
+#include "fmi1_binary_checker.h"
+#include "fmi1_directory_checker.h"
 #include "fmi2_binary_checker.h"
 #include "fmi2_build_description_checker.h"
 #include "fmi2_directory_checker.h"
@@ -99,7 +102,12 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     if (auto checker = createTerminalsAndIconsChecker(info))
         checkers.push_back(std::move(checker));
 
-    if (info.standard == ModelStandard::FMI2)
+    if (info.standard == ModelStandard::FMI1_ME || info.standard == ModelStandard::FMI1_CS)
+    {
+        checkers.push_back(std::make_unique<Fmi1DirectoryChecker>());
+        checkers.push_back(std::make_unique<Fmi1BinaryChecker>());
+    }
+    else if (info.standard == ModelStandard::FMI2)
     {
         checkers.push_back(std::make_unique<Fmi2DirectoryChecker>());
         checkers.push_back(std::make_unique<Fmi2BuildDescriptionChecker>(info.version));
@@ -119,6 +127,10 @@ std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const Mod
 {
     switch (info.standard)
     {
+    case ModelStandard::FMI1_ME:
+        [[fallthrough]];
+    case ModelStandard::FMI1_CS:
+        return std::make_unique<Fmi1ModelDescriptionChecker>();
     case ModelStandard::FMI2:
         return std::make_unique<Fmi2ModelDescriptionChecker>();
     case ModelStandard::FMI3:

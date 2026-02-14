@@ -1,5 +1,8 @@
 #include "build_description_checker.h"
 #include "certificate.h"
+#include "checker_factory.h"
+#include "fmi1_binary_checker.h"
+#include "fmi1_directory_checker.h"
 #include "fmi2_directory_checker.h"
 #include "fmi2_model_description_checker.h"
 #include "fmi3_build_description_checker.h"
@@ -13,9 +16,61 @@ namespace fs = std::filesystem;
 
 static bool reference_fmus_available()
 {
-    static bool available =
-        fs::exists("tests/reference_fmus/BouncingBall_20") && fs::exists("tests/reference_fmus/BouncingBall_30");
+    static bool available = fs::exists("tests/reference_fmus/BouncingBall_10") &&
+                            fs::exists("tests/reference_fmus/BouncingBall_20") &&
+                            fs::exists("tests/reference_fmus/BouncingBall_30");
     return available;
+}
+
+TEST_CASE("FMI 1.0 Factory Detection", "[factory][fmi1]")
+{
+    SECTION("FMI 1.0 ME")
+    {
+        auto info = CheckerFactory::detectModel("tests/data/fmi1/pass/me");
+        CHECK(info.standard == ModelStandard::FMI1_ME);
+        CHECK(info.version == "1.0");
+
+        auto checkers = CheckerFactory::createCheckers(info);
+        bool found_dir = false;
+        bool found_bin = false;
+        for (const auto& c : checkers)
+        {
+            if (dynamic_cast<Fmi1DirectoryChecker*>(c.get()))
+                found_dir = true;
+            if (dynamic_cast<Fmi1BinaryChecker*>(c.get()))
+                found_bin = true;
+        }
+        CHECK(found_dir);
+        CHECK(found_bin);
+    }
+
+    SECTION("FMI 1.0 CS")
+    {
+        auto info = CheckerFactory::detectModel("tests/data/fmi1/pass/cs");
+        CHECK(info.standard == ModelStandard::FMI1_CS);
+        CHECK(info.version == "1.0");
+    }
+}
+
+TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
+{
+    Fmi1DirectoryChecker checker;
+
+    auto validate_pass = [&](const std::string& path)
+    {
+        Certificate cert;
+        checker.validate(path, cert);
+        INFO("Checking path: " << path);
+        CHECK_FALSE(has_fail(cert));
+    };
+
+    SECTION("Passing Cases")
+    {
+        validate_pass("tests/data/fmi1/pass/me");
+        validate_pass("tests/data/fmi1/pass/cs");
+        if (reference_fmus_available())
+            validate_pass("tests/reference_fmus/BouncingBall_10");
+    }
 }
 
 TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")

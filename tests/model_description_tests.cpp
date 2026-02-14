@@ -1,4 +1,5 @@
 #include "certificate.h"
+#include "fmi1_model_description_checker.h"
 #include "fmi2_model_description_checker.h"
 #include "fmi3_model_description_checker.h"
 #include "test_helpers.h"
@@ -6,6 +7,43 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 #include <iostream>
+
+TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
+{
+    Fmi1ModelDescriptionChecker checker;
+
+    auto validate_fail = [&](const std::string& path, const std::string& expected_error)
+    {
+        Certificate cert;
+        checker.validate("tests/data/fmi1/fail/" + path, cert);
+        INFO("Checking path: " << path);
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, expected_error));
+    };
+
+    SECTION("Metadata")
+    {
+        validate_fail("metadata/fmi_version_invalid", "is invalid for FMI 1.0");
+    }
+}
+
+TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
+{
+    Certificate cert;
+    Fmi1ModelDescriptionChecker checker;
+
+    SECTION("FMI 1.0 ME Valid")
+    {
+        checker.validate("tests/data/fmi1/pass/me", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("FMI 1.0 CS Valid")
+    {
+        checker.validate("tests/data/fmi1/pass/cs", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+}
 
 TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 {
