@@ -74,6 +74,15 @@ if(CLANG_FORMAT_EXE)
         ${ALL_SOURCE_FILES}
         COMMENT "Running clang-format on source files"
     )
+
+    add_custom_target(format-xml
+        COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
+        COMMENT "Running XML formatter on test data"
+    )
+
+    add_custom_target(format
+        DEPENDS clang-format format-xml
+    )
 else()
     message(WARNING "clang-format not found")
 endif()
