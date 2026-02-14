@@ -1,4 +1,4 @@
-# CMakeLists.txt - Using just zlib with its included minizip
+#CMakeLists.txt - Using just zlib with its included minizip
 cmake_minimum_required(VERSION 3.15)
 project(FSLint VERSION 0.0.1 LANGUAGES C CXX)
 
@@ -6,26 +6,26 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# ============================================================================
-# Compiler-specific options
-# ============================================================================
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+#Compiler - specific options
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 if(MSVC)
-    # MSVC (also applies to Clang-CL)
+#MSVC(also applies to Clang - CL)
     add_compile_options(/W4 /permissive- /EHsc)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
-    # GCC, Clang, and Clang on Unix-like systems
+#GCC, Clang, and Clang on Unix - like systems
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# ============================================================================
-# Clang-Tidy Integration
-# ============================================================================
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+#Clang - Tidy Integration
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 if(CLANG_TIDY_EXE)
     message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
 
-    # Collect all source files to check
+#Collect all source files to check
     file(GLOB_RECURSE TIDY_SOURCES
         ${CMAKE_SOURCE_DIR}/lib/*.cpp
         ${CMAKE_SOURCE_DIR}/lib/*.h
