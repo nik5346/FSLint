@@ -2,7 +2,7 @@
 <fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
   <Terminals>
     <Terminal name="PortA">
-      <TerminalMemberVariable variableName="missing" memberName="u_member"/>
+      <TerminalMemberVariable variableName="missing" memberName="u_member" />
     </Terminal>
   </Terminals>
 </fmiTerminalsAndIcons>

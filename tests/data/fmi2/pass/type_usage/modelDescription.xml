@@ -1,25 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription
-  fmiVersion="2.0"
-  modelName="TypeUsageTest"
-  guid="{1AE5E10D-9521-4DE3-80B9-D0EAAA7D5AF1}">
-  <CoSimulation modelIdentifier="TypeUsageTest"/>
+<fmiModelDescription fmiVersion="2.0" modelName="TypeUsageTest" guid="{1AE5E10D-9521-4DE3-80B9-D0EAAA7D5AF1}">
+  <CoSimulation modelIdentifier="TypeUsageTest" />
   <UnitDefinitions>
-    <Unit name="m"/>
+    <Unit name="m" />
   </UnitDefinitions>
   <TypeDefinitions>
     <SimpleType name="Position">
-      <Real unit="m"/>
+      <Real unit="m" />
     </SimpleType>
   </TypeDefinitions>
   <ModelVariables>
     <ScalarVariable name="h" valueReference="1" causality="output" variability="continuous" initial="exact">
-      <Real start="1" declaredType="Position"/>
+      <Real start="1" declaredType="Position" />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
     <Outputs>
-      <Unknown index="1"/>
+      <Unknown index="1" />
     </Outputs>
   </ModelStructure>
 </fmiModelDescription>

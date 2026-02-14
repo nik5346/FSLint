@@ -2,7 +2,7 @@
 <fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
   <Terminals>
     <Terminal name="PortA">
-      <TerminalStreamMemberVariable outStreamVariableName="h_bad" outStreamMemberName="h_out" inStreamVariableName="h_inflow" inStreamMemberName="h_in"/>
+      <TerminalStreamMemberVariable outStreamVariableName="h_bad" outStreamMemberName="h_out" inStreamVariableName="h_inflow" inStreamMemberName="h_in" />
     </Terminal>
   </Terminals>
 </fmiTerminalsAndIcons>

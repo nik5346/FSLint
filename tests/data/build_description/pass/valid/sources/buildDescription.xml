@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiBuildDescription fmiVersion="3.0">
   <SourceFileSet>
-    <SourceFile name="exists.c"/>
-    <IncludeDirectory name="inc"/>
+    <SourceFile name="exists.c" />
+    <IncludeDirectory name="inc" />
   </SourceFileSet>
 </fmiBuildDescription>

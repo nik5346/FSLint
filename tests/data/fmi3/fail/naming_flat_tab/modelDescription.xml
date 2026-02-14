@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" variableNamingConvention="flat">
-  <ModelExchange modelIdentifier="Test"/>
+  <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
-    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
-    <Float64 name="v&#09;with_tab" valueReference="1"/>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+    <Float64 name="v&#09;with_tab" valueReference="1" />
   </ModelVariables>
-  <ModelStructure/>
+  <ModelStructure />
 </fmiModelDescription>

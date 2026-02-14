@@ -2,9 +2,9 @@
 <fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
   <Terminals>
     <Terminal name="PortA">
-      <TerminalMemberVariable variableName="m_flow" memberName="m" variableKind="outflow"/>
-      <TerminalMemberVariable variableName="p" memberName="p" variableKind="outflow"/>
-      <TerminalStreamMemberVariable outStreamVariableName="h_outflow" outStreamMemberName="h_out" inStreamVariableName="h_inflow" inStreamMemberName="h_in"/>
+      <TerminalMemberVariable variableName="m_flow" memberName="m" variableKind="outflow" />
+      <TerminalMemberVariable variableName="p" memberName="p" variableKind="outflow" />
+      <TerminalStreamMemberVariable outStreamVariableName="h_outflow" outStreamMemberName="h_out" inStreamVariableName="h_inflow" inStreamMemberName="h_in" />
     </Terminal>
   </Terminals>
 </fmiTerminalsAndIcons>

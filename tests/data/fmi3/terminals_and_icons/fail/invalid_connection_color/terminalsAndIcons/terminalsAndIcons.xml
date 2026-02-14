@@ -2,8 +2,8 @@
 <fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
   <Terminals>
     <Terminal name="PortA">
-      <TerminalMemberVariable variableName="u" memberName="u"/>
-      <TerminalGraphicalRepresentation iconBaseName="icon" defaultConnectionColor="255 0"/>
+      <TerminalMemberVariable variableName="u" memberName="u" />
+      <TerminalGraphicalRepresentation iconBaseName="icon" defaultConnectionColor="255 0" />
     </Terminal>
   </Terminals>
 </fmiTerminalsAndIcons>

@@ -2,7 +2,7 @@
 <fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
   <Terminals>
     <Terminal name="PortA" matchingRule="sequence">
-      <TerminalMemberVariable variableName="u"/>
+      <TerminalMemberVariable variableName="u" />
     </Terminal>
   </Terminals>
 </fmiTerminalsAndIcons>

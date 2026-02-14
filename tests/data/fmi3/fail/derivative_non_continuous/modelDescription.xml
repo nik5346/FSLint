@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
-  <ModelExchange modelIdentifier="Test"/>
+  <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
-    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
-    <Int32 name="x" valueReference="1" variability="discrete"/>
-    <Float64 name="der_x" valueReference="2" variability="continuous" derivative="1"/>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+    <Int32 name="x" valueReference="1" variability="discrete" />
+    <Float64 name="der_x" valueReference="2" variability="continuous" derivative="1" />
   </ModelVariables>
   <ModelStructure>
-    <ContinuousStateDerivative valueReference="2"/>
+    <ContinuousStateDerivative valueReference="2" />
   </ModelStructure>
 </fmiModelDescription>

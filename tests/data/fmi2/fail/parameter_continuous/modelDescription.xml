@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="ParameterContinuous" guid="123">
-  <ModelExchange modelIdentifier="ParameterContinuous"/>
+  <ModelExchange modelIdentifier="ParameterContinuous" />
   <ModelVariables>
     <ScalarVariable name="p" valueReference="1" causality="parameter" variability="continuous">
-      <Real start="1.0"/>
+      <Real start="1.0" />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
-    <InitialUnknowns/>
+    <InitialUnknowns />
   </ModelStructure>
 </fmiModelDescription>
