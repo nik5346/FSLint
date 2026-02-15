@@ -150,9 +150,6 @@ class ModelDescriptionCheckerBase : public Checker
     void checkUnusedDefinitions(const std::map<std::string, TypeDefinition>& type_definitions,
                                 const std::map<std::string, UnitDefinition>& units, Certificate& cert);
 
-    // New: Check that derivative references point to valid variables
-    void checkDerivativeReferences(const std::vector<Variable>& variables, Certificate& cert);
-
     // Version-specific validation methods (must be implemented by derived classes)
     virtual void applyDefaultInitialValues(std::vector<Variable>& variables) = 0;
     virtual void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,

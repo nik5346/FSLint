@@ -13,29 +13,17 @@
 #include <iostream>
 #include <sstream>
 
-void ModelChecker::validate(const std::filesystem::path& path) const
+Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet) const
 {
     Certificate cert;
+    cert.setQuiet(quiet);
 
-    std::string hash = calculateSHA256(path);
-    cert.printMainHeader(path.string(), hash);
+    if (!quiet)
+    {
+        std::string hash = calculateSHA256(path);
+        cert.printMainHeader(path.string(), hash);
+    }
 
-    validateInternal(path, cert);
-
-    cert.printNestedModelsTree();
-    cert.printFooter();
-}
-
-Certificate ModelChecker::validateCore(const std::filesystem::path& path) const
-{
-    Certificate cert;
-    cert.setQuiet(true);
-    validateInternal(path, cert);
-    return cert;
-}
-
-void ModelChecker::validateInternal(const std::filesystem::path& path, Certificate& cert) const
-{
     std::filesystem::path extract_dir;
     bool is_temporary = false;
 
@@ -51,8 +39,9 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
 
         if (cert.isFailed())
         {
-            cert.printFooter();
-            return;
+            if (!quiet)
+                cert.printFooter();
+            return cert;
         }
 
         // Step 2: Extract to temporary directory
@@ -63,14 +52,20 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
 
         Zipper zipper;
         if (!zipper.open(path))
-            return;
+        {
+            if (!quiet)
+                cert.printFooter();
+            return cert;
+        }
 
         if (!zipper.extractAll(extract_dir))
         {
             zipper.close();
             if (std::filesystem::exists(extract_dir))
                 std::filesystem::remove_all(extract_dir);
-            return;
+            if (!quiet)
+                cert.printFooter();
+            return cert;
         }
         
     }
@@ -84,8 +79,9 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
         if (is_temporary && std::filesystem::exists(extract_dir))
             std::filesystem::remove_all(extract_dir);
 
-        cert.printFooter();
-        return;
+        if (!quiet)
+            cert.printFooter();
+        return cert;
     }
 
     // Step 4: Run all appropriate checkers
@@ -97,6 +93,14 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
     // Cleanup temporary directory
     if (is_temporary && std::filesystem::exists(extract_dir))
         std::filesystem::remove_all(extract_dir);
+
+    if (!quiet)
+    {
+        cert.printNestedModelsTree();
+        cert.printFooter();
+    }
+
+    return cert;
 }
 
 bool ModelChecker::addCertificate(const std::filesystem::path& path) const

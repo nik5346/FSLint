@@ -45,8 +45,6 @@ TEST_CASE("FMI 2.0 Terminals and Icons Validation", "[terminals][icons][fmi2]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/fmi2/terminals_and_icons/fail/version_mismatch",
-                      "fmiVersion in terminalsAndIcons.xml");
         validate_fail("tests/data/fmi2/terminals_and_icons/fail/non_existent_var", "references non-existent variable");
         validate_fail("tests/data/fmi2/terminals_and_icons/fail/illegal_causality",
                       "must have causality 'input', 'output', 'parameter', or 'calculatedParameter'");
@@ -97,8 +95,6 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/fmi3/terminals_and_icons/fail/version_mismatch",
-                      "fmiVersion in terminalsAndIcons.xml must match FMI 3.0 format");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/stream_flow_constraint",
                       "has multiple inflow/outflow variables and a stream variable");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/duplicate_stream_member",

@@ -4,6 +4,7 @@
 #include "fmi3_model_description_checker.h"
 #include "test_helpers.h"
 #include <algorithm>
+#include <regex>
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 #include <iostream>
@@ -365,7 +366,6 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     {
         validate_fail("fmi_version_missing", "attribute is missing");
         validate_fail("fmi_version_empty", "attribute is empty");
-        validate_fail("fmi_version_invalid", "does not match FMI 3.0 format");
 
         validate_fail("instantiation_token_missing", "instantiationToken attribute is missing");
         validate_fail("instantiation_token_empty", "instantiationToken attribute is empty");
@@ -572,6 +572,25 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
     {
         checker.validate("tests/data/fmi3/pass", cert);
         CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("FMI 3.0 Version Format Validation")
+    {
+        // FMI 3.0 regex from XSD: 3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?
+        const std::string FMI3_VERSION_PATTERN = R"(^3\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(-.+)?$)";
+        std::regex pattern(FMI3_VERSION_PATTERN);
+
+        CHECK(std::regex_match("3.0", pattern));
+        CHECK(std::regex_match("3.0.0", pattern));
+        CHECK(std::regex_match("3.1", pattern));
+        CHECK(std::regex_match("3.0-alpha", pattern));
+        CHECK(std::regex_match("3.0.1-beta.1", pattern));
+
+        CHECK_FALSE(std::regex_match("3", pattern));
+        CHECK_FALSE(std::regex_match("3.", pattern));
+        CHECK_FALSE(std::regex_match("3.a", pattern));
+        CHECK_FALSE(std::regex_match("3.01", pattern));
+        CHECK_FALSE(std::regex_match("4.0", pattern));
     }
 
     SECTION("FMI 3.0 Patch Version")

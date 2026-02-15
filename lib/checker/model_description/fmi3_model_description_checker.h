@@ -62,7 +62,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkClockedVariables(const std::vector<Variable>& variables, Certificate& cert);
     void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
     void checkReinitAttribute(const std::vector<Variable>& variables, Certificate& cert);
-    void checkDerivativeAttributes(const std::vector<Variable>& variables, Certificate& cert);
+    void checkDerivativeConsistency(const std::vector<Variable>& variables, Certificate& cert);
     void checkCanHandleMultipleSet(const std::vector<Variable>& variables, Certificate& cert);
     void checkClockTypes(xmlDocPtr doc, Certificate& cert);
 

@@ -9,13 +9,7 @@ class ModelChecker
 {
   public:
     // Main validation method
-    void validate(const std::filesystem::path& path) const;
-
-    // Internal validation method for recursive/quiet checking
-    Certificate validateCore(const std::filesystem::path& path) const;
-
-  private:
-    void validateInternal(const std::filesystem::path& path, Certificate& cert) const;
+    Certificate validate(const std::filesystem::path& path, bool quiet = false) const;
 
   public:
     // Certificate management
