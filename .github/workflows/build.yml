@@ -2,6 +2,7 @@ name: Build and Package CLI
 
 # This workflow can be toggled to use self-hosted runners by setting the following
 # Repository Variables in GitHub Settings -> Secrets and variables -> Actions -> Variables:
+# - LINT_RUNNER:    Set to 'self-hosted' to run lint on any available runner, or a specific label
 # - LINUX_RUNNER:   Set to 'self-hosted' (or your specific label) to override ubuntu-latest
 # - WINDOWS_RUNNER: Set to 'self-hosted' (or your specific label) to override windows-latest
 # - MACOS_RUNNER:   Set to 'self-hosted' (or your specific label) to override macos-latest
@@ -16,7 +17,7 @@ on:
 jobs:
   lint:
     name: Lint and Encoding Check
-    runs-on: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
+    runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
