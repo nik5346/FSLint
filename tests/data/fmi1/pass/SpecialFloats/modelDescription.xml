@@ -2,15 +2,15 @@
 <fmiModelDescription fmiVersion="1.0" modelName="SpecialFloats" modelIdentifier="SpecialFloats" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <UnitDefinitions>
     <BaseUnit unit="m">
-      <DisplayUnitDefinition displayUnit="km" gain="INF" offset="0.0"/>
+      <DisplayUnitDefinition displayUnit="km" gain="INF" offset="0.0" />
     </BaseUnit>
   </UnitDefinitions>
   <TypeDefinitions>
     <Type name="MyReal">
-      <RealType min="-INF" max="+INF" nominal="NAN"/>
+      <RealType min="-INF" max="+INF" nominal="NAN" />
     </Type>
   </TypeDefinitions>
-  <DefaultExperiment startTime="0.0" stopTime="INF" tolerance="NAN"/>
+  <DefaultExperiment startTime="0.0" stopTime="INF" tolerance="NAN" />
   <ModelVariables>
     <ScalarVariable name="x" valueReference="1" causality="internal" declaredType="MyReal">
       <Real start="NAN" />

@@ -573,9 +573,9 @@ void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<V
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                            ") is derivative of \"" + state_var->name +
-                                            "\" (line " + std::to_string(state_var->sourceline) +
-                                            ") which has variability \"" + state_var->variability +
+                                            ") is derivative of \"" + state_var->name + "\" (line " +
+                                            std::to_string(state_var->sourceline) + ") which has variability \"" +
+                                            state_var->variability +
                                             "\". Continuous-time states must have variability=\"continuous\".");
                 }
             }

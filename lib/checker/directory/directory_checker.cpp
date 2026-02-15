@@ -134,9 +134,7 @@ bool DirectoryChecker::isEffectivelyEmpty(const std::filesystem::path& path)
         return false;
 
     for (const auto& entry : std::filesystem::directory_iterator(path))
-    {
         if (entry.path().filename() != ".gitkeep")
             return false;
-    }
     return true;
 }

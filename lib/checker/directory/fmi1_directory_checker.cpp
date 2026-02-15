@@ -37,9 +37,10 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
 
         if (*model_id != expected_id)
         {
-            TestResult test{"Model Identifier Filename Match", TestStatus::FAIL,
-                            {"FMI 1.0: modelIdentifier '" + *model_id + "' must match the FMU filename '" +
-                             expected_id + "'."}};
+            TestResult test{
+                "Model Identifier Filename Match",
+                TestStatus::FAIL,
+                {"FMI 1.0: modelIdentifier '" + *model_id + "' must match the FMU filename '" + expected_id + "'."}};
             cert.printTestResult(test);
         }
         else
@@ -155,7 +156,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
     }
 
     // 4. Standard Headers
-    static const std::set<std::string> fmi1_headers = {
-        "fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h", "fmiPlatformTypes.h"};
+    static const std::set<std::string> fmi1_headers = {"fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h",
+                                                       "fmiPlatformTypes.h"};
     checkStandardHeaders(path, cert, fmi1_headers);
 }

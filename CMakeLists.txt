@@ -74,20 +74,19 @@ if(CLANG_FORMAT_EXE)
         ${ALL_SOURCE_FILES}
         COMMENT "Running clang-format on source files"
     )
-
-    add_custom_target(format-xml
-        COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
-        COMMENT "Running XML formatter on test data"
-    )
-
-    add_custom_target(format
-        DEPENDS clang-format format-xml
-    )
 else()
     message(WARNING "clang-format not found")
 endif()
 
 include(FetchContent)
+
+# ============================================================================
+# XML-Format Integration
+# ============================================================================
+add_custom_target(format-xml
+    COMMAND python ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
+    COMMENT "Running XML formatter on test data"
+)
 
 # ============================================================================
 # Fetch ZLIB (includes minizip in contrib/)
@@ -368,10 +367,13 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(FSLint-tests)
 
+# Copy test data to build directory
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
+
 # Check for Reference FMUs (required for binary tests)
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus/BouncingBall_20")
     message(WARNING "Reference FMUs for binary tests are missing. Some tests will be skipped. "
-                    "Run 'scripts/download_reference_fmus.sh' to download them.")
+                    "Run 'scripts/download_reference_fmus.py' to download them.")
 endif()
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT FSLint-cli)
