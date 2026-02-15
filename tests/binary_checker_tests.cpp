@@ -1,5 +1,7 @@
 #include "binary_parser.h"
 #include "certificate.h"
+#include "zipper.h"
+#include "model_checker.h"
 #include "fmi1_binary_checker.h"
 #include "fmi2_binary_checker.h"
 #include "fmi3_binary_checker.h"
@@ -13,9 +15,9 @@ namespace fs = std::filesystem;
 
 static bool reference_fmus_available()
 {
-    static bool available = fs::exists("tests/reference_fmus/BouncingBall_10") &&
-                            fs::exists("tests/reference_fmus/BouncingBall_20") &&
-                            fs::exists("tests/reference_fmus/BouncingBall_30");
+    static bool available = fs::exists("tests/reference_fmus/1.0/cs/BouncingBall.fmu") &&
+                            fs::exists("tests/reference_fmus/2.0/BouncingBall.fmu") &&
+                            fs::exists("tests/reference_fmus/3.0/BouncingBall.fmu");
     if (!available)
     {
         static bool warned = false;
@@ -34,8 +36,19 @@ TEST_CASE("Binary Parser ELF", "[binary][elf]")
     if (!reference_fmus_available())
         SKIP("Reference FMUs not available");
 
-    auto exports = BinaryParser::getExports("tests/reference_fmus/BouncingBall_20/binaries/linux64/BouncingBall.so");
+    fs::path temp_bin = "tests/temp_elf.so";
+    {
+        Zipper zipper;
+        REQUIRE(zipper.open("tests/reference_fmus/2.0/BouncingBall.fmu"));
+        std::vector<uint8_t> content;
+        REQUIRE(zipper.extractFile("binaries/linux64/BouncingBall.so", content));
+        std::ofstream outfile(temp_bin, std::ios::binary);
+        outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
+    }
+
+    auto exports = BinaryParser::getExports(temp_bin);
     CHECK(exports.contains("fmi2Instantiate"));
+    fs::remove(temp_bin);
 }
 
 TEST_CASE("Binary Parser PE", "[binary][pe]")
@@ -43,8 +56,19 @@ TEST_CASE("Binary Parser PE", "[binary][pe]")
     if (!reference_fmus_available())
         SKIP("Reference FMUs not available");
 
-    auto exports = BinaryParser::getExports("tests/reference_fmus/BouncingBall_20/binaries/win64/BouncingBall.dll");
+    fs::path temp_bin = "tests/temp_pe.dll";
+    {
+        Zipper zipper;
+        REQUIRE(zipper.open("tests/reference_fmus/2.0/BouncingBall.fmu"));
+        std::vector<uint8_t> content;
+        REQUIRE(zipper.extractFile("binaries/win64/BouncingBall.dll", content));
+        std::ofstream outfile(temp_bin, std::ios::binary);
+        outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
+    }
+
+    auto exports = BinaryParser::getExports(temp_bin);
     CHECK(exports.contains("fmi2Instantiate"));
+    fs::remove(temp_bin);
 }
 
 TEST_CASE("Binary Parser Mach-O", "[binary][macho]")
@@ -52,9 +76,19 @@ TEST_CASE("Binary Parser Mach-O", "[binary][macho]")
     if (!reference_fmus_available())
         SKIP("Reference FMUs not available");
 
-    auto exports =
-        BinaryParser::getExports("tests/reference_fmus/BouncingBall_20/binaries/darwin64/BouncingBall.dylib");
+    fs::path temp_bin = "tests/temp_macho.dylib";
+    {
+        Zipper zipper;
+        REQUIRE(zipper.open("tests/reference_fmus/2.0/BouncingBall.fmu"));
+        std::vector<uint8_t> content;
+        REQUIRE(zipper.extractFile("binaries/darwin64/BouncingBall.dylib", content));
+        std::ofstream outfile(temp_bin, std::ios::binary);
+        outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
+    }
+
+    auto exports = BinaryParser::getExports(temp_bin);
     CHECK(exports.contains("fmi2Instantiate"));
+    fs::remove(temp_bin);
 }
 
 TEST_CASE("FMI 1.0 Binary Exports", "[binary][fmi1]")
@@ -64,9 +98,8 @@ TEST_CASE("FMI 1.0 Binary Exports", "[binary][fmi1]")
 
     SECTION("ME")
     {
-        Fmi1BinaryChecker checker;
-        Certificate cert;
-        checker.validate("tests/reference_fmus/BouncingBall_10", cert);
+        ModelChecker mc;
+        Certificate cert = mc.validateCore("tests/reference_fmus/1.0/cs/BouncingBall.fmu");
         CHECK_FALSE(has_fail(cert));
     }
 }
@@ -76,9 +109,8 @@ TEST_CASE("FMI 3.0 Binary Exports", "[binary][fmi3]")
     if (!reference_fmus_available())
         SKIP("Reference FMUs not available");
 
-    Fmi3BinaryChecker checker;
-    Certificate cert;
-    checker.validate("tests/reference_fmus/BouncingBall_30", cert);
+    ModelChecker mc;
+    Certificate cert = mc.validateCore("tests/reference_fmus/3.0/BouncingBall.fmu");
     CHECK_FALSE(has_fail(cert));
 }
 
@@ -105,9 +137,15 @@ TEST_CASE("Binary Checker Validation Failure", "[binary][checker]")
     fs::path binaries_dir = temp_path / "binaries" / "linux64";
     fs::create_directories(binaries_dir);
 
-    // Copy FMI 1.0 binary and rename it to match modelIdentifier 'test'
-    fs::copy_file("tests/reference_fmus/BouncingBall_10/binaries/linux64/BouncingBall.so", binaries_dir / "test.so",
-                  fs::copy_options::overwrite_existing);
+    // Extract FMI 1.0 binary and rename it to match modelIdentifier 'test'
+    {
+        Zipper zipper;
+        REQUIRE(zipper.open("tests/reference_fmus/1.0/cs/BouncingBall.fmu"));
+        std::vector<uint8_t> content;
+        REQUIRE(zipper.extractFile("binaries/linux64/BouncingBall.so", content));
+        std::ofstream outfile(binaries_dir / "test.so", std::ios::binary);
+        outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
+    }
 
     Fmi2BinaryChecker checker;
     Certificate cert;

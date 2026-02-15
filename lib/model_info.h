@@ -19,4 +19,5 @@ struct ModelInfo
     ModelStandard standard = ModelStandard::UNKNOWN;
     std::string version;
     std::filesystem::path root_path;
+    std::filesystem::path original_path;
 };

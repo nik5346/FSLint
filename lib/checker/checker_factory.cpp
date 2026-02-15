@@ -104,7 +104,7 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
 
     if (info.standard == ModelStandard::FMI1_ME || info.standard == ModelStandard::FMI1_CS)
     {
-        checkers.push_back(std::make_unique<Fmi1DirectoryChecker>());
+        checkers.push_back(std::make_unique<Fmi1DirectoryChecker>(info.original_path));
         checkers.push_back(std::make_unique<Fmi1BinaryChecker>());
     }
     else if (info.standard == ModelStandard::FMI2)
