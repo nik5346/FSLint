@@ -25,33 +25,45 @@ jobs:
       with:
         python-version: '3.x'
     - name: Check Encodings
-      run: python3 scripts/check_encodings.py
+      run: python scripts/check_encodings.py
 
   setup:
     name: Setup Build Matrix
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
       - id: set-matrix
-        shell: bash
+        env:
+          WIN_RUNNER: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
+          LINUX_RUNNER: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
+          MACOS_RUNNER: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
+          BUILD_LINUX: ${{ vars.BUILD_LINUX || 'false' }}
+          BUILD_MACOS: ${{ vars.BUILD_MACOS || 'false' }}
+        shell: python
         run: |
-          jq -n \
-            --arg win_runner "${{ vars.WINDOWS_RUNNER || 'windows-latest' }}" \
-            --arg linux_runner "${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}" \
-            --arg macos_runner "${{ vars.MACOS_RUNNER || 'macos-latest' }}" \
-            --arg build_linux "${{ vars.BUILD_LINUX || 'false' }}" \
-            --arg build_macos "${{ vars.BUILD_MACOS || 'false' }}" \
-            '
-            {
-              include: [
-                { os: "windows-latest", runner: $win_runner },
-                (if $build_linux == "true" then { os: "ubuntu-latest", runner: $linux_runner } else empty end),
-                (if $build_macos == "true" then { os: "macos-latest", runner: $macos_runner } else empty end)
-              ]
-            }
-            ' > matrix.json
-          echo "matrix=$(cat matrix.json | jq -c .)" >> $GITHUB_OUTPUT
+          import json
+          import os
+
+          win_runner = os.environ.get('WIN_RUNNER', 'windows-latest')
+          linux_runner = os.environ.get('LINUX_RUNNER', 'ubuntu-latest')
+          macos_runner = os.environ.get('MACOS_RUNNER', 'macos-latest')
+          build_linux = os.environ.get('BUILD_LINUX', 'false').lower() == 'true'
+          build_macos = os.environ.get('BUILD_MACOS', 'false').lower() == 'true'
+
+          include = [{"os": "windows-latest", "runner": win_runner}]
+          if build_linux:
+              include.append({"os": "ubuntu-latest", "runner": linux_runner})
+          if build_macos:
+              include.append({"os": "macos-latest", "runner": macos_runner})
+
+          matrix = {"include": include}
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"matrix={json.dumps(matrix)}\n")
 
   build:
     needs: [setup]
