@@ -348,6 +348,7 @@ add_executable(FSLint-tests
     tests/terminals_and_icons_tests.cpp
     tests/binary_checker_tests.cpp
     tests/recursive_checker_tests.cpp
+    tests/schema_checker_tests.cpp
 )
 
 target_link_libraries(FSLint-tests PRIVATE

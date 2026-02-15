@@ -33,6 +33,11 @@ class SchemaCheckerBase : public Checker
     virtual std::string getStandardName() const = 0;
     virtual std::string getStandardVersion() const = 0;
 
+    virtual bool isUtf8Required() const
+    {
+        return true;
+    }
+
     // Common utility methods
     std::filesystem::path findSchemaPath(const std::string& schema_filename) const;
 
