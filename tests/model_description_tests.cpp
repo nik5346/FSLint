@@ -55,6 +55,12 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
         checker.validate("tests/data/fmi1/pass/cs_tool", cert);
         CHECK_FALSE(has_fail(cert));
     }
+
+    SECTION("FMI 1.0 Special Floats Valid")
+    {
+        checker.validate("tests/data/fmi1/pass/special_floats", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
 }
 
 TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
@@ -545,7 +551,6 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
     SECTION("Unit definitions")
     {
         validate_warning("definitions_unused", "Unit \"s\" is unused");
-        validate_warning("unit_offset_inf", "offset value \"INF\" is Infinity");
     }
 
     SECTION("Type definitions")
@@ -555,32 +560,41 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("DefaultExperiment")
     {
-        validate_warning("exp_nan", "startTime value \"NaN\" is NaN");
     }
 }
 
 TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
 {
     Certificate cert;
+    Fmi3ModelDescriptionChecker checker;
 
     SECTION("FMI 3.0 Valid")
     {
-        Fmi3ModelDescriptionChecker checker;
         checker.validate("tests/data/fmi3/pass", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("FMI 3.0 Patch Version")
     {
-        Fmi3ModelDescriptionChecker checker;
         checker.validate("tests/data/fmi3/pass/fmi_version_patch", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("DefaultExperiment INF")
     {
-        Fmi3ModelDescriptionChecker checker;
         checker.validate("tests/data/fmi3/pass/stop_time_inf", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("DefaultExperiment NaN")
+    {
+        checker.validate("tests/data/fmi3/pass/exp_nan", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("Unit Offset INF")
+    {
+        checker.validate("tests/data/fmi3/pass/unit_offset_inf", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }

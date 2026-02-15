@@ -450,53 +450,33 @@ void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test, const Variable& var,
-                                                               const std::string& val, const std::string& attr_name)
+void Fmi1ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& /*test*/, const Variable& /*var*/,
+                                                               const std::string& /*val*/,
+                                                               const std::string& /*attr_name*/)
 {
-    if (isSpecialFloat(val))
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                "): " + attr_name + " value \"" + val +
-                                "\" is a special float which is not explicitly supported in FMI 1.0.");
-    }
+    // Special floats are allowed in FMI 1.0
 }
 
-void Fmi1ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
-                                                                        const std::string& attr_name)
+void Fmi1ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& /*test*/,
+                                                                        const std::string& /*val*/,
+                                                                        const std::string& /*attr_name*/)
 {
-    if (isSpecialFloat(val))
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back(attr_name + " value \"" + val +
-                                "\" is a special float which is not explicitly supported in FMI 1.0.");
-    }
+    // Special floats are allowed in FMI 1.0
 }
 
-void Fmi1ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
-                                                           const std::string& attr_name, const std::string& unit_name,
-                                                           size_t line)
+void Fmi1ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& /*test*/, const std::string& /*val*/,
+                                                           const std::string& /*attr_name*/,
+                                                           const std::string& /*unit_name*/, size_t /*line*/)
 {
-    if (isSpecialFloat(val))
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Unit \"" + unit_name + "\" (line " + std::to_string(line) + "): " + attr_name +
-                                " value \"" + val +
-                                "\" is a special float which is not explicitly supported in FMI 1.0.");
-    }
+    // Special floats are allowed in FMI 1.0
 }
 
-void Fmi1ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
-                                                                     const std::string& val,
-                                                                     const std::string& attr_name)
+void Fmi1ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& /*test*/,
+                                                                     const TypeDefinition& /*type_def*/,
+                                                                     const std::string& /*val*/,
+                                                                     const std::string& /*attr_name*/)
 {
-    if (isSpecialFloat(val))
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Type definition \"" + type_def.name + "\" (line " +
-                                std::to_string(type_def.sourceline) + "): " + attr_name + " value \"" + val +
-                                "\" is a special float which is not explicitly supported in FMI 1.0.");
-    }
+    // Special floats are allowed in FMI 1.0
 }
 
 void Fmi1ModelDescriptionChecker::checkModelIdentifierFormat(xmlDocPtr doc, Certificate& cert)
