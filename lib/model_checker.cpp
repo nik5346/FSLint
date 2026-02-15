@@ -17,7 +17,6 @@ void ModelChecker::validate(const std::filesystem::path& path) const
 {
     Certificate cert;
 
-    // Print header
     std::string hash = calculateSHA256(path);
     cert.printMainHeader(path.string(), hash);
 
@@ -50,6 +49,12 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
         ArchiveChecker archive_checker;
         archive_checker.validate(path, cert);
 
+        if (cert.isFailed())
+        {
+            cert.printFooter();
+            return;
+        }
+
         // Step 2: Extract to temporary directory
         auto now = std::chrono::high_resolution_clock::now();
         auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
@@ -67,7 +72,7 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
                 std::filesystem::remove_all(extract_dir);
             return;
         }
-        zipper.close();
+        
     }
 
     // Step 3: Detect model type and create appropriate checkers
@@ -78,6 +83,8 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
     {
         if (is_temporary && std::filesystem::exists(extract_dir))
             std::filesystem::remove_all(extract_dir);
+
+        cert.printFooter();
         return;
     }
 

@@ -283,6 +283,7 @@ include_directories(lib/checker/directory)
 include_directories(lib/checker/build_description)
 include_directories(lib/checker/terminals_and_icons)
 include_directories(lib/checker/binary)
+include_directories(lib/checker/resources)
 add_library(FSLint-lib STATIC ${LIB_SOURCES})
 
 file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "lib/*")
@@ -366,9 +367,6 @@ target_include_directories(FSLint-tests SYSTEM PRIVATE
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(FSLint-tests)
-
-# Copy test data to build directory
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
 
 # Check for Reference FMUs (required for binary tests)
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus/BouncingBall_20")

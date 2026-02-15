@@ -20,4 +20,7 @@ class CheckerFactory
     static std::unique_ptr<Checker> createSchemaChecker(const ModelInfo& info);
     static std::unique_ptr<Checker> createModelDescriptionChecker(const ModelInfo& info);
     static std::unique_ptr<Checker> createTerminalsAndIconsChecker(const ModelInfo& info);
+    static std::unique_ptr<Checker> createBuildDescriptionChecker(const ModelInfo& info);
+    static std::unique_ptr<Checker> createDirectoryChecker(const ModelInfo& info);
+    static std::unique_ptr<Checker> createBinaryChecker(const ModelInfo& info);
 };

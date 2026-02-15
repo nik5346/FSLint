@@ -9,21 +9,25 @@
 
 #include "fmi1_model_description_checker.h"
 #include "fmi2_model_description_checker.h"
-#include "fmi2_terminals_and_icons_checker.h"
 #include "fmi3_model_description_checker.h"
-#include "fmi3_terminals_and_icons_checker.h"
 #include "model_description_checker.h"
+
+#include "fmi2_terminals_and_icons_checker.h"
+#include "fmi3_terminals_and_icons_checker.h"
 #include "terminals_and_icons_checker.h"
 
 #include "build_description_checker.h"
-#include "fmi1_binary_checker.h"
-#include "fmi1_directory_checker.h"
-#include "fmi2_binary_checker.h"
 #include "fmi2_build_description_checker.h"
-#include "fmi2_directory_checker.h"
-#include "fmi3_binary_checker.h"
 #include "fmi3_build_description_checker.h"
+
+#include "fmi1_binary_checker.h"
+#include "fmi2_binary_checker.h"
+#include "fmi3_binary_checker.h"
+
+#include "fmi1_directory_checker.h"
+#include "fmi2_directory_checker.h"
 #include "fmi3_directory_checker.h"
+
 #include "resources_checker.h"
 
 #include <fstream>
@@ -48,16 +52,17 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
             info.version = *version;
 
             // Determine FMI1, FMI2 vs FMI3 based on version
-            if (version == "1.0")
+            if (version->starts_with("1.0"))
                 if (SchemaCheckerBase::hasElement(model_desc_path, "Implementation"))
                     info.standard = ModelStandard::FMI1_CS;
                 else
                     info.standard = ModelStandard::FMI1_ME;
-            else if (version->starts_with("2."))
+            else if (version->starts_with("2.0"))
                 info.standard = ModelStandard::FMI2;
-            else if (version->starts_with("3."))
+            else if (version->starts_with("3.0"))
                 info.standard = ModelStandard::FMI3;
         }
+
         return info;
     }
 
@@ -67,16 +72,17 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
     {
         auto version =
             SchemaCheckerBase::extractVersionFromXml(system_structure_path, "SystemStructureDescription", "version");
-        if (version->starts_with("1."))
+        if (version->starts_with("1.0"))
         {
             info.version = *version;
             info.standard = ModelStandard::SSP1;
         }
-        else if (version->starts_with("2."))
+        else if (version->starts_with("2.0"))
         {
             info.version = *version;
             info.standard = ModelStandard::SSP2;
         }
+
         return info;
     }
 
@@ -87,74 +93,27 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
 {
     std::vector<std::unique_ptr<Checker>> checkers;
 
-    // Add resources checker for all models
-    checkers.push_back(std::make_unique<ResourcesChecker>());
-
-    // Create schema checker
     if (auto checker = createSchemaChecker(info))
         checkers.push_back(std::move(checker));
 
-    // Create model description checker
     if (auto checker = createModelDescriptionChecker(info))
         checkers.push_back(std::move(checker));
 
-    // Create terminals and icons checker
     if (auto checker = createTerminalsAndIconsChecker(info))
         checkers.push_back(std::move(checker));
 
-    if (info.standard == ModelStandard::FMI1_ME || info.standard == ModelStandard::FMI1_CS)
-    {
-        checkers.push_back(std::make_unique<Fmi1DirectoryChecker>(info.original_path));
-        checkers.push_back(std::make_unique<Fmi1BinaryChecker>());
-    }
-    else if (info.standard == ModelStandard::FMI2)
-    {
-        checkers.push_back(std::make_unique<Fmi2DirectoryChecker>());
-        checkers.push_back(std::make_unique<Fmi2BuildDescriptionChecker>(info.version));
-        checkers.push_back(std::make_unique<Fmi2BinaryChecker>());
-    }
-    else if (info.standard == ModelStandard::FMI3)
-    {
-        checkers.push_back(std::make_unique<Fmi3DirectoryChecker>());
-        checkers.push_back(std::make_unique<Fmi3BuildDescriptionChecker>(info.version));
-        checkers.push_back(std::make_unique<Fmi3BinaryChecker>());
-    }
+    if (auto checker = createBuildDescriptionChecker(info))
+        checkers.push_back(std::move(checker));
+
+    if (auto checker = createDirectoryChecker(info))
+        checkers.push_back(std::move(checker));
+
+    if (auto checker = createBinaryChecker(info))
+        checkers.push_back(std::move(checker));
+
+    checkers.push_back(std::make_unique<ResourcesChecker>());
 
     return checkers;
-}
-
-std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const ModelInfo& info)
-{
-    switch (info.standard)
-    {
-    case ModelStandard::FMI1_ME:
-        [[fallthrough]];
-    case ModelStandard::FMI1_CS:
-        return std::make_unique<Fmi1ModelDescriptionChecker>();
-    case ModelStandard::FMI2:
-        return std::make_unique<Fmi2ModelDescriptionChecker>();
-    case ModelStandard::FMI3:
-        return std::make_unique<Fmi3ModelDescriptionChecker>();
-    case ModelStandard::SSP1:
-        [[fallthrough]]; // No model description checker for SSP
-    case ModelStandard::SSP2:
-        [[fallthrough]]; // No model description checker for SSP
-    default:
-        return nullptr;
-    }
-}
-
-std::unique_ptr<Checker> CheckerFactory::createTerminalsAndIconsChecker(const ModelInfo& info)
-{
-    switch (info.standard)
-    {
-    case ModelStandard::FMI2:
-        return std::make_unique<Fmi2TerminalsAndIconsChecker>();
-    case ModelStandard::FMI3:
-        return std::make_unique<Fmi3TerminalsAndIconsChecker>();
-    default:
-        return nullptr;
-    }
 }
 
 std::unique_ptr<Checker> CheckerFactory::createSchemaChecker(const ModelInfo& info)
@@ -173,6 +132,111 @@ std::unique_ptr<Checker> CheckerFactory::createSchemaChecker(const ModelInfo& in
         return std::make_unique<Ssp1SchemaChecker>();
     case ModelStandard::SSP2:
         return std::make_unique<Ssp2SchemaChecker>();
+    default:
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI1_ME:
+        [[fallthrough]];
+    case ModelStandard::FMI1_CS:
+        return std::make_unique<Fmi1ModelDescriptionChecker>();
+    case ModelStandard::FMI2:
+        return std::make_unique<Fmi2ModelDescriptionChecker>();
+    case ModelStandard::FMI3:
+        return std::make_unique<Fmi3ModelDescriptionChecker>();
+    case ModelStandard::SSP1:
+        [[fallthrough]];
+    case ModelStandard::SSP2:
+        [[fallthrough]];
+    default:
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Checker> CheckerFactory::createTerminalsAndIconsChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI1_ME:
+        [[fallthrough]];
+    case ModelStandard::FMI1_CS:
+        return nullptr;
+    case ModelStandard::FMI2:
+        return std::make_unique<Fmi2TerminalsAndIconsChecker>();
+    case ModelStandard::FMI3:
+        return std::make_unique<Fmi3TerminalsAndIconsChecker>();
+    case ModelStandard::SSP1:
+        [[fallthrough]];
+    case ModelStandard::SSP2:
+        [[fallthrough]];
+    default:
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Checker> CheckerFactory::createBuildDescriptionChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI1_ME:
+        [[fallthrough]];
+    case ModelStandard::FMI1_CS:
+        return nullptr;
+    case ModelStandard::FMI2:
+        return std::make_unique<Fmi2BuildDescriptionChecker>(info.version);
+    case ModelStandard::FMI3:
+        return std::make_unique<Fmi3BuildDescriptionChecker>(info.version);
+    case ModelStandard::SSP1:
+        [[fallthrough]];
+    case ModelStandard::SSP2:
+        [[fallthrough]];
+    default:
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Checker> CheckerFactory::createDirectoryChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI1_ME:
+        [[fallthrough]];
+    case ModelStandard::FMI1_CS:
+        return std::make_unique<Fmi1DirectoryChecker>(info.original_path);
+    case ModelStandard::FMI2:
+        return std::make_unique<Fmi2DirectoryChecker>();
+    case ModelStandard::FMI3:
+        return std::make_unique<Fmi3DirectoryChecker>();
+    case ModelStandard::SSP1:
+        [[fallthrough]];
+    case ModelStandard::SSP2:
+        [[fallthrough]];
+    default:
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Checker> CheckerFactory::createBinaryChecker(const ModelInfo& info)
+{
+    switch (info.standard)
+    {
+    case ModelStandard::FMI1_ME:
+        [[fallthrough]];
+    case ModelStandard::FMI1_CS:
+        return std::make_unique<Fmi1BinaryChecker>();
+    case ModelStandard::FMI2:
+        return std::make_unique<Fmi2BinaryChecker>();
+    case ModelStandard::FMI3:
+        return std::make_unique<Fmi3BinaryChecker>();
+    case ModelStandard::SSP1:
+        [[fallthrough]];
+    case ModelStandard::SSP2:
+        [[fallthrough]];
     default:
         return nullptr;
     }

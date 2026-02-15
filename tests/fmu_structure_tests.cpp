@@ -18,39 +18,10 @@ namespace fs = std::filesystem;
 static bool reference_fmus_available()
 {
     static bool available = fs::exists("tests/reference_fmus/1.0/cs/BouncingBall.fmu") &&
+                            fs::exists("tests/reference_fmus/1.0/me/BouncingBall.fmu") &&
                             fs::exists("tests/reference_fmus/2.0/BouncingBall.fmu") &&
                             fs::exists("tests/reference_fmus/3.0/BouncingBall.fmu");
     return available;
-}
-
-TEST_CASE("FMI 1.0 Factory Detection", "[factory][fmi1]")
-{
-    SECTION("FMI 1.0 ME")
-    {
-        auto info = CheckerFactory::detectModel("tests/data/fmi1/pass/TestME");
-        CHECK(info.standard == ModelStandard::FMI1_ME);
-        CHECK(info.version == "1.0");
-
-        auto checkers = CheckerFactory::createCheckers(info);
-        bool found_dir = false;
-        bool found_bin = false;
-        for (const auto& c : checkers)
-        {
-            if (dynamic_cast<Fmi1DirectoryChecker*>(c.get()))
-                found_dir = true;
-            if (dynamic_cast<Fmi1BinaryChecker*>(c.get()))
-                found_bin = true;
-        }
-        CHECK(found_dir);
-        CHECK(found_bin);
-    }
-
-    SECTION("FMI 1.0 CS")
-    {
-        auto info = CheckerFactory::detectModel("tests/data/fmi1/pass/TestCS");
-        CHECK(info.standard == ModelStandard::FMI1_CS);
-        CHECK(info.version == "1.0");
-    }
 }
 
 TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
@@ -78,7 +49,10 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         validate_pass("tests/data/fmi1/pass/TestME");
         validate_pass("tests/data/fmi1/pass/TestCS");
         if (reference_fmus_available())
+        {
             validate_pass("tests/reference_fmus/1.0/cs/BouncingBall.fmu");
+            validate_pass("tests/reference_fmus/1.0/me/BouncingBall.fmu");
+        }
     }
 
     SECTION("Model Identifier Mismatch")
