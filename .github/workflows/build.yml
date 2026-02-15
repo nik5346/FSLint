@@ -25,28 +25,61 @@ jobs:
       with:
         python-version: '3.x'
     - name: Check Encodings
-      run: python3 scripts/check_encodings.py
+      run: python scripts/check_encodings.py
+
+  setup:
+    name: Setup Build Matrix
+    runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - id: set-matrix
+        env:
+          WIN_RUNNER: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
+          LINUX_RUNNER: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
+          MACOS_RUNNER: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
+          BUILD_LINUX: ${{ vars.BUILD_LINUX || 'false' }}
+          BUILD_MACOS: ${{ vars.BUILD_MACOS || 'false' }}
+        shell: python
+        run: |
+          import json
+          import os
+
+          win_runner = os.environ.get('WIN_RUNNER', 'windows-latest')
+          linux_runner = os.environ.get('LINUX_RUNNER', 'ubuntu-latest')
+          macos_runner = os.environ.get('MACOS_RUNNER', 'macos-latest')
+          build_linux = os.environ.get('BUILD_LINUX', 'false').lower() == 'true'
+          build_macos = os.environ.get('BUILD_MACOS', 'false').lower() == 'true'
+
+          include = [{"os": "windows-latest", "runner": win_runner}]
+          if build_linux:
+              include.append({"os": "ubuntu-latest", "runner": linux_runner})
+          if build_macos:
+              include.append({"os": "macos-latest", "runner": macos_runner})
+
+          matrix = {"include": include}
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"matrix={json.dumps(matrix)}\n")
 
   build:
+    needs: [setup]
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.runner }}
-    if: matrix.enabled == 'true'
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            runner: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
-            enabled: ${{ vars.BUILD_LINUX || 'false' }}
-          - os: windows-latest
-            runner: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
-            enabled: 'true'
-          - os: macos-latest
-            runner: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
-            enabled: ${{ vars.BUILD_MACOS || 'false' }}
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
 
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -88,23 +121,35 @@ jobs:
             }
         }
 
+    - name: Download Reference FMUs (Unix)
+      if: runner.os != 'Windows'
+      run: curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
+
+    - name: Download Reference FMUs (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: Invoke-WebRequest -Uri https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip -OutFile Reference-FMUs.zip
+
+    - name: Extract Bouncing Ball FMU
+      shell: python
+      run: |
+        import zipfile
+        import os
+        import shutil
+        with zipfile.ZipFile('Reference-FMUs.zip') as z:
+            z.extract('2.0/BouncingBall.fmu', 'test_fmu')
+        if os.path.exists('BouncingBall.fmu'):
+            os.remove('BouncingBall.fmu')
+        shutil.move('test_fmu/2.0/BouncingBall.fmu', 'BouncingBall.fmu')
+
     - name: Test with Bouncing Ball FMU (Unix)
       if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
-        python3 -c "import zipfile; zipfile.ZipFile('Reference-FMUs.zip').extract('2.0/BouncingBall.fmu', 'test_fmu')"
-        mv test_fmu/2.0/BouncingBall.fmu .
-        ./dist/FSLint-cli BouncingBall.fmu
+      run: ./dist/FSLint-cli BouncingBall.fmu
 
     - name: Test with Bouncing Ball FMU (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: |
-        Invoke-WebRequest -Uri https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip -OutFile Reference-FMUs.zip
-        python -c "import zipfile; zipfile.ZipFile('Reference-FMUs.zip').extract('2.0/BouncingBall.fmu', 'test_fmu')"
-        Move-Item -Path test_fmu/2.0/BouncingBall.fmu -Destination .
-        ./dist/FSLint-cli.exe BouncingBall.fmu
+      run: ./dist/FSLint-cli.exe BouncingBall.fmu
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

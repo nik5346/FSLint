@@ -50,6 +50,10 @@ def main():
 
     failed_files = []
     for file in files:
+        # Skip files that are intentionally non-UTF-8 or binary for testing purposes
+        if "fail/encoding" in file:
+            continue
+
         if not check_file(file):
             failed_files.append(file)
 
