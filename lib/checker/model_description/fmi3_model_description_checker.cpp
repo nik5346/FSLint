@@ -1,6 +1,7 @@
 #include "fmi3_model_description_checker.h"
 #include "certificate.h"
 #include <algorithm>
+#include <regex>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -284,15 +285,6 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
 
     xmlXPathFreeObject(xpath_obj);
     cert.printTestResult(test);
-}
-
-void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
-{
-    if (!version.starts_with("3."))
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("FMI version \"" + version + "\" is invalid for FMI 3.0 (must start with \"3.\").");
-    }
 }
 
 void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
