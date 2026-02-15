@@ -27,23 +27,39 @@ jobs:
     - name: Check Encodings
       run: python3 scripts/check_encodings.py
 
+  setup:
+    name: Setup Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        shell: bash
+        run: |
+          jq -n \
+            --arg win_runner "${{ vars.WINDOWS_RUNNER || 'windows-latest' }}" \
+            --arg linux_runner "${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}" \
+            --arg macos_runner "${{ vars.MACOS_RUNNER || 'macos-latest' }}" \
+            --arg build_linux "${{ vars.BUILD_LINUX || 'false' }}" \
+            --arg build_macos "${{ vars.BUILD_MACOS || 'false' }}" \
+            '
+            {
+              include: [
+                { os: "windows-latest", runner: $win_runner },
+                (if $build_linux == "true" then { os: "ubuntu-latest", runner: $linux_runner } else empty end),
+                (if $build_macos == "true" then { os: "macos-latest", runner: $macos_runner } else empty end)
+              ]
+            }
+            ' > matrix.json
+          echo "matrix=$(cat matrix.json | jq -c .)" >> $GITHUB_OUTPUT
+
   build:
+    needs: [setup]
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.runner }}
-    if: matrix.enabled == 'true'
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            runner: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
-            enabled: ${{ vars.BUILD_LINUX || 'false' }}
-          - os: windows-latest
-            runner: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
-            enabled: 'true'
-          - os: macos-latest
-            runner: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
-            enabled: ${{ vars.BUILD_MACOS || 'false' }}
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
 
     steps:
     - uses: actions/checkout@v4
