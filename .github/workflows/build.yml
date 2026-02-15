@@ -30,16 +30,20 @@ jobs:
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.runner }}
+    if: matrix.enabled == 'true'
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             runner: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
+            enabled: ${{ vars.BUILD_LINUX || 'false' }}
           - os: windows-latest
             runner: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
+            enabled: 'true'
           - os: macos-latest
             runner: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
+            enabled: ${{ vars.BUILD_MACOS || 'false' }}
 
     steps:
     - uses: actions/checkout@v4
@@ -70,29 +74,37 @@ jobs:
 
     - name: Prepare Artifact (Windows)
       if: runner.os == 'Windows'
-      shell: bash
+      shell: pwsh
       run: |
-        mkdir -p dist
-        cp build/Release/FSLint-cli.exe dist/
-        cp -r standard dist/
-        # Copy DLLs from Release folder
-        cp build/Release/*.dll dist/ 2>/dev/null || true
-        # libxml2 might be in its build dir
-        find build/_deps/libxml2-build -name "*.dll" -exec cp {} dist/ \;
+        New-Item -ItemType Directory -Force -Path dist
+        Copy-Item -Path "build/Release/FSLint-cli.exe" -Destination "dist/"
+        Copy-Item -Path "standard" -Destination "dist/" -Recurse
+        if (Test-Path "build/Release/*.dll") {
+            Copy-Item -Path "build/Release/*.dll" -Destination "dist/"
+        }
+        if (Test-Path "build/_deps/libxml2-build") {
+            Get-ChildItem -Path "build/_deps/libxml2-build" -Filter "*.dll" -Recurse | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination "dist/" -ErrorAction SilentlyContinue
+            }
+        }
 
-    - name: Test with Bouncing Ball FMU
+    - name: Test with Bouncing Ball FMU (Unix)
+      if: runner.os != 'Windows'
       shell: bash
       run: |
         curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
-        # Use python to unzip if unzip is not available, or just use python since it's everywhere
         python3 -c "import zipfile; zipfile.ZipFile('Reference-FMUs.zip').extract('2.0/BouncingBall.fmu', 'test_fmu')"
         mv test_fmu/2.0/BouncingBall.fmu .
+        ./dist/FSLint-cli BouncingBall.fmu
 
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          ./dist/FSLint-cli.exe BouncingBall.fmu
-        else
-          ./dist/FSLint-cli BouncingBall.fmu
-        fi
+    - name: Test with Bouncing Ball FMU (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        Invoke-WebRequest -Uri https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip -OutFile Reference-FMUs.zip
+        python -c "import zipfile; zipfile.ZipFile('Reference-FMUs.zip').extract('2.0/BouncingBall.fmu', 'test_fmu')"
+        Move-Item -Path test_fmu/2.0/BouncingBall.fmu -Destination .
+        ./dist/FSLint-cli.exe BouncingBall.fmu
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
