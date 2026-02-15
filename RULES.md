@@ -2,11 +2,32 @@
 
 This file lists all rules currently checked by FSLint, categorized by standard and version.
 
+## Archive Validation (FMU and SSP)
+
+These rules apply to the ZIP archive itself for both FMU and SSP files.
+
+- **File Extension**: Must have `.fmu` or `.ssp` extension respectively.
+- **Disk Spanning**: Split or spanned ZIP archives are not allowed.
+- **Compression Methods**: Only `store` (0) and `deflate` (8) compression methods are allowed.
+- **Version Needed**: Maximum version needed to extract must be `2.0` (for compatibility).
+- **Encryption**: Encrypted files are not allowed.
+- **Path Format**:
+  - Only forward slashes `/` are allowed (no backslashes `\`).
+  - No absolute paths (must not start with `/`).
+  - No drive letters or device paths (e.g., `C:`).
+  - No parent directory traversal (`..`).
+  - WARNING for non-ASCII characters.
+  - WARNING for leading `./` or multiple consecutive slashes `//`.
+- **Symbolic Links**: Symbolic links are not allowed within the archive.
+- **Language Encoding Flag**: WARNING if bit 11 is set (UTF-8 recommended for paths, but keeping bit 11 at 0 is better for old tools).
+- **Data Descriptor Consistency**: General purpose bit 3 (data descriptor) is only allowed with `deflate` compression.
+
 ## Common FMI Rules (All Versions)
 
 These rules are applied to the `modelDescription.xml` file regardless of the FMI version.
 
 ### Metadata and Format
+- **Schema Validation**: `modelDescription.xml` is validated against the official FMI XSD schemas. Optional files like `buildDescription.xml` and `terminalsAndIcons.xml` are also schema-validated if present.
 - **XML Declaration**: Must be XML version 1.0.
 - **UTF-8 Encoding**:
   - Required for FMI 2.0 and 3.0.
@@ -56,6 +77,9 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ## FMI 1.0 Rules
 
+### Schema Validation
+- **modelDescription.xml**: Validated against `fmiModelDescription.xsd`.
+
 ### Model Description
 - **GUID Presence**: `guid` attribute is mandatory and must not be empty.
 - **Model Identifier Matching**: `modelIdentifier` must match the FMU filename stem (ZIP name).
@@ -73,6 +97,11 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ---
 
 ## FMI 2.0 Rules
+
+### Schema Validation
+- **modelDescription.xml**: Validated against `fmi2ModelDescription.xsd`.
+- **buildDescription.xml**: Validated against `fmi3BuildDescription.xsd` (if present in `sources/`).
+- **terminalsAndIcons.xml**: Validated against `fmi3TerminalsAndIcons.xsd` (if present in `terminalsAndIcons/`).
 
 ### Model Description
 - **Enumeration Variables**: Must have a `declaredType` attribute.
@@ -107,6 +136,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ---
 
 ## FMI 3.0 Rules
+
+### Schema Validation
+- **modelDescription.xml**: Validated against `fmi3ModelDescription.xsd`.
+- **buildDescription.xml**: Validated against `fmi3BuildDescription.xsd` (if present in `sources/`).
+- **terminalsAndIcons.xml**: Validated against `fmi3TerminalsAndIcons.xsd` (if present in `terminalsAndIcons/`).
+- **fmi-ls-manifest.xml**: Validated against `fmi3LayeredStandardManifest.xsd` (if present in `extra/`).
 
 ### Model Description
 - **instantiationToken**: Recommended to follow GUID format.
