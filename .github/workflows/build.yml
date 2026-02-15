@@ -76,6 +76,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
@@ -116,23 +121,35 @@ jobs:
             }
         }
 
+    - name: Download Reference FMUs (Unix)
+      if: runner.os != 'Windows'
+      run: curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
+
+    - name: Download Reference FMUs (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: Invoke-WebRequest -Uri https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip -OutFile Reference-FMUs.zip
+
+    - name: Extract Bouncing Ball FMU
+      shell: python
+      run: |
+        import zipfile
+        import os
+        import shutil
+        with zipfile.ZipFile('Reference-FMUs.zip') as z:
+            z.extract('2.0/BouncingBall.fmu', 'test_fmu')
+        if os.path.exists('BouncingBall.fmu'):
+            os.remove('BouncingBall.fmu')
+        shutil.move('test_fmu/2.0/BouncingBall.fmu', 'BouncingBall.fmu')
+
     - name: Test with Bouncing Ball FMU (Unix)
       if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
-        python3 -c "import zipfile; zipfile.ZipFile('Reference-FMUs.zip').extract('2.0/BouncingBall.fmu', 'test_fmu')"
-        mv test_fmu/2.0/BouncingBall.fmu .
-        ./dist/FSLint-cli BouncingBall.fmu
+      run: ./dist/FSLint-cli BouncingBall.fmu
 
     - name: Test with Bouncing Ball FMU (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: |
-        Invoke-WebRequest -Uri https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip -OutFile Reference-FMUs.zip
-        python -c "import zipfile; zipfile.ZipFile('Reference-FMUs.zip').extract('2.0/BouncingBall.fmu', 'test_fmu')"
-        Move-Item -Path test_fmu/2.0/BouncingBall.fmu -Destination .
-        ./dist/FSLint-cli.exe BouncingBall.fmu
+      run: ./dist/FSLint-cli.exe BouncingBall.fmu
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
