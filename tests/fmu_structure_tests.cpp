@@ -1,5 +1,6 @@
 #include "build_description_checker.h"
 #include "certificate.h"
+#include "model_checker.h"
 #include "checker_factory.h"
 #include "fmi1_binary_checker.h"
 #include "fmi1_directory_checker.h"
@@ -16,9 +17,9 @@ namespace fs = std::filesystem;
 
 static bool reference_fmus_available()
 {
-    static bool available = fs::exists("tests/reference_fmus/BouncingBall") &&
-                            fs::exists("tests/reference_fmus/BouncingBall_20") &&
-                            fs::exists("tests/reference_fmus/BouncingBall_30");
+    static bool available = fs::exists("tests/reference_fmus/1.0/cs/BouncingBall.fmu") &&
+                            fs::exists("tests/reference_fmus/2.0/BouncingBall.fmu") &&
+                            fs::exists("tests/reference_fmus/3.0/BouncingBall.fmu");
     return available;
 }
 
@@ -56,10 +57,18 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
 {
     Fmi1DirectoryChecker checker;
 
-    auto validate_pass = [&](const std::string& path)
+    auto validate_pass = [&](const fs::path& path)
     {
         Certificate cert;
-        checker.validate(path, cert);
+        if (fs::is_regular_file(path))
+        {
+            ModelChecker mc;
+            cert = mc.validateCore(path);
+        }
+        else
+        {
+            checker.validate(path, cert);
+        }
         INFO("Checking path: " << path);
         CHECK_FALSE(has_fail(cert));
     };
@@ -69,7 +78,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         validate_pass("tests/data/fmi1/pass/TestME");
         validate_pass("tests/data/fmi1/pass/TestCS");
         if (reference_fmus_available())
-            validate_pass("tests/reference_fmus/BouncingBall");
+            validate_pass("tests/reference_fmus/1.0/cs/BouncingBall.fmu");
     }
 
     SECTION("Model Identifier Mismatch")
@@ -86,10 +95,18 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 {
     Fmi2DirectoryChecker checker;
 
-    auto validate_pass = [&](const std::string& path)
+    auto validate_pass = [&](const fs::path& path)
     {
         Certificate cert;
-        checker.validate(path, cert);
+        if (fs::is_regular_file(path))
+        {
+            ModelChecker mc;
+            cert = mc.validateCore(path);
+        }
+        else
+        {
+            checker.validate(path, cert);
+        }
         INFO("Checking path: " << path);
         CHECK_FALSE(has_fail(cert));
     };
@@ -163,7 +180,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     {
         validate_pass("tests/data/fmi2/pass/dist_both");
         if (reference_fmus_available())
-            validate_pass("tests/reference_fmus/BouncingBall_20");
+            validate_pass("tests/reference_fmus/2.0/BouncingBall.fmu");
     }
 }
 
@@ -174,7 +191,15 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     auto validate_pass = [&](const fs::path& path)
     {
         Certificate cert;
-        checker.validate(path, cert);
+        if (fs::is_regular_file(path))
+        {
+            ModelChecker mc;
+            cert = mc.validateCore(path);
+        }
+        else
+        {
+            checker.validate(path, cert);
+        }
         INFO("Checking path: " << path);
         CHECK_FALSE(has_fail(cert));
     };
@@ -240,7 +265,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     SECTION("Passing Cases")
     {
         if (reference_fmus_available())
-            validate_pass("tests/reference_fmus/BouncingBall_30");
+            validate_pass("tests/reference_fmus/3.0/BouncingBall.fmu");
     }
 }
 
