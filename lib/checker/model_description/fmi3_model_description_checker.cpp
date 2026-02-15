@@ -17,6 +17,8 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <set>
+#include <utility>
 
 void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,
@@ -101,6 +103,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
             for (xmlNodePtr child = node->children; child; child = child->next)
             {
                 if (child->type == XML_ELEMENT_NODE &&
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Start")) == 0)
                 {
                     if (!var.start.has_value())
@@ -1776,6 +1779,7 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
     for (xmlNodePtr child = node->children; child; child = child->next)
     {
         if (child->type == XML_ELEMENT_NODE &&
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Dimension")) == 0)
         {
             var.has_dimension = true;

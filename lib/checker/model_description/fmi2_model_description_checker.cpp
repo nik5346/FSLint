@@ -19,6 +19,8 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <optional>
+#include <utility>
 
 void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,
@@ -1824,11 +1826,12 @@ void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certif
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             auto name_opt = getXmlAttribute(node, "name");
             if (name_opt)
             {
-                auto file_path = _fmu_root_path / "sources" / (*name_opt);
+                auto file_path = getFmuRootPath() / "sources" / (*name_opt);
                 if (!std::filesystem::exists(file_path))
                 {
                     test.status = TestStatus::FAIL;

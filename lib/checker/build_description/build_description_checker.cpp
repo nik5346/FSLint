@@ -3,6 +3,7 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
+#include <libxml/xmlmemory.h>
 #include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
 #include <libxml/tree.h>
@@ -93,11 +94,13 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
 {
     TestResult test{"Build Description Source Files", TestStatus::PASS, {}};
     xmlXPathObjectPtr sources_xpath =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFile"), xpath_context);
     if (sources_xpath && sources_xpath->nodesetval)
     {
         for (int i = 0; i < sources_xpath->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto node = sources_xpath->nodesetval->nodeTab[i];
             auto name_opt = getXmlAttribute(node, "name");
             if (name_opt)
@@ -133,11 +136,13 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
 {
     TestResult test{"Build Description Include Directories", TestStatus::PASS, {}};
     xmlXPathObjectPtr includes_xpath =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//IncludeDirectory"), xpath_context);
     if (includes_xpath && includes_xpath->nodesetval)
     {
         for (int i = 0; i < includes_xpath->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto node = includes_xpath->nodesetval->nodeTab[i];
             auto name_opt = getXmlAttribute(node, "name");
             if (name_opt)
@@ -173,6 +178,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
 {
     TestResult test{"Build Configuration Attributes", TestStatus::PASS, {}};
     xmlXPathObjectPtr configs_xpath =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//BuildConfiguration"), xpath_context);
     if (configs_xpath && configs_xpath->nodesetval)
     {
@@ -185,6 +191,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
 
         for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto node = configs_xpath->nodesetval->nodeTab[i];
 
             auto model_id = getXmlAttribute(node, "modelIdentifier");
@@ -260,11 +267,13 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
         {
             std::string expr = "//" + tag;
             xmlXPathObjectPtr xpath_obj =
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), xpath_context);
             if (xpath_obj && xpath_obj->nodesetval)
             {
                 for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
                 {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                     auto node = xpath_obj->nodesetval->nodeTab[i];
                     auto id = getXmlAttribute(node, "modelIdentifier");
                     if (id)
@@ -285,10 +294,12 @@ std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr n
     if (!node)
         return std::nullopt;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
     if (!attr)
         return std::nullopt;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::string value(reinterpret_cast<char*>(attr));
     xmlFree(attr);
     return value;

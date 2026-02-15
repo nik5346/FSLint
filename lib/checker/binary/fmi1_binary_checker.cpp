@@ -4,12 +4,14 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
+#include <libxml/xmlmemory.h>
 #include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
 
 #include <filesystem>
 #include <set>
 #include <vector>
+#include <string>
 
 void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
@@ -38,6 +40,7 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
     if (xpath_context)
     {
         xmlXPathObjectPtr xpath_obj =
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
         if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
             is_cs = true;

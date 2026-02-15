@@ -115,7 +115,11 @@ class ModelDescriptionCheckerBase : public Checker
                                               const std::map<std::string, UnitDefinition>& units,
                                               Certificate& cert) = 0;
 
-    std::filesystem::path _fmu_root_path;
+  protected:
+    const std::filesystem::path& getFmuRootPath() const
+    {
+        return _fmu_root_path;
+    }
 
     virtual std::string getFmiVersion() const = 0;
 
@@ -203,6 +207,7 @@ class ModelDescriptionCheckerBase : public Checker
                             const std::optional<std::string>& effective_max, TestResult& test);
 
   private:
+    std::filesystem::path _fmu_root_path;
     std::set<std::string> _used_type_definitions;
     std::set<std::string> _used_units;
 };

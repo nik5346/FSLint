@@ -3,6 +3,7 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
+#include <libxml/xmlmemory.h>
 #include <libxml/tree.h>
 #include <libxml/xmlschemas.h>
 #include <libxml/xmlstring.h>
@@ -27,6 +28,7 @@
 #ifdef __linux__
 #include <linux/limits.h>
 #include <unistd.h>
+#include <string>
 #endif
 
 void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
@@ -379,7 +381,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 
 #ifdef _WIN32
     std::array<char, MAX_PATH> path{};
-    DWORD length = GetModuleFileNameA(NULL, path.data(), MAX_PATH);
+    DWORD length = GetModuleFileNameA(nullptr, path.data(), MAX_PATH);
     if (length > 0 && length < MAX_PATH)
         bin_dir = std::filesystem::path(path.data()).parent_path();
 
@@ -409,7 +411,7 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
                                                                     const std::string& root_element,
                                                                     const std::string& version_attribute)
 {
-    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
         return std::nullopt;
 
@@ -447,7 +449,7 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
 
 bool SchemaCheckerBase::hasElement(const std::filesystem::path& xml_path, const std::string& element_name)
 {
-    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
         return false;
 
@@ -494,7 +496,9 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlSchemaSetParserErrors(parser_ctx, reinterpret_cast<xmlSchemaValidityErrorFunc>(errorCallback),
+                             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                              reinterpret_cast<xmlSchemaValidityWarningFunc>(warningCallback), &test);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
@@ -526,7 +530,9 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlSchemaSetValidErrors(valid_ctx, reinterpret_cast<xmlSchemaValidityErrorFunc>(errorCallback),
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                             reinterpret_cast<xmlSchemaValidityWarningFunc>(warningCallback), &test);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 

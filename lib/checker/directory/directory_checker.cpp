@@ -3,6 +3,7 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
+#include <libxml/xmlmemory.h>
 #include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
 
@@ -53,9 +54,11 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
         {
             std::string xpath = "//" + elem;
             xmlXPathObjectPtr xpath_obj =
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
             if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
             {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 auto node = xpath_obj->nodesetval->nodeTab[0];
                 auto model_id = getXmlAttribute(node, "modelIdentifier");
                 if (model_id)
@@ -73,12 +76,14 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
         }
 
         xmlXPathObjectPtr sources_xpath = xmlXPathEvalExpression(
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             reinterpret_cast<const xmlChar*>("//*[local-name()='SourceFiles']/*[local-name()='File']"), xpath_context);
 
         if (sources_xpath && sources_xpath->nodesetval)
         {
             for (int i = 0; i < sources_xpath->nodesetval->nodeNr; ++i)
             {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 auto node = sources_xpath->nodesetval->nodeTab[i];
                 auto name_opt = getXmlAttribute(node, "name");
                 if (name_opt)
@@ -102,10 +107,12 @@ std::optional<std::string> DirectoryChecker::getXmlAttribute(xmlNodePtr node, co
     if (!node)
         return std::nullopt;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
     if (!attr)
         return std::nullopt;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::string value(reinterpret_cast<char*>(attr));
     xmlFree(attr);
     return value;

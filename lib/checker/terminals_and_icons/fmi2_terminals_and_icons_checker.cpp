@@ -5,6 +5,7 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
+#include <libxml/xmlmemory.h>
 #include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
 
@@ -58,12 +59,14 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
 
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
     xmlXPathObjectPtr xpath_obj =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/ScalarVariable"), context);
 
     if (xpath_obj && xpath_obj->nodesetval)
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             TerminalVariableInfo var;
             var.name = getXmlAttribute(node, "name").value_or("");
@@ -75,6 +78,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
             {
                 if (child->type == XML_ELEMENT_NODE)
                 {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     std::string elem_name = reinterpret_cast<const char*>(child->name);
                     if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" ||
                         elem_name == "String" || elem_name == "Enumeration")
