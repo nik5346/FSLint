@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cctype>
-#include <string>
+#include <cstddef>
 #include <string_view>
 
 class StructuredNameParser

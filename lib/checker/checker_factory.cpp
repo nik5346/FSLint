@@ -1,5 +1,9 @@
 #include "checker_factory.h"
 
+#include "model_info.h"
+
+#include "checker.h"
+
 #include "fmi1_schema_checker.h"
 #include "fmi2_schema_checker.h"
 #include "fmi3_schema_checker.h"
@@ -10,13 +14,10 @@
 #include "fmi1_model_description_checker.h"
 #include "fmi2_model_description_checker.h"
 #include "fmi3_model_description_checker.h"
-#include "model_description_checker.h"
 
 #include "fmi2_terminals_and_icons_checker.h"
 #include "fmi3_terminals_and_icons_checker.h"
-#include "terminals_and_icons_checker.h"
 
-#include "build_description_checker.h"
 #include "fmi2_build_description_checker.h"
 #include "fmi3_build_description_checker.h"
 
@@ -30,9 +31,9 @@
 
 #include "resources_checker.h"
 
-#include <fstream>
-#include <iostream>
+#include <filesystem>
 #include <memory>
+#include <vector>
 #include <utility>
 
 ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)

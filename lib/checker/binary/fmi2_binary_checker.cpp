@@ -1,5 +1,8 @@
 #include "fmi2_binary_checker.h"
 
+#include <string>
+#include <vector>
+
 std::vector<std::string> Fmi2BinaryChecker::getExpectedFunctions()
 {
     return {"fmi2GetTypesPlatform",

@@ -2,6 +2,10 @@
 
 #include "schema_checker.h"
 
+#include <filesystem>
+#include <string>
+#include <vector>
+
 class Ssp1SchemaChecker : public SchemaCheckerBase
 {
   protected:

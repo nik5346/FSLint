@@ -1,5 +1,14 @@
 #pragma once
+
 #include "terminals_and_icons_checker.h"
+
+#include "certificate.h"
+
+#include <libxml/tree.h>
+
+#include <filesystem>
+#include <map>
+#include <string>
 
 class Fmi2TerminalsAndIconsChecker : public TerminalsAndIconsCheckerBase
 {

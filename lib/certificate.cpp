@@ -1,13 +1,17 @@
 #include "certificate.h"
+
 #include <array>
 #include <chrono>
+#include <cstdint>
 #include <ctime>
+#include <filesystem>
 #include <format>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 TestStatus Certificate::getOverallStatus() const
 {

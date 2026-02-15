@@ -1,9 +1,13 @@
 #pragma once
+
 #include "certificate.h"
 #include "checker.h"
-#include <filesystem>
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+
+#include <cstdint>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <string>

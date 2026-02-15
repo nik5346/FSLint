@@ -2,6 +2,12 @@
 
 #include "binary_checker.h"
 
+#include "certificate.h"
+
+#include <filesystem>
+#include <string>
+#include <vector>
+
 class Fmi1BinaryChecker : public BinaryChecker
 {
   public:

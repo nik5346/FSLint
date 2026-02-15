@@ -1,7 +1,16 @@
 #include "fmi2_terminals_and_icons_checker.h"
+
+#include "terminals_and_icons_checker.h"
+
 #include "certificate.h"
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <libxml/xmlstring.h>
+
+#include <filesystem>
+#include <map>
+#include <string>
 
 void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
 {

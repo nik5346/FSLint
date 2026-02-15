@@ -1,5 +1,10 @@
 #include "ssp2_schema_checker.h"
 
+#include "schema_checker.h"
+
+#include <filesystem>
+#include <vector>
+
 std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::path& path) const
 {
     std::vector<XmlFileRule> rules;

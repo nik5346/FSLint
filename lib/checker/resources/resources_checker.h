@@ -1,6 +1,7 @@
 #pragma once
 
 #include "checker.h"
+
 #include <filesystem>
 
 class ResourcesChecker : public Checker

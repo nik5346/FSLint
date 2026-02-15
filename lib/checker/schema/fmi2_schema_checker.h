@@ -2,6 +2,10 @@
 
 #include "schema_checker.h"
 
+#include <filesystem>
+#include <string>
+#include <vector>
+
 class Fmi2SchemaChecker : public SchemaCheckerBase
 {
   protected:

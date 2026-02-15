@@ -1,5 +1,8 @@
 #include "fmi3_binary_checker.h"
 
+#include <string>
+#include <vector>
+
 std::vector<std::string> Fmi3BinaryChecker::getExpectedFunctions()
 {
     return {"fmi3GetVersion",

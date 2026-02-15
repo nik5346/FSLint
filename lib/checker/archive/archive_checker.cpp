@@ -1,11 +1,12 @@
 #include "archive_checker.h"
 
 #include "certificate.h"
+#include "zipper.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>

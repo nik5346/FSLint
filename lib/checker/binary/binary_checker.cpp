@@ -1,12 +1,17 @@
 #include "binary_checker.h"
+
 #include "binary_parser.h"
 #include "certificate.h"
-#include <algorithm>
-#include <filesystem>
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <libxml/xmlstring.h>
+
+#include <filesystem>
 #include <map>
+#include <optional>
 #include <set>
+#include <vector>
 
 void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {

@@ -2,6 +2,7 @@
 
 #include "checker.h"
 
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <string>
