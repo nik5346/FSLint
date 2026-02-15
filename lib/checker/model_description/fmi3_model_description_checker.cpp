@@ -1,7 +1,6 @@
 #include "fmi3_model_description_checker.h"
 #include "certificate.h"
 #include <algorithm>
-#include <regex>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
