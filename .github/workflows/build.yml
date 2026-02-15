@@ -1,5 +1,11 @@
 name: Build and Package CLI
 
+# This workflow can be toggled to use self-hosted runners by setting the following
+# Repository Variables in GitHub Settings -> Secrets and variables -> Actions -> Variables:
+# - LINUX_RUNNER:   Set to 'self-hosted' (or your specific label) to override ubuntu-latest
+# - WINDOWS_RUNNER: Set to 'self-hosted' (or your specific label) to override windows-latest
+# - MACOS_RUNNER:   Set to 'self-hosted' (or your specific label) to override macos-latest
+
 on:
   push:
     branches: [ master ]
@@ -10,7 +16,7 @@ on:
 jobs:
   lint:
     name: Lint and Encoding Check
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -22,11 +28,17 @@ jobs:
 
   build:
     name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            runner: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
+          - os: windows-latest
+            runner: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
+          - os: macos-latest
+            runner: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
 
     steps:
     - uses: actions/checkout@v4
