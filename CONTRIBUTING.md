@@ -23,8 +23,9 @@ Thank you for your interest in contributing to FSLint! We welcome contributions 
 
 ## Code Style
 
-- We use `clang-format` to maintain a consistent code style. Please run `make clang-format` before submitting your PR.
-- We use `clang-tidy` for static analysis. Ensure your changes do not introduce new warnings.
+- We use `clang-format` to maintain a consistent code style. Please run `cmake --build build --target clang-format` before submitting your PR.
+- We use `clang-tidy` for static analysis. You can run it via `cmake --build build --target clang-tidy`. Ensure your changes do not introduce new warnings.
+- We use a custom XML formatter for test data. Run `cmake --build build --target format-xml` to format `.xml` and `.ssd` files in `tests/data/`.
 - Follow modern C++ practices (C++23).
 
 ## Testing

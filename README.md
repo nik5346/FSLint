@@ -25,15 +25,26 @@ FSLint is a comprehensive linting and validation tool for Functional Mock-up Uni
 mkdir build
 cd build
 cmake ..
-make -j
+cmake --build . -j
+```
+
+After building, the `FSLint-cli` executable will be located in the `build/` directory.
+
+### Running Tests
+
+To run the test suite, use `ctest` from the `build/` directory:
+
+```bash
+cd build
+ctest --output-on-failure
 ```
 
 ### Usage
 
-Run the `FSLint-cli` tool on an FMU file, an SSP file, or an extracted directory:
+Run the `FSLint-cli` tool from the `build` directory on an FMU file, an SSP file, or an extracted directory:
 
 ```bash
-./FSLint-cli path/to/your_model.fmu
+./build/FSLint-cli path/to/your_model.fmu
 ```
 
 #### Certificate Management
@@ -72,7 +83,7 @@ SHA256:     0ad0a8b1ac49c7808aad524b171c1534c3ace783cdc1f2681dd13b0b54b8e889
 
 ## Standard Compliance
 
-FSLint aims for full compliance with the following standards:
+FSLint aims for full compliance with the following standards. For a detailed list of all checked rules, see [RULES.md](RULES.md).
 
 - **FMI (Functional Mock-up Interface)**:
   - Version 1.0.x (1.0.0 and 1.0.1).
@@ -94,7 +105,7 @@ FSLint aims for full compliance with the following standards:
 
 ## Contributing
 
-Contributions are welcome! See the [CONTRIBUTING](CONTRIBUTING) file for details.
+Contributions are welcome! See the [CONTRIBUTING](CONTRIBUTING.md) file for details.
 
 ## License
 
