@@ -4,18 +4,9 @@
 #include <string>
 #include <string_view>
 
-/**
- * Parser for FMI structured naming convention.
- * Implements the BNF grammar for validating variable names.
- */
 class StructuredNameParser
 {
   public:
-    /**
-     * Validate a name according to the structured naming convention.
-     * @param name The name to validate
-     * @return true if the name is valid, false otherwise
-     */
     static bool isValid(std::string_view name)
     {
         if (name.empty())
