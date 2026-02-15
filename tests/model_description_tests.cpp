@@ -40,25 +40,25 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
 
     SECTION("FMI 1.0 ME Valid")
     {
-        checker.validate("tests/data/fmi1/pass/me", cert);
+        checker.validate("tests/data/fmi1/pass/TestME", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("FMI 1.0 CS Valid")
     {
-        checker.validate("tests/data/fmi1/pass/cs", cert);
+        checker.validate("tests/data/fmi1/pass/TestCS", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("FMI 1.0 CS Tool Valid")
     {
-        checker.validate("tests/data/fmi1/pass/cs_tool", cert);
+        checker.validate("tests/data/fmi1/pass/TestCSTool", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("FMI 1.0 Special Floats Valid")
     {
-        checker.validate("tests/data/fmi1/pass/special_floats", cert);
+        checker.validate("tests/data/fmi1/pass/SpecialFloats", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }

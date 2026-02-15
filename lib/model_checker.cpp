@@ -72,6 +72,7 @@ void ModelChecker::validateInternal(const std::filesystem::path& path, Certifica
 
     // Step 3: Detect model type and create appropriate checkers
     ModelInfo model_info = CheckerFactory::detectModel(extract_dir);
+    model_info.original_path = path;
 
     if (model_info.standard == ModelStandard::UNKNOWN)
     {
@@ -136,6 +137,7 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 
     // Step 3: Detect and validate
     ModelInfo model_info = CheckerFactory::detectModel(extract_dir);
+    model_info.original_path = path;
 
     if (model_info.standard == ModelStandard::UNKNOWN)
     {

@@ -16,7 +16,7 @@ namespace fs = std::filesystem;
 
 static bool reference_fmus_available()
 {
-    static bool available = fs::exists("tests/reference_fmus/BouncingBall_10") &&
+    static bool available = fs::exists("tests/reference_fmus/BouncingBall") &&
                             fs::exists("tests/reference_fmus/BouncingBall_20") &&
                             fs::exists("tests/reference_fmus/BouncingBall_30");
     return available;
@@ -26,7 +26,7 @@ TEST_CASE("FMI 1.0 Factory Detection", "[factory][fmi1]")
 {
     SECTION("FMI 1.0 ME")
     {
-        auto info = CheckerFactory::detectModel("tests/data/fmi1/pass/me");
+        auto info = CheckerFactory::detectModel("tests/data/fmi1/pass/TestME");
         CHECK(info.standard == ModelStandard::FMI1_ME);
         CHECK(info.version == "1.0");
 
@@ -46,7 +46,7 @@ TEST_CASE("FMI 1.0 Factory Detection", "[factory][fmi1]")
 
     SECTION("FMI 1.0 CS")
     {
-        auto info = CheckerFactory::detectModel("tests/data/fmi1/pass/cs");
+        auto info = CheckerFactory::detectModel("tests/data/fmi1/pass/TestCS");
         CHECK(info.standard == ModelStandard::FMI1_CS);
         CHECK(info.version == "1.0");
     }
@@ -66,10 +66,19 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
 
     SECTION("Passing Cases")
     {
-        validate_pass("tests/data/fmi1/pass/me");
-        validate_pass("tests/data/fmi1/pass/cs");
+        validate_pass("tests/data/fmi1/pass/TestME");
+        validate_pass("tests/data/fmi1/pass/TestCS");
         if (reference_fmus_available())
-            validate_pass("tests/reference_fmus/BouncingBall_10");
+            validate_pass("tests/reference_fmus/BouncingBall");
+    }
+
+    SECTION("Model Identifier Mismatch")
+    {
+        Certificate cert;
+        Fmi1DirectoryChecker mismatch_checker("WrongName.fmu");
+        mismatch_checker.validate("tests/data/fmi1/pass/TestME", cert);
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
     }
 }
 

@@ -13,7 +13,7 @@ namespace fs = std::filesystem;
 
 static bool reference_fmus_available()
 {
-    static bool available = fs::exists("tests/reference_fmus/BouncingBall_10") &&
+    static bool available = fs::exists("tests/reference_fmus/BouncingBall") &&
                             fs::exists("tests/reference_fmus/BouncingBall_20") &&
                             fs::exists("tests/reference_fmus/BouncingBall_30");
     if (!available)
@@ -66,7 +66,7 @@ TEST_CASE("FMI 1.0 Binary Exports", "[binary][fmi1]")
     {
         Fmi1BinaryChecker checker;
         Certificate cert;
-        checker.validate("tests/reference_fmus/BouncingBall_10", cert);
+        checker.validate("tests/reference_fmus/BouncingBall", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }
@@ -106,7 +106,7 @@ TEST_CASE("Binary Checker Validation Failure", "[binary][checker]")
     fs::create_directories(binaries_dir);
 
     // Copy FMI 1.0 binary and rename it to match modelIdentifier 'test'
-    fs::copy_file("tests/reference_fmus/BouncingBall_10/binaries/linux64/BouncingBall.so", binaries_dir / "test.so",
+    fs::copy_file("tests/reference_fmus/BouncingBall/binaries/linux64/BouncingBall.so", binaries_dir / "test.so",
                   fs::copy_options::overwrite_existing);
 
     Fmi2BinaryChecker checker;
