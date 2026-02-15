@@ -85,7 +85,6 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     checkUnusedDefinitions(type_definitions, units, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
-    checkDerivativeReferences(variables, cert);
 
     // Perform version-specific validation
     performVersionSpecificChecks(doc, variables, type_definitions, units, cert);
@@ -1199,61 +1198,3 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkDerivativeReferences(const std::vector<Variable>& variables, Certificate& cert)
-{
-    TestResult test{"Derivative References", TestStatus::PASS, {}};
-
-    bool is_fmi2 = getFmiVersion().starts_with("2.");
-
-    // Build lookup map: for FMI2 it's index -> Variable, for FMI3 it's valueReference -> Variable
-    std::map<uint32_t, const Variable*> lookup_map;
-    for (const auto& var : variables)
-        if (is_fmi2)
-            lookup_map[var.index] = &var;
-        else if (var.value_reference.has_value())
-            lookup_map[*var.value_reference] = &var;
-
-    // Check each variable that has a derivative_of attribute
-    for (const auto& var : variables)
-    {
-        if (var.derivative_of.has_value())
-        {
-            // The derivative itself must be continuous
-            if (var.variability != "continuous")
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") is a derivative and must have variability=\"continuous\".");
-            }
-
-            uint32_t ref = *var.derivative_of;
-
-            // Check if the referenced variable exists
-            auto it = lookup_map.find(ref);
-            if (it == lookup_map.end())
-            {
-                test.status = TestStatus::FAIL;
-                std::string ref_type = is_fmi2 ? "index" : "value reference";
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has derivative attribute referencing " + ref_type + " " +
-                                        std::to_string(ref) + " which does not exist.");
-            }
-            else
-            {
-                const Variable* referenced_var = it->second;
-
-                // The state variable must be continuous
-                if (referenced_var->variability != "continuous")
-                {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                            ") is derivative of \"" + referenced_var->name +
-                                            "\" which has variability \"" + referenced_var->variability +
-                                            "\". Continuous-time states must have variability=\"continuous\".");
-                }
-            }
-        }
-    }
-
-    cert.printTestResult(test);
-}

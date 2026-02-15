@@ -12,7 +12,7 @@ TEST_CASE("Recursive Model Validation", "[recursive]")
     {
         std::filesystem::path root_path = "tests/data/nested/root";
 
-        Certificate result_cert = checker.validateCore(root_path);
+        Certificate result_cert = checker.validate(root_path, true);
 
         const auto& nested = result_cert.getNestedModels();
         REQUIRE(nested.size() == 1);
@@ -29,7 +29,7 @@ TEST_CASE("Recursive Model Validation", "[recursive]")
     {
         std::filesystem::path ssp_path = "tests/data/nested/root_ssp";
 
-        Certificate result_cert = checker.validateCore(ssp_path);
+        Certificate result_cert = checker.validate(ssp_path, true);
 
         const auto& nested = result_cert.getNestedModels();
         REQUIRE(nested.size() == 1);

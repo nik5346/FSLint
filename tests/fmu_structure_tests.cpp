@@ -34,7 +34,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         if (fs::is_regular_file(path))
         {
             ModelChecker mc;
-            cert = mc.validateCore(path);
+            cert = mc.validate(path, true);
         }
         else
         {
@@ -75,7 +75,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         if (fs::is_regular_file(path))
         {
             ModelChecker mc;
-            cert = mc.validateCore(path);
+            cert = mc.validate(path, true);
         }
         else
         {
@@ -168,7 +168,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         if (fs::is_regular_file(path))
         {
             ModelChecker mc;
-            cert = mc.validateCore(path);
+            cert = mc.validate(path, true);
         }
         else
         {

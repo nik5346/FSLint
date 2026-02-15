@@ -31,8 +31,8 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     // Check MultipleSetPerTimeInstant attribute
     checkMultipleSetAttribute(doc, variables, cert);
 
-    // Check continuous-time states
-    checkContinuousStates(variables, cert);
+    // Check continuous-time states and derivatives
+    checkContinuousStatesAndDerivatives(variables, cert);
 
     // Check SourceFiles semantic validation (existence of listed files)
     checkSourceFilesSemantic(doc, cert);
@@ -127,17 +127,24 @@ void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkContinuousStates(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std::vector<Variable>& variables,
+                                                                      Certificate& cert)
 {
-    TestResult test{"Continuous-time States (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Continuous-time States and Derivatives (FMI2)", TestStatus::PASS, {}};
 
     std::set<uint32_t> state_indices;
-    for (const auto& var : variables)
-        if (var.derivative_of.has_value())
-            state_indices.insert(*var.derivative_of);
+    std::map<uint32_t, const Variable*> index_map;
 
     for (const auto& var : variables)
     {
+        index_map[var.index] = &var;
+        if (var.derivative_of.has_value())
+            state_indices.insert(*var.derivative_of);
+    }
+
+    for (const auto& var : variables)
+    {
+        // Check states
         if (state_indices.contains(var.index))
         {
             if (var.causality != "local" && var.causality != "output")
@@ -146,8 +153,50 @@ void Fmi2ModelDescriptionChecker::checkContinuousStates(const std::vector<Variab
                 test.messages.push_back("Continuous-time state \"" + var.name + "\" (line " +
                                         std::to_string(var.sourceline) + ") must have causality 'local' or 'output'.");
             }
+
+            if (var.variability != "continuous")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Continuous-time state \"" + var.name + "\" (line " +
+                                        std::to_string(var.sourceline) + ") must have variability=\"continuous\".");
+            }
         }
 
+        // Check derivatives
+        if (var.derivative_of.has_value())
+        {
+            if (var.variability != "continuous")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") is a derivative and must have variability=\"continuous\".");
+            }
+
+            uint32_t ref_index = *var.derivative_of;
+            auto it = index_map.find(ref_index);
+
+            if (it == index_map.end())
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has derivative attribute referencing index " +
+                                        std::to_string(ref_index) + " which does not exist.");
+            }
+            else
+            {
+                const Variable* state_var = it->second;
+                if (state_var->variability != "continuous")
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                            ") is derivative of \"" + state_var->name +
+                                            "\" which has variability \"" + state_var->variability +
+                                            "\". Continuous-time states must have variability=\"continuous\".");
+                }
+            }
+        }
+
+        // Type check for both
         if (var.derivative_of.has_value() || state_indices.contains(var.index))
         {
             if (var.type != "Real")

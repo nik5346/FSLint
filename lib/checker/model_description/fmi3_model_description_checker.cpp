@@ -1,7 +1,7 @@
 #include "fmi3_model_description_checker.h"
 #include "certificate.h"
-#include "fmi_version_utils.h"
 #include <algorithm>
+#include <regex>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -24,7 +24,7 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     checkClockedVariables(variables, cert);
     checkAliases(variables, cert);
     checkReinitAttribute(variables, cert);
-    checkDerivativeAttributes(variables, cert);
+    checkDerivativeConsistency(variables, cert);
     checkCanHandleMultipleSet(variables, cert);
     checkClockTypes(doc, cert);
     checkStructuralParameter(variables, cert);
@@ -287,16 +287,6 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
-{
-    if (!FmiVersionUtils::isValidFmi3Version(version))
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("FMI version \"" + version +
-                                "\" does not match FMI 3.0 format (expected 3.x.y or 3.x.y-suffix).");
-    }
-}
-
 void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
     TestResult test{"Required Start Values (FMI3)", TestStatus::PASS, {}};
@@ -535,20 +525,59 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkDerivativeAttributes(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Derivative Attribute (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Derivative Consistency (FMI3)", TestStatus::PASS, {}};
+
+    std::map<uint32_t, const Variable*> vr_map;
+    for (const auto& var : variables)
+        if (var.value_reference.has_value())
+            vr_map[*var.value_reference] = &var;
 
     for (const auto& var : variables)
     {
         if (var.derivative_of.has_value())
         {
+            // 1. Variability of derivative must be continuous
+            if (var.variability != "continuous")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") is a derivative and must have variability=\"continuous\".");
+            }
+
+            // 2. Must be Float32 or Float64
             if (var.type != "Float32" && var.type != "Float64")
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                         ") has 'derivative' attribute but is of type " + var.type +
                                         " (must be Float32 or Float64).");
+            }
+
+            uint32_t ref_vr = *var.derivative_of;
+            auto it = vr_map.find(ref_vr);
+
+            if (it == vr_map.end())
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has derivative attribute referencing value reference " +
+                                        std::to_string(ref_vr) + " which does not exist.");
+            }
+            else
+            {
+                const Variable* state_var = it->second;
+                // 3. State variable must have variability="continuous"
+                if (state_var->variability != "continuous")
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                            ") is derivative of \"" + state_var->name +
+                                            "\" (line " + std::to_string(state_var->sourceline) +
+                                            ") which has variability \"" + state_var->variability +
+                                            "\". Continuous-time states must have variability=\"continuous\".");
+                }
             }
         }
     }

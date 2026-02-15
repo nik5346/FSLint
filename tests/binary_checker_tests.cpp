@@ -99,7 +99,7 @@ TEST_CASE("FMI 1.0 Binary Exports", "[binary][fmi1]")
     SECTION("ME")
     {
         ModelChecker mc;
-        Certificate cert = mc.validateCore("tests/reference_fmus/1.0/cs/BouncingBall.fmu");
+        Certificate cert = mc.validate("tests/reference_fmus/1.0/cs/BouncingBall.fmu", true);
         CHECK_FALSE(has_fail(cert));
     }
 }
@@ -110,7 +110,7 @@ TEST_CASE("FMI 3.0 Binary Exports", "[binary][fmi3]")
         SKIP("Reference FMUs not available");
 
     ModelChecker mc;
-    Certificate cert = mc.validateCore("tests/reference_fmus/3.0/BouncingBall.fmu");
+    Certificate cert = mc.validate("tests/reference_fmus/3.0/BouncingBall.fmu", true);
     CHECK_FALSE(has_fail(cert));
 }
 
