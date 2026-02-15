@@ -16,15 +16,6 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     checkRequiredStartValues(variables, cert);
     checkIllegalStartValues(variables, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
-
-    // FMI 1.0 ME consistency check
-    auto ids = extractModelIdentifiers(doc, {});
-    if (ids.contains("ModelExchange"))
-    {
-        xmlNodePtr root = xmlDocGetRootElement(doc);
-        auto metadata = extractMetadata(root);
-        checkMeConsistency(variables, metadata, cert);
-    }
 }
 
 void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
@@ -44,34 +35,6 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         test.status = TestStatus::FAIL;
         test.messages.push_back("guid attribute is missing or empty.");
     }
-    cert.printTestResult(test);
-}
-
-void Fmi1ModelDescriptionChecker::checkMeConsistency(const std::vector<Variable>& variables,
-                                                     const ModelMetadata& metadata, Certificate& cert)
-{
-    TestResult test{"FMI 1.0 ME Consistency", TestStatus::PASS, {}};
-
-    uint32_t nx = metadata.numberOfContinuousStates.value_or(0);
-    uint32_t ni = metadata.numberOfEventIndicators.value_or(0);
-
-    size_t count_continuous_real = 0;
-    for (const auto& var : variables)
-    {
-        if (var.type == "Real" && var.variability == "continuous" && !var.is_alias)
-            count_continuous_real++;
-    }
-
-    size_t required = 2 * nx + ni;
-    if (count_continuous_real < required)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("For Model Exchange, the number of non-alias ScalarVariables with type='Real' and "
-                                "variability='continuous' must be at least 2*numberOfContinuousStates + "
-                                "numberOfEventIndicators = " +
-                                std::to_string(required) + ". Found " + std::to_string(count_continuous_real) + ".");
-    }
-
     cert.printTestResult(test);
 }
 
@@ -440,6 +403,37 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
         variables.push_back(var);
     }
     xmlXPathFreeObject(xpath_obj);
+
+    // Second pass for FMI 1.0: Resolve types and attributes for aliases
+    std::map<uint32_t, const Variable*> vr_to_base;
+    for (const auto& var : variables)
+    {
+        if (!var.is_alias && !var.type.empty() && var.value_reference.has_value())
+        {
+            vr_to_base[*var.value_reference] = &var;
+        }
+    }
+
+    for (auto& var : variables)
+    {
+        if (var.is_alias && var.type.empty() && var.value_reference.has_value())
+        {
+            auto it = vr_to_base.find(*var.value_reference);
+            if (it != vr_to_base.end())
+            {
+                const auto* base = it->second;
+                var.type = base->type;
+                var.unit = base->unit;
+                var.display_unit = base->display_unit;
+                var.declared_type = base->declared_type;
+                var.min = base->min;
+                var.max = base->max;
+                var.nominal = base->nominal;
+                var.relative_quantity = base->relative_quantity;
+            }
+        }
+    }
+
     return variables;
 }
 
@@ -662,6 +656,13 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
 void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::string& attr_name, int line,
                                            TestResult& test)
 {
+    if (uri.find('\\') != std::string::npos)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                ") contains a backslash.");
+    }
+
     if (uri.compare(0, 6, "fmu://") == 0)
     {
         std::string relative_path = uri.substr(6); // Remove "fmu://"

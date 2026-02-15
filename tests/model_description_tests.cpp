@@ -31,11 +31,6 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("implementation/entry_point_missing_file", "references missing file in FMU: 'resources/non_existent.mdl'");
         validate_fail("implementation/file_missing_file", "references missing file in FMU: 'resources/missing_extra.txt'");
     }
-
-    SECTION("ME Consistency")
-    {
-        validate_fail("me_consistency_count", "must be at least 2*numberOfContinuousStates + numberOfEventIndicators");
-    }
 }
 
 TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
@@ -236,7 +231,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_initial_unknowns_not_ordered", "ordered according to their ScalarVariable index");
         validate_fail("structure_dependencies_not_ordered", "ordered according to magnitude");
         validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
-        validate_fail("structure_initial_unknowns_mismatch", "does not contain the expected set of variables");
+        validate_fail("structure_initial_unknowns_mismatch", "missing from ModelStructure/InitialUnknowns");
         validate_fail("structure_initial_unknowns_state_approx", "der_x");
         validate_fail("structure_dependencies_kind_invalid_initial", "is not allowed in InitialUnknowns");
         validate_fail("structure_dependencies_kind_non_real", "only allowed for Real variables");

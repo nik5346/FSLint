@@ -68,7 +68,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
             std::string name = entry.path().filename().string();
-            // Ignore .gitkeep
+
             if (name == ".gitkeep")
                 continue;
 
@@ -77,6 +77,12 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
                 test.status = TestStatus::WARNING;
                 std::string type = entry.is_directory() ? "directory" : "file";
                 test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
+            }
+
+            if (entry.is_directory() && fmi1_standard_entries.contains(name) && std::filesystem::is_empty(entry.path()))
+            {
+                test.status = TestStatus::WARNING;
+                test.messages.push_back("Standard directory '" + name + "' is empty.");
             }
         }
         cert.printTestResult(test);

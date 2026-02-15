@@ -103,6 +103,15 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                     continue;
                 }
 
+                if (name_opt->find('\\') != std::string::npos)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Source file '" + (*name_opt) +
+                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
+                                            ") contains a backslash.");
+                    continue;
+                }
+
                 listed_files.insert(*name_opt);
                 auto file_path = sources_path / (*name_opt);
                 if (!std::filesystem::exists(file_path))
@@ -140,6 +149,15 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                     test.messages.push_back("Include directory '" + (*name_opt) +
                                             "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
                                             ") contains illegal '..' sequence.");
+                    continue;
+                }
+
+                if (name_opt->find('\\') != std::string::npos)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Include directory '" + (*name_opt) +
+                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
+                                            ") contains a backslash.");
                     continue;
                 }
 

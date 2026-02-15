@@ -200,6 +200,13 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
                                         ") contains illegal tab character (U+0009).");
                 is_valid = false;
             }
+            if (var.name.find('\\') != std::string::npos)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") contains an illegal backslash character.");
+                is_valid = false;
+            }
         }
         else if (convention == "structured")
         {

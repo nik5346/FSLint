@@ -1544,60 +1544,60 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 {
     TestResult test{"ModelStructure Initial Unknowns (FMI3)", TestStatus::PASS, {}};
 
-    // Build expected set of initial unknown value references (FMI3 spec)
-    std::set<uint32_t> expected_vrs;
+    std::set<uint32_t> mandatory_vrs;
+    std::set<uint32_t> allowed_vrs;
     std::map<uint32_t, std::string> vr_to_name;
+
+    // Build a map of value_reference -> Variable for quick lookup of states
+    std::set<uint32_t> state_vrs;
+    for (const auto& var : variables)
+        if (var.derivative_of.has_value())
+            state_vrs.insert(*var.derivative_of);
 
     for (const auto& var : variables)
     {
         if (!var.value_reference.has_value())
             continue;
 
-        bool is_required = false;
+        vr_to_name[*var.value_reference] = var.name;
+
+        bool is_mandatory = false;
+        bool is_optional = false;
+
+        bool is_clocked = var.clocks.has_value() && !var.clocks->empty();
 
         // (1) Outputs with initial="approx" or "calculated" (not clocked)
-        if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
-            !var.clocks.has_value())
-        {
-            is_required = true;
-        }
+        if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") && !is_clocked)
+            is_mandatory = true;
+
         // (2) Calculated parameters
         else if (var.causality == "calculatedParameter")
-        {
-            is_required = true;
-        }
-        // (3) State derivatives with initial="approx" or "calculated"
-        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
-        {
-            is_required = true;
-        }
-        // (4) Clocked variables with initial="approx" or "calculated"
-        else if (var.clocks.has_value() && !var.clocks->empty() &&
-                 (var.initial == "approx" || var.initial == "calculated"))
-        {
-            is_required = true;
-        }
-        // (5) States with initial="approx" or "calculated"
-        // Identifying states: variables referenced by 'derivative' attribute of some other variable
-        else
-        {
-            for (const auto& other : variables)
-            {
-                if (other.derivative_of.has_value() && *other.derivative_of == *var.value_reference)
-                {
-                    if (var.initial == "approx" || var.initial == "calculated")
-                    {
-                        is_required = true;
-                        break;
-                    }
-                }
-            }
-        }
+            is_mandatory = true;
 
-        if (is_required)
+        // (3) Continuous-time states with initial="approx" or "calculated"
+        else if (state_vrs.contains(*var.value_reference) && (var.initial == "approx" || var.initial == "calculated"))
+            is_mandatory = true;
+
+        // (4) State derivatives with initial="approx" or "calculated"
+        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
+            is_mandatory = true;
+
+        // (5) Optional: Clocked variables with initial="approx" or "calculated"
+        else if (is_clocked && (var.initial == "approx" || var.initial == "calculated"))
+            is_optional = true;
+
+        // (6) Optional: Local variables with initial="approx" or "calculated" (not clocked)
+        else if (var.causality == "local" && (var.initial == "approx" || var.initial == "calculated") && !is_clocked)
+            is_optional = true;
+
+        if (is_mandatory)
         {
-            expected_vrs.insert(*var.value_reference);
-            vr_to_name[*var.value_reference] = var.name;
+            mandatory_vrs.insert(*var.value_reference);
+            allowed_vrs.insert(*var.value_reference);
+        }
+        else if (is_optional)
+        {
+            allowed_vrs.insert(*var.value_reference);
         }
     }
 
@@ -1634,16 +1634,9 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         xmlXPathFreeObject(xpath_obj);
     }
 
-    // Mandatory: expected_vrs (contains non-clocked outputs, calculated parameters, states/derivatives)
-    // Optional: clocked variables
-    std::map<uint32_t, const Variable*> vr_to_variable;
-    for (const auto& var : variables)
-        if (var.value_reference.has_value())
-            vr_to_variable[*var.value_reference] = &var;
-
     bool mismatch = false;
     std::vector<std::string> missing_mandatory;
-    for (uint32_t vr : expected_vrs)
+    for (uint32_t vr : mandatory_vrs)
     {
         if (!actual_vrs.contains(vr))
         {
@@ -1655,19 +1648,10 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     std::vector<std::string> extra_invalid;
     for (uint32_t vr : actual_vrs)
     {
-        if (!expected_vrs.contains(vr))
+        if (!allowed_vrs.contains(vr))
         {
-            // It might be an optional clocked variable
-            bool is_clocked = false;
-            auto it = vr_to_variable.find(vr);
-            if (it != vr_to_variable.end() && it->second->clocks.has_value() && !it->second->clocks->empty())
-                is_clocked = true;
-
-            if (!is_clocked)
-            {
-                extra_invalid.push_back("VR " + std::to_string(vr));
-                mismatch = true;
-            }
+            extra_invalid.push_back("VR " + std::to_string(vr));
+            mismatch = true;
         }
     }
 
@@ -1686,8 +1670,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
         if (!extra_invalid.empty())
         {
-            std::string msg = "The following variables in ModelStructure/InitialUnknown are not allowed (only "
-                              "mandatory unknowns and optional clocked variables are allowed): ";
+            std::string msg = "The following variables in ModelStructure/InitialUnknown are not allowed: ";
             for (size_t i = 0; i < extra_invalid.size(); ++i)
                 msg += (i > 0 ? ", " : "") + extra_invalid[i];
             msg += ".";

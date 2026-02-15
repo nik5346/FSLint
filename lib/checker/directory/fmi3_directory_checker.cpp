@@ -19,6 +19,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
             std::string name = entry.path().filename().string();
+
+            if (name == ".gitkeep")
+                continue;
+
             if (!fmi3_standard_entries.contains(name))
             {
                 test.status = TestStatus::WARNING;

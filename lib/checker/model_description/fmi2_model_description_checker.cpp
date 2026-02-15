@@ -1099,30 +1099,49 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 {
     TestResult test{"ModelStructure Initial Unknowns (FMI2)", TestStatus::PASS, {}};
 
-    // Build expected set of initial unknowns (FMI2 spec)
-    std::set<std::string> expected;
-
     // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
         if (var.derivative_of.has_value())
             state_indices.insert(*var.derivative_of);
 
+    std::set<std::string> mandatory;
+    std::set<std::string> allowed;
+
     for (const auto& var : variables)
     {
+        bool is_mandatory = false;
+        bool is_optional = false;
+
         // (1) Outputs with initial="approx" or "calculated"
         if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated"))
-            expected.insert(var.name);
+            is_mandatory = true;
 
         // (2) Calculated parameters
         if (var.causality == "calculatedParameter")
-            expected.insert(var.name);
+            is_mandatory = true;
 
         // (3) States and their derivatives with initial="approx" or "calculated"
         if ((state_indices.contains(var.index) || var.derivative_of.has_value()) &&
             (var.initial == "approx" || var.initial == "calculated"))
         {
-            expected.insert(var.name);
+            is_mandatory = true;
+        }
+
+        // (4) Optional: local variables with initial="approx" or "calculated"
+        if (var.causality == "local" && (var.initial == "approx" || var.initial == "calculated"))
+        {
+            is_optional = true;
+        }
+
+        if (is_mandatory)
+        {
+            mandatory.insert(var.name);
+            allowed.insert(var.name);
+        }
+        else if (is_optional)
+        {
+            allowed.insert(var.name);
         }
     }
 
@@ -1240,25 +1259,48 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         }
     }
 
-    if (expected != actual)
+    bool mismatch = false;
+    std::vector<std::string> missing_mandatory;
+    for (const auto& name : mandatory)
+    {
+        if (!actual.contains(name))
+        {
+            missing_mandatory.push_back(name);
+            mismatch = true;
+        }
+    }
+
+    std::vector<std::string> extra_invalid;
+    for (const auto& name : actual)
+    {
+        if (!allowed.contains(name))
+        {
+            extra_invalid.push_back(name);
+            mismatch = true;
+        }
+    }
+
+    if (mismatch)
     {
         test.status = TestStatus::FAIL;
 
-        std::string expected_str;
-        for (const auto& name : expected)
-            expected_str += name + ", ";
-        if (!expected_str.empty())
-            expected_str = expected_str.substr(0, expected_str.length() - 2);
+        if (!missing_mandatory.empty())
+        {
+            std::string msg = "The following mandatory variables are missing from ModelStructure/InitialUnknowns: ";
+            for (size_t i = 0; i < missing_mandatory.size(); ++i)
+                msg += (i > 0 ? ", " : "") + missing_mandatory[i];
+            msg += ".";
+            test.messages.push_back(msg);
+        }
 
-        std::string actual_str;
-        for (const auto& name : actual)
-            actual_str += name + ", ";
-        if (!actual_str.empty())
-            actual_str = actual_str.substr(0, actual_str.length() - 2);
-
-        test.messages.push_back("ModelStructure/InitialUnknowns does not contain the expected set of variables. "
-                                "Expected { " +
-                                expected_str + " } but was { " + actual_str + " }.");
+        if (!extra_invalid.empty())
+        {
+            std::string msg = "The following variables in ModelStructure/InitialUnknowns are not allowed: ";
+            for (size_t i = 0; i < extra_invalid.size(); ++i)
+                msg += (i > 0 ? ", " : "") + extra_invalid[i];
+            msg += ".";
+            test.messages.push_back(msg);
+        }
     }
 
     cert.printTestResult(test);
@@ -1803,6 +1845,13 @@ void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certif
             auto name_opt = getXmlAttribute(node, "name");
             if (name_opt)
             {
+                if (name_opt->find('\\') != std::string::npos)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Source file path '" + (*name_opt) +
+                                            "' (line " + std::to_string(node->line) + ") contains a backslash.");
+                }
+
                 auto file_path = _fmu_root_path / "sources" / (*name_opt);
                 if (!std::filesystem::exists(file_path))
                 {
