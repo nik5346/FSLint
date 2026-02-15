@@ -1,17 +1,23 @@
 #include "schema_checker.h"
+
 #include "certificate.h"
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/xmlschemas.h>
+#include <libxml/xmlstring.h>
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
+#include <vector>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

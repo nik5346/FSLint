@@ -1,10 +1,18 @@
 #include "build_description_checker.h"
+
 #include "certificate.h"
-#include <algorithm>
-#include <filesystem>
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <libxml/xmlstring.h>
+#include <libxml/tree.h>
+
+#include <algorithm>
+#include <filesystem>
+#include <optional>
 #include <set>
+#include <string>
+#include <vector>
 
 void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {

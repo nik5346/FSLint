@@ -1,5 +1,8 @@
 #include "fmi2_build_description_checker.h"
+
 #include "certificate.h"
+
+#include <libxml/tree.h>
 
 void Fmi2BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& cert)
 {

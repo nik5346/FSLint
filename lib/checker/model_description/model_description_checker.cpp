@@ -1,17 +1,29 @@
 #include "model_description_checker.h"
+
 #include "certificate.h"
 #include "structured_name_parser.h"
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <libxml/xmlstring.h>
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <ctime>
+#include <exception>
+#include <filesystem>
 #include <iomanip>
+#include <map>
+#include <optional>
 #include <regex>
+#include <set>
 #include <sstream>
+#include <string>
+#include <time.h>
+#include <vector>
 
 void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
 {

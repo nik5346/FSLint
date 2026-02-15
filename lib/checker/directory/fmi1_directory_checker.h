@@ -2,6 +2,14 @@
 
 #include "directory_checker.h"
 
+#include "certificate.h"
+
+#include <filesystem>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+
 class Fmi1DirectoryChecker : public DirectoryChecker
 {
   public:

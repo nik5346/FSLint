@@ -1,12 +1,18 @@
 #include "terminals_and_icons_checker.h"
+
 #include "certificate.h"
-#include <algorithm>
-#include <iostream>
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
+#include <libxml/xmlstring.h>
+
+#include <filesystem>
+#include <map>
+#include <optional>
 #include <set>
 #include <sstream>
+#include <string>
 
 void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
 {

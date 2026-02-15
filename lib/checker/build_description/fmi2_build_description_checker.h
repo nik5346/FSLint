@@ -1,5 +1,13 @@
 #pragma once
+
 #include "build_description_checker.h"
+
+#include "certificate.h"
+
+#include <libxml/tree.h>
+
+#include <string>
+#include <utility>
 
 class Fmi2BuildDescriptionChecker : public BuildDescriptionChecker
 {

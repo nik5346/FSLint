@@ -1,7 +1,17 @@
 #include "directory_checker.h"
+
 #include "certificate.h"
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <libxml/xmlstring.h>
+
+#include <filesystem>
+#include <map>
+#include <optional>
+#include <set>
+#include <string>
+#include <vector>
 
 void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {

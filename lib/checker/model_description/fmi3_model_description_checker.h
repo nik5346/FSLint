@@ -2,6 +2,16 @@
 
 #include "model_description_checker.h"
 
+#include "certificate.h"
+
+#include "libxml/tree.h"
+
+#include <cstddef>
+#include <optional>
+#include <map>
+#include <string>
+#include <vector>
+
 class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
 {
   protected:

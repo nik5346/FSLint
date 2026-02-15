@@ -3,11 +3,19 @@
 #include "unzip.h"
 #include "zip.h"
 
+#include <zlib.h>
+#include <zconf.h>
+
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
+#include <ios>
+#include <iostream>
+#include <vector>
 
 Zipper::~Zipper()
 {

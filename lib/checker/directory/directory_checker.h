@@ -1,13 +1,13 @@
 #pragma once
 
 #include "checker.h"
+
 #include <filesystem>
 #include <libxml/tree.h>
 #include <map>
 #include <optional>
 #include <set>
 #include <string>
-#include <vector>
 
 class DirectoryChecker : public Checker
 {

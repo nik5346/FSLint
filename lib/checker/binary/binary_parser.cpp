@@ -1,6 +1,11 @@
 #include "binary_parser.h"
-#include <cstring>
+
+#include <cstdint>
+#include <filesystem>
 #include <fstream>
+#include <ios>
+#include <set>
+#include <string>
 #include <vector>
 
 // --- ELF Parsing Structures ---

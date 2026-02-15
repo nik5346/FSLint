@@ -1,11 +1,15 @@
 #include "fmi1_binary_checker.h"
+
 #include "binary_parser.h"
 #include "certificate.h"
-#include <filesystem>
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-#include <map>
+#include <libxml/xmlstring.h>
+
+#include <filesystem>
 #include <set>
+#include <vector>
 
 void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {

@@ -4,6 +4,7 @@
 #include "checker.h"
 
 #include <filesystem>
+#include <string>
 
 class ModelChecker
 {

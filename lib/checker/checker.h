@@ -1,9 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <memory>
-#include <string>
-#include <vector>
 
 class Certificate;
 

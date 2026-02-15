@@ -1,8 +1,12 @@
 #include "fmi3_directory_checker.h"
+
 #include "certificate.h"
-#include <algorithm>
+
+#include <filesystem>
+#include <map>
 #include <regex>
 #include <set>
+#include <string>
 #include <string_view>
 
 void Fmi3DirectoryChecker::performVersionSpecificChecks(

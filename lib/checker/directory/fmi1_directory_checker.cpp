@@ -1,7 +1,14 @@
 #include "fmi1_directory_checker.h"
+
 #include "certificate.h"
-#include <algorithm>
+
 #include <libxml/xpath.h>
+#include <libxml/xmlstring.h>
+#include <libxml/tree.h>
+#include <libxml/parser.h>
+
+#include <filesystem>
+#include <map>
 #include <set>
 
 void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)

@@ -1,7 +1,12 @@
 #include "fmi2_directory_checker.h"
+
 #include "certificate.h"
+
 #include <algorithm>
+#include <filesystem>
+#include <map>
 #include <set>
+#include <string>
 
 void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::path& path, Certificate& cert,
                                                         const std::map<std::string, std::string>& model_identifiers,
