@@ -14,6 +14,10 @@ class Fmi1MeSchemaChecker : public SchemaCheckerBase
     {
         return "1.0/ME";
     }
+    bool isUtf8Required() const override
+    {
+        return false;
+    }
 };
 
 class Fmi1CsSchemaChecker : public SchemaCheckerBase
@@ -27,5 +31,9 @@ class Fmi1CsSchemaChecker : public SchemaCheckerBase
     std::string getStandardVersion() const override
     {
         return "1.0/CS";
+    }
+    bool isUtf8Required() const override
+    {
+        return false;
     }
 };

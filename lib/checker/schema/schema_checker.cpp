@@ -214,10 +214,18 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     // Check if encoding is UTF-8
     if (encoding != "UTF-8")
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Encoding must be UTF-8, found: " + encoding);
+        if (isUtf8Required())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Encoding must be UTF-8, found: " + encoding);
+            cert.printTestResult(test);
+            return false;
+        }
+
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Encoding is " + encoding + ". It is recommended to use UTF-8.");
         cert.printTestResult(test);
-        return false;
+        return true;
     }
 
     // Validate actual file content is valid UTF-8
