@@ -3,13 +3,28 @@ import os
 import xml.etree.ElementTree as ET
 import sys
 import io
+import re
+
+def detect_encoding(filepath):
+    """Detect encoding from XML declaration or default to utf-8"""
+    with open(filepath, 'rb') as f:
+        raw_data = f.read(200)  # Read first 200 bytes to find declaration
+    
+    # Look for encoding in XML declaration
+    match = re.search(b'encoding=["\']([^"\']+)["\']', raw_data)
+    if match:
+        return match.group(1).decode('ascii')
+    return 'utf-8'
 
 def format_xml(filepath):
     if os.path.getsize(filepath) == 0:
         return
 
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        # Detect the original encoding
+        encoding = detect_encoding(filepath)
+        
+        with open(filepath, 'r', encoding=encoding) as f:
             content = f.read()
             if not content.strip():
                 return
@@ -19,7 +34,7 @@ def format_xml(filepath):
             # Extract namespaces for registration
             namespaces = {}
             # Use a fresh BytesIO for iterparse
-            f_bytes = io.BytesIO(content.encode('utf-8'))
+            f_bytes = io.BytesIO(content.encode(encoding))
             for event, elem in ET.iterparse(f_bytes, events=('start-ns',)):
                 prefix, uri = elem
                 namespaces[prefix] = uri
@@ -28,20 +43,23 @@ def format_xml(filepath):
                 ET.register_namespace(prefix, uri)
 
             parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
-            root = ET.fromstring(content.encode('utf-8'), parser=parser)
+            root = ET.fromstring(content.encode(encoding), parser=parser)
             tree = ET.ElementTree(root)
 
             ET.indent(root, space='  ')
 
             with open(filepath, 'wb') as f:
-                f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
-                tree.write(f, encoding='UTF-8', xml_declaration=False)
+                f.write(f'<?xml version="1.0" encoding="{encoding}"?>\n'.encode(encoding))
+                tree.write(f, encoding=encoding, xml_declaration=False)
                 f.write(b'\n')
         except ET.ParseError:
             # Skip malformed files - they are likely intentional test cases
             print(f"Skipping malformed XML: {filepath}")
             return
 
+    except UnicodeDecodeError:
+        # Skip files with encoding issues - they are likely intentional test cases
+        print(f"Skipping undecodable XML: {filepath}")
     except Exception as e:
         print(f"Error formatting {filepath}: {e}", file=sys.stderr)
 

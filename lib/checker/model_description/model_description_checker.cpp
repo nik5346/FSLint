@@ -1197,4 +1197,3 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
 
     cert.printTestResult(test);
 }
-

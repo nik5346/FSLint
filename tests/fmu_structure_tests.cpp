@@ -1,6 +1,5 @@
 #include "build_description_checker.h"
 #include "certificate.h"
-#include "model_checker.h"
 #include "checker_factory.h"
 #include "fmi1_binary_checker.h"
 #include "fmi1_directory_checker.h"
@@ -8,6 +7,7 @@
 #include "fmi2_model_description_checker.h"
 #include "fmi3_build_description_checker.h"
 #include "fmi3_directory_checker.h"
+#include "model_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>

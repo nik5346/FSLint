@@ -179,8 +179,8 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has derivative attribute referencing index " +
-                                        std::to_string(ref_index) + " which does not exist.");
+                                        ") has derivative attribute referencing index " + std::to_string(ref_index) +
+                                        " which does not exist.");
             }
             else
             {
@@ -189,8 +189,8 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                            ") is derivative of \"" + state_var->name +
-                                            "\" which has variability \"" + state_var->variability +
+                                            ") is derivative of \"" + state_var->name + "\" which has variability \"" +
+                                            state_var->variability +
                                             "\". Continuous-time states must have variability=\"continuous\".");
                 }
             }

@@ -1,11 +1,11 @@
 #include "binary_parser.h"
 #include "certificate.h"
-#include "zipper.h"
-#include "model_checker.h"
 #include "fmi1_binary_checker.h"
 #include "fmi2_binary_checker.h"
 #include "fmi3_binary_checker.h"
+#include "model_checker.h"
 #include "test_helpers.h"
+#include "zipper.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 #include <fstream>
@@ -24,7 +24,7 @@ static bool reference_fmus_available()
         if (!warned)
         {
             std::cerr << "[WARNING] Reference FMUs not found. Binary tests will be skipped.\n";
-            std::cerr << "          Run 'scripts/download_reference_fmus.sh' to download them.\n";
+            std::cerr << "          Run 'scripts/download_reference_fmus.py' to download them.\n";
             warned = true;
         }
     }

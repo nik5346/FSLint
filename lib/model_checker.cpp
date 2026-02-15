@@ -67,7 +67,6 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
                 cert.printFooter();
             return cert;
         }
-        
     }
 
     // Step 3: Detect model type and create appropriate checkers

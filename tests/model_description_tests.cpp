@@ -28,8 +28,10 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
 
     SECTION("Implementation")
     {
-        validate_fail("implementation/entry_point_missing_file", "references missing file in FMU: 'resources/non_existent.mdl'");
-        validate_fail("implementation/file_missing_file", "references missing file in FMU: 'resources/missing_extra.txt'");
+        validate_fail("implementation/entry_point_missing_file",
+                      "references missing file in FMU: 'resources/non_existent.mdl'");
+        validate_fail("implementation/file_missing_file",
+                      "references missing file in FMU: 'resources/missing_extra.txt'");
     }
 }
 
