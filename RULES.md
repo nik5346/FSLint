@@ -16,10 +16,10 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
   - No absolute paths (must not start with `/`).
   - No drive letters or device paths (e.g., `C:`).
   - No parent directory traversal (`..`).
-  - Non-ASCII characters in paths should be avoided.
-  - Leading `./` or multiple consecutive slashes `//` should be avoided.
+  - WARNING for non-ASCII characters in paths.
+  - WARNING for leading `./` or multiple consecutive slashes `//`.
 - **Symbolic Links**: Symbolic links are not allowed within the archive.
-- **Language Encoding Flag**: Bit 11 should not be set (UTF-8 recommended for paths, but keeping bit 11 at 0 is better for old tools).
+- **Language Encoding Flag**: WARNING if bit 11 is set (UTF-8 recommended for paths, but keeping bit 11 at 0 is better for old tools).
 - **Data Descriptor Consistency**: General purpose bit 3 (data descriptor) is only allowed with `deflate` compression.
 
 ## Common FMI Rules (All Versions)
@@ -31,7 +31,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **XML Declaration**: Must be XML version 1.0.
 - **UTF-8 Encoding**:
   - Required for FMI 2.0 and 3.0.
-  - Highly recommended for FMI 1.0; other encodings should be avoided.
+  - Highly recommended for FMI 1.0 (issued as a WARNING if other encodings are used).
 - **Model Name Format**: `modelName` attribute must be present and non-empty.
 - **FMI Version Format**: `fmiVersion` attribute must match the expected version string ("1.0", "2.0", or "3.0").
 - **Generation Date and Time**:
@@ -42,7 +42,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Copyright Notice**:
   - Should begin with ©, "Copyright", or "Copr.".
   - Should include the year of publication and the copyright holder name.
-- **Traceability Attributes**: `license`, `author`, and `generationTool` should be present and non-empty.
+- **Traceability Attributes**: `license`, `author`, and `generationTool` presence and non-emptiness are checked (WARNING if missing).
 - **Model Identifier Format**:
   - Must be a valid C identifier (starts with letter/underscore, followed by alphanumerics/underscores).
   - Recommended length under 64 characters; absolute maximum 200 characters.
@@ -60,7 +60,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Illegal Start Values**: Variables with `initial="calculated"` or `causality="independent"` should not provide a `start` value.
 - **Causality/Variability/Initial Combinations**: Combinations must follow the allowed set defined in the FMI specification tables.
 - **Type and Unit References**: All references to types (`declaredType`) and units must exist in `TypeDefinitions` or `UnitDefinitions`.
-- **Unused Definitions**: All type and unit definitions should be referenced by at least one variable.
+- **Unused Definitions**: WARNING if a type or unit definition is not referenced by any variable.
 - **Min/Max/Start Constraints**: `start` values must be within the `[min, max]` range. `max` must be `>= min`.
 
 ### Model Structure and Interfaces
@@ -71,8 +71,8 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Mandatory Files**: `modelDescription.xml` must be present in the FMU root.
 - **Standard Headers**: `sources/` should not include standard FMI headers (e.g., `fmi2Functions.h`, `fmi3PlatformTypes.h`).
 - **Distribution**: The FMU must contain at least one implementation (binary for at least one platform or source code).
-- **Effectively Empty Directories**: Standard directories like `documentation/` or `resources/` should not be effectively empty (contain only `.gitkeep`).
-- **Root Entries**: Unknown files or directories should not be found in the FMU root.
+- **Effectively Empty Directories**: WARNING if standard directories like `documentation/` or `resources/` are effectively empty (contain only `.gitkeep`).
+- **Root Entries**: WARNING if unknown files or directories are found in the FMU root.
 
 ### Recursive Validation
 - **Nested Models**: FMUs and SSPs located in the `resources/` directory are automatically discovered and validated recursively.
@@ -146,14 +146,14 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` must be present.
 - **Licenses**: If a `licenses/` directory exists, it should contain an entry point (`license.txt` or `license.html`).
 - **Source Files Consistency**:
-  - Typical source files (`.c`, `.cpp`, etc.) in `sources/` should be listed in `modelDescription.xml` `<SourceFiles>`.
+  - WARNING if typical source files (`.c`, `.cpp`, etc.) in `sources/` are not listed in `modelDescription.xml` `<SourceFiles>`.
   - `SourceFiles/File` entries must point to existing files in `sources/`.
-- **FMI 2.0.4 Compatibility**: Source-only FMUs should provide both `<SourceFiles>` and `buildDescription.xml`.
+- **FMI 2.0.4 Compatibility**: WARNING if source-only FMU provides only `<SourceFiles>` or only `buildDescription.xml` (providing both is recommended).
 
 ### Build Description
-- **fmiVersion Check**: `buildDescription.xml` must have `fmiVersion` attribute; it should match the FMU version.
+- **fmiVersion Check**: `buildDescription.xml` must have `fmiVersion` attribute (WARNING if it doesn't match FMU version).
 - **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries must exist in `sources/` and not contain `..` traversal.
-- **Attribute Validation**: `language` and `compiler` should be from the suggested set (e.g., C99, gcc).
+- **Attribute Validation**: WARNING if `language` or `compiler` are not from the suggested set (e.g., C99, gcc).
 - **Model Identifier Match**: `modelIdentifier` in `BuildConfiguration` must match an identifier from `modelDescription.xml`.
 
 ---
@@ -214,7 +214,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Build Description
 - **fmiVersion Check**: `buildDescription.xml` must have `fmiVersion="3.0"`.
 - **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries must exist in `sources/` and not contain `..` traversal.
-- **Attribute Validation**: `language` and `compiler` should be from the suggested set (e.g., C99, gcc).
+- **Attribute Validation**: WARNING if `language` or `compiler` are not from the suggested set (e.g., C99, gcc).
 - **Model Identifier Match**: `modelIdentifier` in `BuildConfiguration` must match an identifier from `modelDescription.xml`.
 
 ---
