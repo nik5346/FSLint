@@ -145,7 +145,7 @@ void ModelDescriptionCheckerBase::checkTypeNameClashes(const std::vector<Variabl
             test.status = TestStatus::FAIL;
             test.messages.push_back("Type definition name \"" + name + "\" (line " +
                                     std::to_string(type_def.sourceline) +
-                                    ") must be different from all ScalarVariable names.");
+                                    ") must be different from all variable names.");
         }
     }
 

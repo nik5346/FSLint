@@ -2,6 +2,14 @@
 
 This file lists all rules currently checked by FSLint, categorized by standard and version.
 
+### Rule Statuses
+
+Each rule check in FSLint results in one of the following statuses:
+
+- **PASS**: The rule is fully satisfied.
+- **FAIL**: The rule is violated. This typically indicates a non-compliance with the FMI or SSP specification that would prevent the model from working correctly in most tools.
+- **WARNING**: The rule is not strictly violated, but the model deviates from recommended best practices, uses deprecated features, or contains unusual values that might indicate an error.
+
 ## Archive Validation (FMU and SSP)
 
 These rules apply to the ZIP archive itself for both FMU and SSP files.
@@ -33,12 +41,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - Required for FMI 2.0 and 3.0.
   - Highly recommended for FMI 1.0 (issued as a WARNING if other encodings are used).
 - **Model Name Format**: `modelName` attribute must be present and non-empty.
-- **FMI Version Format**: `fmiVersion` attribute must match the expected version string ("1.0", "2.0", or "3.0").
+- **FMI Version Format**: `fmiVersion` attribute must match the standard version string ("1.0", "2.0", or "3.0").
 - **Generation Date and Time**:
   - Must be in ISO 8601 format (e.g., `YYYY-MM-DDThh:mm:ssZ`).
   - Must be a valid date in the past (not after the current system time).
   - Should not be unreasonably old (before 2010).
-- **Model Version Format**: Semantic versioning (`MAJOR.MINOR.PATCH`) is recommended.
+- **Model Version Format**: The `version` attribute of the model. Semantic versioning (`MAJOR.MINOR.PATCH`) is recommended for this attribute.
 - **Copyright Notice**:
   - Should begin with ©, "Copyright", or "Copr.".
   - Should include the year of publication and the copyright holder name.
@@ -47,16 +55,30 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - Must be a valid C identifier (starts with letter/underscore, followed by alphanumerics/underscores).
   - Recommended length under 64 characters; absolute maximum 200 characters.
 - **Log Categories**: Category names must be unique within the `LogCategories` element.
-- **Vendor Annotations**: Tool names within `VendorAnnotations` must be unique.
+- **Annotations**:
+  - FMI 1.0/2.0: Tool names within `VendorAnnotations` must be unique.
+  - FMI 3.0: Annotation types within `Annotations` must be unique within their container.
 
 ### Variable and Type Consistency
-- **Unique Variable Names**: All `ScalarVariable` names must be unique.
+- **Unique Variable Names**: All variable names (e.g., `ScalarVariable` in FMI 2.0 or type-specific elements in FMI 3.0) must be unique.
 - **Type and Variable Name Clashes**: Type definition names must not clash with variable names.
 - **Variable Naming Convention**:
   - `flat`: No illegal control characters (U+000D, U+000A, U+0009).
-  - `structured`: Must follow the structured name syntax (e.g., `a.b[1]`).
+  - `structured`: Must follow the structured name syntax. This includes:
+    - Identifiers: `name.subname`
+    - Array indices: `name[1,2]`
+    - Quoted names for special characters: `'name with spaces'` (supports escapes like `\'`, `\n`, etc.)
+    - Derivatives: `der(name)` or `der(name, 2)`
+    - This rule applies to naming conventions in FMI 2.0 and 3.0.
 - **Legal Variability**: Variability must be compatible with the variable's type and causality. Only floating-point types can be `continuous`.
-- **Required Start Values**: Variables with certain causality/variability/initial combinations must have a `start` value.
+- **Required Start Values**: Variables with certain causality/variability/initial combinations must have a `start` value. This includes:
+  - FMI 2.0:
+    - `causality` is `input` or `parameter`.
+    - `variability` is `constant`.
+    - `initial` is `exact` or `approx`.
+  - FMI 3.0:
+    - Same as FMI 2.0, plus `causality` is `structuralParameter`.
+    - Variables of type `Clock` are excluded from this requirement.
 - **Illegal Start Values**: Variables with `initial="calculated"` or `causality="independent"` should not provide a `start` value.
 - **Causality/Variability/Initial Combinations**: Combinations must follow the allowed set defined in the FMI specification tables.
 - **Type and Unit References**: All references to types (`declaredType`) and units must exist in `TypeDefinitions` or `UnitDefinitions`.
@@ -87,7 +109,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Model Description
 - **GUID Presence**: `guid` attribute is mandatory and must not be empty.
 - **Model Identifier Matching**: `modelIdentifier` must match the FMU filename stem (ZIP name).
-- **Implementation Check**: Co-Simulation FMUs must have an `<Implementation>` element.
+- **Implementation Check**: Co-Simulation FMUs must have an `<Implementation>` element. This is used in FMI 1.0 to distinguish Co-Simulation Tool implementations from Model Exchange.
 - **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes using `fmu://` must point to existing files within the archive.
 
 ### Binary Exports
@@ -126,7 +148,11 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Model Structure**:
   - `Outputs`, `Derivatives`, and `InitialUnknowns` must be complete (match all variables with respective causalities/attributes) and correctly ordered.
   - Dependencies and `dependenciesKind` must be consistent in size.
-- **Prohibited Special Floats**: Attributes like `min`, `max`, `nominal`, `factor`, `offset`, `startTime`, `stopTime`, `tolerance`, and `stepSize` must not contain `NaN` or `INF`.
+- **Prohibited Special Floats**: Attributes of type `Real` must not contain `NaN` or `INF`. This applies to:
+  - `ScalarVariable`: `min`, `max`, `start`, `nominal`.
+  - `SimpleType`: `min`, `max`, `nominal`.
+  - `BaseUnit` / `DisplayUnit`: `factor`, `offset`.
+  - `DefaultExperiment`: `startTime`, `stopTime`, `tolerance`, `stepSize`.
 
 ### Terminals and Icons
 - **Unique Names**: Terminal and member names must be unique within their respective levels.
@@ -146,14 +172,16 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` must be present.
 - **Licenses**: If a `licenses/` directory exists, it should contain an entry point (`license.txt` or `license.html`).
 - **Source Files Consistency**:
-  - WARNING if typical source files (`.c`, `.cpp`, etc.) in `sources/` are not listed in `modelDescription.xml` `<SourceFiles>`.
+  - WARNING if typical source files (extensions: `.c`, `.cc`, `.cpp`, `.cxx`, `.C`, `.c++`) in `sources/` are not listed in `modelDescription.xml` `<SourceFiles>`.
   - `SourceFiles/File` entries must point to existing files in `sources/`.
 - **FMI 2.0.4 Compatibility**: WARNING if source-only FMU provides only `<SourceFiles>` or only `buildDescription.xml` (providing both is recommended).
 
 ### Build Description
 - **fmiVersion Check**: `buildDescription.xml` must have `fmiVersion` attribute (WARNING if it doesn't match FMU version).
 - **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries must exist in `sources/` and not contain `..` traversal.
-- **Attribute Validation**: WARNING if `language` or `compiler` are not from the suggested set (e.g., C99, gcc).
+- **Attribute Validation**: WARNING if `language` or `compiler` are not from the suggested set:
+  - `language`: `C89`, `C90`, `C99`, `C11`, `C17`, `C18`, `C23`, `C++98`, `C++03`, `C++11`, `C++14`, `C++17`, `C++20`, `C++23`, `C++26`.
+  - `compiler`: `gcc`, `clang`, `msvc`.
 - **Model Identifier Match**: `modelIdentifier` in `BuildConfiguration` must match an identifier from `modelDescription.xml`.
 
 ---
@@ -214,7 +242,9 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Build Description
 - **fmiVersion Check**: `buildDescription.xml` must have `fmiVersion="3.0"`.
 - **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries must exist in `sources/` and not contain `..` traversal.
-- **Attribute Validation**: WARNING if `language` or `compiler` are not from the suggested set (e.g., C99, gcc).
+- **Attribute Validation**: WARNING if `language` or `compiler` are not from the suggested set:
+  - `language`: `C89`, `C90`, `C99`, `C11`, `C17`, `C18`, `C23`, `C++98`, `C++03`, `C++11`, `C++14`, `C++17`, `C++20`, `C++23`, `C++26`.
+  - `compiler`: `gcc`, `clang`, `msvc`.
 - **Model Identifier Match**: `modelIdentifier` in `BuildConfiguration` must match an identifier from `modelDescription.xml`.
 
 ---
