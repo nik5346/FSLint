@@ -22,26 +22,66 @@ endif()
 # Clang-Tidy Integration
 # ============================================================================
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
-if(CLANG_TIDY_EXE)
-    message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
+find_program(RUN_CLANG_TIDY_EXE NAMES "run-clang-tidy" "run-clang-tidy.py")
 
-    # Collect all source files to check
+if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
+    if(CLANG_TIDY_EXE)
+        message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
+    endif()
+    if(RUN_CLANG_TIDY_EXE)
+        message(STATUS "Found run-clang-tidy: ${RUN_CLANG_TIDY_EXE}")
+    endif()
+
+    # Collect all source files to check (implementation files only)
     file(GLOB_RECURSE TIDY_SOURCES
         ${CMAKE_SOURCE_DIR}/lib/*.cpp
-        ${CMAKE_SOURCE_DIR}/lib/*.h
         ${CMAKE_SOURCE_DIR}/cli/*.cpp
     )
+    # Note: Headers are checked via -header-filter and their inclusion in .cpp files.
+
+    # Determine number of parallel jobs
+    set(CLANG_TIDY_JOBS 0 CACHE STRING "Number of parallel clang-tidy jobs (0 for all cores)")
+    if(CLANG_TIDY_JOBS EQUAL 0)
+        include(ProcessorCount)
+        ProcessorCount(N)
+        if(N EQUAL 0)
+            set(N 1)
+        endif()
+    else()
+        set(N ${CLANG_TIDY_JOBS})
+    endif()
+
+    if(RUN_CLANG_TIDY_EXE)
+        set(CLANG_TIDY_BIN ${RUN_CLANG_TIDY_EXE})
+        set(CLANG_TIDY_ARGS
+            -p ${CMAKE_BINARY_DIR}
+            -j ${N}
+            "-header-filter=(lib|cli|tests)/.*"
+        )
+        if(CLANG_TIDY_EXE)
+            list(APPEND CLANG_TIDY_ARGS -clang-tidy-binary ${CLANG_TIDY_EXE})
+        endif()
+    else()
+        set(CLANG_TIDY_BIN ${CLANG_TIDY_EXE})
+        set(CLANG_TIDY_ARGS
+            -p ${CMAKE_BINARY_DIR}
+            "--header-filter=(lib|cli|tests)/.*"
+            --system-headers=false
+        )
+        # Check if clang-tidy supports -j (added in newer versions)
+        execute_process(COMMAND ${CLANG_TIDY_EXE} -j 1 --version RESULT_VARIABLE Tidy_Has_J OUTPUT_QUIET ERROR_QUIET)
+        if(Tidy_Has_J EQUAL 0)
+            list(APPEND CLANG_TIDY_ARGS -j ${N})
+        endif()
+    endif()
 
     # Add custom target to run clang-tidy
     add_custom_target(clang-tidy
-        COMMAND ${CLANG_TIDY_EXE}
-            -p ${CMAKE_BINARY_DIR}
-            --config-file=${CMAKE_SOURCE_DIR}/.clang-tidy
-            "--header-filter=(lib|cli|tests)/.*"
-            --system-headers=false
+        COMMAND ${CLANG_TIDY_BIN}
+            ${CLANG_TIDY_ARGS}
             ${TIDY_SOURCES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "Running clang-tidy on source files..."
+        COMMENT "Running clang-tidy..."
         VERBATIM
         USES_TERMINAL
         COMMAND_EXPAND_LISTS
