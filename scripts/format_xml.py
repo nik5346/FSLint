@@ -16,9 +16,9 @@ def detect_encoding(filepath):
         return match.group(1).decode('ascii')
     return 'utf-8'
 
-def format_xml(filepath):
+def format_xml(filepath, check=False):
     if os.path.getsize(filepath) == 0:
-        return
+        return True
 
     try:
         # Detect the original encoding
@@ -27,7 +27,7 @@ def format_xml(filepath):
         with open(filepath, 'r', encoding=encoding) as f:
             content = f.read()
             if not content.strip():
-                return
+                return True
 
         # Attempt to parse
         try:
@@ -48,22 +48,41 @@ def format_xml(filepath):
 
             ET.indent(root, space='  ')
 
+            output = io.BytesIO()
+            output.write(f'<?xml version="1.0" encoding="{encoding}"?>\n'.encode(encoding))
+            tree.write(output, encoding=encoding, xml_declaration=False)
+            output.write(b'\n')
+
+            formatted_content = output.getvalue()
+
+            if check:
+                if content.encode(encoding) != formatted_content:
+                    print(f"Error: {filepath} is not correctly formatted.")
+                    return False
+                return True
+
             with open(filepath, 'wb') as f:
-                f.write(f'<?xml version="1.0" encoding="{encoding}"?>\n'.encode(encoding))
-                tree.write(f, encoding=encoding, xml_declaration=False)
-                f.write(b'\n')
+                f.write(formatted_content)
+            return True
         except ET.ParseError:
             # Skip malformed files - they are likely intentional test cases
             print(f"Skipping malformed XML: {filepath}")
-            return
+            return True
 
     except UnicodeDecodeError:
         # Skip files with encoding issues - they are likely intentional test cases
         print(f"Skipping undecodable XML: {filepath}")
+        return True
     except Exception as e:
         print(f"Error formatting {filepath}: {e}", file=sys.stderr)
+        return False
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description='Format or check XML/SSD files.')
+    parser.add_argument('--check', action='store_true', help='Check if files are formatted without changing them.')
+    args = parser.parse_args()
+
     # Use the script's directory to find the repository root
     script_dir = os.path.dirname(os.path.realpath(__file__))
     repo_root = os.path.abspath(os.path.join(script_dir, '..'))
@@ -73,11 +92,16 @@ def main():
         print(f"Directory {test_data_dir} not found.")
         sys.exit(1)
 
+    all_passed = True
     for root_dir, _, files in os.walk(test_data_dir):
         for file in files:
             if file.endswith('.xml') or file.endswith('.ssd'):
                 filepath = os.path.join(root_dir, file)
-                format_xml(filepath)
+                if not format_xml(filepath, check=args.check):
+                    all_passed = False
+
+    if not all_passed:
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

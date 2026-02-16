@@ -73,6 +73,16 @@ if(CLANG_FORMAT_EXE)
         ${ALL_SOURCE_FILES}
         COMMENT "Running clang-format on source files"
     )
+
+    # Add format check target
+    add_custom_target(clang-format-check
+        COMMAND ${CLANG_FORMAT_EXE}
+        --dry-run
+        --Werror
+        -style=file
+        ${ALL_SOURCE_FILES}
+        COMMENT "Checking clang-format on source files"
+    )
 else()
     message(WARNING "clang-format not found")
 endif()
