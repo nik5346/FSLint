@@ -19,6 +19,14 @@ else()
 endif()
 
 # ============================================================================
+# Python Integration
+# ============================================================================
+find_package(Python3 COMPONENTS Interpreter)
+if(NOT Python3_Interpreter_FOUND)
+    message(WARNING "Python3 interpreter not found! Some targets may not work.")
+endif()
+
+# ============================================================================
 # Clang-Tidy Integration
 # ============================================================================
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
@@ -58,6 +66,12 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
             -j ${N}
             "-header-filter=(lib|cli|tests)/.*"
         )
+
+        # On Windows, run-clang-tidy is often a Python script without a .py extension,
+        # so we need to run it via the Python interpreter.
+        if(WIN32 AND Python3_Interpreter_FOUND)
+            set(CLANG_TIDY_BIN ${Python3_EXECUTABLE} ${RUN_CLANG_TIDY_EXE})
+        endif()
         if(CLANG_TIDY_EXE)
             list(APPEND CLANG_TIDY_ARGS -clang-tidy-binary ${CLANG_TIDY_EXE})
         endif()
@@ -122,8 +136,13 @@ include(FetchContent)
 # ============================================================================
 # XML-Format Integration
 # ============================================================================
+set(PYTHON_BIN "python")
+if(Python3_Interpreter_FOUND)
+    set(PYTHON_BIN ${Python3_EXECUTABLE})
+endif()
+
 add_custom_target(format-xml
-    COMMAND python ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
+    COMMAND ${PYTHON_BIN} ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
     COMMENT "Running XML formatter on test data"
 )
 
