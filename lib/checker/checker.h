@@ -17,4 +17,4 @@ class Checker
     Checker& operator=(Checker&&) = delete;
 
     virtual void validate(const std::filesystem::path& path, Certificate& cert) = 0;
-};
+};void dummy_test_function() { int x; }
