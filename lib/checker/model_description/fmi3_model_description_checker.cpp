@@ -5,8 +5,8 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
-#include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
+#include <libxml/xpath.h>
 
 #include <algorithm>
 #include <cctype>
@@ -15,12 +15,12 @@
 #include <map>
 #include <optional>
 #include <regex>
+#include <set>
 #include <sstream>
 #include <string>
 #include <tuple>
-#include <vector>
-#include <set>
 #include <utility>
+#include <vector>
 
 void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,

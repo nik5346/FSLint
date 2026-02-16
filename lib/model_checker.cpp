@@ -1,10 +1,10 @@
 #include "model_checker.h"
 
 #include "archive_checker.h"
-#include "checker_factory.h"
-#include "zipper.h"
 #include "certificate.h"
+#include "checker_factory.h"
 #include "model_info.h"
+#include "zipper.h"
 
 #include "picosha2.h"
 

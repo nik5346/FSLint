@@ -5,8 +5,8 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
-#include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
+#include <libxml/xpath.h>
 
 #include <cstdint>
 #include <filesystem>

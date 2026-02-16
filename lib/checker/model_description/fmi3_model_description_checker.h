@@ -7,8 +7,8 @@
 #include "libxml/tree.h"
 
 #include <cstddef>
-#include <optional>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
