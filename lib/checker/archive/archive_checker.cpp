@@ -176,7 +176,8 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
         }
 
         // Check for non-ASCII characters
-        bool has_non_ascii = std::any_of(path.begin(), path.end(), [](unsigned char c) { return c > MAX_ASCII_VALUE; });
+        const bool has_non_ascii =
+            std::any_of(path.begin(), path.end(), [](unsigned char c) { return c > MAX_ASCII_VALUE; });
         if (has_non_ascii)
         {
             test.status = TestStatus::WARNING;
@@ -251,7 +252,7 @@ void ArchiveChecker::checkGeneralPurposeBit3(const std::vector<ZipFileEntry>& en
     for (const auto& entry : entries)
     {
         // Bit 3 is the data descriptor bit
-        bool bit3_set = (entry.flags & DATA_DESCRIPTOR_BIT) != 0;
+        const bool bit3_set = (entry.flags & DATA_DESCRIPTOR_BIT) != 0;
 
         // ZIP compression methods
         constexpr size_t COMPRESSION_DEFLATE = 8;

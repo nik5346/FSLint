@@ -30,11 +30,11 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
-            std::string name = entry.path().filename().string();
+            const std::string name = entry.path().filename().string();
             if (!fmi2_standard_entries.contains(name))
             {
                 test.status = TestStatus::WARNING;
-                std::string type = entry.is_directory() ? "directory" : "file";
+                const std::string type = entry.is_directory() ? "directory" : "file";
                 test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
             }
 
@@ -124,8 +124,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         has_build_description = std::filesystem::exists(sources_path / "buildDescription.xml") ||
                                 std::filesystem::exists(path / "buildDescription.xml");
-        bool has_sources = !listed_sources_in_md.empty() || has_build_description ||
-                           (std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path));
+        const bool has_sources = !listed_sources_in_md.empty() || has_build_description ||
+                                 (std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path));
 
         if (!has_binaries && !has_sources)
         {
@@ -151,7 +151,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
                     // Only check typical source files
                     static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
-                    std::string ext = entry.path().extension().string();
+                    const std::string ext = entry.path().extension().string();
 
                     if (source_extensions.contains(ext))
                     {
@@ -171,14 +171,14 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
     // 6. FMI 2.0.4 Compatibility
     {
-        bool has_build_description_anywhere = has_build_description;
-        bool has_sources = !listed_sources_in_md.empty() || has_build_description_anywhere ||
-                           (std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path));
+        const bool has_build_description_anywhere = has_build_description;
+        const bool has_sources = !listed_sources_in_md.empty() || has_build_description_anywhere ||
+                                 (std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path));
 
         if (has_sources)
         {
             TestResult test{"FMI 2.0.4 Compatibility", TestStatus::PASS, {}};
-            bool has_sources_in_md = !listed_sources_in_md.empty();
+            const bool has_sources_in_md = !listed_sources_in_md.empty();
             if (has_sources_in_md && !has_build_description_anywhere)
             {
                 test.status = TestStatus::WARNING;

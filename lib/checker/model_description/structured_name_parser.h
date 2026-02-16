@@ -29,7 +29,7 @@ class StructuredNameParser
 
     char peek(size_t offset = 1) const
     {
-        size_t peek_pos = _pos + offset;
+        const size_t peek_pos = _pos + offset;
         return peek_pos < _input.size() ? _input[peek_pos] : '\0';
     }
 
@@ -178,7 +178,7 @@ class StructuredNameParser
 
         advance(); // Skip backslash
 
-        char next = current();
+        const char next = current();
         if (next == '\'' || next == '"' || next == '?' || next == '\\' || next == 'a' || next == 'b' || next == 'f' ||
             next == 'n' || next == 'r' || next == 't' || next == 'v')
         {

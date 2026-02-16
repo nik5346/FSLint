@@ -57,7 +57,7 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
 
     if (!std::filesystem::exists(terminals_path))
     {
-        TestResult test{
+        const TestResult test{
             "Terminals and Icons File", TestStatus::PASS, {"terminalsAndIcons.xml not present (optional)."}};
         cert.printTestResult(test);
         return true;
@@ -66,7 +66,8 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     xmlDocPtr doc = xmlReadFile(terminals_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        TestResult test{"Parse terminalsAndIcons.xml", TestStatus::FAIL, {"Failed to parse terminalsAndIcons.xml."}};
+        const TestResult test{
+            "Parse terminalsAndIcons.xml", TestStatus::FAIL, {"Failed to parse terminalsAndIcons.xml."}};
         cert.printTestResult(test);
         return false;
     }
@@ -164,7 +165,7 @@ void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr c
         }
     };
 
-    std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals";
+    const std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals";
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlXPathObjectPtr terminals_elem = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
     if (terminals_elem && terminals_elem->nodesetval && terminals_elem->nodesetval->nodeNr > 0)
@@ -309,7 +310,7 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
             if (child->type == XML_ELEMENT_NODE)
             {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                std::string elem_name = reinterpret_cast<const char*>(child->name);
+                const std::string elem_name = reinterpret_cast<const char*>(child->name);
                 if (elem_name == "TerminalMemberVariable")
                 {
                     auto member_name = getXmlAttribute(child, "memberName");
@@ -367,7 +368,7 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
         }
     };
 
-    std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals//" + p + "Terminal";
+    const std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals//" + p + "Terminal";
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlXPathObjectPtr terminals_elem = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
     if (terminals_elem && terminals_elem->nodesetval)
@@ -382,7 +383,7 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                                                                 xmlXPathContextPtr context, const std::string& p,
                                                                 TestResult& test)
 {
-    std::string expr = "//" + p + "TerminalGraphicalRepresentation";
+    const std::string expr = "//" + p + "TerminalGraphicalRepresentation";
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlXPathObjectPtr xpath_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
 
@@ -463,7 +464,7 @@ void TerminalsAndIconsCheckerBase::checkStreamFlowConstraints(xmlXPathContextPtr
             if (child->type == XML_ELEMENT_NODE)
             {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                std::string elem_name = reinterpret_cast<const char*>(child->name);
+                const std::string elem_name = reinterpret_cast<const char*>(child->name);
                 if (elem_name == "TerminalStreamMemberVariable")
                 {
                     has_stream = true;
@@ -491,7 +492,7 @@ void TerminalsAndIconsCheckerBase::checkStreamFlowConstraints(xmlXPathContextPtr
         }
     };
 
-    std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals//" + p + "Terminal";
+    const std::string expr = "/" + p + "fmiTerminalsAndIcons/" + p + "Terminals//" + p + "Terminal";
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlXPathObjectPtr terminals_elem = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
     if (terminals_elem && terminals_elem->nodesetval)
