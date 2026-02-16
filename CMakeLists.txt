@@ -59,6 +59,8 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
         set(N ${CLANG_TIDY_JOBS})
     endif()
 
+    set(CLANG_TIDY_FILES ${TIDY_SOURCES})
+
     if(RUN_CLANG_TIDY_EXE)
         set(CLANG_TIDY_BIN ${RUN_CLANG_TIDY_EXE})
         set(CLANG_TIDY_ARGS
@@ -72,9 +74,19 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
         if(WIN32 AND Python3_Interpreter_FOUND)
             set(CLANG_TIDY_BIN ${Python3_EXECUTABLE} ${RUN_CLANG_TIDY_EXE})
         endif()
+
         if(CLANG_TIDY_EXE)
             list(APPEND CLANG_TIDY_ARGS -clang-tidy-binary ${CLANG_TIDY_EXE})
         endif()
+
+        # run-clang-tidy uses regex matching for files. To be cross-platform (handling both / and \),
+        # we convert implementation file paths to relative regex patterns that are slash-agnostic.
+        set(CLANG_TIDY_FILES "")
+        foreach(F ${TIDY_SOURCES})
+            file(RELATIVE_PATH F_REL ${CMAKE_SOURCE_DIR} ${F})
+            string(REPLACE "/" "." F_REGEX "${F_REL}")
+            list(APPEND CLANG_TIDY_FILES "${F_REGEX}$")
+        endforeach()
     else()
         set(CLANG_TIDY_BIN ${CLANG_TIDY_EXE})
         set(CLANG_TIDY_ARGS
@@ -93,7 +105,7 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
     add_custom_target(clang-tidy
         COMMAND ${CLANG_TIDY_BIN}
             ${CLANG_TIDY_ARGS}
-            ${TIDY_SOURCES}
+            ${CLANG_TIDY_FILES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Running clang-tidy..."
         VERBATIM
