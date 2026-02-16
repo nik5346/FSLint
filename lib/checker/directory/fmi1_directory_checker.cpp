@@ -19,7 +19,7 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
     {
-        TestResult test{"Mandatory Files", TestStatus::FAIL, {"modelDescription.xml not found."}};
+        const TestResult test{"Mandatory Files", TestStatus::FAIL, {"modelDescription.xml not found."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -28,7 +28,8 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        TestResult test{"Parse modelDescription.xml", TestStatus::FAIL, {"Failed to parse 'modelDescription.xml'."}};
+        const TestResult test{
+            "Parse modelDescription.xml", TestStatus::FAIL, {"Failed to parse 'modelDescription.xml'."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -41,11 +42,11 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     {
         // Check if modelIdentifier matches filename (FMI 1.0 specific)
         const auto& path_to_check = m_original_path.empty() ? path : m_original_path;
-        std::string expected_id = path_to_check.stem().string();
+        const std::string expected_id = path_to_check.stem().string();
 
         if (*model_id != expected_id)
         {
-            TestResult test{
+            const TestResult test{
                 "Model Identifier Filename Match",
                 TestStatus::FAIL,
                 {"FMI 1.0: modelIdentifier '" + *model_id + "' must match the FMU filename '" + expected_id + "'."}};
@@ -93,7 +94,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
-            std::string name = entry.path().filename().string();
+            const std::string name = entry.path().filename().string();
             // Ignore .gitkeep
             if (name == ".gitkeep")
                 continue;
@@ -101,7 +102,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             if (!fmi1_standard_entries.contains(name))
             {
                 test.status = TestStatus::WARNING;
-                std::string type = entry.is_directory() ? "directory" : "file";
+                const std::string type = entry.is_directory() ? "directory" : "file";
                 test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
             }
         }
@@ -153,7 +154,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         }
 
         auto sources_path = path / "sources";
-        bool has_sources = std::filesystem::exists(sources_path) && !std::filesystem::is_empty(sources_path);
+        const bool has_sources = std::filesystem::exists(sources_path) && !std::filesystem::is_empty(sources_path);
 
         if (!has_binaries && !has_sources)
         {

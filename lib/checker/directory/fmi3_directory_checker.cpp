@@ -22,11 +22,11 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
-            std::string name = entry.path().filename().string();
+            const std::string name = entry.path().filename().string();
             if (!fmi3_standard_entries.contains(name))
             {
                 test.status = TestStatus::WARNING;
-                std::string type = entry.is_directory() ? "directory" : "file";
+                const std::string type = entry.is_directory() ? "directory" : "file";
                 test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
             }
 
@@ -146,8 +146,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 if (entry.is_directory())
                 {
-                    std::string tuple = entry.path().filename().string();
-                    std::regex tuple_regex("^([a-z0-9_]+)-([a-z0-9_]+)(-([a-z0-9_]+))?$");
+                    const std::string tuple = entry.path().filename().string();
+                    const std::regex tuple_regex("^([a-z0-9_]+)-([a-z0-9_]+)(-([a-z0-9_]+))?$");
                     std::smatch match;
                     if (!std::regex_match(tuple, match, tuple_regex))
                     {
@@ -159,8 +159,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     else if (match[4].matched) // ABI present
                     {
                         static_library_detected = true;
-                        std::string abi = match[4].str();
-                        std::regex abi_regex("^[a-z][a-z0-9_]*$");
+                        const std::string abi = match[4].str();
+                        const std::regex abi_regex("^[a-z][a-z0-9_]*$");
                         if (!std::regex_match(abi, abi_regex))
                         {
                             test.status = TestStatus::FAIL;
@@ -214,7 +214,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         // 6. Implementation Presence
         TestResult impl_test{"Implementation Presence", TestStatus::PASS, {}};
-        bool has_sources = std::filesystem::exists(path / "sources" / "buildDescription.xml");
+        const bool has_sources = std::filesystem::exists(path / "sources" / "buildDescription.xml");
         if (!has_binaries && !has_sources)
         {
             impl_test.status = TestStatus::FAIL;
@@ -234,10 +234,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 if (entry.is_directory())
                 {
-                    std::string name = entry.path().filename().string();
+                    const std::string name = entry.path().filename().string();
                     // Reverse domain notation: e.g. com.example
                     // It should have at least one dot and follow basic domain naming rules.
-                    std::regex rd_regex("^[a-z0-9]+(\\.[a-z0-9]+)+$");
+                    const std::regex rd_regex("^[a-z0-9]+(\\.[a-z0-9]+)+$");
                     if (!std::regex_match(name, rd_regex))
                     {
                         if (test.status != TestStatus::FAIL)
