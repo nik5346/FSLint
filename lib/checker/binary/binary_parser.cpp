@@ -1,5 +1,6 @@
 #include "binary_parser.h"
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -12,7 +13,7 @@
 #pragma pack(push, 1)
 struct Elf64_Ehdr
 {
-    unsigned char e_ident[16];
+    std::array<unsigned char, 16> e_ident;
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
@@ -30,7 +31,7 @@ struct Elf64_Ehdr
 
 struct Elf32_Ehdr
 {
-    unsigned char e_ident[16];
+    std::array<unsigned char, 16> e_ident;
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
@@ -139,27 +140,37 @@ struct Elf32_Shdr
 };
 #pragma pack(pop)
 
-#define PT_LOAD 1
-#define PT_DYNAMIC 2
-#define DT_NULL 0
-#define DT_SYMTAB 6
-#define DT_STRTAB 5
-#define DT_HASH 4
-#define DT_GNU_HASH 0x6ffffef5
-#define SHT_DYNSYM 11
-#define SHN_UNDEF 0
-#define STB_LOCAL 0
-#define ELF64_ST_BIND(i) ((i) >> 4)
-#define ELF32_ST_BIND(i) ((i) >> 4)
+enum ElfConstants : uint32_t
+{
+    PT_LOAD = 1,
+    PT_DYNAMIC = 2,
+    DT_NULL = 0,
+    DT_SYMTAB = 6,
+    DT_STRTAB = 5,
+    DT_HASH = 4,
+    DT_GNU_HASH = 0x6ffffef5,
+    SHT_DYNSYM = 11,
+    SHN_UNDEF = 0,
+    STB_LOCAL = 0,
+    EI_NIDENT = 16,
+    EI_CLASS = 4,
+    ELFCLASS32 = 1,
+    ELFCLASS64 = 2,
+    ELFMAG0 = 0x7f
+};
 
-#define EI_NIDENT 16
-#define EI_CLASS 4
-#define ELFCLASS32 1
-#define ELFCLASS64 2
-#define ELFMAG0 0x7f
-#define ELFMAG1 'E'
-#define ELFMAG2 'L'
-#define ELFMAG3 'F'
+static constexpr char ELFMAG1 = 'E';
+static constexpr char ELFMAG2 = 'L';
+static constexpr char ELFMAG3 = 'F';
+
+static inline uint8_t ELF64_ST_BIND(uint8_t i)
+{
+    return i >> 4;
+}
+static inline uint8_t ELF32_ST_BIND(uint8_t i)
+{
+    return i >> 4;
+}
 
 template <typename T>
 static bool readFromFile(std::ifstream& f, std::streamoff offset, T& dest)
@@ -172,12 +183,12 @@ static bool readFromFile(std::ifstream& f, std::streamoff offset, T& dest)
 static std::set<std::string> parseElf64(std::ifstream& f)
 {
     std::set<std::string> exports;
-    Elf64_Ehdr ehdr;
+    Elf64_Ehdr ehdr{};
     if (!readFromFile(f, 0, ehdr))
         return {};
 
     // Find PT_DYNAMIC
-    Elf64_Phdr phdr;
+    Elf64_Phdr phdr{};
     bool found_dynamic = false;
     for (int i = 0; i < ehdr.e_phnum; ++i)
     {
@@ -196,7 +207,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
 
     // Read Dynamic entries
     std::vector<Elf64_Dyn> dyns;
-    Elf64_Dyn dyn;
+    Elf64_Dyn dyn{};
     f.seekg(static_cast<std::streamoff>(phdr.p_offset));
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     while (f.read(reinterpret_cast<char*>(&dyn), sizeof(dyn)) && dyn.d_tag != DT_NULL)
@@ -212,15 +223,19 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         switch (d.d_tag)
         {
         case DT_SYMTAB:
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             symtab_off = d.d_un.d_ptr;
             break;
         case DT_STRTAB:
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             strtab_off = d.d_un.d_ptr;
             break;
         case DT_HASH:
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             hash_off = d.d_un.d_ptr;
             break;
         case DT_GNU_HASH:
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             gnu_hash_off = d.d_un.d_ptr;
             break;
         }
@@ -233,7 +248,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         f.seekg(static_cast<std::streamoff>(ehdr.e_phoff));
         for (int i = 0; i < ehdr.e_phnum; ++i)
         {
-            Elf64_Phdr p;
+            Elf64_Phdr p{};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             if (f.read(reinterpret_cast<char*>(&p), sizeof(p)))
             {
@@ -308,7 +323,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         // Fallback: use section headers if available
         for (int i = 0; i < ehdr.e_shnum; ++i)
         {
-            Elf64_Shdr shdr;
+            Elf64_Shdr shdr{};
             if (readFromFile(f, static_cast<std::streamoff>(ehdr.e_shoff + i * ehdr.e_shentsize), shdr))
             {
                 if (shdr.sh_type == SHT_DYNSYM)
@@ -316,7 +331,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
                     nsyms = static_cast<uint32_t>(shdr.sh_size / shdr.sh_entsize);
                     symtab_off = shdr.sh_offset;
                     // Get strtab too
-                    Elf64_Shdr str_shdr;
+                    Elf64_Shdr str_shdr{};
                     if (readFromFile(f, static_cast<std::streamoff>(ehdr.e_shoff + shdr.sh_link * ehdr.e_shentsize),
                                      str_shdr))
                         strtab_off = str_shdr.sh_offset;
@@ -328,7 +343,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
 
     for (uint32_t i = 0; i < nsyms; ++i)
     {
-        Elf64_Sym sym;
+        Elf64_Sym sym{};
         if (readFromFile(f, static_cast<std::streamoff>(symtab_off + i * sizeof(Elf64_Sym)), sym))
         {
             if (ELF64_ST_BIND(sym.st_info) != STB_LOCAL && sym.st_shndx != SHN_UNDEF)
@@ -490,7 +505,7 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, st
     // Actually we should save the position after terminalSize
     // Let's do it properly
     f.seekg(start_off + curr_off);
-    uint8_t b;
+    uint8_t b = 0;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     f.read(reinterpret_cast<char*>(&b), 1);
     uint64_t tSize = b;
@@ -523,7 +538,7 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, st
 static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
 {
     std::set<std::string> exports;
-    uint32_t magic;
+    uint32_t magic = 0;
     if (!readFromFile(f, base_off, magic))
         return {};
 
@@ -537,14 +552,14 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
 
     if (is_64)
     {
-        mach_header_64 h;
+        mach_header_64 h{};
         readFromFile(f, base_off, h);
         ncmds = swap ? swap32(h.ncmds) : h.ncmds;
         header_size = sizeof(mach_header_64);
     }
     else
     {
-        mach_header h;
+        mach_header h{};
         readFromFile(f, base_off, h);
         ncmds = swap ? swap32(h.ncmds) : h.ncmds;
         header_size = sizeof(mach_header);
@@ -556,14 +571,14 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
 
     for (uint32_t i = 0; i < ncmds; ++i)
     {
-        load_command lc;
+        load_command lc{};
         readFromFile(f, curr_off, lc);
         uint32_t cmd = swap ? swap32(lc.cmd) : lc.cmd;
         uint32_t cmdsize = swap ? swap32(lc.cmdsize) : lc.cmdsize;
 
         if (cmd == 0x2 /* LC_SYMTAB */)
         {
-            symtab_command sc;
+            symtab_command sc{};
             readFromFile(f, curr_off, sc);
             symoff = swap ? swap32(sc.symoff) : sc.symoff;
             nsyms = swap ? swap32(sc.nsyms) : sc.nsyms;
@@ -571,13 +586,13 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
         }
         else if (cmd == 0x80000022 /* LC_DYLD_INFO_ONLY */ || cmd == 0x22 /* LC_DYLD_INFO */)
         {
-            dyld_info_command dc;
+            dyld_info_command dc{};
             readFromFile(f, curr_off, dc);
             export_off = swap ? swap32(dc.export_off) : dc.export_off;
         }
         else if (cmd == 0x48 /* LC_DYLD_EXPORTS_TRIE */)
         {
-            linkedit_data_command dc;
+            linkedit_data_command dc{};
             readFromFile(f, curr_off, dc);
             export_off = swap ? swap32(dc.dataoff) : dc.dataoff;
         }
@@ -596,14 +611,14 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
             uint8_t type = 0;
             if (is_64)
             {
-                nlist_64 nl;
+                nlist_64 nl{};
                 readFromFile(f, static_cast<std::streamoff>(base_off + symoff + i * sizeof(nlist_64)), nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
             }
             else
             {
-                nlist nl;
+                nlist nl{};
                 readFromFile(f, static_cast<std::streamoff>(base_off + symoff + i * sizeof(nlist)), nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
@@ -633,12 +648,12 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
 static std::set<std::string> parseElf32(std::ifstream& f)
 {
     std::set<std::string> exports;
-    Elf32_Ehdr ehdr;
+    Elf32_Ehdr ehdr{};
     if (!readFromFile(f, 0, ehdr))
         return {};
 
     // Find PT_DYNAMIC
-    Elf32_Phdr phdr;
+    Elf32_Phdr phdr{};
     bool found_dynamic = false;
     for (int i = 0; i < ehdr.e_phnum; ++i)
     {
@@ -657,7 +672,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
 
     // Read Dynamic entries
     std::vector<Elf32_Dyn> dyns;
-    Elf32_Dyn dyn;
+    Elf32_Dyn dyn{};
     f.seekg(static_cast<std::streamoff>(phdr.p_offset));
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     while (f.read(reinterpret_cast<char*>(&dyn), sizeof(dyn)) && dyn.d_tag != DT_NULL)
@@ -672,12 +687,15 @@ static std::set<std::string> parseElf32(std::ifstream& f)
         switch (d.d_tag)
         {
         case DT_SYMTAB:
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             symtab_off = d.d_un.d_ptr;
             break;
         case DT_STRTAB:
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             strtab_off = d.d_un.d_ptr;
             break;
         case DT_HASH:
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             hash_off = d.d_un.d_ptr;
             break;
         }
@@ -688,7 +706,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
         f.seekg(ehdr.e_phoff);
         for (int i = 0; i < ehdr.e_phnum; ++i)
         {
-            Elf32_Phdr p;
+            Elf32_Phdr p{};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             if (f.read(reinterpret_cast<char*>(&p), sizeof(p)))
             {
@@ -713,7 +731,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
 
     for (uint32_t i = 0; i < nsyms; ++i)
     {
-        Elf32_Sym sym;
+        Elf32_Sym sym{};
         if (readFromFile(f, static_cast<std::streamoff>(symtab_off + i * sizeof(Elf32_Sym)), sym))
         {
             if (ELF32_ST_BIND(sym.st_info) != STB_LOCAL && sym.st_shndx != SHN_UNDEF)
@@ -750,10 +768,10 @@ struct IMAGE_DOS_HEADER
     uint16_t e_cs;
     uint16_t e_lfarlc;
     uint16_t e_ovno;
-    uint16_t e_res[4];
+    std::array<uint16_t, 4> e_res;
     uint16_t e_oemid;
     uint16_t e_oeminfo;
-    uint16_t e_res2[10];
+    std::array<uint16_t, 10> e_res2;
     uint32_t e_lfanew;
 };
 
@@ -806,7 +824,7 @@ struct IMAGE_OPTIONAL_HEADER32
     uint32_t SizeOfHeapCommit;
     uint32_t LoaderFlags;
     uint32_t NumberOfRvaAndSizes;
-    IMAGE_DATA_DIRECTORY DataDirectory[16];
+    std::array<IMAGE_DATA_DIRECTORY, 16> DataDirectory;
 };
 
 struct IMAGE_OPTIONAL_HEADER64
@@ -871,12 +889,12 @@ struct IMAGE_OPTIONAL_HEADER64_REAL
     uint64_t SizeOfHeapCommit;
     uint32_t LoaderFlags;
     uint32_t NumberOfRvaAndSizes;
-    IMAGE_DATA_DIRECTORY DataDirectory[16];
+    std::array<IMAGE_DATA_DIRECTORY, 16> DataDirectory;
 };
 
 struct IMAGE_SECTION_HEADER
 {
-    uint8_t Name[8];
+    std::array<uint8_t, 8> Name;
     uint32_t VirtualSize;
     uint32_t VirtualAddress;
     uint32_t SizeOfRawData;
@@ -907,27 +925,27 @@ struct IMAGE_EXPORT_DIRECTORY
 static std::set<std::string> parsePe(std::ifstream& f)
 {
     std::set<std::string> exports;
-    IMAGE_DOS_HEADER dos;
+    IMAGE_DOS_HEADER dos{};
     if (!readFromFile(f, 0, dos) || dos.e_magic != 0x5A4D)
         return {};
 
-    uint32_t pe_sig;
+    uint32_t pe_sig = 0;
     if (!readFromFile(f, dos.e_lfanew, pe_sig) || pe_sig != 0x00004550)
         return {};
 
-    IMAGE_FILE_HEADER file_hdr;
+    IMAGE_FILE_HEADER file_hdr{};
     if (!readFromFile(f, dos.e_lfanew + 4, file_hdr))
         return {};
 
     uint32_t optional_hdr_off = dos.e_lfanew + 4 + sizeof(IMAGE_FILE_HEADER);
-    uint16_t magic;
+    uint16_t magic = 0;
     if (!readFromFile(f, optional_hdr_off, magic))
         return {};
 
     IMAGE_DATA_DIRECTORY export_dir_info = {0, 0};
     if (magic == 0x10B) // PE32
     {
-        IMAGE_OPTIONAL_HEADER32 opt;
+        IMAGE_OPTIONAL_HEADER32 opt{};
         if (readFromFile(f, optional_hdr_off, opt))
         {
             if (opt.NumberOfRvaAndSizes > 0)
@@ -936,7 +954,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
     }
     else if (magic == 0x20B) // PE32+
     {
-        IMAGE_OPTIONAL_HEADER64_REAL opt;
+        IMAGE_OPTIONAL_HEADER64_REAL opt{};
         if (readFromFile(f, optional_hdr_off, opt))
         {
             if (opt.NumberOfRvaAndSizes > 0)
@@ -967,7 +985,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
     if (export_dir_off == 0)
         return {};
 
-    IMAGE_EXPORT_DIRECTORY export_dir;
+    IMAGE_EXPORT_DIRECTORY export_dir{};
     if (!readFromFile(f, export_dir_off, export_dir))
         return {};
 
@@ -977,7 +995,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
 
     for (uint32_t i = 0; i < export_dir.NumberOfNames; ++i)
     {
-        uint32_t name_rva;
+        uint32_t name_rva = 0;
         if (readFromFile(f, names_off + i * 4, name_rva))
         {
             uint32_t name_off = rva_to_off(name_rva);
@@ -1003,16 +1021,16 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
     if (!f)
         return {};
 
-    uint32_t magic;
+    uint32_t magic = 0;
     if (!readFromFile(f, 0, magic))
         return {};
 
     if (magic == 0x464c457f /* ELF in little-endian */ || magic == 0x7f454c46 /* ELF in big-endian */)
     {
         f.seekg(0);
-        unsigned char ident[EI_NIDENT];
+        std::array<unsigned char, EI_NIDENT> ident{};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        f.read(reinterpret_cast<char*>(ident), sizeof(ident));
+        f.read(reinterpret_cast<char*>(ident.data()), static_cast<std::streamsize>(ident.size()));
         if (ident[EI_CLASS] == ELFCLASS64)
             return parseElf64(f);
         else if (ident[EI_CLASS] == ELFCLASS32)
@@ -1028,7 +1046,7 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
     }
     else if (magic == 0xCAFEBABE || magic == 0xBEBAFECA) // Fat Binary
     {
-        fat_header fh;
+        fat_header fh{};
         readFromFile(f, 0, fh);
         uint32_t nfat = (magic == 0xBEBAFECA) ? ((fh.nfat_arch << 24) | ((fh.nfat_arch << 8) & 0xFF0000) |
                                                  ((fh.nfat_arch >> 8) & 0xFF00) | (fh.nfat_arch >> 24))
@@ -1036,7 +1054,7 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
 
         for (uint32_t i = 0; i < nfat; ++i)
         {
-            fat_arch fa;
+            fat_arch fa{};
             readFromFile(f, static_cast<std::streamoff>(sizeof(fat_header) + i * sizeof(fat_arch)), fa);
             uint32_t offset = (magic == 0xBEBAFECA) ? ((fa.offset << 24) | ((fa.offset << 8) & 0xFF0000) |
                                                        ((fa.offset >> 8) & 0xFF00) | (fa.offset >> 24))
