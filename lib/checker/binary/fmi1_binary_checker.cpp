@@ -32,7 +32,7 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
 
     xmlNodePtr root = xmlDocGetRootElement(doc);
     auto model_id_opt = getXmlAttribute(root, "modelIdentifier");
-    std::string model_id = model_id_opt.value_or("");
+    const std::string model_id = model_id_opt.value_or("");
 
     bool is_cs = false;
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
@@ -119,7 +119,7 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
         {
             if (!platform_entry.is_directory())
                 continue;
-            std::string platform = platform_entry.path().filename().string();
+            const std::string platform = platform_entry.path().filename().string();
 
             for (const auto& ext : {".dll", ".so", ".dylib"})
             {
@@ -127,11 +127,11 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
                 if (std::filesystem::exists(binary_file))
                 {
                     TestResult test{"Exported Functions: " + platform + "/" + model_id + ext, TestStatus::PASS, {}};
-                    std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
+                    const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
 
                     for (const auto& func : base_functions)
                     {
-                        std::string prefixed_func = model_id + "_" + func;
+                        const std::string prefixed_func = model_id + "_" + func;
                         if (!actual_exports.contains(prefixed_func))
                         {
                             test.status = TestStatus::FAIL;

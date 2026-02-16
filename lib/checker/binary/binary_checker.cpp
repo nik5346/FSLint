@@ -34,14 +34,14 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     }
 
     std::map<std::string, std::string> model_identifiers;
-    std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
+    const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
 
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     if (xpath_context)
     {
         for (const auto& elem : interface_elements)
         {
-            std::string xpath = "//" + elem;
+            const std::string xpath = "//" + elem;
             xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
@@ -65,7 +65,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
         return;
     }
 
-    std::vector<std::string> expected_functions = getExpectedFunctions();
+    const std::vector<std::string> expected_functions = getExpectedFunctions();
 
     auto binaries_path = path / "binaries";
     if (std::filesystem::exists(binaries_path))
@@ -75,18 +75,18 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
             if (!platform_entry.is_directory())
                 continue;
 
-            std::string platform = platform_entry.path().filename().string();
+            const std::string platform = platform_entry.path().filename().string();
 
             for (const auto& [interface, model_id] : model_identifiers)
             {
-                std::vector<std::string> extensions = {".dll", ".so", ".dylib"};
+                const std::vector<std::string> extensions = {".dll", ".so", ".dylib"};
                 for (const auto& ext : extensions)
                 {
                     auto binary_file = platform_entry.path() / (model_id + ext);
                     if (std::filesystem::exists(binary_file))
                     {
                         TestResult test{"Exported Functions: " + platform + "/" + model_id + ext, TestStatus::PASS, {}};
-                        std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
+                        const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
 
                         for (const auto& func : expected_functions)
                         {

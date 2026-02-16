@@ -22,9 +22,9 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
     {
-        TestResult test{"Mandatory Files",
-                        TestStatus::FAIL,
-                        {"Mandatory file 'modelDescription.xml' is missing from the FMU root."}};
+        const TestResult test{"Mandatory Files",
+                              TestStatus::FAIL,
+                              {"Mandatory file 'modelDescription.xml' is missing from the FMU root."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -34,9 +34,9 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        TestResult test{"Parse modelDescription.xml",
-                        TestStatus::FAIL,
-                        {"Failed to parse 'modelDescription.xml' to verify directory structure."}};
+        const TestResult test{"Parse modelDescription.xml",
+                              TestStatus::FAIL,
+                              {"Failed to parse 'modelDescription.xml' to verify directory structure."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -46,13 +46,13 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     std::set<std::string> listed_sources_in_md;
     bool needs_execution_tool = false;
 
-    std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
+    const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     if (xpath_context)
     {
         for (const auto& elem : interface_elements)
         {
-            std::string xpath = "//" + elem;
+            const std::string xpath = "//" + elem;
             xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
@@ -130,7 +130,7 @@ void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, C
     {
         if (entry.is_regular_file())
         {
-            std::string filename = entry.path().filename().string();
+            const std::string filename = entry.path().filename().string();
             if (headers.contains(filename))
             {
                 test.status = TestStatus::WARNING;

@@ -283,7 +283,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets * 4));
 
-        for (uint32_t b : buckets)
+        for (const uint32_t b : buckets)
             if (b > max_idx)
                 max_idx = b;
 
@@ -510,7 +510,7 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, st
         f.seekg(start_off + curr_off);
         tSize = readUleb128(f);
     }
-    uint32_t children_pos = static_cast<uint32_t>(f.tellg()) + static_cast<uint32_t>(tSize);
+    const uint32_t children_pos = static_cast<uint32_t>(f.tellg()) + static_cast<uint32_t>(tSize);
 
     f.seekg(children_pos);
     uint8_t childCount = 0;
@@ -524,8 +524,8 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, st
         char c = 0;
         while (f.get(c) && c != '\0')
             edgeLabel += c;
-        uint64_t childOffset = readUleb128(f);
-        uint32_t next_pos = static_cast<uint32_t>(f.tellg());
+        const uint64_t childOffset = readUleb128(f);
+        const uint32_t next_pos = static_cast<uint32_t>(f.tellg());
         walkTrie(f, start_off, static_cast<uint32_t>(childOffset), prefix + edgeLabel, exports);
         f.seekg(next_pos);
     }
@@ -538,8 +538,8 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
     if (!readFromFile(f, base_off, magic))
         return {};
 
-    bool is_64 = (magic == 0xFEEDFACF || magic == 0xCFFAEDFE);
-    bool swap = (magic == 0xCEFAEDFE || magic == 0xCFFAEDFE);
+    const bool is_64 = (magic == 0xFEEDFACF || magic == 0xCFFAEDFE);
+    const bool swap = (magic == 0xCEFAEDFE || magic == 0xCFFAEDFE);
 
     uint32_t ncmds = 0;
     uint32_t header_size = 0;
@@ -569,8 +569,8 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
     {
         load_command lc{};
         readFromFile(f, curr_off, lc);
-        uint32_t cmd = swap ? swap32(lc.cmd) : lc.cmd;
-        uint32_t cmdsize = swap ? swap32(lc.cmdsize) : lc.cmdsize;
+        const uint32_t cmd = swap ? swap32(lc.cmd) : lc.cmd;
+        const uint32_t cmdsize = swap ? swap32(lc.cmdsize) : lc.cmdsize;
 
         if (cmd == 0x2 /* LC_SYMTAB */)
         {
@@ -933,7 +933,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
     if (!readFromFile(f, dos.e_lfanew + 4, file_hdr))
         return {};
 
-    uint32_t optional_hdr_off = dos.e_lfanew + 4 + sizeof(IMAGE_FILE_HEADER);
+    const uint32_t optional_hdr_off = dos.e_lfanew + 4 + sizeof(IMAGE_FILE_HEADER);
     uint16_t magic = 0;
     if (!readFromFile(f, optional_hdr_off, magic))
         return {};
@@ -963,7 +963,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
 
     // Find section containing export directory
     std::vector<IMAGE_SECTION_HEADER> sections(file_hdr.NumberOfSections);
-    uint32_t section_hdr_off = optional_hdr_off + file_hdr.SizeOfOptionalHeader;
+    const uint32_t section_hdr_off = optional_hdr_off + file_hdr.SizeOfOptionalHeader;
     f.seekg(section_hdr_off);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     f.read(reinterpret_cast<char*>(sections.data()),
@@ -977,7 +977,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
         return 0;
     };
 
-    uint32_t export_dir_off = rva_to_off(export_dir_info.VirtualAddress);
+    const uint32_t export_dir_off = rva_to_off(export_dir_info.VirtualAddress);
     if (export_dir_off == 0)
         return {};
 
@@ -985,7 +985,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
     if (!readFromFile(f, export_dir_off, export_dir))
         return {};
 
-    uint32_t names_off = rva_to_off(export_dir.AddressOfNames);
+    const uint32_t names_off = rva_to_off(export_dir.AddressOfNames);
     if (names_off == 0)
         return {};
 
@@ -994,7 +994,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
         uint32_t name_rva = 0;
         if (readFromFile(f, names_off + i * 4, name_rva))
         {
-            uint32_t name_off = rva_to_off(name_rva);
+            const uint32_t name_off = rva_to_off(name_rva);
             if (name_off != 0)
             {
                 f.seekg(name_off);
@@ -1044,17 +1044,17 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
     {
         fat_header fh{};
         readFromFile(f, 0, fh);
-        uint32_t nfat = (magic == 0xBEBAFECA) ? ((fh.nfat_arch << 24) | ((fh.nfat_arch << 8) & 0xFF0000) |
-                                                 ((fh.nfat_arch >> 8) & 0xFF00) | (fh.nfat_arch >> 24))
-                                              : fh.nfat_arch;
+        const uint32_t nfat = (magic == 0xBEBAFECA) ? ((fh.nfat_arch << 24) | ((fh.nfat_arch << 8) & 0xFF0000) |
+                                                       ((fh.nfat_arch >> 8) & 0xFF00) | (fh.nfat_arch >> 24))
+                                                    : fh.nfat_arch;
 
         for (uint32_t i = 0; i < nfat; ++i)
         {
             fat_arch fa{};
             readFromFile(f, static_cast<std::streamoff>(sizeof(fat_header) + i * sizeof(fat_arch)), fa);
-            uint32_t offset = (magic == 0xBEBAFECA) ? ((fa.offset << 24) | ((fa.offset << 8) & 0xFF0000) |
-                                                       ((fa.offset >> 8) & 0xFF00) | (fa.offset >> 24))
-                                                    : fa.offset;
+            const uint32_t offset = (magic == 0xBEBAFECA) ? ((fa.offset << 24) | ((fa.offset << 8) & 0xFF0000) |
+                                                             ((fa.offset >> 8) & 0xFF00) | (fa.offset >> 24))
+                                                          : fa.offset;
             // For FMUs, we just take the first architecture that we can parse
             auto res = parseMachO(f, offset);
             if (!res.empty())

@@ -27,7 +27,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
     xmlDocPtr doc = xmlReadFile(build_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        TestResult test{
+        const TestResult test{
             "Parse buildDescription.xml", TestStatus::FAIL, {"Failed to parse 'sources/buildDescription.xml'."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
@@ -66,7 +66,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
 
                     // Only check typical source files
                     static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
-                    std::string ext = entry.path().extension().string();
+                    const std::string ext = entry.path().extension().string();
 
                     if (source_extensions.contains(ext))
                     {
@@ -265,7 +265,7 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
         static const std::vector<std::string> tags = {"ModelExchange", "CoSimulation", "ScheduledExecution"};
         for (const auto& tag : tags)
         {
-            std::string expr = "//" + tag;
+            const std::string expr = "//" + tag;
             xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), xpath_context);
