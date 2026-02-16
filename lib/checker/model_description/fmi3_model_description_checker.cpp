@@ -9,11 +9,13 @@
 #include <libxml/xmlstring.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <map>
 #include <optional>
 #include <regex>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <vector>

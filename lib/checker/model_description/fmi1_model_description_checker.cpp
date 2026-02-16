@@ -7,6 +7,7 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <map>

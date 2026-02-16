@@ -6,7 +6,6 @@
 #include <libxml/xmlstring.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>
-#include <libxml/xmlmemory.h>
 
 #include <filesystem>
 #include <map>
