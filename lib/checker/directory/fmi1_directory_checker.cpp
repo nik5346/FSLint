@@ -6,10 +6,12 @@
 #include <libxml/xmlstring.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>
+#include <libxml/xmlmemory.h>
 
 #include <filesystem>
 #include <map>
 #include <set>
+#include <string>
 
 void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
@@ -60,6 +62,7 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
         if (xpath_context)
         {
             xmlXPathObjectPtr xpath_obj =
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
             if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
                 is_cs = true;

@@ -4,6 +4,7 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
+#include <libxml/xmlmemory.h>
 #include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
 
@@ -12,6 +13,7 @@
 #include <optional>
 #include <set>
 #include <vector>
+#include <string>
 
 void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
@@ -41,9 +43,11 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
         {
             std::string xpath = "//" + elem;
             xmlXPathObjectPtr xpath_obj =
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
             if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
             {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 auto model_id = getXmlAttribute(xpath_obj->nodesetval->nodeTab[0], "modelIdentifier");
                 if (model_id)
                     model_identifiers[elem] = *model_id;
@@ -108,10 +112,12 @@ std::optional<std::string> BinaryChecker::getXmlAttribute(xmlNodePtr node, const
     if (!node)
         return std::nullopt;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
     if (!attr)
         return std::nullopt;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::string value(reinterpret_cast<char*>(attr));
     xmlFree(attr);
     return value;

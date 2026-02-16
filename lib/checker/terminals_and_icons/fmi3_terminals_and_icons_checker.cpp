@@ -5,6 +5,7 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
+#include <libxml/xmlmemory.h>
 #include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
 
@@ -59,23 +60,27 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
 
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
     xmlXPathObjectPtr xpath_obj =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/*"), context);
 
     if (xpath_obj && xpath_obj->nodesetval)
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             TerminalVariableInfo var;
             var.name = getXmlAttribute(node, "name").value_or("");
             var.causality = getXmlAttribute(node, "causality").value_or("local");
             var.variability = getXmlAttribute(node, "variability").value_or("");
             var.sourceline = node->line;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             var.type = reinterpret_cast<const char*>(node->name);
 
             for (xmlNodePtr child = node->children; child; child = child->next)
             {
                 if (child->type == XML_ELEMENT_NODE &&
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Dimension")) == 0)
                 {
                     TerminalDimension dim;

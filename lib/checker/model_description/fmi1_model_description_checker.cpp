@@ -59,6 +59,7 @@ void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
         std::set<std::string> seen_names;
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             auto name = getXmlAttribute(node, "name");
             if (name)
@@ -251,6 +252,7 @@ std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDe
 
     for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         xmlNodePtr unit_node = xpath_obj->nodesetval->nodeTab[i];
         UnitDefinition unit_def;
         unit_def.name = getXmlAttribute(unit_node, "unit").value_or("");
@@ -262,6 +264,7 @@ std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDe
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "DisplayUnitDefinition")
             {
@@ -296,6 +299,7 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
 
     for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         xmlNodePtr type_node = xpath_obj->nodesetval->nodeTab[i];
         TypeDefinition type_def;
         type_def.name = getXmlAttribute(type_node, "name").value_or("");
@@ -305,6 +309,7 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "RealType" || elem_name == "IntegerType" || elem_name == "BooleanType" ||
                 elem_name == "StringType" || elem_name == "EnumerationType")
@@ -341,6 +346,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
     for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         xmlNodePtr scalar_var_node = xpath_obj->nodesetval->nodeTab[i];
         Variable var;
         var.name = getXmlAttribute(scalar_var_node, "name").value_or("");
@@ -366,6 +372,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" || elem_name == "String" ||
                 elem_name == "Enumeration")
@@ -415,6 +422,7 @@ void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
         std::set<std::string> seen_names;
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             auto name = getXmlAttribute(node, "unit");
             if (name)
@@ -443,6 +451,7 @@ void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
         std::set<std::string> seen_names;
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             auto name = getXmlAttribute(node, "name");
             if (name)
@@ -521,6 +530,7 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
     if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
     {
         TestResult test{"CS Implementation", TestStatus::PASS, {}};
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         xmlNodePtr impl_node = xpath_obj->nodesetval->nodeTab[0];
         xmlNodePtr tool_node = nullptr;
 
@@ -528,6 +538,7 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             std::string name = reinterpret_cast<const char*>(child->name);
             if (name == "CoSimulation_StandAlone" || name == "CoSimulation_Tool")
             {
@@ -545,6 +556,7 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
             {
                 if (child->type != XML_ELEMENT_NODE)
                     continue;
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 if (reinterpret_cast<const char*>(child->name) == std::string("Model"))
                 {
                     model_node = child;
@@ -563,6 +575,7 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
                 {
                     if (child->type != XML_ELEMENT_NODE)
                         continue;
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     if (reinterpret_cast<const char*>(child->name) == std::string("File"))
                     {
                         auto file_uri = getXmlAttribute(child, "file");
@@ -582,6 +595,7 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
             {
                 if (child->type != XML_ELEMENT_NODE)
                     continue;
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 if (reinterpret_cast<const char*>(child->name) == std::string("CoSimulation_StandAlone"))
                 {
                     is_standalone = true;
@@ -613,7 +627,7 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
         if (!relative_path.empty() && relative_path[0] == '/')
             relative_path.erase(0, 1);
 
-        std::filesystem::path full_path = _fmu_root_path / relative_path;
+        std::filesystem::path full_path = getFmuRootPath() / relative_path;
         if (!std::filesystem::exists(full_path))
         {
             test.status = TestStatus::FAIL;

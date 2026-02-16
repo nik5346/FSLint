@@ -37,7 +37,15 @@ struct TerminalVariableInfo
 class TerminalsAndIconsCheckerBase : public Checker
 {
   public:
-    virtual ~TerminalsAndIconsCheckerBase() = default;
+    TerminalsAndIconsCheckerBase() = default;
+    ~TerminalsAndIconsCheckerBase() override = default;
+
+    // Disable copying and moving to match base class and satisfy rule of five
+    TerminalsAndIconsCheckerBase(const TerminalsAndIconsCheckerBase&) = delete;
+    TerminalsAndIconsCheckerBase& operator=(const TerminalsAndIconsCheckerBase&) = delete;
+    TerminalsAndIconsCheckerBase(TerminalsAndIconsCheckerBase&&) = delete;
+    TerminalsAndIconsCheckerBase& operator=(TerminalsAndIconsCheckerBase&&) = delete;
+
     void validate(const std::filesystem::path& path, Certificate& cert) override;
 
   protected:

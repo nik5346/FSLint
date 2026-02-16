@@ -165,6 +165,7 @@ template <typename T>
 static bool readFromFile(std::ifstream& f, std::streamoff offset, T& dest)
 {
     f.seekg(offset);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return !!f.read(reinterpret_cast<char*>(&dest), sizeof(T));
 }
 
@@ -180,7 +181,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     bool found_dynamic = false;
     for (int i = 0; i < ehdr.e_phnum; ++i)
     {
-        if (readFromFile(f, ehdr.e_phoff + i * ehdr.e_phentsize, phdr))
+        if (readFromFile(f, static_cast<std::streamoff>(ehdr.e_phoff + i * ehdr.e_phentsize), phdr))
         {
             if (phdr.p_type == PT_DYNAMIC)
             {
@@ -197,6 +198,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     std::vector<Elf64_Dyn> dyns;
     Elf64_Dyn dyn;
     f.seekg(static_cast<std::streamoff>(phdr.p_offset));
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     while (f.read(reinterpret_cast<char*>(&dyn), sizeof(dyn)) && dyn.d_tag != DT_NULL)
         dyns.push_back(dyn);
 
@@ -228,10 +230,11 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     // We need to map these back to file offsets using program headers.
     auto va_to_off = [&](uint64_t va) -> uint64_t
     {
-        f.seekg(ehdr.e_phoff);
+        f.seekg(static_cast<std::streamoff>(ehdr.e_phoff));
         for (int i = 0; i < ehdr.e_phnum; ++i)
         {
             Elf64_Phdr p;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             if (f.read(reinterpret_cast<char*>(&p), sizeof(p)))
             {
                 if (p.p_type == PT_LOAD && va >= p.p_vaddr && va < p.p_vaddr + p.p_memsz)
@@ -250,14 +253,14 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     if (hash_off != 0)
     {
         // Read nchain from DT_HASH
-        uint32_t nbucket;
+        uint32_t nbucket = 0;
         if (readFromFile(f, static_cast<std::streamoff>(hash_off), nbucket))
             readFromFile(f, static_cast<std::streamoff>(hash_off + 4), nsyms);
     }
     else if (gnu_hash_off != 0)
     {
         // DT_GNU_HASH is harder, but we can find the number of symbols by looking at the buckets and chains.
-        uint32_t nbuckets, symoffset, bloom_size, bloom_shift;
+        uint32_t nbuckets = 0, symoffset = 0, bloom_size = 0, bloom_shift = 0;
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off), nbuckets);
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 4), symoffset);
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 8), bloom_size);
@@ -266,6 +269,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
         f.seekg(static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint64_t>(bloom_size) * 8));
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets * 4));
 
         for (uint32_t b : buckets)
@@ -279,7 +283,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
             uint32_t curr_idx = max_idx;
             while (!done)
             {
-                uint32_t chain_val;
+                uint32_t chain_val = 0;
                 if (readFromFile(f,
                                  static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint64_t>(bloom_size) * 8 +
                                                              static_cast<uint64_t>(nbuckets) * 4 +
@@ -305,7 +309,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         for (int i = 0; i < ehdr.e_shnum; ++i)
         {
             Elf64_Shdr shdr;
-            if (readFromFile(f, ehdr.e_shoff + i * ehdr.e_shentsize, shdr))
+            if (readFromFile(f, static_cast<std::streamoff>(ehdr.e_shoff + i * ehdr.e_shentsize), shdr))
             {
                 if (shdr.sh_type == SHT_DYNSYM)
                 {
@@ -313,7 +317,8 @@ static std::set<std::string> parseElf64(std::ifstream& f)
                     symtab_off = shdr.sh_offset;
                     // Get strtab too
                     Elf64_Shdr str_shdr;
-                    if (readFromFile(f, ehdr.e_shoff + shdr.sh_link * ehdr.e_shentsize, str_shdr))
+                    if (readFromFile(f, static_cast<std::streamoff>(ehdr.e_shoff + shdr.sh_link * ehdr.e_shentsize),
+                                     str_shdr))
                         strtab_off = str_shdr.sh_offset;
                     break;
                 }
@@ -330,7 +335,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
             {
                 f.seekg(static_cast<std::streamoff>(strtab_off + sym.st_name));
                 std::string name;
-                char c;
+                char c = 0;
                 while (f.get(c) && c != '\0')
                     name += c;
                 if (!name.empty())
@@ -447,7 +452,8 @@ static uint64_t readUleb128(std::ifstream& f)
     int shift = 0;
     while (true)
     {
-        uint8_t byte;
+        uint8_t byte = 0;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         if (!f.read(reinterpret_cast<char*>(&byte), 1))
             break;
         result |= static_cast<uint64_t>(byte & 0x7f) << shift;
@@ -474,17 +480,18 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, st
     }
 
     // Skip terminal data
-    f.seekg(start_off + curr_off + 1 + terminalSize); // Rough estimate of ULEB size as 1
+    f.seekg(static_cast<std::streamoff>(start_off + curr_off + 1 + terminalSize)); // Rough estimate of ULEB size as 1
 
     // Need to correctly find children
     f.seekg(start_off + curr_off);
     terminalSize = readUleb128(f);
-    f.seekg(start_off + curr_off + (terminalSize > 0 ? (1 + terminalSize) : 1)); // Better but still rough
+    f.seekg(static_cast<std::streamoff>(start_off + curr_off + (terminalSize > 0 ? (1 + terminalSize) : 1)));
 
     // Actually we should save the position after terminalSize
     // Let's do it properly
     f.seekg(start_off + curr_off);
     uint8_t b;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     f.read(reinterpret_cast<char*>(&b), 1);
     uint64_t tSize = b;
     if (b & 0x80)
@@ -495,14 +502,15 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, st
     uint32_t children_pos = static_cast<uint32_t>(f.tellg()) + static_cast<uint32_t>(tSize);
 
     f.seekg(children_pos);
-    uint8_t childCount;
+    uint8_t childCount = 0;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     if (!f.read(reinterpret_cast<char*>(&childCount), 1))
         return;
 
     for (uint8_t i = 0; i < childCount; ++i)
     {
         std::string edgeLabel;
-        char c;
+        char c = 0;
         while (f.get(c) && c != '\0')
             edgeLabel += c;
         uint64_t childOffset = readUleb128(f);
@@ -589,14 +597,14 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
             if (is_64)
             {
                 nlist_64 nl;
-                readFromFile(f, base_off + symoff + i * sizeof(nlist_64), nl);
+                readFromFile(f, static_cast<std::streamoff>(base_off + symoff + i * sizeof(nlist_64)), nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
             }
             else
             {
                 nlist nl;
-                readFromFile(f, base_off + symoff + i * sizeof(nlist), nl);
+                readFromFile(f, static_cast<std::streamoff>(base_off + symoff + i * sizeof(nlist)), nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
             }
@@ -605,7 +613,7 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
             {
                 f.seekg(base_off + stroff + strx);
                 std::string name;
-                char c;
+                char c = 0;
                 while (f.get(c) && c != '\0')
                     name += c;
                 if (!name.empty())
@@ -651,6 +659,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     std::vector<Elf32_Dyn> dyns;
     Elf32_Dyn dyn;
     f.seekg(static_cast<std::streamoff>(phdr.p_offset));
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     while (f.read(reinterpret_cast<char*>(&dyn), sizeof(dyn)) && dyn.d_tag != DT_NULL)
         dyns.push_back(dyn);
 
@@ -680,6 +689,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
         for (int i = 0; i < ehdr.e_phnum; ++i)
         {
             Elf32_Phdr p;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             if (f.read(reinterpret_cast<char*>(&p), sizeof(p)))
             {
                 if (p.p_type == PT_LOAD && va >= p.p_vaddr && va < p.p_vaddr + p.p_memsz)
@@ -696,7 +706,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     uint32_t nsyms = 0;
     if (hash_off != 0)
     {
-        uint32_t nbucket;
+        uint32_t nbucket = 0;
         if (readFromFile(f, static_cast<std::streamoff>(hash_off), nbucket))
             readFromFile(f, static_cast<std::streamoff>(hash_off + 4), nsyms);
     }
@@ -710,7 +720,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
             {
                 f.seekg(static_cast<std::streamoff>(strtab_off + sym.st_name));
                 std::string name;
-                char c;
+                char c = 0;
                 while (f.get(c) && c != '\0')
                     name += c;
                 if (!name.empty())
@@ -941,6 +951,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
     std::vector<IMAGE_SECTION_HEADER> sections(file_hdr.NumberOfSections);
     uint32_t section_hdr_off = optional_hdr_off + file_hdr.SizeOfOptionalHeader;
     f.seekg(section_hdr_off);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     f.read(reinterpret_cast<char*>(sections.data()),
            static_cast<std::streamsize>(sections.size() * sizeof(IMAGE_SECTION_HEADER)));
 
@@ -974,7 +985,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
             {
                 f.seekg(name_off);
                 std::string name;
-                char c;
+                char c = 0;
                 while (f.get(c) && c != '\0')
                     name += c;
                 if (!name.empty())
@@ -1000,6 +1011,7 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
     {
         f.seekg(0);
         unsigned char ident[EI_NIDENT];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(ident), sizeof(ident));
         if (ident[EI_CLASS] == ELFCLASS64)
             return parseElf64(f);
@@ -1025,7 +1037,7 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
         for (uint32_t i = 0; i < nfat; ++i)
         {
             fat_arch fa;
-            readFromFile(f, sizeof(fat_header) + i * sizeof(fat_arch), fa);
+            readFromFile(f, static_cast<std::streamoff>(sizeof(fat_header) + i * sizeof(fat_arch)), fa);
             uint32_t offset = (magic == 0xBEBAFECA) ? ((fa.offset << 24) | ((fa.offset << 8) & 0xFF0000) |
                                                        ((fa.offset >> 8) & 0xFF00) | (fa.offset >> 24))
                                                     : fa.offset;

@@ -21,7 +21,10 @@ class BuildDescriptionChecker : public Checker
     void validate(const std::filesystem::path& path, Certificate& cert) override;
 
   protected:
-    std::string _fmi_version;
+    const std::string& getFmiVersion() const
+    {
+        return _fmi_version;
+    }
     std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 
     virtual void checkFmiVersion(xmlNodePtr root, Certificate& cert) = 0;
@@ -33,4 +36,7 @@ class BuildDescriptionChecker : public Checker
                                            Certificate& cert);
 
     std::set<std::string> getValidModelIdentifiers(const std::filesystem::path& path);
+
+  private:
+    std::string _fmi_version;
 };

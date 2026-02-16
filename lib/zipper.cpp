@@ -16,6 +16,7 @@
 #include <ios>
 #include <iostream>
 #include <vector>
+#include <string>
 
 Zipper::~Zipper()
 {
