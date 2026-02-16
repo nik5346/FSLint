@@ -33,8 +33,8 @@
 
 #include <filesystem>
 #include <memory>
-#include <vector>
 #include <utility>
+#include <vector>
 
 ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
 {

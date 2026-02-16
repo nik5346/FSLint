@@ -4,13 +4,13 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
-#include <libxml/xpath.h>
 #include <libxml/xmlstring.h>
+#include <libxml/xpath.h>
 
 #include <filesystem>
 #include <set>
-#include <vector>
 #include <string>
+#include <vector>
 
 void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {

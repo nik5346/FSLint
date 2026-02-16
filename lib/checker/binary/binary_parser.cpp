@@ -245,7 +245,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         for (int i = 0; i < ehdr.e_phnum; ++i)
         {
             Elf64_Phdr p{};
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             if (f.read(reinterpret_cast<char*>(&p), sizeof(p)))
             {
                 if (p.p_type == PT_LOAD && va >= p.p_vaddr && va < p.p_vaddr + p.p_memsz)
@@ -280,7 +280,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
         f.seekg(static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint64_t>(bloom_size) * 8));
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets * 4));
 
         for (uint32_t b : buckets)
@@ -464,7 +464,7 @@ static uint64_t readUleb128(std::ifstream& f)
     while (true)
     {
         uint8_t byte = 0;
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         if (!f.read(reinterpret_cast<char*>(&byte), 1))
             break;
         result |= static_cast<uint64_t>(byte & 0x7f) << shift;
@@ -703,7 +703,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
         for (int i = 0; i < ehdr.e_phnum; ++i)
         {
             Elf32_Phdr p{};
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             if (f.read(reinterpret_cast<char*>(&p), sizeof(p)))
             {
                 if (p.p_type == PT_LOAD && va >= p.p_vaddr && va < p.p_vaddr + p.p_memsz)
@@ -1025,7 +1025,7 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
     {
         f.seekg(0);
         std::array<unsigned char, EI_NIDENT> ident{};
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(ident.data()), static_cast<std::streamsize>(ident.size()));
         if (ident[EI_CLASS] == ELFCLASS64)
             return parseElf64(f);

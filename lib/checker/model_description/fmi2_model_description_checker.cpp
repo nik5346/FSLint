@@ -8,19 +8,19 @@
 #include <libxml/xpath.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
-#include <map>
 #include <iostream>
+#include <map>
+#include <optional>
 #include <regex>
 #include <set>
 #include <sstream>
 #include <string>
 #include <tuple>
-#include <vector>
-#include <optional>
 #include <utility>
+#include <vector>
 
 void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,

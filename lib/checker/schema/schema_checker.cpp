@@ -3,8 +3,8 @@
 #include "certificate.h"
 
 #include <libxml/parser.h>
-#include <libxml/xmlmemory.h>
 #include <libxml/tree.h>
+#include <libxml/xmlmemory.h>
 #include <libxml/xmlschemas.h>
 #include <libxml/xmlstring.h>
 
@@ -27,8 +27,8 @@
 
 #ifdef __linux__
 #include <linux/limits.h>
-#include <unistd.h>
 #include <string>
+#include <unistd.h>
 #endif
 
 void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)

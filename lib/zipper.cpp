@@ -3,8 +3,8 @@
 #include "unzip.h"
 #include "zip.h"
 
-#include <zlib.h>
 #include <zconf.h>
+#include <zlib.h>
 
 #include <algorithm>
 #include <array>
@@ -15,8 +15,8 @@
 #include <fstream>
 #include <ios> // IWYU pragma: keep
 #include <iostream>
-#include <vector>
 #include <string>
+#include <vector>
 
 Zipper::~Zipper()
 {
