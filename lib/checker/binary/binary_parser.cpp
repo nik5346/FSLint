@@ -159,10 +159,6 @@ enum ElfConstants : uint32_t
     ELFMAG0 = 0x7f
 };
 
-static constexpr char ELFMAG1 = 'E';
-static constexpr char ELFMAG2 = 'L';
-static constexpr char ELFMAG3 = 'F';
-
 static inline uint8_t ELF64_ST_BIND(uint8_t i)
 {
     return i >> 4;

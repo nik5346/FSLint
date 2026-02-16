@@ -276,7 +276,7 @@ int32_t Zipper::getDiskCount() const
     {
         // Might have comment, search backwards
         file.seekg(0, std::ios::end);
-        std::streampos file_size = file.tellg();
+        auto file_size = file.tellg();
         const size_t search_size = std::min<size_t>(MAX_EOCD_SEARCH_SIZE, static_cast<size_t>(file_size));
 
         file.seekg(-static_cast<std::streamoff>(search_size), std::ios::end);

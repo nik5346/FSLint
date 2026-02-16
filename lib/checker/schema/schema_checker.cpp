@@ -380,9 +380,10 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     std::filesystem::path bin_dir;
 
 #ifdef _WIN32
-    std::array<char, MAX_PATH> path{};
-    DWORD length = GetModuleFileNameA(nullptr, path.data(), MAX_PATH);
-    if (length > 0 && length < MAX_PATH)
+    std::array<char, 260> path{};
+    // NOLINTNEXTLINE(misc-include-cleaner)
+    auto length = GetModuleFileNameA(nullptr, path.data(), static_cast<unsigned long>(path.size()));
+    if (length > 0 && length < path.size())
         bin_dir = std::filesystem::path(path.data()).parent_path();
 
 #elif defined(__linux__)
