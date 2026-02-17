@@ -18,49 +18,28 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# ============================================================================
-# Clang-Tidy Integration
-# ============================================================================
+find_package(Python3 COMPONENTS Interpreter)
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
-if(CLANG_TIDY_EXE)
-    message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
+find_program(RUN_CLANG_TIDY_EXE NAMES "run-clang-tidy" "run-clang-tidy.py")
 
-    # Collect all source files to check
-    file(GLOB_RECURSE TIDY_SOURCES
-        ${CMAKE_SOURCE_DIR}/lib/*.cpp
-        ${CMAKE_SOURCE_DIR}/cli/*.cpp
-    )
+if(CLANG_TIDY_EXE AND RUN_CLANG_TIDY_EXE AND Python3_Interpreter_FOUND)
+    include(ProcessorCount)
+    ProcessorCount(N)
+    if(N EQUAL 0)
+        set(N 1)
+    endif()
 
-    # Create a custom command for each source file to allow parallel execution via the build tool (e.g., ninja -j)
-    foreach(SOURCE ${TIDY_SOURCES})
-        get_filename_component(SOURCE_NAME ${SOURCE} NAME)
-        # Use a hash of the full path to avoid collisions for files with same name in different dirs
-        string(SHA1 PATH_HASH ${SOURCE})
-        set(STAMP_FILE "${CMAKE_BINARY_DIR}/clang-tidy/${SOURCE_NAME}_${PATH_HASH}.stamp")
-
-        add_custom_command(
-            OUTPUT ${STAMP_FILE}
-            COMMAND ${CLANG_TIDY_EXE}
-                -p ${CMAKE_BINARY_DIR}
-                --config-file=${CMAKE_SOURCE_DIR}/.clang-tidy
-                "--header-filter=(lib|cli|tests)/.*"
-                --system-headers=false
-                ${SOURCE}
-            COMMAND ${CMAKE_COMMAND} -E touch ${STAMP_FILE}
-            DEPENDS ${SOURCE} ${CMAKE_SOURCE_DIR}/.clang-tidy
-            COMMENT "Checking ${SOURCE_NAME} with clang-tidy..."
-            VERBATIM
-        )
-        list(APPEND TIDY_STAMPS ${STAMP_FILE})
-    endforeach()
-
-    # Add custom target to run clang-tidy
     add_custom_target(clang-tidy
-        DEPENDS ${TIDY_STAMPS}
-        COMMENT "Running clang-tidy on all source files..."
+        COMMAND ${Python3_EXECUTABLE} ${RUN_CLANG_TIDY_EXE}
+            -p ${CMAKE_BINARY_DIR}
+            -j ${N}
+            -clang-tidy-binary ${CLANG_TIDY_EXE}
+            "-header-filter=(lib|cli|tests)/.*"
+            "lib/.*\\.cpp" "cli/.*\\.cpp"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running parallel clang-tidy..."
+        VERBATIM
     )
-else()
-    message(WARNING "clang-tidy not found!")
 endif()
 
 # ============================================================================
@@ -95,8 +74,13 @@ include(FetchContent)
 # ============================================================================
 # XML-Format Integration
 # ============================================================================
+set(XML_FORMAT_PYTHON "python")
+if(Python3_Interpreter_FOUND)
+    set(XML_FORMAT_PYTHON ${Python3_EXECUTABLE})
+endif()
+
 add_custom_target(format-xml
-    COMMAND python ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
+    COMMAND ${XML_FORMAT_PYTHON} ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
     COMMENT "Running XML formatter on test data"
 )
 
