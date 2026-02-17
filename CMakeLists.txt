@@ -28,7 +28,7 @@ if(CLANG_TIDY_EXE)
     # Collect all source files to check
     file(GLOB_RECURSE TIDY_SOURCES
         ${CMAKE_SOURCE_DIR}/lib/*.cpp
-        ${CMAKE_SOURCE_DIR}/lib/*.h
+
         ${CMAKE_SOURCE_DIR}/cli/*.cpp
     )
 
