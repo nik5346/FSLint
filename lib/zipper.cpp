@@ -101,8 +101,8 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
         constexpr uint16_t FILE_TYPE_SHIFT = 12;
         constexpr uint16_t SYMLINK_TYPE = 0xA;
 
-        const uint16_t unix_mode = static_cast<uint16_t>((file_info.external_fa >> UNIX_MODE_SHIFT) & UNIX_MODE_MASK);
-        const uint16_t file_type = (unix_mode & FILE_TYPE_MASK) >> FILE_TYPE_SHIFT;
+        uint16_t unix_mode = static_cast<uint16_t>((file_info.external_fa >> UNIX_MODE_SHIFT) & UNIX_MODE_MASK);
+        uint16_t file_type = (unix_mode & FILE_TYPE_MASK) >> FILE_TYPE_SHIFT;
         entry.is_symlink = (file_type == SYMLINK_TYPE);
 
         entries.push_back(entry);
@@ -132,7 +132,7 @@ bool Zipper::extractFile(const std::string& filename, std::vector<uint8_t>& outp
 
     output.resize(file_info.uncompressed_size);
 
-    const int32_t bytes_read = unzReadCurrentFile(uf, output.data(), static_cast<uint32_t>(output.size()));
+    int32_t bytes_read = unzReadCurrentFile(uf, output.data(), static_cast<uint32_t>(output.size()));
     unzCloseCurrentFile(uf);
 
     if (bytes_read < 0 || static_cast<size_t>(bytes_read) != output.size())
@@ -151,7 +151,7 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
     auto entries = getEntries();
     for (const auto& entry : entries)
     {
-        const std::filesystem::path file_path = destination / entry.filename;
+        std::filesystem::path file_path = destination / entry.filename;
 
         // Check if it's a directory (ends with /)
         if (!entry.filename.empty() && entry.filename.back() == '/')
@@ -187,10 +187,10 @@ bool Zipper::addFile(const std::string& internal_path, const std::vector<uint8_t
 
     zipFile zf = static_cast<zipFile>(_zip_writer);
 
-    const zip_fileinfo zi{};
+    zip_fileinfo zi{};
 
     // Determine compression method
-    const int32_t method = (compression_level > 0) ? Z_DEFLATED : 0;
+    int32_t method = (compression_level > 0) ? Z_DEFLATED : 0;
 
     if (zipOpenNewFileInZip(zf, internal_path.c_str(), &zi, nullptr, 0, nullptr, 0, nullptr, method,
                             compression_level) != ZIP_OK)
@@ -212,7 +212,7 @@ bool Zipper::addFileFromDisk(const std::string& internal_path, const std::filesy
     if (!file)
         return false;
 
-    const int64_t size = file.tellg();
+    int64_t size = file.tellg();
     file.seekg(0, std::ios::beg);
 
     std::vector<uint8_t> buffer(static_cast<size_t>(size));
@@ -271,7 +271,7 @@ int32_t Zipper::getDiskCount() const
         return value;
     };
 
-    const uint32_t signature = readInteger(buffer.data(), 0);
+    uint32_t signature = readInteger(buffer.data(), 0);
     if (signature != EOCD_SIGNATURE)
     {
         // Might have comment, search backwards
@@ -287,7 +287,7 @@ int32_t Zipper::getDiskCount() const
         bool found = false;
         for (size_t i = search_buffer.size() - EOCD_MIN_SIZE; i > 0; --i)
         {
-            const uint32_t sig = readInteger(search_buffer.data(), i);
+            uint32_t sig = readInteger(search_buffer.data(), i);
             if (sig == EOCD_SIGNATURE)
             {
                 buffer.assign(search_buffer.begin() + static_cast<std::ptrdiff_t>(i),
@@ -302,8 +302,8 @@ int32_t Zipper::getDiskCount() const
     }
 
     // Check disk numbers
-    const uint16_t disk_number = readInteger16(buffer.data(), EOCD_DISK_NUMBER_OFFSET);
-    const uint16_t disk_with_cd = readInteger16(buffer.data(), EOCD_DISK_WITH_CD_OFFSET);
+    uint16_t disk_number = readInteger16(buffer.data(), EOCD_DISK_NUMBER_OFFSET);
+    uint16_t disk_with_cd = readInteger16(buffer.data(), EOCD_DISK_WITH_CD_OFFSET);
 
     // Both should be the same for valid archives
     // Return the maximum of the two (disk numbers are 0-indexed, so add 1 for count)

@@ -383,7 +383,7 @@ void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
 
     for (const auto& var : variables)
     {
-        const std::string initial = var.initial.empty() ? "" : var.initial;
+        std::string initial = var.initial.empty() ? "" : var.initial;
         auto combination = std::make_tuple(var.causality, var.variability, initial);
 
         if (!legal_combinations.contains(combination))
@@ -441,7 +441,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
         }
 
         // Get effective bounds (considering type definitions)
-        const EffectiveBounds bounds = getEffectiveBounds(var, type_definitions);
+        EffectiveBounds bounds = getEffectiveBounds(var, type_definitions);
 
         // Validate variable's bounds using the appropriate type
         if (var.type == "Float32")
@@ -568,7 +568,7 @@ void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<V
                                         " (must be Float32 or Float64).");
             }
 
-            const uint32_t ref_vr = *var.derivative_of;
+            uint32_t ref_vr = *var.derivative_of;
             auto it = vr_map.find(ref_vr);
 
             if (it == vr_map.end())
@@ -813,7 +813,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
         {
             if (dim.value_reference.has_value())
             {
-                const uint32_t vr = *dim.value_reference;
+                uint32_t vr = *dim.value_reference;
                 auto it = sp_map.find(vr);
 
                 if (it == sp_map.end())
@@ -831,7 +831,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
                         // Check that the structural parameter has start > 0
                         try
                         {
-                            const uint64_t start_val = std::stoull(*sp->start);
+                            uint64_t start_val = std::stoull(*sp->start);
                             if (start_val == 0)
                             {
                                 test.status = TestStatus::FAIL;
@@ -953,11 +953,11 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
         std::vector<std::string> missing;
         std::vector<std::string> extra;
 
-        for (const uint32_t vr : expected_vrs)
+        for (uint32_t vr : expected_vrs)
             if (!actual_vrs.contains(vr))
                 missing.push_back(vr_to_name[vr] + " (VR " + std::to_string(vr) + ")");
 
-        for (const uint32_t vr : actual_vrs)
+        for (uint32_t vr : actual_vrs)
             if (!expected_vrs.contains(vr))
                 extra.push_back("VR " + std::to_string(vr));
 
@@ -1087,7 +1087,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
     {
         test.status = TestStatus::FAIL;
         std::vector<std::string> missing;
-        for (const uint32_t vr : expected_vrs)
+        for (uint32_t vr : expected_vrs)
             if (!actual_vrs.contains(vr))
                 missing.push_back(vr_to_var[vr]->name + " (VR " + std::to_string(vr) + ")");
 
@@ -1171,11 +1171,11 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
         std::vector<std::string> missing;
         std::vector<std::string> extra;
 
-        for (const uint32_t vr : expected_vrs)
+        for (uint32_t vr : expected_vrs)
             if (!actual_vrs.contains(vr))
                 missing.push_back(vr_to_name[vr] + " (VR " + std::to_string(vr) + ")");
 
-        for (const uint32_t vr : actual_vrs)
+        for (uint32_t vr : actual_vrs)
             if (!expected_vrs.contains(vr))
                 extra.push_back("VR " + std::to_string(vr));
 
@@ -1222,7 +1222,7 @@ void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Va
     {
         if (var.derivative_of.has_value())
         {
-            const uint32_t derivative_of_vr = *var.derivative_of;
+            uint32_t derivative_of_vr = *var.derivative_of;
 
             // Find the state variable
             auto it = vr_to_variable.find(derivative_of_vr);
@@ -1235,14 +1235,14 @@ void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Va
             const Variable* state_var = it->second;
 
             // Compare dimensions
-            const bool dimensions_match = compareDimensions(var, *state_var);
+            bool dimensions_match = compareDimensions(var, *state_var);
 
             if (!dimensions_match)
             {
                 test.status = TestStatus::FAIL;
 
-                const std::string derivative_dims = formatDimensions(var);
-                const std::string state_dims = formatDimensions(*state_var);
+                std::string derivative_dims = formatDimensions(var);
+                std::string state_dims = formatDimensions(*state_var);
 
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                         ") is derivative of \"" + state_var->name + "\" (line " +
@@ -1435,7 +1435,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
             }
 
             // 5. Check that all dependency VRs exist
-            for (const uint32_t d_vr : deps)
+            for (uint32_t d_vr : deps)
             {
                 if (!vr_to_var.contains(d_vr))
                 {
@@ -1643,7 +1643,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             {
                 try
                 {
-                    const uint32_t vr = std::stoul(*vr_str);
+                    uint32_t vr = std::stoul(*vr_str);
                     if (actual_vrs.contains(vr))
                     {
                         test.status = TestStatus::FAIL;
@@ -1669,7 +1669,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     bool mismatch = false;
     std::vector<std::string> missing_mandatory;
-    for (const uint32_t vr : expected_vrs)
+    for (uint32_t vr : expected_vrs)
     {
         if (!actual_vrs.contains(vr))
         {
@@ -1679,7 +1679,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     }
 
     std::vector<std::string> extra_invalid;
-    for (const uint32_t vr : actual_vrs)
+    for (uint32_t vr : actual_vrs)
     {
         if (!expected_vrs.contains(vr))
         {
@@ -1750,7 +1750,7 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
         type_def.sourceline = type_node->line;
 
         // Element name IS the type (Float32Type, Int8Type, BooleanType, etc.)
-        const std::string elem_name =
+        std::string elem_name =
             reinterpret_cast<const char*>(type_node->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
         // Strip "Type" suffix to get the actual type name
@@ -1843,8 +1843,8 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                 const auto& dim = var.dimensions[i];
 
                 // A dimension must have either start OR valueReference, but not both
-                const bool has_start = dim.start.has_value();
-                const bool has_vr = dim.value_reference.has_value();
+                bool has_start = dim.start.has_value();
+                bool has_vr = dim.value_reference.has_value();
 
                 if (!has_start && !has_vr)
                 {
@@ -1866,7 +1866,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                 // If valueReference is used, check that it points to a structural parameter
                 if (has_vr)
                 {
-                    const uint32_t vr = *dim.value_reference;
+                    uint32_t vr = *dim.value_reference;
                     auto it = structural_params_by_vr.find(vr);
 
                     if (it == structural_params_by_vr.end())
@@ -1898,7 +1898,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                         {
                             try
                             {
-                                const uint64_t start_val = std::stoull(*sp->start);
+                                uint64_t start_val = std::stoull(*sp->start);
                                 if (start_val == 0)
                                 {
                                     test.status = TestStatus::FAIL;
@@ -1991,7 +1991,7 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
                         {
                             try
                             {
-                                const uint64_t dim_size = std::stoull(*sp->start);
+                                uint64_t dim_size = std::stoull(*sp->start);
                                 total_size = *total_size * dim_size;
                                 dimension_info.push_back(sp->name + "=" + std::to_string(dim_size));
                             }
@@ -2035,7 +2035,7 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
                 // 2. Comma-separated list in the start attribute
                 // 3. Multiple Start child elements (for String/Binary)
 
-                const size_t num_start_values = var.num_start_values;
+                size_t num_start_values = var.num_start_values;
 
                 // Check if the count matches
                 if (num_start_values != *total_size && num_start_values != 1)
@@ -2090,7 +2090,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
         {
             try
             {
-                const uint32_t vr = std::stoul(vr_str);
+                uint32_t vr = std::stoul(vr_str);
                 clock_refs.push_back(vr);
             }
             catch (...)
@@ -2103,7 +2103,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
         }
 
         // Validate each clock reference
-        for (const uint32_t clock_vr : clock_refs)
+        for (uint32_t clock_vr : clock_refs)
         {
             // Check if a Clock is referencing itself
             if (var.type == "Clock" && var.value_reference.has_value() && *var.value_reference == clock_vr)
@@ -2268,7 +2268,7 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
             continue;
 
         auto name_opt = getXmlAttribute(type_node, "name");
-        const std::string name = name_opt.value_or("unnamed");
+        std::string name = name_opt.value_or("unnamed");
 
         if (name_opt)
         {
@@ -2281,7 +2281,7 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
             seen_names.insert(*name_opt);
         }
 
-        const std::string elem_name =
+        std::string elem_name =
             reinterpret_cast<const char*>(type_node->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
         auto min_str = getXmlAttribute(type_node, "min");
@@ -2293,8 +2293,8 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
         if (min_str && max_str)
         {
-            const bool special_min = isSpecialFloat(*min_str);
-            const bool special_max = isSpecialFloat(*max_str);
+            bool special_min = isSpecialFloat(*min_str);
+            bool special_max = isSpecialFloat(*max_str);
 
             if (!special_min && !special_max)
             {
@@ -2302,8 +2302,8 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                 {
                     if (elem_name == "Float32Type" || elem_name == "Float64Type")
                     {
-                        const double min_val = std::stod(*min_str);
-                        const double max_val = std::stod(*max_str);
+                        double min_val = std::stod(*min_str);
+                        double max_val = std::stod(*max_str);
                         if (max_val < min_val)
                         {
                             test.status = TestStatus::FAIL;
@@ -2314,8 +2314,8 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                     }
                     else if (elem_name.find("UInt") != std::string::npos)
                     {
-                        const uint64_t min_val = std::stoull(*min_str);
-                        const uint64_t max_val = std::stoull(*max_str);
+                        uint64_t min_val = std::stoull(*min_str);
+                        uint64_t max_val = std::stoull(*max_str);
                         if (max_val < min_val)
                         {
                             test.status = TestStatus::FAIL;
@@ -2326,8 +2326,8 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                     }
                     else if (elem_name.find("Int") != std::string::npos || elem_name == "EnumerationType")
                     {
-                        const int64_t min_val = std::stoll(*min_str);
-                        const int64_t max_val = std::stoll(*max_str);
+                        int64_t min_val = std::stoll(*min_str);
+                        int64_t max_val = std::stoll(*max_str);
                         if (max_val < min_val)
                         {
                             test.status = TestStatus::FAIL;
@@ -2357,7 +2357,7 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                     continue;
 
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                const std::string item_elem_name = reinterpret_cast<const char*>(item->name);
+                std::string item_elem_name = reinterpret_cast<const char*>(item->name);
                 if (item_elem_name == "Item")
                 {
                     has_items = true;
@@ -2380,7 +2380,7 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                     {
                         try
                         {
-                            const int64_t val = std::stoll(*item_value_str);
+                            int64_t val = std::stoll(*item_value_str);
                             if (item_values.contains(val))
                             {
                                 test.status = TestStatus::FAIL;
@@ -2438,7 +2438,7 @@ void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
                 continue;
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            const std::string elem_name = reinterpret_cast<const char*>(child->name);
+            std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "Annotation")
             {
                 auto type = getXmlAttribute(child, "type");
@@ -2482,7 +2482,7 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     }
 
     const std::string& guid = *guid_opt;
-    const std::regex guid_pattern(
+    std::regex guid_pattern(
         R"(^(\{)?[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}(\})?$)");
 
     if (!std::regex_match(guid, guid_pattern))
@@ -2545,7 +2545,7 @@ void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
     {
         xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         auto name_opt = getXmlAttribute(unit_node, "name");
-        const std::string name = name_opt.value_or("unnamed");
+        std::string name = name_opt.value_or("unnamed");
 
         if (name_opt)
         {
@@ -2567,7 +2567,7 @@ void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            const std::string elem_name =
+            std::string elem_name =
                 reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
             if (elem_name == "DisplayUnit")
@@ -2620,7 +2620,7 @@ std::map<std::string, UnitDefinition> Fmi3ModelDescriptionChecker::extractUnitDe
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            const std::string elem_name =
+            std::string elem_name =
                 reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
             if (elem_name == "DisplayUnit")

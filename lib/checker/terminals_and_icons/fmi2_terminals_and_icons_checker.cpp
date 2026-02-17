@@ -78,7 +78,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
                 if (child->type == XML_ELEMENT_NODE)
                 {
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                    const std::string elem_name = reinterpret_cast<const char*>(child->name);
+                    std::string elem_name = reinterpret_cast<const char*>(child->name);
                     if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" ||
                         elem_name == "String" || elem_name == "Enumeration")
                     {

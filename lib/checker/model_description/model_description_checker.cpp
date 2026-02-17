@@ -35,7 +35,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     if (!std::filesystem::exists(model_desc_path))
     {
-        const TestResult test{"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}};
+        TestResult test{"Model Description File", TestStatus::FAIL, {"modelDescription.xml not found."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -44,7 +44,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
     if (!doc)
     {
-        const TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}};
+        TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}};
         cert.printTestResult(test);
         cert.printSubsectionSummary(false);
         return;
@@ -191,7 +191,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             if (var.name.find('\r') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                const std::string escaped_name = std::regex_replace(var.name, std::regex("\r"), "\\r");
+                std::string escaped_name = std::regex_replace(var.name, std::regex("\r"), "\\r");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal carriage return character (U+000D).");
                 is_valid = false;
@@ -199,7 +199,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             if (var.name.find('\n') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                const std::string escaped_name = std::regex_replace(var.name, std::regex("\n"), "\\n");
+                std::string escaped_name = std::regex_replace(var.name, std::regex("\n"), "\\n");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal line feed character (U+000A).");
                 is_valid = false;
@@ -207,7 +207,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             if (var.name.find('\t') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                const std::string escaped_name = std::regex_replace(var.name, std::regex("\t"), "\\t");
+                std::string escaped_name = std::regex_replace(var.name, std::regex("\t"), "\\t");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal tab character (U+0009).");
                 is_valid = false;
@@ -258,8 +258,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     // With milliseconds: YYYY-MM-DDThh:mm:ss.sssZ
     // With timezone offset: YYYY-MM-DDThh:mm:ss+hh:mm or YYYY-MM-DDThh:mm:ss-hh:mm
     // The FMI standard recommends: YYYY-MM-DDThh:mm:ssZ
-    const std::regex datetime_pattern(
-        R"(^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$)");
+    std::regex datetime_pattern(R"(^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$)");
     std::smatch matches;
 
     if (!std::regex_match(dt, matches, datetime_pattern))
@@ -288,13 +287,13 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     constexpr int32_t MAX_MINUTE = 59;
     constexpr int32_t MAX_SECOND = 59;
 
-    const int32_t year = std::stoi(matches[MATCH_INDEX_YEAR]);
-    const int32_t month = std::stoi(matches[MATCH_INDEX_MONTH]);
-    const int32_t day = std::stoi(matches[MATCH_INDEX_DAY]);
-    const int32_t hour = std::stoi(matches[MATCH_INDEX_HOUR]);
-    const int32_t minute = std::stoi(matches[MATCH_INDEX_MINUTE]);
-    const int32_t second = std::stoi(matches[MATCH_INDEX_SECOND]);
-    const std::string timezone = matches[MATCH_INDEX_TIMEZONE];
+    int32_t year = std::stoi(matches[MATCH_INDEX_YEAR]);
+    int32_t month = std::stoi(matches[MATCH_INDEX_MONTH]);
+    int32_t day = std::stoi(matches[MATCH_INDEX_DAY]);
+    int32_t hour = std::stoi(matches[MATCH_INDEX_HOUR]);
+    int32_t minute = std::stoi(matches[MATCH_INDEX_MINUTE]);
+    int32_t second = std::stoi(matches[MATCH_INDEX_SECOND]);
+    std::string timezone = matches[MATCH_INDEX_TIMEZONE];
 
     if (month < MIN_MONTH || month > MAX_MONTH)
     {
@@ -352,13 +351,13 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
             if (timezone != "Z")
             {
                 // Parse timezone offset (e.g., "+02:00" or "-05:00")
-                const std::regex tz_pattern(R"(([+-])(\d{2}):(\d{2}))");
+                std::regex tz_pattern(R"(([+-])(\d{2}):(\d{2}))");
                 std::smatch tz_matches;
                 if (std::regex_match(timezone, tz_matches, tz_pattern))
                 {
-                    const int32_t tz_sign = (tz_matches[1] == "+") ? 1 : -1;
-                    const int32_t tz_hours = std::stoi(tz_matches[2]);
-                    const int32_t tz_minutes = std::stoi(tz_matches[3]);
+                    int32_t tz_sign = (tz_matches[1] == "+") ? 1 : -1;
+                    int32_t tz_hours = std::stoi(tz_matches[2]);
+                    int32_t tz_minutes = std::stoi(tz_matches[3]);
 
                     // Subtract the timezone offset to get UTC time
                     constexpr int32_t SECONDS_PER_HOUR = 3600;
@@ -371,7 +370,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
             // Get current time
             auto now = std::chrono::system_clock::now();
-            const std::time_t current_time = std::chrono::system_clock::to_time_t(now);
+            std::time_t current_time = std::chrono::system_clock::to_time_t(now);
 
             // Check if generation time is in the future
             if (generation_time > current_time)
@@ -411,7 +410,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
             fmi_first_release.tm_hour = 0;
             fmi_first_release.tm_min = 0;
             fmi_first_release.tm_sec = 0;
-            const std::time_t fmi_release_time = std::mktime(&fmi_first_release);
+            std::time_t fmi_release_time = std::mktime(&fmi_first_release);
 
             if (generation_time < fmi_release_time)
             {
@@ -482,7 +481,7 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
 
     // Semantic versioning format: MAJOR.MINOR.PATCH or simpler versions like MAJOR.MINOR
     // Also allow optional pre-release and build metadata (e.g., 1.0.0-alpha+001)
-    const std::regex semver_pattern(R"(^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z\-\.]+))?(?:\+([0-9A-Za-z\-\.]+))?$)");
+    std::regex semver_pattern(R"(^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z\-\.]+))?(?:\+([0-9A-Za-z\-\.]+))?$)");
 
     if (!std::regex_match(ver, semver_pattern))
     {
@@ -524,7 +523,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
 
     // Check for copyright symbol, word, or abbreviation at the beginning
     bool has_copyright_indicator = false;
-    const std::string remaining = cr;
+    std::string remaining = cr;
 
     // Check for various copyright indicators
     if (cr.find("©") != std::string::npos)
@@ -555,7 +554,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     }
 
     // Check for a year (4 digits) anywhere in the notice
-    const std::regex year_pattern(R"(\b(19|20)\d{2}\b)");
+    std::regex year_pattern(R"(\b(19|20)\d{2}\b)");
     std::smatch year_match;
 
     if (!std::regex_search(cr, year_match, year_pattern))
@@ -709,14 +708,14 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
 
     // Check if it's a valid C identifier using regex
     // Pattern: starts with letter or underscore, followed by any number of letters, digits, or underscores
-    const std::regex c_identifier_pattern("^[a-zA-Z_][a-zA-Z0-9_]*$");
+    std::regex c_identifier_pattern("^[a-zA-Z_][a-zA-Z0-9_]*$");
 
     if (!std::regex_match(model_identifier, c_identifier_pattern))
     {
         test.status = TestStatus::FAIL;
 
         // Provide helpful error message
-        const char first_char = model_identifier[0];
+        char first_char = model_identifier[0];
         if (first_char >= '0' && first_char <= '9')
         {
             test.messages.push_back("Model identifier \"" + model_identifier + "\" cannot start with a digit.");
@@ -831,7 +830,7 @@ std::string ModelDescriptionCheckerBase::normalizeFloatString(const std::string&
     std::string s = value;
     // Remove leading/trailing whitespace
     s.erase(0, s.find_first_not_of(" \t\n\r"));
-    const size_t last = s.find_last_not_of(" \t\n\r");
+    size_t last = s.find_last_not_of(" \t\n\r");
     if (last != std::string::npos)
         s.erase(last + 1);
 
@@ -846,7 +845,7 @@ std::string ModelDescriptionCheckerBase::normalizeFloatString(const std::string&
 
 bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
 {
-    const std::string lower = normalizeFloatString(value);
+    std::string lower = normalizeFloatString(value);
 
     if (lower.empty())
         return false;
@@ -862,7 +861,7 @@ bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
 
 std::string ModelDescriptionCheckerBase::getSpecialFloatDescription(const std::string& value)
 {
-    const std::string lower = normalizeFloatString(value);
+    std::string lower = normalizeFloatString(value);
 
     if (lower.empty())
         return "NaN or Infinity";
@@ -1101,7 +1100,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                     {
                         try
                         {
-                            const double offset_val = std::stod(*unit_def.offset);
+                            double offset_val = std::stod(*unit_def.offset);
                             if (offset_val != 0.0)
                             {
                                 if (test.status == TestStatus::PASS)
@@ -1159,7 +1158,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                     {
                         try
                         {
-                            const double offset_val = std::stod(*unit_def.offset);
+                            double offset_val = std::stod(*unit_def.offset);
                             if (offset_val != 0.0)
                             {
                                 if (test.status == TestStatus::PASS)

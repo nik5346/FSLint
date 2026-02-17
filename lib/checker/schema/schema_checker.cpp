@@ -59,7 +59,7 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
         {
             if (rule.is_mandatory)
             {
-                const TestResult test{rule.validation_name, TestStatus::FAIL, {"File not found (mandatory)"}};
+                TestResult test{rule.validation_name, TestStatus::FAIL, {"File not found (mandatory)"}};
                 is_valid = false;
                 cert.printTestResult(test);
             }
@@ -77,8 +77,7 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
         const auto schema_path = findSchemaPath(rule.schema_filename);
         if (schema_path.empty() || !std::filesystem::exists(schema_path))
         {
-            const TestResult test{
-                rule.validation_name, TestStatus::FAIL, {"Schema " + rule.schema_filename + " not found"}};
+            TestResult test{rule.validation_name, TestStatus::FAIL, {"Schema " + rule.schema_filename + " not found"}};
             is_valid = false;
             cert.printTestResult(test);
             continue;
@@ -109,7 +108,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     constexpr size_t XML_DECL_BUFFER_SIZE = 512;
     std::vector<char> buffer(XML_DECL_BUFFER_SIZE);
     file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
-    const size_t bytes_read = static_cast<size_t>(file.gcount());
+    size_t bytes_read = static_cast<size_t>(file.gcount());
     file.close();
 
     if (bytes_read == 0)
@@ -121,7 +120,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     }
 
     // Convert to string for easier searching (first line should be ASCII-compatible)
-    const std::string first_part(buffer.data(), bytes_read);
+    std::string first_part(buffer.data(), bytes_read);
 
     // Find end of first line (either \n or \r\n or just end of declaration ?>)
     size_t line_end = first_part.find_first_of("\r\n");
@@ -145,7 +144,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     }
 
     // Check XML version
-    const size_t version_pos = first_line.find("version");
+    size_t version_pos = first_line.find("version");
     if (version_pos == std::string::npos)
     {
         test.status = TestStatus::FAIL;
@@ -155,7 +154,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     }
 
     // Extract version value
-    const size_t version_quote_start = first_line.find_first_of("\"'", version_pos);
+    size_t version_quote_start = first_line.find_first_of("\"'", version_pos);
     if (version_quote_start == std::string::npos)
     {
         test.status = TestStatus::FAIL;
@@ -164,8 +163,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
         return false;
     }
 
-    const char version_quote_char = first_line[version_quote_start];
-    const size_t version_quote_end = first_line.find(version_quote_char, version_quote_start + 1);
+    char version_quote_char = first_line[version_quote_start];
+    size_t version_quote_end = first_line.find(version_quote_char, version_quote_start + 1);
     if (version_quote_end == std::string::npos)
     {
         test.status = TestStatus::FAIL;
@@ -174,7 +173,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
         return false;
     }
 
-    const std::string version = first_line.substr(version_quote_start + 1, version_quote_end - version_quote_start - 1);
+    std::string version = first_line.substr(version_quote_start + 1, version_quote_end - version_quote_start - 1);
 
     // Check if version is 1.0
     if (version != "1.0")
@@ -186,7 +185,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     }
 
     // Check if encoding is specified
-    const size_t encoding_pos = first_line.find("encoding");
+    size_t encoding_pos = first_line.find("encoding");
     if (encoding_pos == std::string::npos)
     {
         test.status = TestStatus::FAIL;
@@ -196,7 +195,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     }
 
     // Extract encoding value
-    const size_t quote_start = first_line.find_first_of("\"'", encoding_pos);
+    size_t quote_start = first_line.find_first_of("\"'", encoding_pos);
     if (quote_start == std::string::npos)
     {
         test.status = TestStatus::FAIL;
@@ -205,8 +204,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
         return false;
     }
 
-    const char quote_char = first_line[quote_start];
-    const size_t quote_end = first_line.find(quote_char, quote_start + 1);
+    char quote_char = first_line[quote_start];
+    size_t quote_end = first_line.find(quote_char, quote_start + 1);
     if (quote_end == std::string::npos)
     {
         test.status = TestStatus::FAIL;
@@ -263,7 +262,7 @@ bool SchemaCheckerBase::isValidUtf8File(const std::filesystem::path& file_path)
                      static_cast<std::streamsize>(buffer.size())) ||
            file.gcount() > 0)
     {
-        const size_t bytes_read = static_cast<size_t>(file.gcount());
+        size_t bytes_read = static_cast<size_t>(file.gcount());
         if (!isValidUtf8(buffer.data(), bytes_read))
             return false;
     }
@@ -304,7 +303,7 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
     // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     while (i < length)
     {
-        const unsigned char byte = data[i];
+        unsigned char byte = data[i];
         size_t num_bytes = 0;
 
         // Determine number of bytes in this UTF-8 character
@@ -346,14 +345,14 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
         // Check for overlong encodings and invalid code points
         if (num_bytes == 2)
         {
-            const uint32_t codepoint = ((data[i] & MASK_1F) << BIT_SHIFT_6) | (data[i + 1] & MASK_3F);
+            uint32_t codepoint = ((data[i] & MASK_1F) << BIT_SHIFT_6) | (data[i + 1] & MASK_3F);
             if (codepoint < UTF8_2BYTE_MIN)
                 return false; // Overlong encoding
         }
         else if (num_bytes == 3)
         {
-            const uint32_t codepoint = ((data[i] & MASK_0F) << BIT_SHIFT_12) |
-                                       ((data[i + 1] & MASK_3F) << BIT_SHIFT_6) | (data[i + 2] & MASK_3F);
+            uint32_t codepoint = ((data[i] & MASK_0F) << BIT_SHIFT_12) | ((data[i + 1] & MASK_3F) << BIT_SHIFT_6) |
+                                 (data[i + 2] & MASK_3F);
             if (codepoint < UTF8_3BYTE_MIN)
                 return false; // Overlong encoding
             if (codepoint >= UTF16_SURROGATE_MIN && codepoint <= UTF16_SURROGATE_MAX)
@@ -361,9 +360,8 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
         }
         else if (num_bytes == 4)
         {
-            const uint32_t codepoint = ((data[i] & MASK_07) << BIT_SHIFT_18) |
-                                       ((data[i + 1] & MASK_3F) << BIT_SHIFT_12) |
-                                       ((data[i + 2] & MASK_3F) << BIT_SHIFT_6) | (data[i + 3] & MASK_3F);
+            uint32_t codepoint = ((data[i] & MASK_07) << BIT_SHIFT_18) | ((data[i + 1] & MASK_3F) << BIT_SHIFT_12) |
+                                 ((data[i + 2] & MASK_3F) << BIT_SHIFT_6) | (data[i + 3] & MASK_3F);
             if (codepoint < UTF8_4BYTE_MIN)
                 return false; // Overlong encoding
             if (codepoint > UTF8_MAX_CODEPOINT)
@@ -539,7 +537,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
                             reinterpret_cast<xmlSchemaValidityWarningFunc>(warningCallback), &test);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
-    const std::int32_t valid_result = xmlSchemaValidateFile(valid_ctx, xml_path.string().c_str(), 0);
+    std::int32_t valid_result = xmlSchemaValidateFile(valid_ctx, xml_path.string().c_str(), 0);
 
     if (valid_result != 0)
     {
@@ -567,7 +565,7 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
     va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
     va_start(args, msg);
-    const std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
+    std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
     va_end(args);
 
     if (written < 0)
@@ -597,7 +595,7 @@ void SchemaCheckerBase::warningCallback(void* ctx, const char* msg, ...)
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
     va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
     va_start(args, msg);
-    const std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
+    std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
     va_end(args);
 
     if (written < 0)

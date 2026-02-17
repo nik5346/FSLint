@@ -48,7 +48,7 @@ void Certificate::log(const std::string& message)
 void Certificate::printMainHeader(const std::string& filename, const std::string& hash)
 {
     auto timestamp = std::chrono::system_clock::now();
-    const std::time_t now_c = std::chrono::system_clock::to_time_t(timestamp);
+    std::time_t now_c = std::chrono::system_clock::to_time_t(timestamp);
     constexpr size_t TIME_STRING_BUFFER_SIZE = 100;
     std::array<char, TIME_STRING_BUFFER_SIZE> time_str{};
 
@@ -150,7 +150,7 @@ void Certificate::printTestResult(const TestResult& test)
 
 void Certificate::printSubsectionSummary(bool subsection_valid)
 {
-    const bool actual_valid = subsection_valid && (_current_subsection_failed == 0);
+    bool actual_valid = subsection_valid && (_current_subsection_failed == 0);
 
     if (!actual_valid && _current_subsection_failed == 0)
         _total_failed++;
@@ -174,10 +174,10 @@ static void printTree(Certificate& cert, const std::vector<NestedModelResult>& m
 {
     for (size_t i = 0; i < models.size(); ++i)
     {
-        const bool is_last = (i == models.size() - 1);
+        bool is_last = (i == models.size() - 1);
         const auto& model = models[i];
 
-        const std::string marker = is_last ? "└─ " : "├─ ";
+        std::string marker = is_last ? "└─ " : "├─ ";
         std::string status_str;
         switch (model.status)
         {
@@ -196,7 +196,7 @@ static void printTree(Certificate& cert, const std::vector<NestedModelResult>& m
 
         if (!model.nested_models.empty())
         {
-            const std::string new_prefix = prefix + (is_last ? "   " : "│  ");
+            std::string new_prefix = prefix + (is_last ? "   " : "│  ");
             printTree(cert, model.nested_models, new_prefix);
         }
     }

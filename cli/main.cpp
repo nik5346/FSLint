@@ -28,7 +28,7 @@ void printUsage(const std::string& program_name)
 
 int main(int argc, char** argv)
 {
-    const std::span<char*> args(argv, argc);
+    std::span<char*> args(argv, argc);
 
     if (args.size() < 2)
     {
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
     }
 
     // Validate mutual exclusivity of operations
-    const size_t operation_count =
+    size_t operation_count =
         (save_cert ? 1 : 0) + (update_cert ? 1 : 0) + (remove_cert ? 1 : 0) + (display_cert ? 1 : 0);
 
     if (operation_count > 1)
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
     }
 
     // Create validator instance
-    const ModelChecker validator;
+    ModelChecker validator;
 
     // Execute requested operation
     try

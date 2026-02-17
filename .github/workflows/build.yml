@@ -26,8 +26,6 @@ jobs:
         python-version: '3.x'
     - name: Check Encodings
       run: python scripts/check_encodings.py
-    - name: XML Format Check
-      run: python scripts/format_xml.py --check
     - name: Install Linting Tools
       if: runner.os == 'Linux'
       run: |
@@ -35,10 +33,12 @@ jobs:
         sudo apt-get install -y clang-tidy clang-format
     - name: Configure CMake
       run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    - name: xml-format-check
+      run: cmake --build build --target xml-format-check
     - name: Clang-Format Check
       run: cmake --build build --target clang-format-check
     - name: Clang-Tidy Check
-      run: cmake --build build --target clang-tidy
+      run: cmake --build build --target clang-tidy-check
 
   setup:
     name: Setup Build Matrix

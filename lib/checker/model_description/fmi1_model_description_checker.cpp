@@ -178,7 +178,7 @@ void Fmi1ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
         if (var.type != "Real" && var.type != "Integer" && var.type != "Enumeration")
             continue;
 
-        const EffectiveBounds bounds = getEffectiveBounds(var, type_definitions);
+        EffectiveBounds bounds = getEffectiveBounds(var, type_definitions);
         if (var.type == "Real")
             validateTypeBounds<double>(var, bounds.min, bounds.max, test);
         else if (var.type == "Integer" || var.type == "Enumeration")
@@ -266,7 +266,7 @@ std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDe
             if (child->type != XML_ELEMENT_NODE)
                 continue;
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            const std::string elem_name = reinterpret_cast<const char*>(child->name);
+            std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "DisplayUnitDefinition")
             {
                 auto du_name = getXmlAttribute(child, "displayUnit");
@@ -311,7 +311,7 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
             if (child->type != XML_ELEMENT_NODE)
                 continue;
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            const std::string elem_name = reinterpret_cast<const char*>(child->name);
+            std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "RealType" || elem_name == "IntegerType" || elem_name == "BooleanType" ||
                 elem_name == "StringType" || elem_name == "EnumerationType")
             {
@@ -374,7 +374,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
             if (child->type != XML_ELEMENT_NODE)
                 continue;
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            const std::string elem_name = reinterpret_cast<const char*>(child->name);
+            std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" || elem_name == "String" ||
                 elem_name == "Enumeration")
             {
@@ -512,7 +512,7 @@ void Fmi1ModelDescriptionChecker::checkModelIdentifierFormat(xmlDocPtr doc, Cert
     }
     else
     {
-        const std::regex id_pattern("^[a-zA-Z_][a-zA-Z0-9_]*$");
+        std::regex id_pattern("^[a-zA-Z_][a-zA-Z0-9_]*$");
         if (!std::regex_match(*model_id, id_pattern))
         {
             test.status = TestStatus::FAIL;
@@ -540,7 +540,7 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
             if (child->type != XML_ELEMENT_NODE)
                 continue;
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            const std::string name = reinterpret_cast<const char*>(child->name);
+            std::string name = reinterpret_cast<const char*>(child->name);
             if (name == "CoSimulation_StandAlone" || name == "CoSimulation_Tool")
             {
                 if (name == "CoSimulation_Tool")
@@ -628,7 +628,7 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
         if (!relative_path.empty() && relative_path[0] == '/')
             relative_path.erase(0, 1);
 
-        const std::filesystem::path full_path = getFmuRootPath() / relative_path;
+        std::filesystem::path full_path = getFmuRootPath() / relative_path;
         if (!std::filesystem::exists(full_path))
         {
             test.status = TestStatus::FAIL;

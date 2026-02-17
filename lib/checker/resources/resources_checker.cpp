@@ -24,10 +24,10 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
             auto ext = entry.path().extension().string();
             if (ext == ".fmu" || ext == ".ssp")
             {
-                const ModelChecker nested_checker;
+                ModelChecker nested_checker;
                 // validate(..., true) will perform validation quietly and return a certificate
                 // The ResourcesChecker inside that validation will handle further nesting
-                const Certificate nested_cert = nested_checker.validate(entry.path(), true);
+                Certificate nested_cert = nested_checker.validate(entry.path(), true);
 
                 NestedModelResult result;
                 result.name = entry.path().filename().string();
@@ -47,8 +47,8 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
             if (std::filesystem::exists(entry.path() / "modelDescription.xml") ||
                 std::filesystem::exists(entry.path() / "SystemStructure.ssd"))
             {
-                const ModelChecker nested_checker;
-                const Certificate nested_cert = nested_checker.validate(entry.path(), true);
+                ModelChecker nested_checker;
+                Certificate nested_cert = nested_checker.validate(entry.path(), true);
 
                 NestedModelResult result;
                 result.name = entry.path().filename().string() + "/";

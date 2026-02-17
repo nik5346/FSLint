@@ -46,6 +46,22 @@ if(CLANG_TIDY_EXE)
         USES_TERMINAL
         COMMAND_EXPAND_LISTS
     )
+
+    # Add custom target to run clang-tidy and treat warnings as errors (for CI)
+    add_custom_target(clang-tidy-check
+        COMMAND ${CLANG_TIDY_EXE}
+            -p ${CMAKE_BINARY_DIR}
+            --config-file=${CMAKE_SOURCE_DIR}/.clang-tidy
+            "--header-filter=(lib|cli|tests)/.*"
+            --system-headers=false
+            --warnings-as-errors='*'
+            ${TIDY_SOURCES}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Checking clang-tidy on source files with warnings-as-errors..."
+        VERBATIM
+        USES_TERMINAL
+        COMMAND_EXPAND_LISTS
+    )
 else()
     message(WARNING "clang-tidy not found!")
 endif()
@@ -95,6 +111,11 @@ include(FetchContent)
 add_custom_target(format-xml
     COMMAND python ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
     COMMENT "Running XML formatter on test data"
+)
+
+add_custom_target(xml-format-check
+    COMMAND python ${CMAKE_SOURCE_DIR}/scripts/format_xml.py --check
+    COMMENT "Checking XML format on test data"
 )
 
 # ============================================================================
