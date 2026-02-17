@@ -29,15 +29,21 @@ if(CLANG_TIDY_EXE AND RUN_CLANG_TIDY_EXE AND Python3_Interpreter_FOUND)
         set(N 1)
     endif()
 
+    file(GLOB_RECURSE TIDY_SOURCES
+        ${CMAKE_SOURCE_DIR}/lib/*.cpp
+        ${CMAKE_SOURCE_DIR}/cli/*.cpp
+    )
+    list(LENGTH TIDY_SOURCES TIDY_SOURCES_COUNT)
+
     add_custom_target(clang-tidy
         COMMAND ${Python3_EXECUTABLE} ${RUN_CLANG_TIDY_EXE}
             -p ${CMAKE_BINARY_DIR}
             -j ${N}
             -clang-tidy-binary ${CLANG_TIDY_EXE}
-            "-header-filter=(lib|cli|tests)/.*"
-            "lib/.*\\.cpp" "cli/.*\\.cpp"
+            "-header-filter=(lib|cli|tests).*"
+            ${TIDY_SOURCES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "Running parallel clang-tidy..."
+        COMMENT "Running parallel clang-tidy with ${N} cores on ${TIDY_SOURCES_COUNT} files..."
         VERBATIM
     )
 endif()
@@ -74,15 +80,12 @@ include(FetchContent)
 # ============================================================================
 # XML-Format Integration
 # ============================================================================
-set(XML_FORMAT_PYTHON "python")
 if(Python3_Interpreter_FOUND)
-    set(XML_FORMAT_PYTHON ${Python3_EXECUTABLE})
+    add_custom_target(format-xml
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
+        COMMENT "Running XML formatter on test data"
+    )
 endif()
-
-add_custom_target(format-xml
-    COMMAND ${XML_FORMAT_PYTHON} ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
-    COMMENT "Running XML formatter on test data"
-)
 
 # ============================================================================
 # Fetch ZLIB (includes minizip in contrib/)
