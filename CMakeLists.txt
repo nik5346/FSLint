@@ -40,12 +40,11 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
         message(STATUS "Found run-clang-tidy: ${RUN_CLANG_TIDY_EXE}")
     endif()
 
-    # Collect all source files to check (implementation files only)
+    # Collect all source files to check
     file(GLOB_RECURSE TIDY_SOURCES
         ${CMAKE_SOURCE_DIR}/lib/*.cpp
         ${CMAKE_SOURCE_DIR}/cli/*.cpp
     )
-    # Note: Headers are checked via -header-filter and their inclusion in .cpp files.
 
     # Determine number of parallel jobs
     set(CLANG_TIDY_JOBS 0 CACHE STRING "Number of parallel clang-tidy jobs (0 for all cores)")
