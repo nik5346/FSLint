@@ -17,7 +17,7 @@ on:
 jobs:
   lint:
     name: Formatting and Static Analysis
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.LINT_RUNNER || 'windows-latest' }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -26,12 +26,28 @@ jobs:
         python-version: '3.x'
     - name: Check Encodings
       run: python scripts/check_encodings.py
-    - name: Install Linting Tools
+    - name: Install Linting Tools (Linux)
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y clang-tidy clang-format clang
+    - name: Check Linting Tools (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Continue"
+        where.exe clang-format
+        where.exe clang-tidy
+        clang-format --version
+        clang-tidy --version
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+      run: |
+        if ("${{ runner.os }}" -eq "Linux") {
+          cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        } else {
+          cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -T ClangCL
+        }
+      shell: pwsh
     - name: xml-format-check
       run: cmake --build build --target xml-format-check
     - name: Clang-Format Check

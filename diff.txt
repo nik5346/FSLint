@@ -1,0 +1,206 @@
+diff --git a/.clang-tidy b/.clang-tidy
+index 1bbce5b..418d9ec 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -1,5 +1,5 @@
+ ---
+-Checks: 'cert-*,cppcoreguidelines-*,misc-include-cleaner,-clang-analyzer-*,-cppcoreguidelines-avoid-magic-numbers'
++Checks: 'cert-*,cppcoreguidelines-*,misc-include-cleaner,misc-const-correctness,-clang-analyzer-*,-cppcoreguidelines-avoid-magic-numbers'
+ WarningsAsErrors: ''
+ HeaderFilterRegex: '^(?!.*(_deps|build)).*/(lib|cli|tests)/.*'
+ SystemHeaders: false
+diff --git a/.github/workflows/build.yml b/.github/workflows/build.yml
+index 9a311db..1ab57ae 100644
+--- a/.github/workflows/build.yml
++++ b/.github/workflows/build.yml
+@@ -16,8 +16,8 @@ on:
+
+ jobs:
+   lint:
+-    name: Lint and Encoding Check
+-    runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
++    name: Formatting and Static Analysis
++    runs-on: ${{ vars.LINT_RUNNER || 'windows-latest' }}
+     steps:
+     - uses: actions/checkout@v4
+     - name: Set up Python
+@@ -26,6 +26,34 @@ jobs:
+         python-version: '3.x'
+     - name: Check Encodings
+       run: python scripts/check_encodings.py
++    - name: Install Linting Tools (Linux)
++      if: runner.os == 'Linux'
++      run: |
++        sudo apt-get update
++        sudo apt-get install -y clang-tidy clang-format clang
++    - name: Check Linting Tools (Windows)
++      if: runner.os == 'Windows'
++      shell: pwsh
++      run: |
++        $ErrorActionPreference = "Continue"
++        where.exe clang-format
++        where.exe clang-tidy
++        clang-format --version
++        clang-tidy --version
++    - name: Configure CMake
++      run: |
++        if ("${{ runner.os }}" -eq "Linux") {
++          cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
++        } else {
++          cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -T ClangCL
++        }
++      shell: pwsh
++    - name: xml-format-check
++      run: cmake --build build --target xml-format-check
++    - name: Clang-Format Check
++      run: cmake --build build --target clang-format-check
++    - name: Clang-Tidy Check
++      run: cmake --build build --target clang-tidy-check
+
+   setup:
+     name: Setup Build Matrix
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index decaf20..1810564 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -46,6 +46,22 @@ if(CLANG_TIDY_EXE)
+         USES_TERMINAL
+         COMMAND_EXPAND_LISTS
+     )
++
++    # Add custom target to run clang-tidy and treat warnings as errors (for CI)
++    add_custom_target(clang-tidy-check
++        COMMAND ${CLANG_TIDY_EXE}
++            -p ${CMAKE_BINARY_DIR}
++            --config-file=${CMAKE_SOURCE_DIR}/.clang-tidy
++            "--header-filter=(lib|cli|tests)/.*"
++            --system-headers=false
++            --warnings-as-errors='*'
++            ${TIDY_SOURCES}
++        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
++        COMMENT "Checking clang-tidy on source files with warnings-as-errors..."
++        VERBATIM
++        USES_TERMINAL
++        COMMAND_EXPAND_LISTS
++    )
+ else()
+     message(WARNING "clang-tidy not found!")
+ endif()
+@@ -73,6 +89,16 @@ if(CLANG_FORMAT_EXE)
+         ${ALL_SOURCE_FILES}
+         COMMENT "Running clang-format on source files"
+     )
++
++    # Add format check target
++    add_custom_target(clang-format-check
++        COMMAND ${CLANG_FORMAT_EXE}
++        --dry-run
++        --Werror
++        -style=file
++        ${ALL_SOURCE_FILES}
++        COMMENT "Checking clang-format on source files"
++    )
+ else()
+     message(WARNING "clang-format not found")
+ endif()
+@@ -87,6 +113,11 @@ add_custom_target(format-xml
+     COMMENT "Running XML formatter on test data"
+ )
+
++add_custom_target(xml-format-check
++    COMMAND python ${CMAKE_SOURCE_DIR}/scripts/format_xml.py --check
++    COMMENT "Checking XML format on test data"
++)
++
+ # ============================================================================
+ # Fetch ZLIB (includes minizip in contrib/)
+ # ============================================================================
+diff --git a/scripts/format_xml.py b/scripts/format_xml.py
+index 0818981..310e064 100755
+--- a/scripts/format_xml.py
++++ b/scripts/format_xml.py
+@@ -16,9 +16,9 @@ def detect_encoding(filepath):
+         return match.group(1).decode('ascii')
+     return 'utf-8'
+
+-def format_xml(filepath):
++def format_xml(filepath, check=False):
+     if os.path.getsize(filepath) == 0:
+-        return
++        return True
+
+     try:
+         # Detect the original encoding
+@@ -27,7 +27,7 @@ def format_xml(filepath):
+         with open(filepath, 'r', encoding=encoding) as f:
+             content = f.read()
+             if not content.strip():
+-                return
++                return True
+
+         # Attempt to parse
+         try:
+@@ -48,22 +48,41 @@ def format_xml(filepath):
+
+             ET.indent(root, space='  ')
+
++            output = io.BytesIO()
++            output.write(f'<?xml version="1.0" encoding="{encoding}"?>\n'.encode(encoding))
++            tree.write(output, encoding=encoding, xml_declaration=False)
++            output.write(b'\n')
++
++            formatted_content = output.getvalue()
++
++            if check:
++                if content.encode(encoding) != formatted_content:
++                    print(f"Error: {filepath} is not correctly formatted.")
++                    return False
++                return True
++
+             with open(filepath, 'wb') as f:
+-                f.write(f'<?xml version="1.0" encoding="{encoding}"?>\n'.encode(encoding))
+-                tree.write(f, encoding=encoding, xml_declaration=False)
+-                f.write(b'\n')
++                f.write(formatted_content)
++            return True
+         except ET.ParseError:
+             # Skip malformed files - they are likely intentional test cases
+             print(f"Skipping malformed XML: {filepath}")
+-            return
++            return True
+
+     except UnicodeDecodeError:
+         # Skip files with encoding issues - they are likely intentional test cases
+         print(f"Skipping undecodable XML: {filepath}")
++        return True
+     except Exception as e:
+         print(f"Error formatting {filepath}: {e}", file=sys.stderr)
++        return False
+
+ def main():
++    import argparse
++    parser = argparse.ArgumentParser(description='Format or check XML/SSD files.')
++    parser.add_argument('--check', action='store_true', help='Check if files are formatted without changing them.')
++    args = parser.parse_args()
++
+     # Use the script's directory to find the repository root
+     script_dir = os.path.dirname(os.path.realpath(__file__))
+     repo_root = os.path.abspath(os.path.join(script_dir, '..'))
+@@ -73,11 +92,16 @@ def main():
+         print(f"Directory {test_data_dir} not found.")
+         sys.exit(1)
+
++    all_passed = True
+     for root_dir, _, files in os.walk(test_data_dir):
+         for file in files:
+             if file.endswith('.xml') or file.endswith('.ssd'):
+                 filepath = os.path.join(root_dir, file)
+-                format_xml(filepath)
++                if not format_xml(filepath, check=args.check):
++                    all_passed = False
++
++    if not all_passed:
++        sys.exit(1)
+
+ if __name__ == "__main__":
+     main()
