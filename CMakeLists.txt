@@ -26,14 +26,14 @@ find_package(Python3 COMPONENTS Interpreter)
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 find_program(RUN_CLANG_TIDY_EXE NAMES "run-clang-tidy" "run-clang-tidy.py")
 
-if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
-    # Collect all source files to be checked
-    file(GLOB_RECURSE TIDY_SOURCES
-        ${CMAKE_SOURCE_DIR}/lib/*.cpp
-        ${CMAKE_SOURCE_DIR}/cli/*.cpp
-    )
-    list(LENGTH TIDY_SOURCES TIDY_SOURCES_COUNT)
+# Collect all source files to be checked
+file(GLOB_RECURSE TIDY_SOURCES
+    ${CMAKE_SOURCE_DIR}/lib/*.cpp
+    ${CMAKE_SOURCE_DIR}/cli/*.cpp
+)
+list(LENGTH TIDY_SOURCES TIDY_SOURCES_COUNT)
 
+if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
     # Determine number of parallel jobs
     set(CLANG_TIDY_JOBS 0 CACHE STRING "Number of parallel clang-tidy jobs (0 for all cores)")
     if(CLANG_TIDY_JOBS EQUAL 0)
@@ -88,22 +88,28 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
         COMMAND_EXPAND_LISTS
         VERBATIM
     )
+else()
+    add_custom_target(clang-tidy
+        COMMAND ${CMAKE_COMMAND} -E echo "Error: clang-tidy not found"
+        COMMAND ${CMAKE_COMMAND} -E false
+    )
 endif()
 
 # ============================================================================
 # Clang-Format Integration
 # ============================================================================
 find_program(CLANG_FORMAT_EXE NAMES "clang-format")
+
+# Collect all source files
+file(GLOB_RECURSE ALL_SOURCE_FILES
+    ${CMAKE_SOURCE_DIR}/lib/*.cpp
+    ${CMAKE_SOURCE_DIR}/lib/*.h
+    ${CMAKE_SOURCE_DIR}/cli/*.cpp
+    ${CMAKE_SOURCE_DIR}/tests/*.cpp
+)
+
 if(CLANG_FORMAT_EXE)
     message(STATUS "clang-format found: ${CLANG_FORMAT_EXE}")
-
-    # Collect all source files
-    file(GLOB_RECURSE ALL_SOURCE_FILES
-        ${CMAKE_SOURCE_DIR}/lib/*.cpp
-        ${CMAKE_SOURCE_DIR}/lib/*.h
-        ${CMAKE_SOURCE_DIR}/cli/*.cpp
-        ${CMAKE_SOURCE_DIR}/tests/*.cpp
-    )
 
     # Add format target
     add_custom_target(clang-format
@@ -113,8 +119,26 @@ if(CLANG_FORMAT_EXE)
         ${ALL_SOURCE_FILES}
         COMMENT "Running clang-format on source files"
     )
+
+    # Add format check target
+    add_custom_target(clang-format-check
+        COMMAND ${CLANG_FORMAT_EXE}
+        --dry-run
+        --Werror
+        -style=file
+        ${ALL_SOURCE_FILES}
+        COMMENT "Checking formatting of source files"
+    )
 else()
     message(WARNING "clang-format not found")
+    add_custom_target(clang-format
+        COMMAND ${CMAKE_COMMAND} -E echo "Error: clang-format not found"
+        COMMAND ${CMAKE_COMMAND} -E false
+    )
+    add_custom_target(clang-format-check
+        COMMAND ${CMAKE_COMMAND} -E echo "Error: clang-format not found"
+        COMMAND ${CMAKE_COMMAND} -E false
+    )
 endif()
 
 include(FetchContent)
@@ -126,6 +150,20 @@ if(Python3_Interpreter_FOUND)
     add_custom_target(format-xml
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/format_xml.py
         COMMENT "Running XML formatter on test data"
+    )
+
+    add_custom_target(format-xml-check
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/format_xml.py --check
+        COMMENT "Checking XML formatting on test data"
+    )
+else()
+    add_custom_target(format-xml
+        COMMAND ${CMAKE_COMMAND} -E echo "Error: Python3 not found"
+        COMMAND ${CMAKE_COMMAND} -E false
+    )
+    add_custom_target(format-xml-check
+        COMMAND ${CMAKE_COMMAND} -E echo "Error: Python3 not found"
+        COMMAND ${CMAKE_COMMAND} -E false
     )
 endif()
 
@@ -147,7 +185,7 @@ if(MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /w")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
 else()
-    # GCC, Clang, Clang-CL, and other Unix-like compilers
+    # GCC, Clang, and Clang on Unix-like systems
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()

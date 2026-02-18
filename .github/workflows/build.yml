@@ -16,7 +16,7 @@ on:
 
 jobs:
   lint:
-    name: Lint and Encoding Check
+    name: Formatting and Static Analysis
     runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
     steps:
     - uses: actions/checkout@v4
@@ -26,6 +26,14 @@ jobs:
         python-version: '3.x'
     - name: Check Encodings
       run: python scripts/check_encodings.py
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    - name: XML Format Check
+      run: cmake --build build --target format-xml-check
+    - name: Clang-Format Check
+      run: cmake --build build --target clang-format-check
+    - name: Clang-Tidy
+      run: cmake --build build --target clang-tidy
 
   setup:
     name: Setup Build Matrix
