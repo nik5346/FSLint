@@ -475,7 +475,8 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
     else
     {
         // Semantic versioning format: MAJOR.MINOR.PATCH or simpler versions like MAJOR.MINOR
-        const std::regex semver_pattern(R"(^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z\-\.]+))?(?:\+([0-9A-Za-z\-\.]+))?$)");
+        const std::regex semver_pattern(
+            R"(^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z\-\.]+))?(?:\+([0-9A-Za-z\-\.]+))?$)");
 
         if (!std::regex_match(*version, semver_pattern))
         {
