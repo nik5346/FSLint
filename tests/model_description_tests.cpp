@@ -273,6 +273,13 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
             }
         }
         REQUIRE(has_warning(cert));
+        // For metadata warnings, verify they are grouped under "Model Metadata"
+        if (path.find("metadata") != std::string::npos || path.find("author") != std::string::npos ||
+            path.find("license") != std::string::npos || path.find("copyright") != std::string::npos ||
+            path.find("model_version") != std::string::npos || path.find("generation_tool") != std::string::npos)
+        {
+            CHECK(has_warning_with_text(cert, "Model Metadata"));
+        }
         CHECK(has_warning_with_text(cert, expected_warning));
     };
 
@@ -285,12 +292,12 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning("license_missing", "Attribute 'license' is missing");
         validate_warning("license_empty", "Attribute 'license' is empty");
         validate_warning("copyright_missing", "Attribute 'copyright' is missing");
-        validate_warning("copyright_empty", "Copyright attribute is empty");
+        validate_warning("copyright_empty", "Attribute 'copyright' is empty");
         validate_warning("copyright_format_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
         validate_warning("copyright_format_no_year", "should include the year of publication");
         validate_warning("copyright_format_no_holder", "should include the name of the copyright holder");
-        validate_warning("model_version_missing", "Model version attribute is missing");
-        validate_warning("model_version_empty", "Model version attribute is empty");
+        validate_warning("model_version_missing", "Attribute 'version' is missing");
+        validate_warning("model_version_empty", "Attribute 'version' is empty");
         validate_warning("generation_date_and_time_missing", "Attribute 'generationDateAndTime' is missing");
         validate_warning("generation_date_and_time_empty", "Attribute 'generationDateAndTime' is empty");
         validate_warning("generation_date_and_time_old", "is before the first FMI standard release");
@@ -521,6 +528,13 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
             }
         }
         REQUIRE(has_warning(cert));
+        // For metadata warnings, verify they are grouped under "Model Metadata"
+        if (path.find("metadata") != std::string::npos || path.find("author") != std::string::npos ||
+            path.find("license") != std::string::npos || path.find("copyright") != std::string::npos ||
+            path.find("model_version") != std::string::npos || path.find("generation_tool") != std::string::npos)
+        {
+            CHECK(has_warning_with_text(cert, "Model Metadata"));
+        }
         CHECK(has_warning_with_text(cert, expected_warning));
     };
 
@@ -531,8 +545,8 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("metadata_missing", "Attribute 'license' is missing");
         validate_warning("metadata_missing", "Attribute 'copyright' is missing");
 
-        validate_warning("model_version_missing", "Model version attribute is missing");
-        validate_warning("model_version_empty", "Model version attribute is empty");
+        validate_warning("model_version_missing", "Attribute 'version' is missing");
+        validate_warning("model_version_empty", "Attribute 'version' is empty");
 
         validate_warning("generation_date_and_time_missing", "Attribute 'generationDateAndTime' is missing");
         validate_warning("generation_date_and_time_old", "is before the first FMI standard release");
