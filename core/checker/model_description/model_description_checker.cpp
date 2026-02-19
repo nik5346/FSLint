@@ -237,8 +237,8 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (!generation_date_time.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationDateAndTime' is missing. Providing a generation timestamp is "
-                                "highly recommended for traceability.");
+        test.messages.push_back("Attribute 'generationDateAndTime' is missing. It is recommended to provide a "
+                                "generation timestamp for traceability.");
         cert.printTestResult(test);
         return;
     }
@@ -459,36 +459,31 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
 
 void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::string>& version, Certificate& cert)
 {
-    TestResult test{"Model Version Format", TestStatus::PASS, {}};
+    TestResult test{"Model Version", TestStatus::PASS, {}};
 
     if (!version.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Model version attribute is missing. It is recommended to provide a version "
-                                "number for the model.");
-        cert.printTestResult(test);
-        return;
+        test.messages.push_back("Attribute 'version' is missing. It is recommended to provide a version number for "
+                                "the model.");
     }
-
-    if (version->empty())
+    else if (version->empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Model version attribute is empty.");
-        cert.printTestResult(test);
-        return;
+        test.messages.push_back("Attribute 'version' is empty.");
     }
-
-    const std::string& ver = *version;
-
-    // Semantic versioning format: MAJOR.MINOR.PATCH or simpler versions like MAJOR.MINOR
-    // Also allow optional pre-release and build metadata (e.g., 1.0.0-alpha+001)
-    const std::regex semver_pattern(R"(^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z\-\.]+))?(?:\+([0-9A-Za-z\-\.]+))?$)");
-
-    if (!std::regex_match(ver, semver_pattern))
+    else
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Model version \"" + ver +
-                                "\" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).");
+        // Semantic versioning format: MAJOR.MINOR.PATCH or simpler versions like MAJOR.MINOR
+        const std::regex semver_pattern(
+            R"(^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z\-\.]+))?(?:\+([0-9A-Za-z\-\.]+))?$)");
+
+        if (!std::regex_match(*version, semver_pattern))
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Model version \"" + *version +
+                                    "\" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).");
+        }
     }
 
     cert.printTestResult(test);
@@ -496,96 +491,79 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
 
 void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string>& copyright, Certificate& cert)
 {
-    TestResult test{"Copyright Notice Format", TestStatus::PASS, {}};
+    TestResult test{"Copyright", TestStatus::PASS, {}};
 
     if (!copyright.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'copyright' is missing.");
-        cert.printTestResult(test);
-        return;
+        test.messages.push_back("Attribute 'copyright' is missing. It is recommended to provide a copyright notice.");
     }
-
-    const std::string& cr = *copyright;
-
-    if (cr.empty())
+    else if (copyright->empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright attribute is empty.");
-        cert.printTestResult(test);
-        return;
-    }
-
-    // Standard copyright notice format components:
-    // 1. Copyright symbol (©), word "Copyright", or abbreviation "Copr."
-    // 2. Year(s) of publication (can be a range like 2020-2026)
-    // 3. Copyright holder name
-    // 4. Optional: "All Rights Reserved" or similar rights statement
-
-    // Check for copyright symbol, word, or abbreviation at the beginning
-    bool has_copyright_indicator = false;
-    const std::string remaining = cr;
-
-    // Check for various copyright indicators
-    if (cr.find("©") != std::string::npos)
-    {
-        has_copyright_indicator = true;
-    }
-    else if (cr.find("(c)") != std::string::npos || cr.find("(C)") != std::string::npos)
-    {
-        has_copyright_indicator = true;
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright notice uses (c) or (C) instead of the © symbol - consider using © for "
-                                "international recognition");
+        test.messages.push_back("Attribute 'copyright' is empty.");
     }
     else
     {
-        // Check if it starts with "Copyright" or "Copr." (case-insensitive)
-        std::string cr_lower = cr;
-        std::transform(cr_lower.begin(), cr_lower.end(), cr_lower.begin(), ::tolower);
+        const std::string& cr = *copyright;
+        bool has_copyright_indicator = false;
 
-        if (cr_lower.find("copyright") == 0 || cr_lower.find("copr.") == 0)
+        if (cr.find("©") != std::string::npos)
+        {
             has_copyright_indicator = true;
-    }
+        }
+        else if (cr.find("(c)") != std::string::npos || cr.find("(C)") != std::string::npos)
+        {
+            has_copyright_indicator = true;
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Copyright notice uses (c) or (C) instead of the © symbol - consider using © for "
+                                    "international recognition");
+        }
+        else
+        {
+            std::string cr_lower = cr;
+            std::transform(cr_lower.begin(), cr_lower.end(), cr_lower.begin(), ::tolower);
 
-    if (!has_copyright_indicator)
-    {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright notice should begin with ©, 'Copyright', or 'Copr.'.");
-    }
+            if (cr_lower.find("copyright") == 0 || cr_lower.find("copr.") == 0)
+                has_copyright_indicator = true;
+        }
 
-    // Check for a year (4 digits) anywhere in the notice
-    const std::regex year_pattern(R"(\b(19|20)\d{2}\b)");
-    std::smatch year_match;
+        if (!has_copyright_indicator)
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Copyright notice should begin with ©, 'Copyright', or 'Copr.'.");
+        }
 
-    if (!std::regex_search(cr, year_match, year_pattern))
-    {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright notice should include the year of publication (e.g., 2026).");
-    }
+        const std::regex year_pattern(R"(\b(19|20)\d{2}\b)");
+        std::smatch year_match;
 
-    // Check if there's some text that could be the copyright holder name
-    // This is a simple heuristic: after removing symbols and years, there should be some text
-    std::string name_check = cr;
-    name_check = std::regex_replace(name_check, std::regex("[©(c)(C)]"), "");
-    name_check =
-        std::regex_replace(name_check, std::regex(R"(\b(copyright|copr\.?)\b)", std::regex_constants::icase), "");
-    name_check = std::regex_replace(name_check, std::regex(R"(\b(19|20)\d{2}\b)"), "");
-    name_check = std::regex_replace(
-        name_check, std::regex(R"(\b(all rights reserved|some rights reserved)\b)", std::regex_constants::icase), "");
-    name_check = std::regex_replace(name_check, std::regex(R"([.,\-:\s]+)"), "");
+        if (!std::regex_search(cr, year_match, year_pattern))
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Copyright notice should include the year of publication (e.g., 2026).");
+        }
 
-    if (name_check.empty())
-    {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Copyright notice should include the name of the copyright holder.");
-    }
+        std::string name_check = cr;
+        name_check = std::regex_replace(name_check, std::regex("[©(c)(C)]"), "");
+        name_check =
+            std::regex_replace(name_check, std::regex(R"(\b(copyright|copr\.?)\b)", std::regex_constants::icase), "");
+        name_check = std::regex_replace(name_check, std::regex(R"(\b(19|20)\d{2}\b)"), "");
+        name_check = std::regex_replace(
+            name_check, std::regex(R"(\b(all rights reserved|some rights reserved)\b)", std::regex_constants::icase),
+            "");
+        name_check = std::regex_replace(name_check, std::regex(R"([.,\-:\s]+)"), "");
 
-    // Provide an informational note about proper format if warnings were issued
-    if (test.status == TestStatus::WARNING && !test.messages.empty())
-    {
-        test.messages.push_back(
-            "Recommended format: © [Year] [Copyright Holder Name] or Copyright [Year] [Copyright Holder Name]");
+        if (name_check.empty())
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Copyright notice should include the name of the copyright holder.");
+        }
+
+        if (test.status == TestStatus::WARNING && !test.messages.empty())
+        {
+            test.messages.push_back(
+                "Recommended format: © [Year] [Copyright Holder Name] or Copyright [Year] [Copyright Holder Name]");
+        }
     }
 
     cert.printTestResult(test);
@@ -593,7 +571,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
 
 void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>& license, Certificate& cert)
 {
-    TestResult test{"License Information", TestStatus::PASS, {}};
+    TestResult test{"License", TestStatus::PASS, {}};
 
     if (!license.has_value())
     {
@@ -613,12 +591,12 @@ void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>&
 
 void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& author, Certificate& cert)
 {
-    TestResult test{"Author Information", TestStatus::PASS, {}};
+    TestResult test{"Author", TestStatus::PASS, {}};
 
     if (!author.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'author' is missing.");
+        test.messages.push_back("Attribute 'author' is missing. It is recommended to provide the name of the author.");
     }
     else if (author->empty())
     {
@@ -631,12 +609,13 @@ void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& 
 
 void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert)
 {
-    TestResult test{"Generation Tool Information", TestStatus::PASS, {}};
+    TestResult test{"Generation Tool", TestStatus::PASS, {}};
 
     if (!tool.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationTool' is missing.");
+        test.messages.push_back("Attribute 'generationTool' is missing. It is recommended to provide the name of the "
+                                "tool that generated the model.");
     }
     else if (tool->empty())
     {
