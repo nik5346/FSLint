@@ -28,7 +28,7 @@ find_program(RUN_CLANG_TIDY_EXE NAMES "run-clang-tidy" "run-clang-tidy.py")
 
 # Collect all source files to be checked
 file(GLOB_RECURSE TIDY_SOURCES
-    ${CMAKE_SOURCE_DIR}/lib/*.cpp
+    ${CMAKE_SOURCE_DIR}/core/*.cpp
     ${CMAKE_SOURCE_DIR}/cli/*.cpp
 )
 list(LENGTH TIDY_SOURCES TIDY_SOURCES_COUNT)
@@ -49,7 +49,7 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
     set(CLANG_TIDY_BIN ${CLANG_TIDY_EXE})
     set(CLANG_TIDY_ARGS
         -p ${CMAKE_BINARY_DIR}
-        "-header-filter=(lib|cli|tests)/.*"
+        "-header-filter=(core|cli|tests)/.*"
     )
     set(CLANG_TIDY_TARGET_FILES ${TIDY_SOURCES})
 
@@ -64,7 +64,7 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
             -p ${CMAKE_BINARY_DIR}
             -j ${N}
             -clang-tidy-binary ${CLANG_TIDY_EXE}
-            "-header-filter=(lib|cli|tests)/.*"
+            "-header-filter=(core|cli|tests)/.*"
         )
 
         # run-clang-tidy uses regex matching for files. To be cross-platform (handling both / and \),
@@ -102,8 +102,8 @@ find_program(CLANG_FORMAT_EXE NAMES "clang-format")
 
 # Collect all source files
 file(GLOB_RECURSE ALL_SOURCE_FILES
-    ${CMAKE_SOURCE_DIR}/lib/*.cpp
-    ${CMAKE_SOURCE_DIR}/lib/*.h
+    ${CMAKE_SOURCE_DIR}/core/*.cpp
+    ${CMAKE_SOURCE_DIR}/core/*.h
     ${CMAKE_SOURCE_DIR}/cli/*.cpp
     ${CMAKE_SOURCE_DIR}/tests/*.cpp
 )
@@ -356,55 +356,58 @@ endforeach()
 # ============================================================================
 # Core library
 # ============================================================================
-file(GLOB_RECURSE LIB_SOURCES "lib/*.cpp")
-include_directories(lib/checker/directory)
-include_directories(lib/checker/build_description)
-include_directories(lib/checker/terminals_and_icons)
-include_directories(lib/checker/binary)
-include_directories(lib/checker/resources)
-add_library(FSLint-lib STATIC ${LIB_SOURCES})
+file(GLOB_RECURSE CORE_SOURCES "core/*.cpp")
+include_directories(core/checker/directory)
+include_directories(core/checker/build_description)
+include_directories(core/checker/terminals_and_icons)
+include_directories(core/checker/binary)
+include_directories(core/checker/resources)
+add_library(FSLint-core ${CORE_SOURCES})
 
-file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "lib/*")
+file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "core/*")
 foreach(DIR ${HEADER_DIRS})
     if(IS_DIRECTORY ${DIR})
-        target_include_directories(FSLint-lib PUBLIC
+        target_include_directories(FSLint-core PUBLIC
             $<BUILD_INTERFACE:${DIR}>
         )
     endif()
 endforeach()
 
-target_include_directories(FSLint-lib PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib>
+target_include_directories(FSLint-core PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/core>
     $<INSTALL_INTERFACE:include>
 )
 
 # Mark external dependencies as SYSTEM to suppress warnings
-target_include_directories(FSLint-lib SYSTEM PRIVATE
+target_include_directories(FSLint-core SYSTEM PRIVATE
     ${ZLIB_INCLUDE_DIRS}
     ${MINIZIP_DIR}
     ${picosha2_SOURCE_DIR}
 )
 
-target_include_directories(FSLint-lib SYSTEM PRIVATE
+target_include_directories(FSLint-core SYSTEM PRIVATE
     $<TARGET_PROPERTY:LibXml2::LibXml2,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
-target_compile_definitions(FSLint-lib PRIVATE
+target_compile_definitions(FSLint-core PRIVATE
     PROJECT_VERSION="${CMAKE_PROJECT_VERSION}"
     PROJECT_VERSION_MAJOR=${CMAKE_PROJECT_VERSION_MAJOR}
     PROJECT_VERSION_MINOR=${CMAKE_PROJECT_VERSION_MINOR}
     PROJECT_VERSION_PATCH=${CMAKE_PROJECT_VERSION_PATCH}
 )
 
-target_link_libraries(FSLint-lib PUBLIC
-    LibXml2::LibXml2
-    minizip
-    zlibstatic
+target_link_libraries(FSLint-core
+    PUBLIC
+        $<BUILD_INTERFACE:LibXml2::LibXml2>
+        $<INSTALL_INTERFACE:LibXml2::LibXml2>
+    PRIVATE
+        minizip
+        zlibstatic
 )
 
 # Windows-specific libraries
 if(WIN32)
-    target_link_libraries(FSLint-lib PUBLIC ws2_32)
+    target_link_libraries(FSLint-core PRIVATE ws2_32)
 endif()
 
 # ============================================================================
@@ -431,7 +434,7 @@ add_executable(FSLint-tests
 )
 
 target_link_libraries(FSLint-tests PRIVATE
-    FSLint-lib
+    FSLint-core
     Catch2::Catch2WithMain
 )
 
@@ -457,7 +460,7 @@ endif()
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT FSLint-cli)
 
-target_link_libraries(FSLint-cli PRIVATE FSLint-lib)
+target_link_libraries(FSLint-cli PRIVATE FSLint-core)
 
 if(UNIX)
     if(APPLE)
@@ -536,12 +539,45 @@ endif()
 # ============================================================================
 # Install
 # ============================================================================
+include(CMakePackageConfigHelpers)
+
+write_basic_config_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/FSLintConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/FSLint
+)
 
 # We use manual installation for the CLI to avoid export dependency issues with fetched libraries
 install(PROGRAMS $<TARGET_FILE:FSLint-cli> DESTINATION .)
 install(DIRECTORY standard DESTINATION .)
 
 # Install headers for developer use
-install(DIRECTORY lib/ DESTINATION include
+install(DIRECTORY core/ DESTINATION include
     FILES_MATCHING PATTERN "*.h"
+)
+
+install(TARGETS FSLint-core
+    EXPORT FSLintTargets
+    DESTINATION lib
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(EXPORT FSLintTargets
+    FILE FSLintTargets.cmake
+    NAMESPACE FSLint::
+    DESTINATION lib/cmake/FSLint
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfigVersion.cmake"
+    DESTINATION lib/cmake/FSLint
 )

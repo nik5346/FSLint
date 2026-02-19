@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# LibXml2 is a public dependency
+find_dependency(LibXml2)
+
+include("${CMAKE_CURRENT_LIST_DIR}/FSLintTargets.cmake")
+
+check_required_components(FSLint)
