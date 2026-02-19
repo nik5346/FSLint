@@ -5,6 +5,7 @@ project(FSLint VERSION 0.0.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # ============================================================================
 # Compiler-specific options
@@ -367,8 +368,10 @@ add_library(FSLint-core ${CORE_SOURCES})
 file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "core/*")
 foreach(DIR ${HEADER_DIRS})
     if(IS_DIRECTORY ${DIR})
+        file(RELATIVE_PATH REL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/core" "${DIR}")
         target_include_directories(FSLint-core PUBLIC
             $<BUILD_INTERFACE:${DIR}>
+            $<INSTALL_INTERFACE:include/${REL_DIR}>
         )
     endif()
 endforeach()
