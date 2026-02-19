@@ -273,13 +273,6 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
             }
         }
         REQUIRE(has_warning(cert));
-        // For metadata warnings, verify they are grouped under "Model Metadata"
-        if (path.find("metadata") != std::string::npos || path.find("author") != std::string::npos ||
-            path.find("license") != std::string::npos || path.find("copyright") != std::string::npos ||
-            path.find("model_version") != std::string::npos || path.find("generation_tool") != std::string::npos)
-        {
-            CHECK(has_warning_with_text(cert, "Model Metadata"));
-        }
         CHECK(has_warning_with_text(cert, expected_warning));
     };
 
@@ -528,13 +521,6 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
             }
         }
         REQUIRE(has_warning(cert));
-        // For metadata warnings, verify they are grouped under "Model Metadata"
-        if (path.find("metadata") != std::string::npos || path.find("author") != std::string::npos ||
-            path.find("license") != std::string::npos || path.find("copyright") != std::string::npos ||
-            path.find("model_version") != std::string::npos || path.find("generation_tool") != std::string::npos)
-        {
-            CHECK(has_warning_with_text(cert, "Model Metadata"));
-        }
         CHECK(has_warning_with_text(cert, expected_warning));
     };
 

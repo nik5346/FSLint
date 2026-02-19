@@ -63,7 +63,11 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkModelName(metadata.modelName, cert);
     checkGuid(metadata.guid, cert);
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
-    checkModelMetadata(metadata, cert);
+    checkModelVersion(metadata.modelVersion, cert);
+    checkCopyright(metadata.copyright, cert);
+    checkLicense(metadata.license, cert);
+    checkAuthor(metadata.author, cert);
+    checkGenerationTool(metadata.generationTool, cert);
     checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
 
     // Perform interface checks
@@ -453,21 +457,10 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkModelMetadata(const ModelMetadata& metadata, Certificate& cert)
+void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::string>& version, Certificate& cert)
 {
-    TestResult test{"Model Metadata", TestStatus::PASS, {}};
+    TestResult test{"Model Version", TestStatus::PASS, {}};
 
-    checkModelVersion(metadata.modelVersion, test);
-    checkCopyright(metadata.copyright, test);
-    checkLicense(metadata.license, test);
-    checkAuthor(metadata.author, test);
-    checkGenerationTool(metadata.generationTool, test);
-
-    cert.printTestResult(test);
-}
-
-void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::string>& version, TestResult& test)
-{
     if (!version.has_value())
     {
         test.status = TestStatus::WARNING;
@@ -491,10 +484,14 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
                                     "\" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).");
         }
     }
+
+    cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string>& copyright, TestResult& test)
+void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string>& copyright, Certificate& cert)
 {
+    TestResult test{"Copyright", TestStatus::PASS, {}};
+
     if (!copyright.has_value())
     {
         test.status = TestStatus::WARNING;
@@ -561,20 +558,20 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
             test.messages.push_back("Copyright notice should include the name of the copyright holder.");
         }
 
-        bool has_copyright_warnings = std::any_of(test.messages.begin(), test.messages.end(), [](const std::string& m) {
-            return m.find("Copyright") != std::string::npos || m.find("copyright") != std::string::npos || m.find("Copr.") != std::string::npos || m.find("©") != std::string::npos;
-        });
-
-        if (has_copyright_warnings)
+        if (test.status == TestStatus::WARNING && !test.messages.empty())
         {
             test.messages.push_back(
                 "Recommended format: © [Year] [Copyright Holder Name] or Copyright [Year] [Copyright Holder Name]");
         }
     }
+
+    cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>& license, TestResult& test)
+void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>& license, Certificate& cert)
 {
+    TestResult test{"License", TestStatus::PASS, {}};
+
     if (!license.has_value())
     {
         test.status = TestStatus::WARNING;
@@ -587,10 +584,14 @@ void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>&
         test.status = TestStatus::WARNING;
         test.messages.push_back("Attribute 'license' is empty.");
     }
+
+    cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& author, TestResult& test)
+void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& author, Certificate& cert)
 {
+    TestResult test{"Author", TestStatus::PASS, {}};
+
     if (!author.has_value())
     {
         test.status = TestStatus::WARNING;
@@ -601,10 +602,14 @@ void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& 
         test.status = TestStatus::WARNING;
         test.messages.push_back("Attribute 'author' is empty.");
     }
+
+    cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::string>& tool, TestResult& test)
+void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert)
 {
+    TestResult test{"Generation Tool", TestStatus::PASS, {}};
+
     if (!tool.has_value())
     {
         test.status = TestStatus::WARNING;
@@ -615,6 +620,8 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
         test.status = TestStatus::WARNING;
         test.messages.push_back("Attribute 'generationTool' is empty.");
     }
+
+    cert.printTestResult(test);
 }
 
 void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate& cert)

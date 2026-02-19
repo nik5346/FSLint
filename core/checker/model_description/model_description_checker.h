@@ -136,12 +136,11 @@ class ModelDescriptionCheckerBase : public Checker
     virtual void validateFmiVersionValue(const std::string& version, TestResult& test) = 0;
     void checkModelName(const std::optional<std::string>& model_name, Certificate& cert);
     virtual void checkGuid(const std::optional<std::string>& guid, Certificate& cert) = 0;
-    void checkModelMetadata(const ModelMetadata& metadata, Certificate& cert);
-    void checkModelVersion(const std::optional<std::string>& version, TestResult& test);
-    void checkCopyright(const std::optional<std::string>& copyright, TestResult& test);
-    void checkLicense(const std::optional<std::string>& license, TestResult& test);
-    void checkAuthor(const std::optional<std::string>& author, TestResult& test);
-    void checkGenerationTool(const std::optional<std::string>& tool, TestResult& test);
+    void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
+    void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert);
+    void checkLicense(const std::optional<std::string>& license, Certificate& cert);
+    void checkAuthor(const std::optional<std::string>& author, Certificate& cert);
+    void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert);
     void checkLogCategories(xmlDocPtr doc, Certificate& cert);
     virtual void checkAnnotations(xmlDocPtr doc, Certificate& cert) = 0;
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
