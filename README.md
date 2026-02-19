@@ -97,7 +97,7 @@ FSLint aims for full compliance with the following standards. For a detailed lis
 ## Project Structure
 
 - `cli/`: Command-line interface implementation.
-- `lib/`: Core logic for model extraction and validation.
+- `core/`: Core logic for model extraction and validation.
   - `checker/`: Individual validation engines for FMI and SSP.
 - `standard/`: XSD schema files for FMI and SSP standards.
 - `scripts/`: Utility scripts for development and CI (e.g., encoding checks).
