@@ -18,6 +18,10 @@ class ModelChecker
     bool updateCertificate(const std::filesystem::path& path) const;
     bool removeCertificate(const std::filesystem::path& path) const;
     bool displayCertificate(const std::filesystem::path& path) const;
+    bool verifyCertificate(const std::filesystem::path& path) const;
+
+    // Version management
+    bool isVersionDeprecated(const std::string& version) const;
 
   private:
     // Helper functions for FMU manipulation

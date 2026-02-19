@@ -382,6 +382,132 @@ bool ModelChecker::displayCertificate(const std::filesystem::path& path) const
     return true;
 }
 
+bool ModelChecker::verifyCertificate(const std::filesystem::path& path) const
+{
+    std::string cert_content;
+
+    if (std::filesystem::is_directory(path))
+    {
+        const std::filesystem::path cert_file = path / "extra" / "validation_certificate.txt";
+        if (!std::filesystem::exists(cert_file))
+        {
+            std::cout << "No validation certificate found in directory model\n";
+            return false;
+        }
+
+        const std::ifstream file(cert_file);
+        if (!file)
+        {
+            std::cerr << "Error: Failed to open certificate file\n";
+            return false;
+        }
+        std::stringstream ss;
+        ss << file.rdbuf();
+        cert_content = ss.str();
+    }
+    else
+    {
+        Zipper zipper;
+        if (!zipper.open(path))
+        {
+            std::cerr << "Error: Failed to open model file\n";
+            return false;
+        }
+
+        std::vector<uint8_t> cert_data;
+        if (!zipper.extractFile("extra/validation_certificate.txt", cert_data))
+        {
+            std::cout << "No validation certificate found in model\n";
+            zipper.close();
+            return false;
+        }
+        zipper.close();
+        cert_content.assign(cert_data.begin(), cert_data.end());
+    }
+
+    // Parse Tool version and SHA256
+    std::string stored_version;
+    std::string stored_hash;
+
+    std::istringstream iss(cert_content);
+    std::string line;
+    while (std::getline(iss, line))
+    {
+        if (line.find("Tool:") != std::string::npos)
+        {
+            const size_t pos = line.find("FSLint");
+            if (pos != std::string::npos && line.length() > pos + 7)
+            {
+                stored_version = line.substr(pos + 7);
+                // Trim leading/trailing spaces
+                const size_t first = stored_version.find_first_not_of(' ');
+                if (std::string::npos != first)
+                {
+                    const size_t last = stored_version.find_last_not_of(' ');
+                    stored_version = stored_version.substr(first, (last - first + 1));
+                }
+            }
+        }
+        else if (line.find("SHA256:") != std::string::npos)
+        {
+            const size_t pos = line.find("SHA256:");
+            stored_hash = line.substr(pos + 7);
+            // Trim leading/trailing spaces
+            const size_t first = stored_hash.find_first_not_of(' ');
+            if (std::string::npos != first)
+            {
+                const size_t last = stored_hash.find_last_not_of(' ');
+                stored_hash = stored_hash.substr(first, (last - first + 1));
+            }
+        }
+    }
+
+    if (stored_hash.empty())
+    {
+        std::cerr << "Error: Could not find SHA256 in certificate\n";
+        return false;
+    }
+
+    std::cout << "Verifying certificate...\n";
+    std::cout << "Stored Tool Version: " << stored_version << "\n";
+    std::cout << "Stored SHA256:       " << stored_hash << "\n";
+
+    const std::string current_hash = calculateSHA256(path);
+    std::cout << "Current SHA256:      " << current_hash << "\n\n";
+
+    bool valid = true;
+    if (current_hash != stored_hash)
+    {
+        std::cout << "✗ Verification FAILED: Hash mismatch. The model has been modified since the certificate was "
+                     "created.\n";
+        valid = false;
+    }
+    else
+    {
+        std::cout << "✓ Verification PASSED: Hash matches.\n";
+    }
+
+    if (isVersionDeprecated(stored_version))
+    {
+        std::cout << "⚠ Tool version " << stored_version
+                  << " is deprecated. It is recommended to re-validate with the latest version.\n";
+    }
+    else
+    {
+        std::cout << "✓ Tool version " << stored_version << " is still supported.\n";
+    }
+
+    return valid;
+}
+
+bool ModelChecker::isVersionDeprecated(const std::string& version) const
+{
+    // Initially, no versions are deprecated.
+    // This can be expanded in the future.
+    (void)version;
+    return false;
+}
+
 bool ModelChecker::extract(const std::filesystem::path& model_path, const std::filesystem::path& extract_dir) const
 {
     Zipper zipper;
@@ -443,24 +569,99 @@ bool ModelChecker::package(const std::filesystem::path& extract_dir, const std::
 
 std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) const
 {
+    picosha2::hash256_one_by_one hasher;
+
     if (std::filesystem::is_directory(path))
     {
-        if (std::filesystem::exists(path / "modelDescription.xml"))
-            return calculateSHA256(path / "modelDescription.xml");
-        if (std::filesystem::exists(path / "SystemStructure.ssd"))
-            return calculateSHA256(path / "SystemStructure.ssd");
-        return "N/A (Directory)";
-    }
+        std::vector<std::filesystem::path> files;
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(path))
+        {
+            if (entry.is_regular_file())
+            {
+                auto rel_path = std::filesystem::relative(entry.path(), path);
+                std::string rel_path_str = rel_path.string();
+                std::replace(rel_path_str.begin(), rel_path_str.end(), '\\', '/');
 
-    std::ifstream file(path, std::ios::binary);
-    if (!file)
+                if (rel_path_str == "extra/validation_certificate.txt")
+                    continue;
+
+                files.push_back(rel_path);
+            }
+        }
+        std::sort(files.begin(), files.end());
+
+        for (const auto& rel_path : files)
+        {
+            std::string rel_path_str = rel_path.string();
+            std::replace(rel_path_str.begin(), rel_path_str.end(), '\\', '/');
+
+            // Hash path to include structure in hash
+            hasher.process(rel_path_str.begin(), rel_path_str.end());
+
+            // Hash content
+            std::ifstream f(path / rel_path, std::ios::binary);
+            if (f)
+            {
+                std::vector<char> buffer(4096);
+                while (f.read(buffer.data(), static_cast<std::streamsize>(buffer.size())))
+                    hasher.process(buffer.begin(), buffer.end());
+                if (f.gcount() > 0)
+                    hasher.process(buffer.begin(), buffer.begin() + f.gcount());
+            }
+        }
+    }
+    else
     {
-        std::cerr << "Error: Failed to open file for hashing: " << path << "\n";
-        return "";
+        Zipper zipper;
+        if (zipper.open(path))
+        {
+            auto entries = zipper.getEntries();
+            std::vector<std::string> names;
+            for (const auto& entry : entries)
+            {
+                // Skip directories and the certificate itself
+                if (entry.filename.empty() || entry.filename.back() == '/' ||
+                    entry.filename == "extra/validation_certificate.txt")
+                    continue;
+                names.push_back(entry.filename);
+            }
+            std::sort(names.begin(), names.end());
+
+            for (const auto& name : names)
+            {
+                // Hash filename
+                hasher.process(name.begin(), name.end());
+
+                // Hash content
+                std::vector<uint8_t> data;
+                if (zipper.extractFile(name, data))
+                    hasher.process(data.begin(), data.end());
+            }
+            zipper.close();
+        }
+        else
+        {
+            // Plain file
+            std::ifstream file(path, std::ios::binary);
+            if (file)
+            {
+                std::vector<char> buffer(4096);
+                while (file.read(buffer.data(), static_cast<std::streamsize>(buffer.size())))
+                    hasher.process(buffer.begin(), buffer.end());
+                if (file.gcount() > 0)
+                    hasher.process(buffer.begin(), buffer.begin() + file.gcount());
+            }
+            else
+            {
+                std::cerr << "Error: Failed to open file for hashing: " << path << "\n";
+                return "";
+            }
+        }
     }
 
+    hasher.finish();
     std::vector<unsigned char> hash(picosha2::k_digest_size);
-    picosha2::hash256(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), hash.begin(), hash.end());
+    hasher.get_hash_bytes(hash.begin(), hash.end());
 
     return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
 }

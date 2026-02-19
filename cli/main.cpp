@@ -15,6 +15,7 @@ void printUsage(const std::string& program_name)
     std::cout << "  -u, --update            Re-validate and update certificate in FMU/SSP\n";
     std::cout << "  -r, --remove            Remove certificate from FMU/SSP\n";
     std::cout << "  -d, --display           Display certificate information from FMU/SSP\n";
+    std::cout << "  -c, --verify            Verify the embedded certificate in FMU/SSP\n";
     std::cout << "  -h, --help              Show this help message\n";
     std::cout << "  -v, --version           Show version information\n";
     std::cout << "\n";
@@ -41,6 +42,7 @@ int main(int argc, char** argv)
     bool update_cert = false;
     bool remove_cert = false;
     bool display_cert = false;
+    bool verify_cert = false;
 
     // Parse arguments
     for (size_t i = 1; i < args.size(); ++i)
@@ -65,6 +67,8 @@ int main(int argc, char** argv)
             remove_cert = true;
         else if (arg == "-d" || arg == "--display")
             display_cert = true;
+        else if (arg == "-c" || arg == "--verify")
+            verify_cert = true;
         else if (arg[0] != '-')
         {
             if (fmu_path.empty())
@@ -99,8 +103,8 @@ int main(int argc, char** argv)
     }
 
     // Validate mutual exclusivity of operations
-    const size_t operation_count =
-        (save_cert ? 1 : 0) + (update_cert ? 1 : 0) + (remove_cert ? 1 : 0) + (display_cert ? 1 : 0);
+    const size_t operation_count = (save_cert ? 1 : 0) + (update_cert ? 1 : 0) + (remove_cert ? 1 : 0) +
+                                   (display_cert ? 1 : 0) + (verify_cert ? 1 : 0);
 
     if (operation_count > 1)
     {
@@ -118,6 +122,8 @@ int main(int argc, char** argv)
             return validator.removeCertificate(fmu_path) ? 0 : 1;
         else if (display_cert)
             return validator.displayCertificate(fmu_path) ? 0 : 1;
+        else if (verify_cert)
+            return validator.verifyCertificate(fmu_path) ? 0 : 1;
         else if (save_cert)
             return validator.addCertificate(fmu_path) ? 0 : 1;
         else if (update_cert)
