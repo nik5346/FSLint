@@ -13,12 +13,12 @@ void Fmi2BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& 
         test.status = TestStatus::FAIL;
         test.messages.push_back("Missing 'fmiVersion' attribute in 'buildDescription.xml'.");
     }
-    else if (*bd_fmi_version != getFmiVersion())
+    else if (*bd_fmi_version != "3.0")
     {
-        // For FMI 2.0, it's a backport, we issue a warning if versions don't match.
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
-                                ") does not match FMU version (" + getFmiVersion() + ").");
+        // For FMI 2.0, it's a backport from FMI 3.0 and the fmiVersion attribute is fixed to "3.0".
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("fmiVersion in 'buildDescription.xml' must be '3.0' for FMI 2.0 FMUs (found '" +
+                                *bd_fmi_version + "').");
     }
     cert.printTestResult(test);
 }

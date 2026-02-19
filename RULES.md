@@ -41,7 +41,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - FMI 2.0 and 3.0: XML files **must** use UTF-8 encoding.
   - FMI 1.0: UTF-8 encoding is highly **recommended**.
 - **Model Name Format**: The `modelName` attribute **must** be present and non-empty.
-- **FMI Version Format**: The `fmiVersion` attribute **must** match the standard version string ("1.0", "2.0", or "3.0").
+- **FMI Version Format**: The `fmiVersion` attribute **must** match the standard version string ("1.0", "2.0", or a version matching the FMI 3.0+ regex). For FMI 1.0 and 2.0, only "1.0" and "2.0" are allowed respectively. For FMI 3.0, minor and patch versions are supported (e.g., "3.0", "3.0.1").
 - **Generation Date and Time**:
   - **Must** be in ISO 8601 format (e.g., `YYYY-MM-DDThh:mm:ssZ`).
   - **Must** be a valid date in the past (not after the current system time).
@@ -177,7 +177,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 2.0 headers: `fmi2Functions.h`, `fmi2FunctionTypes.h`, `fmi2TypesPlatform.h`.
 
 ### Build Description
-- **fmiVersion Check**: `buildDescription.xml` **must** have an `fmiVersion` attribute. It **should** match the FMU version.
+- **fmiVersion Check**: `buildDescription.xml` **must** have `fmiVersion="3.0"`. This attribute is fixed to "3.0" for FMI 2.0 FMUs because the feature was backported from FMI 3.0.
 - **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries **must** exist in `sources/` and **must not** contain `..` traversal.
 - **Attribute Validation**: The `language` and `compiler` attributes **should** be from the suggested sets:
   - `language`: `C89`, `C90`, `C99`, `C11`, `C17`, `C18`, `C23`, `C++98`, `C++03`, `C++11`, `C++14`, `C++17`, `C++20`, `C++23`, `C++26`.
@@ -248,7 +248,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 3.0 headers: `fmi3Functions.h`, `fmi3FunctionTypes.h`, `fmi3PlatformTypes.h`.
 
 ### Build Description
-- **fmiVersion Check**: `buildDescription.xml` **must** have `fmiVersion="3.0"`.
+- **fmiVersion Check**: `buildDescription.xml` **must** have an `fmiVersion` attribute that matches the `fmiVersion` attribute in `modelDescription.xml`.
 - **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries **must** exist in `sources/` and **must not** contain `..` traversal.
 - **Attribute Validation**: The `language` and `compiler` attributes **should** be from the suggested sets:
   - `language`: `C89`, `C90`, `C99`, `C11`, `C17`, `C18`, `C23`, `C++98`, `C++03`, `C++11`, `C++14`, `C++17`, `C++20`, `C++23`, `C++26`.

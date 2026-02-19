@@ -60,7 +60,7 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
                     info.standard = ModelStandard::FMI1_ME;
             else if (version->starts_with("2.0"))
                 info.standard = ModelStandard::FMI2;
-            else if (version->starts_with("3.0"))
+            else if (version->starts_with("3."))
                 info.standard = ModelStandard::FMI3;
         }
 

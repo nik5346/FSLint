@@ -3,6 +3,7 @@
 #include "checker_factory.h"
 #include "fmi1_binary_checker.h"
 #include "fmi1_directory_checker.h"
+#include "fmi2_build_description_checker.h"
 #include "fmi2_directory_checker.h"
 #include "fmi2_model_description_checker.h"
 #include "fmi3_build_description_checker.h"
@@ -323,6 +324,60 @@ TEST_CASE("Build Description Validation", "[build_description]")
         validate_pass("tests/data/build_description/pass/valid");
         validate_pass("tests/data/build_description/pass/cpp26");
         validate_pass("tests/data/build_description/pass/multi_id_match");
+    }
+
+    SECTION("FMI 3.0 Version Mismatch")
+    {
+        Fmi3BuildDescriptionChecker mismatch_checker("3.0.1");
+        Certificate cert;
+        mismatch_checker.validate("tests/data/fmi3/fail/build_description_mismatch", cert);
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, "does not match FMU version (3.0.1)"));
+    }
+}
+
+TEST_CASE("FMI 2.0 Build Description Validation", "[build_description][fmi2]")
+{
+    Fmi2BuildDescriptionChecker checker("2.0");
+
+    auto validate_pass = [&](const fs::path& path)
+    {
+        Certificate cert;
+        checker.validate(path, cert);
+        INFO("Checking path: " << path);
+        CHECK_FALSE(has_fail(cert));
+    };
+
+    auto validate_fail = [&](const fs::path& path, const std::string& expected_error)
+    {
+        Certificate cert;
+        checker.validate(path, cert);
+        INFO("Checking path: " << path);
+        if (!has_error_with_text(cert, expected_error))
+        {
+            UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
+                {
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
+                }
+            }
+        }
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, expected_error));
+    };
+
+    SECTION("Passing Cases")
+    {
+        validate_pass("tests/data/fmi2/pass/build_description");
+    }
+
+    SECTION("Failure Cases")
+    {
+        validate_fail("tests/data/fmi2/fail/build_description_v2", "must be '3.0' for FMI 2.0 FMUs");
     }
 }
 
