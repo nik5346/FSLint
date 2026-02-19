@@ -237,8 +237,8 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (!generation_date_time.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationDateAndTime' is missing. Providing a generation timestamp is "
-                                "highly recommended for traceability.");
+        test.messages.push_back("Attribute 'generationDateAndTime' is missing. It is recommended to provide a "
+                                "generation timestamp for traceability.");
         cert.printTestResult(test);
         return;
     }
@@ -496,7 +496,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     if (!copyright.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'copyright' is missing.");
+        test.messages.push_back("Attribute 'copyright' is missing. It is recommended to provide a copyright notice.");
     }
     else if (copyright->empty())
     {
@@ -596,7 +596,7 @@ void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& 
     if (!author.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'author' is missing.");
+        test.messages.push_back("Attribute 'author' is missing. It is recommended to provide the name of the author.");
     }
     else if (author->empty())
     {
@@ -614,7 +614,8 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
     if (!tool.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationTool' is missing.");
+        test.messages.push_back("Attribute 'generationTool' is missing. It is recommended to provide the name of the "
+                                "tool that generated the model.");
     }
     else if (tool->empty())
     {
