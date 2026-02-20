@@ -3,6 +3,7 @@
 #include "certificate.h"
 
 #include <filesystem>
+#include <format>
 #include <map>
 #include <regex>
 #include <set>
@@ -27,7 +28,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 test.status = TestStatus::WARNING;
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
+                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
             }
 
             if (entry.is_directory() && fmi3_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
@@ -107,9 +108,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     if (!std::filesystem::exists(png_path))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("FMI 3.0: '" + entry.path().filename().string() +
-                                                "' exists in terminalsAndIcons/ but '" + png_path.filename().string() +
-                                                "' is missing (required as fallback).");
+                        test.messages.push_back(
+                            std::format("FMI 3.0: '{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
+                                        "fallback).",
+                                        entry.path().filename().string(), png_path.filename().string()));
                     }
                 }
             }
@@ -153,8 +155,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back("FMI 3.0: Platform tuple '" + tuple +
-                                                "' does not follow the <arch>-<sys>[-<abi>] format.");
+                        test.messages.push_back(std::format(
+                            "FMI 3.0: Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
                     else if (match[4].matched) // ABI present
                     {
@@ -164,10 +166,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (!std::regex_match(abi, abi_regex))
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(
-                                "FMI 3.0: ABI name '" + abi + "' in platform tuple '" + tuple +
-                                "' is invalid (must start with lowercase letter and contain only lowercase letters, "
-                                "digits, or underscores).");
+                            test.messages.push_back(std::format(
+                                "FMI 3.0: ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
+                                "letter and contain only lowercase letters, digits, or underscores).",
+                                abi, tuple));
                         }
                     }
 
@@ -193,8 +195,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back("FMI 3.0: Platform directory '" + tuple +
-                                                "' does not contain a binary matching any modelIdentifier.");
+                        test.messages.push_back(std::format(
+                            "FMI 3.0: Platform directory '{}' does not contain a binary matching any modelIdentifier.",
+                            tuple));
                     }
                 }
             }
@@ -242,9 +245,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back("FMI 3.0: Subdirectory '" + name +
-                                                "' in extra/ should use reverse domain name notation (e.g. "
-                                                "'com.example').");
+                        test.messages.push_back(
+                            std::format("FMI 3.0: Subdirectory '{}' in extra/ should use reverse domain name notation "
+                                        "(e.g. 'com.example').",
+                                        name));
                     }
                 }
             }

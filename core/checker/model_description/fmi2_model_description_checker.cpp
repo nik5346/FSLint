@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <iostream>
 #include <map>
 #include <optional>
@@ -1733,17 +1734,16 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
                     if (unit_display_names.contains(*du_name_opt))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("DisplayUnit \"" + *du_name_opt + "\" (line " +
-                                                std::to_string(child->line) +
-                                                ") is defined multiple times for unit \"" + name + "\".");
+                        test.messages.push_back(
+                            std::format("DisplayUnit \"{}\" (line {}) is defined multiple times for unit \"{}\".",
+                                        *du_name_opt, child->line, name));
                     }
                     unit_display_names.insert(*du_name_opt);
                 }
 
-                checkSpecial(getXmlAttribute(child, "factor"), "factor",
-                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
-                checkSpecial(getXmlAttribute(child, "offset"), "offset",
-                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
+                const std::string context = std::format("Unit \"{}\" DisplayUnit \"{}\"", name, du_name);
+                checkSpecial(getXmlAttribute(child, "factor"), "factor", context, child->line);
+                checkSpecial(getXmlAttribute(child, "offset"), "offset", context, child->line);
             }
         }
     }

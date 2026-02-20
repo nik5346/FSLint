@@ -47,7 +47,7 @@ int main(int argc, char** argv)
     // Parse arguments
     for (size_t i = 1; i < args.size(); ++i)
     {
-        std::string arg = args[i];
+        const std::string_view arg = args[i];
 
         if (arg == "-h" || arg == "--help")
         {
