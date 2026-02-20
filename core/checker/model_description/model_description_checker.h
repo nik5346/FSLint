@@ -226,9 +226,7 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         if constexpr (std::is_floating_point_v<T>)
         {
             if (isSpecialFloat(*str_opt))
-            {
                 validateVariableSpecialFloat(test, var, *str_opt, attr_name);
-            }
         }
 
         try
