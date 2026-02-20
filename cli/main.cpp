@@ -6,6 +6,7 @@
 #include <iostream>
 #include <span>
 #include <string>
+#include <string_view>
 
 void printUsage(const std::string& program_name)
 {
