@@ -475,7 +475,7 @@ static uint64_t readUleb128(std::ifstream& f)
     return result;
 }
 
-static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, std::string prefix,
+static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, const std::string& prefix,
                      std::set<std::string>& exports)
 {
     f.seekg(start_off + curr_off);

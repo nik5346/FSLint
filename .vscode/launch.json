@@ -107,7 +107,10 @@
                 "${workspaceFolder}/models/Reference-FMUs-0.0.39/3.0/StateSpace.fmu",
                 "${workspaceFolder}/models/Reference-FMUs-0.0.39/3.0/VanDerPol.fmu",
 
-                "${workspaceFolder}/models/PneumaticCylinderController3.fmu"
+                "${workspaceFolder}/models/PneumaticCylinderController2.fmu",
+                "${workspaceFolder}/models/PneumaticCylinderController3.fmu",
+                "${workspaceFolder}/models/PneumaticCylinderModel2.fmu",
+                "${workspaceFolder}/models/PneumaticCylinderModel3.fmu"
             ],
             "default": "${workspaceFolder}/models/Reference-FMUs-0.0.39/3.0/BouncingBall.fmu"
         }

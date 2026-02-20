@@ -1,5 +1,16 @@
 ---
-Checks: 'cert-*,cppcoreguidelines-*,misc-include-cleaner,misc-const-correctness,-clang-analyzer-*,-cppcoreguidelines-avoid-magic-numbers'
+Checks: >
+  cert-*,
+  cppcoreguidelines-*
+  modernize-*,
+  performance-*,
+  misc-include-cleaner,
+  misc-const-correctness,
+  misc-redundant-expression,
+  misc-definitions-in-headers,
+  -clang-analyzer-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -modernize-use-trailing-return-type
 WarningsAsErrors: ''
 HeaderFilterRegex: '^(?!.*(_deps|build)).*/(core|cli|tests)/.*'
 SystemHeaders: false
