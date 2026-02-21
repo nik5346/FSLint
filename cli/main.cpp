@@ -81,7 +81,7 @@ int main(int argc, char** argv)
                 }
                 else
                 {
-                    std::cerr << "Error: Multiple FMU files specified\n";
+                    std::cerr << "Error: Multiple FMU/SSP files specified\n";
                     return 1;
                 }
             }
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 
         if (fmu_path.empty())
         {
-            std::cerr << "Error: No FMU file specified\n";
+            std::cerr << "Error: No FMU/SSP file specified\n";
             printUsage(args[0]);
             return 1;
         }

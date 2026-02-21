@@ -195,7 +195,12 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
         }
 
         // Apply defaults based on FMI3 spec
-        if (var.causality == "structuralParameter" || var.causality == "parameter")
+        if (var.causality == "structuralParameter")
+        {
+            if (var.variability == "fixed" || var.variability == "tunable")
+                var.initial = "exact";
+        }
+        else if (var.causality == "parameter")
         {
             if (var.variability == "fixed" || var.variability == "tunable")
                 var.initial = "exact";
@@ -447,7 +452,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<float>(var, bounds.min, bounds.max, test);
         else if (var.type == "Float64")
             validateTypeBounds<double>(var, bounds.min, bounds.max, test);
-        else if (var.type == "Enumeration" || var.type == "Int64")
+        else if (var.type == "Enumeration")
             validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "Int8")
             validateTypeBounds<int8_t>(var, bounds.min, bounds.max, test);
@@ -461,6 +466,8 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<int32_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt32")
             validateTypeBounds<uint32_t>(var, bounds.min, bounds.max, test);
+        else if (var.type == "Int64")
+            validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt64")
             validateTypeBounds<uint64_t>(var, bounds.min, bounds.max, test);
     }
