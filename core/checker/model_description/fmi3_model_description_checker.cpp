@@ -146,6 +146,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
             }
             catch (...)
             {
+                // Ignore parsing errors for optional attributes
             }
         }
 
@@ -159,6 +160,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
             }
             catch (...)
             {
+                // Ignore parsing errors for optional attributes
             }
         }
 
@@ -193,12 +195,7 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
         }
 
         // Apply defaults based on FMI3 spec
-        if (var.causality == "structuralParameter")
-        {
-            if (var.variability == "fixed" || var.variability == "tunable")
-                var.initial = "exact";
-        }
-        else if (var.causality == "parameter")
+        if (var.causality == "structuralParameter" || var.causality == "parameter")
         {
             if (var.variability == "fixed" || var.variability == "tunable")
                 var.initial = "exact";
@@ -450,7 +447,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<float>(var, bounds.min, bounds.max, test);
         else if (var.type == "Float64")
             validateTypeBounds<double>(var, bounds.min, bounds.max, test);
-        else if (var.type == "Enumeration")
+        else if (var.type == "Enumeration" || var.type == "Int64")
             validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "Int8")
             validateTypeBounds<int8_t>(var, bounds.min, bounds.max, test);
@@ -464,8 +461,6 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<int32_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt32")
             validateTypeBounds<uint32_t>(var, bounds.min, bounds.max, test);
-        else if (var.type == "Int64")
-            validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt64")
             validateTypeBounds<uint64_t>(var, bounds.min, bounds.max, test);
     }
@@ -844,7 +839,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
                         }
                         catch (...)
                         {
-                            // Invalid start value will be caught in bounds validation
+                            // Ignore parsing errors; invalid start value will be caught in bounds validation
                         }
                     }
                 }
@@ -904,6 +899,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors here as it is handled by the check below
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("ModelStructure/Output " + std::to_string(i + 1) +
                                             " has invalid valueReference \"" + *vr_str + "\".");
@@ -1030,6 +1026,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors here as it is handled by the check below
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("ModelStructure/ClockedState " + std::to_string(i + 1) +
                                             " has invalid valueReference \"" + *vr_str + "\".");
@@ -1144,6 +1141,7 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors for optional attributes
                     continue;
                 }
 
@@ -1353,6 +1351,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
         }
         catch (...)
         {
+            // Ignore parsing errors for optional attributes
             return;
         }
 
@@ -1381,6 +1380,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors for optional attributes
                 }
             }
 
@@ -1499,6 +1499,7 @@ void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const s
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors here as it is handled by the check below
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("ModelStructure/EventIndicator " + std::to_string(i + 1) +
                                             " has invalid valueReference \"" + *vr_str + "\".");
@@ -1594,13 +1595,9 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         {
             is_required = true;
         }
-        // (2) Calculated parameters
-        else if (var.causality == "calculatedParameter")
-        {
-            is_required = true;
-        }
-        // (3) State derivatives with initial="approx" or "calculated"
-        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
+        // (2) Calculated parameters OR (3) State derivatives with initial="approx" or "calculated"
+        else if (var.causality == "calculatedParameter" ||
+                 (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")))
         {
             is_required = true;
         }
@@ -1655,6 +1652,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors for optional attributes
                 }
             }
         }
@@ -1998,7 +1996,7 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
                             }
                             catch (...)
                             {
-                                // Invalid structural parameter value - skip this check
+                                // Ignore parsing errors; invalid structural parameter value - skip this check
                                 // (will be caught by dimension reference check)
                                 size_determinable = false;
                                 break;
@@ -2096,6 +2094,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
             }
             catch (...)
             {
+                // Ignore parsing errors here as it is handled by the check below
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                         "): Invalid clock reference '" + vr_str + "' in clocks attribute.");

@@ -1093,6 +1093,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                         }
                         catch (...)
                         {
+                            // Ignore parsing errors for optional attributes
                         }
                     }
                 }
@@ -1151,6 +1152,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                         }
                         catch (...)
                         {
+                            // Ignore parsing errors for optional attributes
                         }
                     }
                 }

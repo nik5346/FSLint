@@ -1,6 +1,7 @@
 ---
 Checks: >
   cert-*,
+  bugprone-*,
   cppcoreguidelines-*
   modernize-*,
   performance-*,

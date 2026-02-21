@@ -471,6 +471,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
             }
             catch (...)
             {
+                // Ignore parsing errors for optional attributes
             }
         }
 
@@ -517,6 +518,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                         }
                         catch (...)
                         {
+                            // Ignore parsing errors for optional attributes
                         }
                     }
 
@@ -907,6 +909,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors for optional attributes
                 }
             }
         }
@@ -1074,6 +1077,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors for optional attributes
                 }
             }
         }
@@ -1250,6 +1254,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                 }
                 catch (...)
                 {
+                    // Ignore parsing errors for optional attributes
                 }
             }
         }
@@ -1549,6 +1554,7 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                             }
                             catch (...)
                             {
+                                // Ignore parsing errors for optional attributes
                             }
                         }
                     }
@@ -1659,6 +1665,7 @@ ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
         }
         catch (...)
         {
+            // Ignore parsing errors for optional attributes
         }
     }
 

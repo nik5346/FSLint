@@ -73,15 +73,18 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
     {
         auto version =
             SchemaCheckerBase::extractVersionFromXml(system_structure_path, "SystemStructureDescription", "version");
-        if (version->starts_with("1.0"))
+        if (version)
         {
-            info.version = *version;
-            info.standard = ModelStandard::SSP1;
-        }
-        else if (version->starts_with("2.0"))
-        {
-            info.version = *version;
-            info.standard = ModelStandard::SSP2;
+            if (version->starts_with("1.0"))
+            {
+                info.version = *version;
+                info.standard = ModelStandard::SSP1;
+            }
+            else if (version->starts_with("2.0"))
+            {
+                info.version = *version;
+                info.standard = ModelStandard::SSP2;
+            }
         }
 
         return info;

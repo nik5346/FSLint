@@ -92,6 +92,7 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
                         }
                         catch (...)
                         {
+                            // Ignore parsing errors for optional attributes
                         }
                     }
                     auto vr_str = getXmlAttribute(child, "valueReference");
@@ -103,6 +104,7 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
                         }
                         catch (...)
                         {
+                            // Ignore parsing errors for optional attributes
                         }
                     }
                     var.dimensions.push_back(dim);

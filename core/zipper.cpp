@@ -173,8 +173,8 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
         if (!out)
             return false;
 
-        // Use static_cast instead of reinterpret_cast and explicit size conversion
-        out.write(static_cast<const char*>(static_cast<const void*>(data.data())), static_cast<int64_t>(data.size()));
+        // Use reinterpret_cast to avoid casting through void
+        out.write(reinterpret_cast<const char*>(data.data()), static_cast<int64_t>(data.size()));
     }
 
     return true;
@@ -216,8 +216,8 @@ bool Zipper::addFileFromDisk(const std::string& internal_path, const std::filesy
     file.seekg(0, std::ios::beg);
 
     std::vector<uint8_t> buffer(static_cast<size_t>(size));
-    // Use static_cast instead of reinterpret_cast
-    if (!file.read(static_cast<char*>(static_cast<void*>(buffer.data())), size))
+    // Use reinterpret_cast to avoid casting through void
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
         return false;
 
     return addFile(internal_path, buffer, compression_level);
