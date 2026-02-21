@@ -1602,9 +1602,13 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         {
             is_required = true;
         }
-        // (2) Calculated parameters OR (3) State derivatives with initial="approx" or "calculated"
-        else if (var.causality == "calculatedParameter" ||
-                 (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")))
+        // (2) Calculated parameters
+        else if (var.causality == "calculatedParameter")
+        {
+            is_required = true;
+        }
+        // (3) State derivatives with initial="approx" or "calculated"
+        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
         {
             is_required = true;
         }
