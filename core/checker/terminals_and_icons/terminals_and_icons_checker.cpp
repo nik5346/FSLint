@@ -85,8 +85,9 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     std::string p = "";
     if (root->ns && root->ns->href)
     {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathRegisterNs(context, reinterpret_cast<const xmlChar*>("f"), root->ns->href);
+        // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
         p = "f:";
     }
 

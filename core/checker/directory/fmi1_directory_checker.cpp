@@ -8,6 +8,7 @@
 #include <libxml/xpath.h>
 
 #include <filesystem>
+#include <format>
 #include <map>
 #include <set>
 #include <string>
@@ -46,10 +47,10 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
 
         if (*model_id != expected_id)
         {
-            const TestResult test{
-                "Model Identifier Filename Match",
-                TestStatus::FAIL,
-                {"FMI 1.0: modelIdentifier '" + *model_id + "' must match the FMU filename '" + expected_id + "'."}};
+            const TestResult test{"Model Identifier Filename Match",
+                                  TestStatus::FAIL,
+                                  {std::format("FMI 1.0: modelIdentifier '{}' must match the FMU filename '{}'.",
+                                               *model_id, expected_id)}};
             cert.printTestResult(test);
         }
         else
@@ -103,7 +104,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             {
                 test.status = TestStatus::WARNING;
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
+                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
             }
         }
         cert.printTestResult(test);

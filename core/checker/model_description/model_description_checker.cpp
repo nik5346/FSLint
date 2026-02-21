@@ -52,11 +52,11 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     // Extract common data
     xmlNodePtr root = xmlDocGetRootElement(doc);
-    auto metadata = extractMetadata(root);
+    const auto metadata = extractMetadata(root);
     auto variables = extractVariables(doc);
     applyDefaultInitialValues(variables);
-    auto type_definitions = extractTypeDefinitions(doc);
-    auto units = extractUnitDefinitions(doc);
+    const auto type_definitions = extractTypeDefinitions(doc);
+    const auto units = extractUnitDefinitions(doc);
 
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
@@ -77,7 +77,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     else
         interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
 
-    auto model_identifiers = extractModelIdentifiers(doc, interface_elements);
+    const auto model_identifiers = extractModelIdentifiers(doc, interface_elements);
     checkNumberOfImplementedInterfaces(model_identifiers, cert);
     for (const auto& [interface_name, model_id] : model_identifiers)
         checkModelIdentifier(model_id, interface_name, cert);

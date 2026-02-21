@@ -499,9 +499,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlSchemaSetParserErrors(parser_ctx, reinterpret_cast<xmlSchemaValidityErrorFunc>(errorCallback),
-                             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                              reinterpret_cast<xmlSchemaValidityWarningFunc>(warningCallback), &test);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
@@ -533,9 +531,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlSchemaSetValidErrors(valid_ctx, reinterpret_cast<xmlSchemaValidityErrorFunc>(errorCallback),
-                            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                             reinterpret_cast<xmlSchemaValidityWarningFunc>(warningCallback), &test);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 

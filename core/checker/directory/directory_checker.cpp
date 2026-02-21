@@ -46,7 +46,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     std::set<std::string> listed_sources_in_md;
     bool needs_execution_tool = false;
 
-    const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
+    static const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     if (xpath_context)
     {

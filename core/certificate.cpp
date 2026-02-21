@@ -62,8 +62,8 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╚════════════════════════════════════════════════════════════╝");
         log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log("Model Path: " + filename);
-        log("SHA256:     " + hash);
+        log(std::format("Model Path: {}", filename));
+        log(std::format("SHA256:     {}", hash));
         return;
     }
 #else
@@ -75,8 +75,8 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╚════════════════════════════════════════════════════════════╝");
         log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log("Model Path: " + filename);
-        log("SHA256:     " + hash);
+        log(std::format("Model Path: {}", filename));
+        log(std::format("SHA256:     {}", hash));
         return;
     }
 #endif
@@ -89,8 +89,8 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╚════════════════════════════════════════════════════════════╝");
         log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log("Model Path: " + filename);
-        log("SHA256:     " + hash);
+        log(std::format("Model Path: {}", filename));
+        log(std::format("SHA256:     {}", hash));
         return;
     }
 
@@ -98,9 +98,9 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
     log("║ MODEL VALIDATION REPORT                                    ║");
     log("╚════════════════════════════════════════════════════════════╝");
     log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
-    log("Timestamp:  " + std::string(time_str.data()));
-    log("Model Path: " + filename);
-    log("SHA256:     " + hash);
+    log(std::format("Timestamp:  {}", time_str.data()));
+    log(std::format("Model Path: {}", filename));
+    log(std::format("SHA256:     {}", hash));
 }
 
 void Certificate::printSubsectionHeader(const std::string& name)
@@ -192,11 +192,12 @@ static void printTree(Certificate& cert, const std::vector<NestedModelResult>& m
             break;
         }
 
-        cert.log(prefix + marker + model.name + " " + status_str);
+        cert.log(std::format("{}{}{} {}", prefix, marker, model.name, status_str));
 
         if (!model.nested_models.empty())
         {
-            const std::string new_prefix = prefix + (is_last ? "   " : "│  ");
+            std::string new_prefix = prefix;
+            new_prefix += (is_last ? "   " : "│  ");
             printTree(cert, model.nested_models, new_prefix);
         }
     }

@@ -12,6 +12,7 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <map>
 #include <optional>
 #include <regex>
@@ -123,7 +124,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
         extractDimensions(node, var);
         var.sourceline = node->line;
 
-        auto parse_bool = [](const std::optional<std::string>& s) -> std::optional<bool>
+        static auto parse_bool = [](const std::optional<std::string>& s) -> std::optional<bool>
         {
             if (!s)
                 return std::nullopt;
@@ -289,9 +290,10 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
             if (!id && !ic)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("ClockType \"" + name + "\" (line " + std::to_string(node->line) +
-                                        ") has intervalVariability='" + iv +
-                                        "' but missing 'intervalDecimal' or 'intervalCounter'.");
+                test.messages.push_back(
+                    std::format("ClockType \"{}\" (line {}) has intervalVariability='{}' but missing 'intervalDecimal' "
+                                "or 'intervalCounter'.",
+                                name, node->line, iv));
             }
         }
     }
@@ -1244,11 +1246,10 @@ void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Va
                 const std::string derivative_dims = formatDimensions(var);
                 const std::string state_dims = formatDimensions(*state_var);
 
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") is derivative of \"" + state_var->name + "\" (line " +
-                                        std::to_string(state_var->sourceline) + ") but has different dimensions. " +
-                                        "Derivative dimensions: " + derivative_dims + ", " +
-                                        "State dimensions: " + state_dims + ".");
+                test.messages.push_back(std::format(
+                    "Variable \"{}\" (line {}) is derivative of \"{}\" (line {}) but has different dimensions. "
+                    "Derivative dimensions: {}, State dimensions: {}.",
+                    var.name, var.sourceline, state_var->name, state_var->sourceline, derivative_dims, state_dims));
             }
         }
     }
@@ -1419,16 +1420,16 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
                         if (is_initial_unknown)
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(elem_name + " (VR " + std::to_string(unknown_vr) +
-                                                    ") has illegal dependencyKind '" + k +
-                                                    "' (not allowed for InitialUnknown).");
+                            test.messages.push_back(std::format("{} (VR {}) has illegal dependencyKind '{}' (not "
+                                                                "allowed for InitialUnknown).",
+                                                                elem_name, unknown_vr, k));
                         }
                         else if (unknown_var && unknown_var->type != "Float32" && unknown_var->type != "Float64")
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(elem_name + " (VR " + std::to_string(unknown_vr) +
-                                                    ") has dependencyKind '" + k +
-                                                    "' but unknown is not a float type.");
+                            test.messages.push_back(std::format("{} (VR {}) has dependencyKind '{}' but unknown is not "
+                                                                "a float type.",
+                                                                elem_name, unknown_vr, k));
                         }
                     }
                 }
@@ -2573,10 +2574,9 @@ void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
             if (elem_name == "DisplayUnit")
             {
                 auto du_name = getXmlAttribute(child, "name").value_or("unnamed");
-                checkSpecial(getXmlAttribute(child, "factor"), "factor",
-                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
-                checkSpecial(getXmlAttribute(child, "offset"), "offset",
-                             "Unit \"" + name + "\" DisplayUnit \"" + du_name + "\"", child->line);
+                const std::string context = std::format("Unit \"{}\" DisplayUnit \"{}\"", name, du_name);
+                checkSpecial(getXmlAttribute(child, "factor"), "factor", context, child->line);
+                checkSpecial(getXmlAttribute(child, "offset"), "offset", context, child->line);
             }
         }
     }

@@ -531,6 +531,11 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, co
     }
 }
 
+static constexpr uint32_t swap32(uint32_t x)
+{
+    return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | (x >> 24);
+}
+
 static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
 {
     std::set<std::string> exports;
@@ -543,8 +548,6 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
 
     uint32_t ncmds = 0;
     uint32_t header_size = 0;
-
-    auto swap32 = [](uint32_t x) { return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | (x >> 24); };
 
     if (is_64)
     {
@@ -1044,17 +1047,13 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
     {
         fat_header fh{};
         readFromFile(f, 0, fh);
-        const uint32_t nfat = (magic == 0xBEBAFECA) ? ((fh.nfat_arch << 24) | ((fh.nfat_arch << 8) & 0xFF0000) |
-                                                       ((fh.nfat_arch >> 8) & 0xFF00) | (fh.nfat_arch >> 24))
-                                                    : fh.nfat_arch;
+        const uint32_t nfat = (magic == 0xBEBAFECA) ? swap32(fh.nfat_arch) : fh.nfat_arch;
 
         for (uint32_t i = 0; i < nfat; ++i)
         {
             fat_arch fa{};
             readFromFile(f, static_cast<std::streamoff>(sizeof(fat_header) + i * sizeof(fat_arch)), fa);
-            const uint32_t offset = (magic == 0xBEBAFECA) ? ((fa.offset << 24) | ((fa.offset << 8) & 0xFF0000) |
-                                                             ((fa.offset >> 8) & 0xFF00) | (fa.offset >> 24))
-                                                          : fa.offset;
+            const uint32_t offset = (magic == 0xBEBAFECA) ? swap32(fa.offset) : fa.offset;
             // For FMUs, we just take the first architecture that we can parse
             auto res = parseMachO(f, offset);
             if (!res.empty())

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <map>
 #include <set>
 #include <string>
@@ -35,7 +36,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             {
                 test.status = TestStatus::WARNING;
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back("Unknown " + type + " in FMU root: '" + name + "'.");
+                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
             }
 
             if (entry.is_directory() && fmi2_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
@@ -158,9 +159,10 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                         if (!listed_sources_in_md.contains(filename))
                         {
                             test.status = TestStatus::WARNING;
-                            test.messages.push_back("Source file '" + filename +
-                                                    "' exists in 'sources/' directory but is not listed in "
-                                                    "'modelDescription.xml'.");
+                            test.messages.push_back(
+                                std::format("Source file '{}' exists in 'sources/' directory but is not listed in "
+                                            "'modelDescription.xml'.",
+                                            filename));
                         }
                     }
                 }

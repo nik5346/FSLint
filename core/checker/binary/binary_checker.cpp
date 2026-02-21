@@ -9,6 +9,7 @@
 #include <libxml/xpath.h>
 
 #include <filesystem>
+#include <format>
 #include <map>
 #include <optional>
 #include <set>
@@ -85,7 +86,8 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     auto binary_file = platform_entry.path() / (model_id + ext);
                     if (std::filesystem::exists(binary_file))
                     {
-                        TestResult test{"Exported Functions: " + platform + "/" + model_id + ext, TestStatus::PASS, {}};
+                        TestResult test{
+                            std::format("Exported Functions: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
                         const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
 
                         for (const auto& func : expected_functions)
