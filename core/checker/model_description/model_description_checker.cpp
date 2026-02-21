@@ -1091,7 +1091,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                     "\" which has a non-zero offset (" + *unit_def.offset + ").");
                             }
                         }
-                        catch (...)
+                        catch (const std::exception&)
                         {
                             // Ignore parsing errors for optional attributes
                         }
@@ -1150,7 +1150,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                     "\" which has a non-zero offset (" + *unit_def.offset + ").");
                             }
                         }
-                        catch (...)
+                        catch (const std::exception&)
                         {
                             // Ignore parsing errors for optional attributes
                         }

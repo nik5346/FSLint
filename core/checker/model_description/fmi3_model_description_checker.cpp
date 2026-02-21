@@ -144,7 +144,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
             {
                 var.value_reference = std::stoul(*vr);
             }
-            catch (...)
+            catch (const std::exception&)
             {
                 // Ignore parsing errors for optional attributes
             }
@@ -158,7 +158,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
             {
                 var.derivative_of = std::stoul(*der);
             }
-            catch (...)
+            catch (const std::exception&)
             {
                 // Ignore parsing errors for optional attributes
             }
@@ -837,7 +837,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
                                                         ") is referenced in <Dimension> and must have start > 0.");
                             }
                         }
-                        catch (...)
+                        catch (const std::exception&)
                         {
                             // Ignore parsing errors; invalid start value will be caught in bounds validation
                         }
@@ -897,7 +897,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 {
                     vr = std::stoul(*vr_str);
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors here as it is handled by the check below
                     test.status = TestStatus::FAIL;
@@ -1024,7 +1024,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
                 {
                     vr = std::stoul(*vr_str);
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors here as it is handled by the check below
                     test.status = TestStatus::FAIL;
@@ -1139,7 +1139,7 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                 {
                     vr = std::stoul(*vr_str);
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors for optional attributes
                     continue;
@@ -1349,7 +1349,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
         {
             unknown_vr = std::stoul(*vr_str);
         }
-        catch (...)
+        catch (const std::exception&)
         {
             // Ignore parsing errors for optional attributes
             return;
@@ -1378,7 +1378,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
                 {
                     deps.push_back(std::stoul(item));
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors for optional attributes
                 }
@@ -1497,7 +1497,7 @@ void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const s
                 {
                     vr = std::stoul(*vr_str);
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors here as it is handled by the check below
                     test.status = TestStatus::FAIL;
@@ -1650,7 +1650,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                     }
                     actual_vrs.insert(vr);
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors for optional attributes
                 }
@@ -1796,7 +1796,7 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
                 {
                     dim.start = std::stoull(*start_attr);
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Invalid start value will be caught in validation
                 }
@@ -1810,7 +1810,7 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
                 {
                     dim.value_reference = std::stoul(*vr_attr);
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Invalid value reference will be caught in validation
                 }
@@ -1909,7 +1909,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                                         ") which has start=0 (must be > 0).");
                                 }
                             }
-                            catch (...)
+                            catch (const std::exception&)
                             {
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back(
@@ -1994,7 +1994,7 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
                                 total_size = *total_size * dim_size;
                                 dimension_info.push_back(sp->name + "=" + std::to_string(dim_size));
                             }
-                            catch (...)
+                            catch (const std::exception&)
                             {
                                 // Ignore parsing errors; invalid structural parameter value - skip this check
                                 // (will be caught by dimension reference check)
@@ -2092,7 +2092,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
                 const uint32_t vr = std::stoul(vr_str);
                 clock_refs.push_back(vr);
             }
-            catch (...)
+            catch (const std::exception&)
             {
                 // Ignore parsing errors here as it is handled by the check below
                 test.status = TestStatus::FAIL;
@@ -2337,7 +2337,7 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                         }
                     }
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Parsing failed - might be due to unsigned overflow if using stoll for UInt64
                     // but for min/max comparison it should generally work if values are within range.
@@ -2391,7 +2391,7 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                             }
                             item_values.insert(val);
                         }
-                        catch (...)
+                        catch (const std::exception&)
                         {
                         }
                     }

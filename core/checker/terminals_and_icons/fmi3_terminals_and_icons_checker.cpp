@@ -90,7 +90,7 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
                         {
                             dim.start = std::stoull(*start_str);
                         }
-                        catch (...)
+                        catch (const std::exception&)
                         {
                             // Ignore parsing errors for optional attributes
                         }
@@ -102,7 +102,7 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
                         {
                             dim.value_reference = static_cast<uint32_t>(std::stoul(*vr_str));
                         }
-                        catch (...)
+                        catch (const std::exception&)
                         {
                             // Ignore parsing errors for optional attributes
                         }

@@ -469,7 +469,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
             {
                 var.value_reference = std::stoul(*vr);
             }
-            catch (...)
+            catch (const std::exception&)
             {
                 // Ignore parsing errors for optional attributes
             }
@@ -516,7 +516,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                         {
                             var.derivative_of = std::stoul(*der);
                         }
-                        catch (...)
+                        catch (const std::exception&)
                         {
                             // Ignore parsing errors for optional attributes
                         }
@@ -907,7 +907,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         }
                     }
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors for optional attributes
                 }
@@ -1075,7 +1075,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         }
                     }
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors for optional attributes
                 }
@@ -1252,7 +1252,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         }
                     }
                 }
-                catch (...)
+                catch (const std::exception&)
                 {
                     // Ignore parsing errors for optional attributes
                 }
@@ -1497,7 +1497,7 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                             }
                         }
                     }
-                    catch (...)
+                    catch (const std::exception&)
                     {
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("Type definition \"" + name + "\" (line " +
@@ -1552,7 +1552,7 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                                 }
                                 item_values.insert(val);
                             }
-                            catch (...)
+                            catch (const std::exception&)
                             {
                                 // Ignore parsing errors for optional attributes
                             }
@@ -1663,7 +1663,7 @@ ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
         {
             metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
         }
-        catch (...)
+        catch (const std::exception&)
         {
             // Ignore parsing errors for optional attributes
         }

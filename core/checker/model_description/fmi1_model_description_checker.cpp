@@ -233,7 +233,7 @@ ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
         {
             metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
         }
-        catch (...)
+        catch (const std::exception&)
         {
             // Ignore parsing errors for optional attributes
         }
@@ -365,7 +365,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
             {
                 var.value_reference = std::stoul(*vr);
             }
-            catch (...)
+            catch (const std::exception&)
             {
                 // Ignore parsing errors for optional attributes
             }
