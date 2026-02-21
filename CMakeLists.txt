@@ -191,6 +191,9 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
+# Prevent zlib from building examples and adding tests
+set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(zlib)
 
 # Restore warning flags after zlib
@@ -221,7 +224,6 @@ set(ZLIB_INCLUDE_DIRS "${ZLIB_SOURCE_DIR};${ZLIB_BINARY_DIR}")
 set(ZLIB_LIBRARY zlibstatic)
 set(ZLIB_LIBRARIES zlibstatic)
 set(ZLIB_VERSION_STRING "1.3.1")
-set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 # Create an imported target for ZLIB (needed by libxml2)
 if(NOT TARGET ZLIB::ZLIB)

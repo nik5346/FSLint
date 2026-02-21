@@ -562,7 +562,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
         if (test.status == TestStatus::WARNING && !test.messages.empty())
         {
             test.messages.push_back(
-                "Recommended format: © [Year] [Copyright Holder Name] or Copyright [Year] [Copyright Holder Name]");
+                "Recommended format: © [Year] [Holder] or Copyright [Year] [Holder]");
         }
     }
 
