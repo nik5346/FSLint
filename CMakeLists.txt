@@ -22,6 +22,20 @@ endif()
 find_package(Python3 COMPONENTS Interpreter)
 
 # ============================================================================
+# Generate VS Code launch.json from template
+# ============================================================================
+if(Python3_Interpreter_FOUND)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/generate_launch.py
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        RESULT_VARIABLE UPDATE_LAUNCH_RESULT
+    )
+    if(NOT UPDATE_LAUNCH_RESULT EQUAL 0)
+        message(WARNING "Failed to update .vscode/launch.json from template.")
+    endif()
+endif()
+
+# ============================================================================
 # Clang-Tidy Integration
 # ============================================================================
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")

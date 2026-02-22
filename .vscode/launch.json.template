@@ -1,0 +1,86 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Tests",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "type": "cppdbg",
+            "linux": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "/usr/bin/gdb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ]
+            },
+            "osx": {
+                "type": "lldb"
+            },
+            "windows": {
+                "type": "cppvsdbg"
+            },
+            "preLaunchTask": "Build Current Project"
+        },
+        {
+            "name": "Debug FMU/SSP",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [
+                "${input:operation}",
+                "${input:modelFile}"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "type": "cppdbg",
+            "linux": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "/usr/bin/gdb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ]
+            },
+            "osx": {
+                "type": "lldb"
+            },
+            "windows": {
+                "type": "cppvsdbg"
+            },
+            "preLaunchTask": "Build Current Project"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "operation",
+            "type": "pickString",
+            "description": "Operation",
+            "options": [
+                "",
+                "-s",
+                "-u",
+                "-r",
+                "-d"
+            ],
+            "default": ""
+        },
+        {
+            "id": "modelFile",
+            "type": "pickString",
+            "description": "Select Model File (FMU/SSP)",
+            "options": [
+                "${workspaceFolder}/models/dummy.fmu"
+            ],
+            "default": "${workspaceFolder}/models/dummy.fmu"
+        }
+    ]
+}

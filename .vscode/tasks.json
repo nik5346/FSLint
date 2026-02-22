@@ -17,6 +17,12 @@
                 "$gcc",
                 "$msCompile"
             ]
+        },
+        {
+            "label": "Generate Model list in launch.json",
+            "type": "shell",
+            "command": "python3 scripts/generate_launch.py",
+            "problemMatcher": []
         }
     ]
 }

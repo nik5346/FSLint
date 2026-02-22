@@ -5,3 +5,4 @@ models/
 *.dll
 *.dylib
 tests/reference_fmus/
+.vscode/launch.json
