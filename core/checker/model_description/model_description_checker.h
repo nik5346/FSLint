@@ -7,6 +7,7 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 
+#include <cctype>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>

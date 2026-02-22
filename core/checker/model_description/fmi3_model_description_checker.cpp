@@ -182,6 +182,7 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
             if (var.variability == "fixed" || var.variability == "tunable")
                 var.initial = "exact";
         }
+        // NOLINTNEXTLINE(bugprone-branch-clone)
         else if (var.causality == "parameter")
         {
             if (var.variability == "fixed" || var.variability == "tunable")
@@ -448,6 +449,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<int32_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt32")
             validateTypeBounds<uint32_t>(var, bounds.min, bounds.max, test);
+        // NOLINTNEXTLINE(bugprone-branch-clone)
         else if (var.type == "Int64")
             validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt64")
@@ -1112,9 +1114,7 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
             {
                 const auto vr_opt = parseNumber<uint32_t>(*vr_str);
                 if (!vr_opt)
-                {
                     continue;
-                }
                 const uint32_t vr = *vr_opt;
 
                 if (actual_vrs.contains(vr))
@@ -1551,11 +1551,13 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             is_required = true;
         }
         // (2) Calculated parameters
+        // NOLINTNEXTLINE(bugprone-branch-clone)
         else if (var.causality == "calculatedParameter")
         {
             is_required = true;
         }
         // (3) State derivatives with initial="approx" or "calculated"
+        // NOLINTNEXTLINE(bugprone-branch-clone)
         else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
         {
             is_required = true;
@@ -1924,12 +1926,12 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
                         const Variable* sp = it->second;
                         if (sp->start.has_value())
                         {
-                        if (const auto dim_size_opt = parseNumber<uint64_t>(*sp->start))
+                            if (const auto dim_size_opt = parseNumber<uint64_t>(*sp->start))
                             {
-                            total_size = *total_size * (*dim_size_opt);
-                            dimension_info.push_back(sp->name + "=" + std::to_string(*dim_size_opt));
+                                total_size = *total_size * (*dim_size_opt);
+                                dimension_info.push_back(sp->name + "=" + std::to_string(*dim_size_opt));
                             }
-                        else
+                            else
                             {
                                 // Invalid structural parameter value - skip this check
                                 // (will be caught by dimension reference check)

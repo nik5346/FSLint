@@ -150,4 +150,14 @@ int main(int argc, char** argv)
         std::cerr << "Logic error: " << e.what() << "\n";
         return 1;
     }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Unexpected error: " << e.what() << "\n";
+        return 1;
+    }
+    catch (...)
+    {
+        std::cerr << "An unknown fatal error occurred.\n";
+        return 1;
+    }
 }
