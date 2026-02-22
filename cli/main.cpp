@@ -30,95 +30,95 @@ void printUsage(const std::string& program_name)
 
 int main(int argc, char** argv)
 {
-    try
-    {
-        const std::span<char*> args(argv, argc);
+    const std::span<char*> args(argv, argc);
 
-        if (args.size() < 2)
+    if (args.size() < 2)
+    {
+        printUsage(args[0]);
+        return 1;
+    }
+
+    std::filesystem::path fmu_path;
+    bool save_cert = false;
+    bool update_cert = false;
+    bool remove_cert = false;
+    bool display_cert = false;
+    bool verify_cert = false;
+
+    // Parse arguments
+    for (size_t i = 1; i < args.size(); ++i)
+    {
+        const std::string_view arg = args[i];
+
+        if (arg == "-h" || arg == "--help")
         {
             printUsage(args[0]);
-            return 1;
+            return 0;
         }
-
-        std::filesystem::path fmu_path;
-        bool save_cert = false;
-        bool update_cert = false;
-        bool remove_cert = false;
-        bool display_cert = false;
-        bool verify_cert = false;
-
-        // Parse arguments
-        for (size_t i = 1; i < args.size(); ++i)
+        else if (arg == "-v" || arg == "--version")
         {
-            const std::string_view arg = args[i];
-
-            if (arg == "-h" || arg == "--help")
+            std::cout << "FSLint " << PROJECT_VERSION << "\n";
+            return 0;
+        }
+        else if (arg == "-s" || arg == "--save")
+            save_cert = true;
+        else if (arg == "-u" || arg == "--update")
+            update_cert = true;
+        else if (arg == "-r" || arg == "--remove")
+            remove_cert = true;
+        else if (arg == "-d" || arg == "--display")
+            display_cert = true;
+        else if (arg == "-c" || arg == "--verify")
+            verify_cert = true;
+        else if (arg[0] != '-')
+        {
+            if (fmu_path.empty())
             {
-                printUsage(args[0]);
-                return 0;
-            }
-            else if (arg == "-v" || arg == "--version")
-            {
-                std::cout << "FSLint " << PROJECT_VERSION << "\n";
-                return 0;
-            }
-            else if (arg == "-s" || arg == "--save")
-                save_cert = true;
-            else if (arg == "-u" || arg == "--update")
-                update_cert = true;
-            else if (arg == "-r" || arg == "--remove")
-                remove_cert = true;
-            else if (arg == "-d" || arg == "--display")
-                display_cert = true;
-            else if (arg == "-c" || arg == "--verify")
-                verify_cert = true;
-            else if (arg[0] != '-')
-            {
-                if (fmu_path.empty())
-                {
-                    fmu_path = arg;
-                    fmu_path = fmu_path.make_preferred();
-                }
-                else
-                {
-                    std::cerr << "Error: Multiple FMU/SSP files specified\n";
-                    return 1;
-                }
+                fmu_path = arg;
+                fmu_path = fmu_path.make_preferred();
             }
             else
             {
-                std::cerr << "Unknown option: " << arg << "\n";
+                std::cerr << "Error: Multiple FMU files specified\n";
                 return 1;
             }
         }
-
-        if (fmu_path.empty())
+        else
         {
-            std::cerr << "Error: No FMU/SSP file specified\n";
-            printUsage(args[0]);
+            std::cerr << "Unknown option: " << arg << "\n";
             return 1;
         }
+    }
 
-        if (!std::filesystem::exists(fmu_path))
-        {
-            std::cerr << "Error: File not found: " << fmu_path << "\n";
-            return 1;
-        }
+    if (fmu_path.empty())
+    {
+        std::cerr << "Error: No FMU file specified\n";
+        printUsage(args[0]);
+        return 1;
+    }
 
-        // Validate mutual exclusivity of operations
-        const size_t operation_count = (save_cert ? 1 : 0) + (update_cert ? 1 : 0) + (remove_cert ? 1 : 0) +
-                                       (display_cert ? 1 : 0) + (verify_cert ? 1 : 0);
+    if (!std::filesystem::exists(fmu_path))
+    {
+        std::cerr << "Error: File not found: " << fmu_path << "\n";
+        return 1;
+    }
 
-        if (operation_count > 1)
-        {
-            std::cerr << "Error: Cannot combine multiple certificate operations\n";
-            return 1;
-        }
+    // Validate mutual exclusivity of operations
+    const size_t operation_count = (save_cert ? 1 : 0) + (update_cert ? 1 : 0) + (remove_cert ? 1 : 0) +
+                                   (display_cert ? 1 : 0) + (verify_cert ? 1 : 0);
 
-        // Create validator instance
-        const ModelChecker validator;
+    if (operation_count > 1)
+    {
+        std::cerr << "Error: Cannot combine multiple certificate operations\n";
+        return 1;
+    }
 
-        // Execute requested operation
+    // Create validator instance
+    const ModelChecker validator;
+
+    // Execute requested operation
+    try
+    {
         if (remove_cert)
             return validator.removeCertificate(fmu_path) ? 0 : 1;
         else if (display_cert)
@@ -135,9 +135,19 @@ int main(int argc, char** argv)
 
         return 0;
     }
-    catch (const std::exception& e)
+    catch (const std::filesystem::filesystem_error& e)
     {
-        std::cerr << "Error: " << e.what() << "\n";
+        std::cerr << "Filesystem error: " << e.what() << "\n";
+        return 1;
+    }
+    catch (const std::runtime_error& e)
+    {
+        std::cerr << "Runtime error: " << e.what() << "\n";
+        return 1;
+    }
+    catch (const std::logic_error& e)
+    {
+        std::cerr << "Logic error: " << e.what() << "\n";
         return 1;
     }
 }

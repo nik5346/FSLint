@@ -740,8 +740,10 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     for (uint32_t i = 0; i < nsyms; ++i)
     {
         Elf32_Sym sym{};
-        if (readFromFile(
-                f, static_cast<std::streamoff>(symtab_off) + static_cast<std::streamoff>(i) * sizeof(Elf32_Sym), sym))
+        if (readFromFile(f,
+                         static_cast<std::streamoff>(symtab_off) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(Elf32_Sym)),
+                         sym))
         {
             if (ELF32_ST_BIND(sym.st_info) != STB_LOCAL && sym.st_shndx != SHN_UNDEF)
             {

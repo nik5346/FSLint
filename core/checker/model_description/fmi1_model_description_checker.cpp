@@ -228,16 +228,7 @@ ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
 
     auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
     if (num_event_ind)
-    {
-        try
-        {
-            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
-        }
-        catch (const std::exception&)
-        {
-            // Ignore parsing errors for optional attributes
-        }
-    }
+        metadata.numberOfEventIndicators = parseNumber<uint32_t>(*num_event_ind);
     return metadata;
 }
 
@@ -360,16 +351,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
         if (vr)
-        {
-            try
-            {
-                var.value_reference = std::stoul(*vr);
-            }
-            catch (const std::exception&)
-            {
-                // Ignore parsing errors for optional attributes
-            }
-        }
+            var.value_reference = parseNumber<uint32_t>(*vr);
 
         for (xmlNodePtr child = scalar_var_node->children; child; child = child->next)
         {
@@ -619,7 +601,6 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
         xmlXPathFreeObject(xpath_obj);
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::string& attr_name, int line,
                                            TestResult& test)
 {

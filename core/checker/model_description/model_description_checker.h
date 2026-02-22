@@ -7,9 +7,11 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 
+#include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <map>
 #include <optional>
 #include <set>
@@ -107,6 +109,55 @@ class ModelDescriptionCheckerBase : public Checker
 {
   public:
     void validate(const std::filesystem::path& path, Certificate& cert) override;
+
+    // Non-throwing numeric parsing
+    template <typename T>
+    static std::optional<T> parseNumber(std::string_view s)
+    {
+        // Trim whitespace
+        const size_t first = s.find_first_not_of(" \t\n\r");
+        if (first == std::string_view::npos)
+            return std::nullopt;
+        s.remove_prefix(first);
+
+        const size_t last = s.find_last_not_of(" \t\n\r");
+        if (last != std::string_view::npos)
+            s.remove_suffix(s.size() - last - 1);
+
+        if (s.empty())
+            return std::nullopt;
+
+        // std::from_chars does not support leading '+' sign
+        if (s[0] == '+')
+        {
+            s.remove_prefix(1);
+            if (s.empty())
+                return std::nullopt;
+        }
+
+        if constexpr (std::is_floating_point_v<T>)
+        {
+            // Handle special values manually for robustness as std::from_chars
+            // implementation of these is platform-dependent or missing in some versions.
+            std::string lower;
+            lower.reserve(s.size());
+            for (char c : s)
+                lower += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+            if (lower == "nan")
+                return std::numeric_limits<T>::quiet_NaN();
+            if (lower == "inf" || lower == "infinity")
+                return std::numeric_limits<T>::infinity();
+            if (lower == "-inf" || lower == "-infinity")
+                return -std::numeric_limits<T>::infinity();
+        }
+
+        T val;
+        const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+        if (ec == std::errc() && ptr == s.data() + s.size())
+            return val;
+        return std::nullopt;
+    }
 
   protected:
     // Each derived class implements version-specific validation
@@ -229,16 +280,8 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
                 validateVariableSpecialFloat(test, var, *str_opt, attr_name);
         }
 
-        try
-        {
-            if constexpr (std::is_floating_point_v<T>)
-                return static_cast<T>(std::stod(*str_opt));
-            else if constexpr (std::is_signed_v<T>)
-                return static_cast<T>(std::stoll(*str_opt));
-            else
-                return static_cast<T>(std::stoull(*str_opt));
-        }
-        catch (...)
+        const auto val = parseNumber<T>(*str_opt);
+        if (!val)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -246,6 +289,7 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
                                     "'");
             return std::nullopt;
         }
+        return val;
     };
 
     // Parse the effective min/max (which may come from type definition)
