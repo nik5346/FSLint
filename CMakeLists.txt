@@ -194,7 +194,11 @@ endif()
 # Prevent zlib from building examples and adding tests
 set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(zlib)
+FetchContent_GetProperties(zlib)
+if(NOT zlib_POPULATED)
+    FetchContent_Populate(zlib)
+    add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # Restore warning flags after zlib
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -302,7 +306,11 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
-FetchContent_MakeAvailable(libxml2)
+FetchContent_GetProperties(libxml2)
+if(NOT libxml2_POPULATED)
+    FetchContent_Populate(libxml2)
+    add_subdirectory(${libxml2_SOURCE_DIR} ${libxml2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # Restore warning flags after libxml2
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -331,7 +339,13 @@ FetchContent_Declare(
   GIT_TAG        v3.4.0
 )
 
-FetchContent_MakeAvailable(picosha2 Catch2)
+FetchContent_MakeAvailable(picosha2)
+
+FetchContent_GetProperties(Catch2)
+if(NOT catch2_POPULATED)
+    FetchContent_Populate(Catch2)
+    add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
