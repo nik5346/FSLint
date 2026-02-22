@@ -14,7 +14,6 @@
 #include <cmath>
 #include <cstdint>
 #include <ctime>
-#include <exception>
 #include <filesystem>
 #include <iomanip>
 #include <map>
@@ -22,6 +21,7 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <time.h>
 #include <vector>
@@ -421,9 +421,13 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
                                         "This is unusual and may indicate an incorrect timestamp.");
             }
         }
-        catch (const std::exception& e)
+        catch (const std::logic_error& e)
         {
-            // If time parsing fails for some reason, issue a warning but don't fail
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Could not verify if generation date is in the past: " + std::string(e.what()));
+        }
+        catch (const std::runtime_error& e)
+        {
             test.status = TestStatus::WARNING;
             test.messages.push_back("Could not verify if generation date is in the past: " + std::string(e.what()));
         }
@@ -905,18 +909,17 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     if (start_time_str.has_value())
     {
         checkSpecial(start_time_str, "startTime");
-        try
+        start_time = parseNumber<double>(*start_time_str);
+        if (start_time)
         {
-            start_time = std::stod(*start_time_str);
-
-            // Check for invalid values (already checked for special values above, but std::stod handles them too)
+            // Check for invalid values (already checked for special values above)
             if (*start_time < 0.0 && !std::isnan(*start_time) && !std::isinf(*start_time))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("startTime (" + std::to_string(*start_time) + ") must be non-negative.");
             }
         }
-        catch (const std::exception&)
+        else
         {
             // Schema should have caught this, but just in case
             test.status = TestStatus::FAIL;
@@ -928,10 +931,9 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     if (stop_time_str.has_value())
     {
         checkSpecial(stop_time_str, "stopTime");
-        try
+        stop_time = parseNumber<double>(*stop_time_str);
+        if (stop_time)
         {
-            stop_time = std::stod(*stop_time_str);
-
             // Check for invalid values - NaN is invalid, but infinity is valid (means run indefinitely)
             if (*stop_time < 0.0 && !std::isnan(*stop_time) && !std::isinf(*stop_time))
             {
@@ -939,7 +941,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
                 test.messages.push_back("stopTime (" + std::to_string(*stop_time) + ") must be non-negative.");
             }
         }
-        catch (const std::exception&)
+        else
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("stopTime \"" + *stop_time_str + "\" is not a valid number.");
@@ -962,10 +964,9 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     if (tolerance_str.has_value())
     {
         checkSpecial(tolerance_str, "tolerance");
-        try
+        tolerance = parseNumber<double>(*tolerance_str);
+        if (tolerance)
         {
-            tolerance = std::stod(*tolerance_str);
-
             // Check for invalid values
             if (*tolerance <= 0.0 && !std::isnan(*tolerance) && !std::isinf(*tolerance))
             {
@@ -973,7 +974,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
                 test.messages.push_back("tolerance (" + std::to_string(*tolerance) + ") must be greater than 0.");
             }
         }
-        catch (const std::exception&)
+        else
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("tolerance \"" + *tolerance_str + "\" is not a valid number.");
@@ -984,10 +985,9 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     if (step_size_str.has_value())
     {
         checkSpecial(step_size_str, "stepSize");
-        try
+        step_size = parseNumber<double>(*step_size_str);
+        if (step_size)
         {
-            step_size = std::stod(*step_size_str);
-
             // Check for invalid values
             if (*step_size <= 0.0 && !std::isnan(*step_size) && !std::isinf(*step_size))
             {
@@ -995,7 +995,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
                 test.messages.push_back("stepSize (" + std::to_string(*step_size) + ") must be greater than 0.");
             }
         }
-        catch (const std::exception&)
+        else
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("stepSize \"" + *step_size_str + "\" is not a valid number.");
@@ -1075,10 +1075,9 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                     const auto& unit_def = units.at(*unit_to_check);
                     if (unit_def.offset.has_value())
                     {
-                        try
+                        if (const auto offset_val = parseNumber<double>(*unit_def.offset))
                         {
-                            const double offset_val = std::stod(*unit_def.offset);
-                            if (offset_val != 0.0)
+                            if (*offset_val != 0.0)
                             {
                                 if (test.status == TestStatus::PASS)
                                     test.status = TestStatus::WARNING;
@@ -1087,9 +1086,6 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                     ") has relativeQuantity=\"true\" but is associated with unit \"" + *unit_to_check +
                                     "\" which has a non-zero offset (" + *unit_def.offset + ").");
                             }
-                        }
-                        catch (...)
-                        {
                         }
                     }
                 }
@@ -1133,10 +1129,9 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                     const auto& unit_def = units.at(*type_def.unit);
                     if (unit_def.offset.has_value())
                     {
-                        try
+                        if (const auto offset_val = parseNumber<double>(*unit_def.offset))
                         {
-                            const double offset_val = std::stod(*unit_def.offset);
-                            if (offset_val != 0.0)
+                            if (*offset_val != 0.0)
                             {
                                 if (test.status == TestStatus::PASS)
                                     test.status = TestStatus::WARNING;
@@ -1145,9 +1140,6 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                     ") has relativeQuantity=\"true\" but references unit \"" + *type_def.unit +
                                     "\" which has a non-zero offset (" + *unit_def.offset + ").");
                             }
-                        }
-                        catch (...)
-                        {
                         }
                     }
                 }

@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -28,97 +29,98 @@ void printUsage(const std::string& program_name)
     std::cout << "  " << program_name << " -u model.fmu/ssp   # Re-validate and update certificate\n";
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv)
 {
-    const std::span<char*> args(argv, argc);
-
-    if (args.size() < 2)
+    try
     {
-        printUsage(args[0]);
-        return 1;
-    }
+        const std::span<char*> args(argv, argc);
 
-    std::filesystem::path fmu_path;
-    bool save_cert = false;
-    bool update_cert = false;
-    bool remove_cert = false;
-    bool display_cert = false;
-    bool verify_cert = false;
-
-    // Parse arguments
-    for (size_t i = 1; i < args.size(); ++i)
-    {
-        const std::string_view arg = args[i];
-
-        if (arg == "-h" || arg == "--help")
+        if (args.size() < 2)
         {
             printUsage(args[0]);
-            return 0;
+            return 1;
         }
-        else if (arg == "-v" || arg == "--version")
+
+        std::filesystem::path fmu_path;
+        bool save_cert = false;
+        bool update_cert = false;
+        bool remove_cert = false;
+        bool display_cert = false;
+        bool verify_cert = false;
+
+        // Parse arguments
+        for (size_t i = 1; i < args.size(); ++i)
         {
-            std::cout << "FSLint " << PROJECT_VERSION << "\n";
-            return 0;
-        }
-        else if (arg == "-s" || arg == "--save")
-            save_cert = true;
-        else if (arg == "-u" || arg == "--update")
-            update_cert = true;
-        else if (arg == "-r" || arg == "--remove")
-            remove_cert = true;
-        else if (arg == "-d" || arg == "--display")
-            display_cert = true;
-        else if (arg == "-c" || arg == "--verify")
-            verify_cert = true;
-        else if (arg[0] != '-')
-        {
-            if (fmu_path.empty())
+            const std::string_view arg = args[i];
+
+            if (arg == "-h" || arg == "--help")
             {
-                fmu_path = arg;
-                fmu_path = fmu_path.make_preferred();
+                printUsage(args[0]);
+                return 0;
+            }
+            else if (arg == "-v" || arg == "--version")
+            {
+                std::cout << "FSLint " << PROJECT_VERSION << "\n";
+                return 0;
+            }
+            else if (arg == "-s" || arg == "--save")
+                save_cert = true;
+            else if (arg == "-u" || arg == "--update")
+                update_cert = true;
+            else if (arg == "-r" || arg == "--remove")
+                remove_cert = true;
+            else if (arg == "-d" || arg == "--display")
+                display_cert = true;
+            else if (arg == "-c" || arg == "--verify")
+                verify_cert = true;
+            else if (arg[0] != '-')
+            {
+                if (fmu_path.empty())
+                {
+                    fmu_path = arg;
+                    fmu_path = fmu_path.make_preferred();
+                }
+                else
+                {
+                    std::cerr << "Error: Multiple FMU files specified\n";
+                    return 1;
+                }
             }
             else
             {
-                std::cerr << "Error: Multiple FMU files specified\n";
+                std::cerr << "Unknown option: " << arg << "\n";
                 return 1;
             }
         }
-        else
+
+        if (fmu_path.empty())
         {
-            std::cerr << "Unknown option: " << arg << "\n";
+            std::cerr << "Error: No FMU file specified\n";
+            printUsage(args[0]);
             return 1;
         }
-    }
 
-    if (fmu_path.empty())
-    {
-        std::cerr << "Error: No FMU file specified\n";
-        printUsage(args[0]);
-        return 1;
-    }
+        if (!std::filesystem::exists(fmu_path))
+        {
+            std::cerr << "Error: File not found: " << fmu_path << "\n";
+            return 1;
+        }
 
-    if (!std::filesystem::exists(fmu_path))
-    {
-        std::cerr << "Error: File not found: " << fmu_path << "\n";
-        return 1;
-    }
+        // Validate mutual exclusivity of operations
+        const size_t operation_count = (save_cert ? 1 : 0) + (update_cert ? 1 : 0) + (remove_cert ? 1 : 0) +
+                                       (display_cert ? 1 : 0) + (verify_cert ? 1 : 0);
 
-    // Validate mutual exclusivity of operations
-    const size_t operation_count = (save_cert ? 1 : 0) + (update_cert ? 1 : 0) + (remove_cert ? 1 : 0) +
-                                   (display_cert ? 1 : 0) + (verify_cert ? 1 : 0);
+        if (operation_count > 1)
+        {
+            std::cerr << "Error: Cannot combine multiple certificate operations\n";
+            return 1;
+        }
 
-    if (operation_count > 1)
-    {
-        std::cerr << "Error: Cannot combine multiple certificate operations\n";
-        return 1;
-    }
+        // Create validator instance
+        const ModelChecker validator;
 
-    // Create validator instance
-    const ModelChecker validator;
-
-    // Execute requested operation
-    try
-    {
+        // Execute requested operation
         if (remove_cert)
             return validator.removeCertificate(fmu_path) ? 0 : 1;
         else if (display_cert)
@@ -135,9 +137,29 @@ int main(int argc, char** argv)
 
         return 0;
     }
+    catch (const std::filesystem::filesystem_error& e)
+    {
+        std::cerr << "Filesystem error: " << e.what() << "\n";
+        return 1;
+    }
+    catch (const std::runtime_error& e)
+    {
+        std::cerr << "Runtime error: " << e.what() << "\n";
+        return 1;
+    }
+    catch (const std::logic_error& e)
+    {
+        std::cerr << "Logic error: " << e.what() << "\n";
+        return 1;
+    }
     catch (const std::exception& e)
     {
-        std::cerr << "Error: " << e.what() << "\n";
+        std::cerr << "Unexpected error: " << e.what() << "\n";
+        return 1;
+    }
+    catch (...)
+    {
+        std::cerr << "An unknown fatal error occurred.\n";
         return 1;
     }
 }

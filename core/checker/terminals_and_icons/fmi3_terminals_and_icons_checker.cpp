@@ -8,6 +8,8 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
+#include "model_description_checker.h"
+
 #include <cstdint>
 #include <filesystem>
 #include <map>
@@ -85,26 +87,10 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
                     TerminalDimension dim;
                     auto start_str = getXmlAttribute(child, "start");
                     if (start_str)
-                    {
-                        try
-                        {
-                            dim.start = std::stoull(*start_str);
-                        }
-                        catch (...)
-                        {
-                        }
-                    }
+                        dim.start = ModelDescriptionCheckerBase::parseNumber<uint64_t>(*start_str);
                     auto vr_str = getXmlAttribute(child, "valueReference");
                     if (vr_str)
-                    {
-                        try
-                        {
-                            dim.value_reference = static_cast<uint32_t>(std::stoul(*vr_str));
-                        }
-                        catch (...)
-                        {
-                        }
-                    }
+                        dim.value_reference = ModelDescriptionCheckerBase::parseNumber<uint32_t>(*vr_str);
                     var.dimensions.push_back(dim);
                 }
             }

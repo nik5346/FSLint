@@ -139,28 +139,12 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
         auto vr = getXmlAttribute(node, "valueReference");
         if (vr.has_value())
-        {
-            try
-            {
-                var.value_reference = std::stoul(*vr);
-            }
-            catch (...)
-            {
-            }
-        }
+            var.value_reference = parseNumber<uint32_t>(*vr);
 
         // FMI3: derivative attribute is on the variable element itself
         auto der = getXmlAttribute(node, "derivative");
         if (der.has_value())
-        {
-            try
-            {
-                var.derivative_of = std::stoul(*der);
-            }
-            catch (...)
-            {
-            }
-        }
+            var.derivative_of = parseNumber<uint32_t>(*der);
 
         var.reinit = parse_bool(getXmlAttribute(node, "reinit"));
         var.can_handle_multiple_set = parse_bool(getXmlAttribute(node, "canHandleMultipleSetPerTimeInstant"));
@@ -193,12 +177,7 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
         }
 
         // Apply defaults based on FMI3 spec
-        if (var.causality == "structuralParameter")
-        {
-            if (var.variability == "fixed" || var.variability == "tunable")
-                var.initial = "exact";
-        }
-        else if (var.causality == "parameter")
+        if (var.causality == "structuralParameter" || var.causality == "parameter")
         {
             if (var.variability == "fixed" || var.variability == "tunable")
                 var.initial = "exact";
@@ -450,7 +429,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<float>(var, bounds.min, bounds.max, test);
         else if (var.type == "Float64")
             validateTypeBounds<double>(var, bounds.min, bounds.max, test);
-        else if (var.type == "Enumeration")
+        else if (var.type == "Enumeration" || var.type == "Int64")
             validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "Int8")
             validateTypeBounds<int8_t>(var, bounds.min, bounds.max, test);
@@ -464,8 +443,6 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<int32_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt32")
             validateTypeBounds<uint32_t>(var, bounds.min, bounds.max, test);
-        else if (var.type == "Int64")
-            validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt64")
             validateTypeBounds<uint64_t>(var, bounds.min, bounds.max, test);
     }
@@ -831,20 +808,15 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
                     if (sp->start.has_value())
                     {
                         // Check that the structural parameter has start > 0
-                        try
+                        if (const auto start_val_opt = parseNumber<uint64_t>(*sp->start))
                         {
-                            const uint64_t start_val = std::stoull(*sp->start);
-                            if (start_val == 0)
+                            if (*start_val_opt == 0)
                             {
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back("Structural parameter \"" + sp->name + "\" (line " +
                                                         std::to_string(sp->sourceline) +
                                                         ") is referenced in <Dimension> and must have start > 0.");
                             }
-                        }
-                        catch (...)
-                        {
-                            // Invalid start value will be caught in bounds validation
                         }
                     }
                 }
@@ -897,18 +869,15 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
             if (vr_str.has_value())
             {
-                uint32_t vr = 0;
-                try
-                {
-                    vr = std::stoul(*vr_str);
-                }
-                catch (...)
+                const auto vr_opt = parseNumber<uint32_t>(*vr_str);
+                if (!vr_opt)
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("ModelStructure/Output " + std::to_string(i + 1) +
                                             " has invalid valueReference \"" + *vr_str + "\".");
                     continue;
                 }
+                const uint32_t vr = *vr_opt;
 
                 if (actual_vrs.contains(vr))
                 {
@@ -1023,18 +992,15 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
 
             if (vr_str.has_value())
             {
-                uint32_t vr = 0;
-                try
-                {
-                    vr = std::stoul(*vr_str);
-                }
-                catch (...)
+                const auto vr_opt = parseNumber<uint32_t>(*vr_str);
+                if (!vr_opt)
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("ModelStructure/ClockedState " + std::to_string(i + 1) +
                                             " has invalid valueReference \"" + *vr_str + "\".");
                     continue;
                 }
+                const uint32_t vr = *vr_opt;
 
                 if (actual_vrs.contains(vr))
                 {
@@ -1137,15 +1103,10 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
             if (vr_str.has_value())
             {
-                uint32_t vr = 0;
-                try
-                {
-                    vr = std::stoul(*vr_str);
-                }
-                catch (...)
-                {
+                const auto vr_opt = parseNumber<uint32_t>(*vr_str);
+                if (!vr_opt)
                     continue;
-                }
+                const uint32_t vr = *vr_opt;
 
                 if (actual_vrs.contains(vr))
                 {
@@ -1347,14 +1308,10 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
             return;
 
         uint32_t unknown_vr = 0;
-        try
-        {
-            unknown_vr = std::stoul(*vr_str);
-        }
-        catch (...)
-        {
+        const auto unknown_vr_opt = parseNumber<uint32_t>(*vr_str);
+        if (!unknown_vr_opt)
             return;
-        }
+        unknown_vr = *unknown_vr_opt;
 
         const Variable* unknown_var = nullptr;
         if (vr_to_var.contains(unknown_vr))
@@ -1374,15 +1331,8 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
             std::stringstream ss_deps(*deps_str);
             std::string item;
             while (ss_deps >> item)
-            {
-                try
-                {
-                    deps.push_back(std::stoul(item));
-                }
-                catch (...)
-                {
-                }
-            }
+                if (const auto dep_vr = parseNumber<uint32_t>(item))
+                    deps.push_back(*dep_vr);
 
             if (kinds_str)
             {
@@ -1492,18 +1442,15 @@ void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const s
 
             if (vr_str.has_value())
             {
-                uint32_t vr = 0;
-                try
-                {
-                    vr = std::stoul(*vr_str);
-                }
-                catch (...)
+                const auto vr_opt = parseNumber<uint32_t>(*vr_str);
+                if (!vr_opt)
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("ModelStructure/EventIndicator " + std::to_string(i + 1) +
                                             " has invalid valueReference \"" + *vr_str + "\".");
                     continue;
                 }
+                const uint32_t vr = *vr_opt;
 
                 if (seen_vrs.contains(vr))
                 {
@@ -1588,19 +1535,14 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
         bool is_required = false;
 
+        // Mandatory unknowns according to FMI 3.0 spec:
         // (1) Outputs with initial="approx" or "calculated" (not clocked)
-        if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
-            !var.clocks.has_value())
-        {
-            is_required = true;
-        }
         // (2) Calculated parameters
-        else if (var.causality == "calculatedParameter")
-        {
-            is_required = true;
-        }
         // (3) State derivatives with initial="approx" or "calculated"
-        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
+        if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
+             !var.clocks.has_value()) ||
+            (var.causality == "calculatedParameter") ||
+            (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")))
         {
             is_required = true;
         }
@@ -1642,9 +1584,9 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
             if (vr_str.has_value())
             {
-                try
+                if (const auto vr_opt = parseNumber<uint32_t>(*vr_str))
                 {
-                    const uint32_t vr = std::stoul(*vr_str);
+                    const uint32_t vr = *vr_opt;
                     if (actual_vrs.contains(vr))
                     {
                         test.status = TestStatus::FAIL;
@@ -1652,9 +1594,6 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                                                 " is listed multiple times in ModelStructure/InitialUnknown.");
                     }
                     actual_vrs.insert(vr);
-                }
-                catch (...)
-                {
                 }
             }
         }
@@ -1687,8 +1626,12 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             // It might be an optional clocked variable
             bool is_clocked = false;
             auto it = vr_to_variable.find(vr);
-            if (it != vr_to_variable.end() && it->second->clocks.has_value() && !it->second->clocks->empty())
-                is_clocked = true;
+            if (it != vr_to_variable.end())
+            {
+                const auto& var_obj = *it->second;
+                if (var_obj.clocks.has_value() && !var_obj.clocks.value().empty())
+                    is_clocked = true;
+            }
 
             if (!is_clocked)
             {
@@ -1793,30 +1736,12 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
             // Extract start attribute (fixed dimension size)
             auto start_attr = getXmlAttribute(child, "start");
             if (start_attr.has_value())
-            {
-                try
-                {
-                    dim.start = std::stoull(*start_attr);
-                }
-                catch (...)
-                {
-                    // Invalid start value will be caught in validation
-                }
-            }
+                dim.start = parseNumber<uint64_t>(*start_attr);
 
             // Extract valueReference attribute (reference to structural parameter)
             auto vr_attr = getXmlAttribute(child, "valueReference");
             if (vr_attr.has_value())
-            {
-                try
-                {
-                    dim.value_reference = std::stoul(*vr_attr);
-                }
-                catch (...)
-                {
-                    // Invalid value reference will be caught in validation
-                }
-            }
+                dim.value_reference = parseNumber<uint32_t>(*vr_attr);
 
             var.dimensions.push_back(dim);
         }
@@ -1897,10 +1822,9 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                         // Check that the structural parameter has start > 0
                         if (sp->start.has_value())
                         {
-                            try
+                            if (const auto start_val_opt = parseNumber<uint64_t>(*sp->start))
                             {
-                                const uint64_t start_val = std::stoull(*sp->start);
-                                if (start_val == 0)
+                                if (*start_val_opt == 0)
                                 {
                                     test.status = TestStatus::FAIL;
                                     test.messages.push_back(
@@ -1911,7 +1835,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                                         ") which has start=0 (must be > 0).");
                                 }
                             }
-                            catch (...)
+                            else
                             {
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back(
@@ -1990,13 +1914,12 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
                         const Variable* sp = it->second;
                         if (sp->start.has_value())
                         {
-                            try
+                            if (const auto dim_size_opt = parseNumber<uint64_t>(*sp->start))
                             {
-                                const uint64_t dim_size = std::stoull(*sp->start);
-                                total_size = *total_size * dim_size;
-                                dimension_info.push_back(sp->name + "=" + std::to_string(dim_size));
+                                total_size = *total_size * (*dim_size_opt);
+                                dimension_info.push_back(sp->name + "=" + std::to_string(*dim_size_opt));
                             }
-                            catch (...)
+                            else
                             {
                                 // Invalid structural parameter value - skip this check
                                 // (will be caught by dimension reference check)
@@ -2089,12 +2012,11 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
 
         while (ss >> vr_str)
         {
-            try
+            if (const auto vr_opt = parseNumber<uint32_t>(vr_str))
             {
-                const uint32_t vr = std::stoul(vr_str);
-                clock_refs.push_back(vr);
+                clock_refs.push_back(*vr_opt);
             }
-            catch (...)
+            else
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -2299,49 +2221,41 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
             if (!special_min && !special_max)
             {
-                try
+                if (elem_name == "Float32Type" || elem_name == "Float64Type")
                 {
-                    if (elem_name == "Float32Type" || elem_name == "Float64Type")
+                    const auto min_val = parseNumber<double>(*min_str);
+                    const auto max_val = parseNumber<double>(*max_str);
+                    if (min_val && max_val && *max_val < *min_val)
                     {
-                        const double min_val = std::stod(*min_str);
-                        const double max_val = std::stod(*max_str);
-                        if (max_val < min_val)
-                        {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                    std::to_string(type_node->line) + "): max (" + *max_str +
-                                                    ") must be >= min (" + *min_str + ").");
-                        }
-                    }
-                    else if (elem_name.find("UInt") != std::string::npos)
-                    {
-                        const uint64_t min_val = std::stoull(*min_str);
-                        const uint64_t max_val = std::stoull(*max_str);
-                        if (max_val < min_val)
-                        {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                    std::to_string(type_node->line) + "): max (" + *max_str +
-                                                    ") must be >= min (" + *min_str + ").");
-                        }
-                    }
-                    else if (elem_name.find("Int") != std::string::npos || elem_name == "EnumerationType")
-                    {
-                        const int64_t min_val = std::stoll(*min_str);
-                        const int64_t max_val = std::stoll(*max_str);
-                        if (max_val < min_val)
-                        {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                    std::to_string(type_node->line) + "): max (" + *max_str +
-                                                    ") must be >= min (" + *min_str + ").");
-                        }
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                std::to_string(type_node->line) + "): max (" + *max_str +
+                                                ") must be >= min (" + *min_str + ").");
                     }
                 }
-                catch (...)
+                else if (elem_name.find("UInt") != std::string::npos)
                 {
-                    // Parsing failed - might be due to unsigned overflow if using stoll for UInt64
-                    // but for min/max comparison it should generally work if values are within range.
+                    const auto min_val = parseNumber<uint64_t>(*min_str);
+                    const auto max_val = parseNumber<uint64_t>(*max_str);
+                    if (min_val && max_val && *max_val < *min_val)
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                std::to_string(type_node->line) + "): max (" + *max_str +
+                                                ") must be >= min (" + *min_str + ").");
+                    }
+                }
+                else if (elem_name.find("Int") != std::string::npos || elem_name == "EnumerationType")
+                {
+                    const auto min_val = parseNumber<int64_t>(*min_str);
+                    const auto max_val = parseNumber<int64_t>(*max_str);
+                    if (min_val && max_val && *max_val < *min_val)
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                std::to_string(type_node->line) + "): max (" + *max_str +
+                                                ") must be >= min (" + *min_str + ").");
+                    }
                 }
             }
         }
@@ -2379,9 +2293,9 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
                     if (item_value_str)
                     {
-                        try
+                        if (const auto val_opt = parseNumber<int64_t>(*item_value_str))
                         {
-                            const int64_t val = std::stoll(*item_value_str);
+                            const int64_t val = *val_opt;
                             if (item_values.contains(val))
                             {
                                 test.status = TestStatus::FAIL;
@@ -2391,9 +2305,6 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                                                         ". Item values must be unique within the same enumeration.");
                             }
                             item_values.insert(val);
-                        }
-                        catch (...)
-                        {
                         }
                     }
                 }

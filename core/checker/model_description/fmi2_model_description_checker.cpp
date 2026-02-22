@@ -464,15 +464,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
         if (vr.has_value())
-        {
-            try
-            {
-                var.value_reference = std::stoul(*vr);
-            }
-            catch (...)
-            {
-            }
-        }
+            var.value_reference = parseNumber<uint32_t>(*vr);
 
         // FMI2: The type element (Real, Integer, Boolean, String, Enumeration) is a child of ScalarVariable
         for (xmlNodePtr child = scalar_var_node->children; child; child = child->next)
@@ -510,15 +502,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 {
                     auto der = getXmlAttribute(child, "derivative");
                     if (der.has_value())
-                    {
-                        try
-                        {
-                            var.derivative_of = std::stoul(*der);
-                        }
-                        catch (...)
-                        {
-                        }
-                    }
+                        var.derivative_of = parseNumber<uint32_t>(*der);
 
                     auto ri = getXmlAttribute(child, "reinit");
                     if (ri)
@@ -810,9 +794,9 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
             if (index_str.has_value())
             {
-                try
+                if (const auto index_opt = parseNumber<size_t>(*index_str))
                 {
-                    const size_t index = std::stoul(*index_str);
+                    const size_t index = *index_opt;
                     // FMI2 uses 1-based indexing
                     if (index > 0 && index <= variables.size())
                     {
@@ -905,9 +889,6 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         }
                     }
                 }
-                catch (...)
-                {
-                }
             }
         }
         xmlXPathFreeObject(xpath_obj);
@@ -978,9 +959,9 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
             if (index_str.has_value())
             {
-                try
+                if (const auto index_opt = parseNumber<size_t>(*index_str))
                 {
-                    const size_t index = std::stoul(*index_str);
+                    const size_t index = *index_opt;
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
@@ -1071,9 +1052,6 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                                     "present, 'dependencies' must be present.");
                         }
                     }
-                }
-                catch (...)
-                {
                 }
             }
         }
@@ -1169,9 +1147,9 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
             if (index_str.has_value())
             {
-                try
+                if (const auto index_opt = parseNumber<size_t>(*index_str))
                 {
-                    const size_t index = std::stoul(*index_str);
+                    const size_t index = *index_opt;
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
@@ -1247,9 +1225,6 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             }
                         }
                     }
-                }
-                catch (...)
-                {
                 }
             }
         }
@@ -1465,13 +1440,13 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
                 if (!special_min && !special_max)
                 {
-                    try
+                    if (elem_name == "Real")
                     {
-                        if (elem_name == "Real")
+                        const auto min_val = parseNumber<double>(*min_str);
+                        const auto max_val = parseNumber<double>(*max_str);
+                        if (min_val && max_val)
                         {
-                            const double min_val = std::stod(*min_str);
-                            const double max_val = std::stod(*max_str);
-                            if (max_val < min_val)
+                            if (*max_val < *min_val)
                             {
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back("Type definition \"" + name + "\" (line " +
@@ -1479,24 +1454,33 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                                                         ") must be >= min (" + *min_str + ").");
                             }
                         }
-                        else if (elem_name == "Integer" || elem_name == "Enumeration")
+                        else
                         {
-                            const int64_t min_val = std::stoll(*min_str);
-                            const int64_t max_val = std::stoll(*max_str);
-                            if (max_val < min_val)
-                            {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                        std::to_string(child->line) + "): max (" + *max_str +
-                                                        ") must be >= min (" + *min_str + ").");
-                            }
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                    std::to_string(child->line) + "): Failed to parse min/max values.");
                         }
                     }
-                    catch (...)
+                    else if (elem_name == "Integer" || elem_name == "Enumeration")
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                std::to_string(child->line) + "): Failed to parse min/max values.");
+                        const auto min_val = parseNumber<int64_t>(*min_str);
+                        const auto max_val = parseNumber<int64_t>(*max_str);
+                        if (min_val && max_val)
+                        {
+                            if (*max_val < *min_val)
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                        std::to_string(child->line) + "): max (" + *max_str +
+                                                        ") must be >= min (" + *min_str + ").");
+                            }
+                        }
+                        else
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Type definition \"" + name + "\" (line " +
+                                                    std::to_string(child->line) + "): Failed to parse min/max values.");
+                        }
                     }
                 }
             }
@@ -1534,10 +1518,9 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
                         if (item_value_str)
                         {
-                            try
+                            if (const auto val = parseNumber<int32_t>(*item_value_str))
                             {
-                                const int32_t val = std::stoi(*item_value_str);
-                                if (item_values.contains(val))
+                                if (item_values.contains(*val))
                                 {
                                     test.status = TestStatus::FAIL;
                                     test.messages.push_back(
@@ -1545,10 +1528,7 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                                         ") has multiple items with value " + *item_value_str +
                                         ". Item values must be unique within the same enumeration.");
                                 }
-                                item_values.insert(val);
-                            }
-                            catch (...)
-                            {
+                                item_values.insert(*val);
                             }
                         }
                     }
@@ -1652,15 +1632,7 @@ ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
 
     auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
     if (num_event_ind)
-    {
-        try
-        {
-            metadata.numberOfEventIndicators = std::stoul(*num_event_ind);
-        }
-        catch (...)
-        {
-        }
-    }
+        metadata.numberOfEventIndicators = parseNumber<uint32_t>(*num_event_ind);
 
     return metadata;
 }
