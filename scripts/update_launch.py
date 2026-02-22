@@ -29,11 +29,23 @@ def update_launch():
     ]
 
     with open(launch_json_path, "r") as f:
-        try:
-            launch_data = json.load(f)
-        except json.JSONDecodeError as e:
-            print(f"Error decoding {launch_json_path}: {e}")
-            return
+        content = f.read()
+
+    # Simple JSONC comment stripping (handles // comments)
+    lines = content.splitlines()
+    clean_lines = []
+    for line in lines:
+        if "//" in line:
+            # Very basic check, might fail if // is inside a string, but safe for typical launch.json
+            line = line.split("//")[0]
+        clean_lines.append(line)
+    clean_content = "\n".join(clean_lines)
+
+    try:
+        launch_data = json.loads(clean_content)
+    except json.JSONDecodeError as e:
+        print(f"Error decoding {launch_json_path}: {e}")
+        return
 
     found = False
     if "inputs" in launch_data:
@@ -59,6 +71,8 @@ def update_launch():
         f.write("\n")
 
     print(f"Successfully updated {launch_json_path} with {len(options)} files.")
+    print("\nTip: To avoid committing your local changes to launch.json, run:")
+    print("  git update-index --skip-worktree .vscode/launch.json")
 
 if __name__ == "__main__":
     update_launch()

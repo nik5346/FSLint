@@ -77,8 +77,10 @@
             "id": "fmuFile",
             "type": "pickString",
             "description": "Select FMU / SSP file",
-            "options": [],
-            "default": ""
+            "options": [
+                "${workspaceFolder}/models/dummy.fmu"
+            ],
+            "default": "${workspaceFolder}/models/dummy.fmu"
         }
     ]
 }
