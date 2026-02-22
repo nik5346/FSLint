@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import json
-import os
 from pathlib import Path
 
 def update_launch():
     # Get the workspace root (parent of the scripts directory)
     workspace_root = Path(__file__).parent.parent.resolve()
-    launch_template_path = workspace_root / ".vscode" / "launch.json.default"
+    launch_template_path = workspace_root / ".vscode" / "launch.json.template"
     launch_json_path = workspace_root / ".vscode" / "launch.json"
     models_dir = workspace_root / "models"
 
@@ -64,7 +63,7 @@ def update_launch():
                 break
 
     if not found:
-        print("Error: Could not find input with id 'fmuFile' in launch.json.default")
+        print("Error: Could not find input with id 'fmuFile' in launch.json.template")
         return
 
     with open(launch_json_path, "w") as f:
