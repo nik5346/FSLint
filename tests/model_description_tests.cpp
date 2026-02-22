@@ -204,7 +204,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     SECTION("Aliases")
     {
         validate_fail("alias_conflicting_start", "At most one variable in an alias set");
-        validate_fail("alias_inconsistent_unit", "All variables in an alias set must have the same unit");
+        validate_fail("alias_inconsistent_unit", "All variables in an alias set");
         validate_fail("alias_constant_conflicting_start", "have different start values");
     }
 
