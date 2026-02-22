@@ -177,13 +177,7 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
         }
 
         // Apply defaults based on FMI3 spec
-        if (var.causality == "structuralParameter")
-        {
-            if (var.variability == "fixed" || var.variability == "tunable")
-                var.initial = "exact";
-        }
-        // NOLINTNEXTLINE(bugprone-branch-clone)
-        else if (var.causality == "parameter")
+        if (var.causality == "structuralParameter" || var.causality == "parameter")
         {
             if (var.variability == "fixed" || var.variability == "tunable")
                 var.initial = "exact";
@@ -435,7 +429,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<float>(var, bounds.min, bounds.max, test);
         else if (var.type == "Float64")
             validateTypeBounds<double>(var, bounds.min, bounds.max, test);
-        else if (var.type == "Enumeration")
+        else if (var.type == "Enumeration" || var.type == "Int64")
             validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "Int8")
             validateTypeBounds<int8_t>(var, bounds.min, bounds.max, test);
@@ -449,9 +443,6 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
             validateTypeBounds<int32_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt32")
             validateTypeBounds<uint32_t>(var, bounds.min, bounds.max, test);
-        // NOLINTNEXTLINE(bugprone-branch-clone)
-        else if (var.type == "Int64")
-            validateTypeBounds<int64_t>(var, bounds.min, bounds.max, test);
         else if (var.type == "UInt64")
             validateTypeBounds<uint64_t>(var, bounds.min, bounds.max, test);
     }
@@ -1544,21 +1535,14 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
         bool is_required = false;
 
+        // Mandatory unknowns according to FMI 3.0 spec:
         // (1) Outputs with initial="approx" or "calculated" (not clocked)
-        if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
-            !var.clocks.has_value())
-        {
-            is_required = true;
-        }
         // (2) Calculated parameters
-        // NOLINTNEXTLINE(bugprone-branch-clone)
-        else if (var.causality == "calculatedParameter")
-        {
-            is_required = true;
-        }
         // (3) State derivatives with initial="approx" or "calculated"
-        // NOLINTNEXTLINE(bugprone-branch-clone)
-        else if (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated"))
+        if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
+             !var.clocks.has_value()) ||
+            (var.causality == "calculatedParameter") ||
+            (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")))
         {
             is_required = true;
         }
@@ -1642,8 +1626,12 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             // It might be an optional clocked variable
             bool is_clocked = false;
             auto it = vr_to_variable.find(vr);
-            if (it != vr_to_variable.end() && it->second->clocks.has_value() && !it->second->clocks.value().empty())
-                is_clocked = true;
+            if (it != vr_to_variable.end())
+            {
+                const auto& var_obj = *it->second;
+                if (var_obj.clocks.has_value() && !var_obj.clocks.value().empty())
+                    is_clocked = true;
+            }
 
             if (!is_clocked)
             {

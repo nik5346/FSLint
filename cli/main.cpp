@@ -29,6 +29,7 @@ void printUsage(const std::string& program_name)
     std::cout << "  " << program_name << " -u model.fmu/ssp   # Re-validate and update certificate\n";
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv)
 {
     try
