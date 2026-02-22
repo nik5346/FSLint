@@ -601,6 +601,7 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
         xmlXPathFreeObject(xpath_obj);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::string& attr_name, int line,
                                            TestResult& test)
 {

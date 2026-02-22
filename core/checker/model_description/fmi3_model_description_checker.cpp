@@ -1642,7 +1642,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             // It might be an optional clocked variable
             bool is_clocked = false;
             auto it = vr_to_variable.find(vr);
-            if (it != vr_to_variable.end() && it->second->clocks.has_value() && !it->second->clocks->empty())
+            if (it != vr_to_variable.end() && it->second->clocks.has_value() && !it->second->clocks.value().empty())
                 is_clocked = true;
 
             if (!is_clocked)

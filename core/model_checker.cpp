@@ -12,11 +12,11 @@
 #include <chrono>
 #include <cstdint>
 #include <ctime>
-#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -507,6 +507,7 @@ bool ModelChecker::isVersionDeprecated(const std::string& version) const
     return false;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool ModelChecker::extract(const std::filesystem::path& model_path, const std::filesystem::path& extract_dir) const
 {
     Zipper zipper;
@@ -518,6 +519,7 @@ bool ModelChecker::extract(const std::filesystem::path& model_path, const std::f
     return success;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool ModelChecker::package(const std::filesystem::path& extract_dir, const std::filesystem::path& model_path) const
 {
     // Delete existing file if it exists

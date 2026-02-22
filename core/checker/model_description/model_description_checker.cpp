@@ -14,7 +14,6 @@
 #include <cmath>
 #include <cstdint>
 #include <ctime>
-#include <exception>
 #include <filesystem>
 #include <iomanip>
 #include <map>
@@ -22,6 +21,7 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <time.h>
 #include <vector>
