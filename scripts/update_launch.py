@@ -6,11 +6,12 @@ from pathlib import Path
 def update_launch():
     # Get the workspace root (parent of the scripts directory)
     workspace_root = Path(__file__).parent.parent.resolve()
+    launch_template_path = workspace_root / ".vscode" / "launch.json.default"
     launch_json_path = workspace_root / ".vscode" / "launch.json"
     models_dir = workspace_root / "models"
 
-    if not launch_json_path.exists():
-        print(f"Error: {launch_json_path} not found.")
+    if not launch_template_path.exists():
+        print(f"Error: {launch_template_path} not found.")
         return
 
     if not models_dir.exists():
@@ -28,7 +29,7 @@ def update_launch():
         for file in all_files
     ]
 
-    with open(launch_json_path, "r") as f:
+    with open(launch_template_path, "r") as f:
         content = f.read()
 
     # Simple JSONC comment stripping (handles // comments)
@@ -36,7 +37,7 @@ def update_launch():
     clean_lines = []
     for line in lines:
         if "//" in line:
-            # Very basic check, might fail if // is inside a string, but safe for typical launch.json
+            # Very basic check, might fail if // is inside a string
             line = line.split("//")[0]
         clean_lines.append(line)
     clean_content = "\n".join(clean_lines)
@@ -44,7 +45,7 @@ def update_launch():
     try:
         launch_data = json.loads(clean_content)
     except json.JSONDecodeError as e:
-        print(f"Error decoding {launch_json_path}: {e}")
+        print(f"Error decoding {launch_template_path}: {e}")
         return
 
     found = False
@@ -63,16 +64,14 @@ def update_launch():
                 break
 
     if not found:
-        print("Error: Could not find input with id 'fmuFile' in launch.json")
+        print("Error: Could not find input with id 'fmuFile' in launch.json.default")
         return
 
     with open(launch_json_path, "w") as f:
         json.dump(launch_data, f, indent=4)
         f.write("\n")
 
-    print(f"Successfully updated {launch_json_path} with {len(options)} files.")
-    print("\nTip: To avoid committing your local changes to launch.json, run:")
-    print("  git update-index --skip-worktree .vscode/launch.json")
+    print(f"Successfully generated {launch_json_path} from template with {len(options)} files.")
 
 if __name__ == "__main__":
     update_launch()
