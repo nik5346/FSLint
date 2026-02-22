@@ -50,7 +50,7 @@ def update_launch():
     found = False
     if "inputs" in launch_data:
         for input_item in launch_data["inputs"]:
-            if input_item.get("id") == "fmuFile":
+            if input_item.get("id") == "modelFile":
                 input_item["options"] = options
                 if options:
                     # Set default to the first option if the current default is not in the list
@@ -63,7 +63,7 @@ def update_launch():
                 break
 
     if not found:
-        print("Error: Could not find input with id 'fmuFile' in launch.json.template")
+        print("Error: Could not find input with id 'modelFile' in launch.json.template")
         return
 
     with open(launch_json_path, "w") as f:

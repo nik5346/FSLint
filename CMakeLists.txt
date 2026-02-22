@@ -22,11 +22,11 @@ endif()
 find_package(Python3 COMPONENTS Interpreter)
 
 # ============================================================================
-# Update VS Code launch.json from template
+# Generate VS Code launch.json from template
 # ============================================================================
 if(Python3_Interpreter_FOUND)
     execute_process(
-        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/update_launch.py
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/generate_launch.py
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         RESULT_VARIABLE UPDATE_LAUNCH_RESULT
     )

@@ -19,9 +19,9 @@
             ]
         },
         {
-            "label": "Update FMU list in launch.json",
+            "label": "Generate Model list in launch.json",
             "type": "shell",
-            "command": "python3 scripts/update_launch.py",
+            "command": "python3 scripts/generate_launch.py",
             "problemMatcher": []
         }
     ]

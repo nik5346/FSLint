@@ -34,7 +34,7 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [
                 "${input:operation}",
-                "${input:fmuFile}"
+                "${input:modelFile}"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
@@ -74,9 +74,9 @@
             "default": ""
         },
         {
-            "id": "fmuFile",
+            "id": "modelFile",
             "type": "pickString",
-            "description": "Select FMU / SSP file",
+            "description": "Select Model File (FMU/SSP)",
             "options": [
                 "${workspaceFolder}/models/dummy.fmu"
             ],
