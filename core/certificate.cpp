@@ -170,35 +170,44 @@ void Certificate::addNestedModelResult(const NestedModelResult& result)
         _total_failed++;
 }
 
-static void printTree(Certificate& cert, const std::vector<NestedModelResult>& models, const std::string& prefix)
+static void printTree(Certificate& cert, const std::vector<NestedModelResult>& models, const std::string& tree_prefix,
+                      bool is_top_level)
 {
     for (size_t i = 0; i < models.size(); ++i)
     {
         const bool is_last = (i == models.size() - 1);
         const auto& model = models[i];
 
-        const std::string marker = is_last ? "└─ " : "├─ ";
-        std::string status_str;
+        std::string status_tag;
         switch (model.status)
         {
         case TestStatus::PASS:
-            status_str = "[✓ PASS]";
+            status_tag = "[✓ PASS]";
             break;
         case TestStatus::WARNING:
-            status_str = "[⚠ WARN]";
+            status_tag = "[⚠ WARN]";
             break;
         case TestStatus::FAIL:
-            status_str = "[✗ FAIL]";
+            status_tag = "[✗ FAIL]";
             break;
         }
 
-        cert.log(std::format("{}{}{} {}", prefix, marker, model.name, status_str));
+        if (is_top_level)
+        {
+            cert.log(std::format("  {} {}", status_tag, model.name));
+        }
+        else
+        {
+            const std::string marker = is_last ? "└─ " : "├─ ";
+            cert.log(std::format("  {} {}{}{}", status_tag, tree_prefix, marker, model.name));
+        }
 
         if (!model.nested_models.empty())
         {
-            std::string new_prefix = prefix;
-            new_prefix += (is_last ? "   " : "│  ");
-            printTree(cert, model.nested_models, new_prefix);
+            std::string next_prefix = tree_prefix;
+            if (!is_top_level)
+                next_prefix += (is_last ? "   " : "│  ");
+            printTree(cert, model.nested_models, next_prefix, false);
         }
     }
 }
@@ -209,7 +218,7 @@ void Certificate::printNestedModelsTree()
         return;
 
     printSubsectionHeader("NESTED MODELS");
-    printTree(*this, _nested_models, "  ");
+    printTree(*this, _nested_models, "", true);
 }
 
 void Certificate::printFooter()
