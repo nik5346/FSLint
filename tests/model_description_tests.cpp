@@ -26,6 +26,12 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("metadata/fmi_version_invalid", "is invalid for FMI 1.0");
     }
 
+    SECTION("Aliases")
+    {
+        validate_fail("alias_inconsistent_unit", "Variables sharing VR 1 must have the same unit");
+        validate_fail("alias_inconsistent_type", "Variables sharing VR 1 must have the same type");
+    }
+
     SECTION("Implementation")
     {
         validate_fail("implementation/entry_point_missing_file",
@@ -204,7 +210,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     SECTION("Aliases")
     {
         validate_fail("alias_conflicting_start", "At most one variable in an alias set");
-        validate_fail("alias_inconsistent_unit", "All variables in an alias set must have the same unit");
+        validate_fail("alias_inconsistent_unit", "All variables in an alias set");
         validate_fail("alias_constant_conflicting_start", "have different start values");
     }
 

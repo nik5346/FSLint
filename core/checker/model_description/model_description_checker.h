@@ -49,6 +49,7 @@ struct Variable
     std::optional<bool> reinit;
     std::optional<bool> can_handle_multiple_set;
     uint32_t index = 0; // 1-based ScalarVariable index
+    std::optional<std::string> alias;
     bool is_alias = false;
     bool has_dimension = false;
     std::vector<Dimension> dimensions; // Full dimension information

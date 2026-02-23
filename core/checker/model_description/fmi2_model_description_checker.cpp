@@ -384,10 +384,10 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                     if (var->start != first_constant->start)
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("Aliased constant variables \"" + var->name + "\" and \"" +
-                                                first_constant->name + "\" have different start values ('" +
-                                                var->start.value_or("") + "' vs '" +
-                                                first_constant->start.value_or("") + "').");
+                        test.messages.push_back(
+                            "Aliased constant variables \"" + var->name + "\" and \"" + first_constant->name +
+                            "\" have different start values ('" + var->start.value_or("") + "' vs '" +
+                            first_constant->start.value_or("") + "') (VR " + std::to_string(key.second) + ").");
                     }
                 }
             }
@@ -404,9 +404,10 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                 else if (var->unit != first_with_unit->unit)
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("All variables in an alias set must have the same unit. Variable \"" +
-                                            var->name + "\" has unit \"" + *var->unit + "\" but \"" +
-                                            first_with_unit->name + "\" has unit \"" + *first_with_unit->unit + "\".");
+                    test.messages.push_back("All variables in an alias set (VR " + std::to_string(key.second) +
+                                            ") must have the same unit. Variable \"" + var->name + "\" has unit \"" +
+                                            *var->unit + "\" but \"" + first_with_unit->name + "\" has unit \"" +
+                                            *first_with_unit->unit + "\".");
                 }
             }
         }
@@ -417,9 +418,10 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                 if (!var->unit.has_value())
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("All variables in an alias set must have the same unit. Variable \"" +
-                                            var->name + "\" has no unit but \"" + first_with_unit->name +
-                                            "\" has unit \"" + *first_with_unit->unit + "\".");
+                    test.messages.push_back("All variables in an alias set (VR " + std::to_string(key.second) +
+                                            ") must have the same unit. Variable \"" + var->name +
+                                            "\" has no unit but \"" + first_with_unit->name + "\" has unit \"" +
+                                            *first_with_unit->unit + "\".");
                 }
             }
         }
