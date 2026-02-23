@@ -2,16 +2,34 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug FSLint (Pick Model)",
-            "type": "cmake",
+            "name": "Debug FSLint (GDB/LLDB)",
+            "type": "cppdbg",
             "request": "launch",
-            "target": "FSLint-cli",
+            "program": "${command:cmake.launchTargetPath}",
             "args": [
                 "${input:operation}",
                 "${input:modelFile}"
             ],
             "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build CLI",
+            "MIMode": "gdb",
+            "osx": {
+                "MIMode": "lldb"
+            }
+        },
+        {
+            "name": "Debug FSLint (MSVC)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [
+                "${input:operation}",
+                "${input:modelFile}"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build CLI"
         }
     ],
     "inputs": [
