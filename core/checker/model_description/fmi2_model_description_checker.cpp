@@ -384,11 +384,10 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                     if (var->start != first_constant->start)
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("Aliased constant variables \"" + var->name + "\" and \"" +
-                                                first_constant->name + "\" have different start values ('" +
-                                                var->start.value_or("") + "' vs '" +
-                                                first_constant->start.value_or("") + "') (VR " +
-                                                std::to_string(key.second) + ").");
+                        test.messages.push_back(
+                            "Aliased constant variables \"" + var->name + "\" and \"" + first_constant->name +
+                            "\" have different start values ('" + var->start.value_or("") + "' vs '" +
+                            first_constant->start.value_or("") + "') (VR " + std::to_string(key.second) + ").");
                     }
                 }
             }
