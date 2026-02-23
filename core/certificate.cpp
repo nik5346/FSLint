@@ -206,9 +206,7 @@ static void printTree(Certificate& cert, const std::vector<NestedModelResult>& m
         {
             std::string next_prefix = tree_prefix;
             if (!is_top_level)
-            {
                 next_prefix += (is_last ? "   " : "│  ");
-            }
             printTree(cert, model.nested_models, next_prefix, false);
         }
     }
