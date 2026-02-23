@@ -143,7 +143,7 @@ class ModelDescriptionCheckerBase : public Checker
             // implementation of these is platform-dependent or missing in some versions.
             std::string lower;
             lower.reserve(s.size());
-            for (char c : s)
+            for (const char c : s)
                 lower += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
             if (lower == "nan")

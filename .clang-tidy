@@ -12,6 +12,3 @@ Checks: >
   -clang-analyzer-*,
   -cppcoreguidelines-avoid-magic-numbers,
   -modernize-use-trailing-return-type
-WarningsAsErrors: ''
-HeaderFilterRegex: '^(?!.*(_deps|build)).*/(core|cli|tests)/.*'
-SystemHeaders: false

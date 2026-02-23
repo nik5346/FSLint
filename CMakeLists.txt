@@ -79,7 +79,7 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
             -p ${CMAKE_BINARY_DIR}
             -j ${N}
             -clang-tidy-binary ${CLANG_TIDY_EXE}
-            "-header-filter=(core|cli|tests)/.*"
+            "-header-filter=.*"
         )
 
         # run-clang-tidy uses regex matching for files. To be cross-platform (handling both / and \),

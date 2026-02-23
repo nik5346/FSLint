@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-enum class TestStatus
+enum class TestStatus : uint8_t
 {
     PASS,
     FAIL,

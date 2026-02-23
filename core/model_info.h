@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <string>
 
-enum class ModelStandard
+enum class ModelStandard : uint8_t
 {
     FMI1_ME,
     FMI1_CS,
