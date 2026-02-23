@@ -14,7 +14,8 @@ def update_launch():
         return
 
     if not models_dir.exists():
-        print(f"Warning: {models_dir} directory not found.")
+        models_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Created {models_dir} directory.")
         all_files = []
     else:
         # Find all .fmu and .ssp files recursively

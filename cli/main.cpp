@@ -54,6 +54,9 @@ int main(int argc, char** argv)
         {
             const std::string_view arg = args[i];
 
+            if (arg.empty())
+                continue;
+
             if (arg == "-h" || arg == "--help")
             {
                 printUsage(args[0]);
