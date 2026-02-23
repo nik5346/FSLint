@@ -8,7 +8,6 @@
     "cmake.configureSettings": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
     },
-    "cmake.testConfig": "Debug Tests",
     "cmake.ctest.testExplorerIntegrationEnabled": true,
     "cmake.preferredGenerators": [
         "Ninja"
