@@ -8,15 +8,13 @@
     "cmake.configureSettings": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
     },
-    "cmake.buildArgs": ["-j", "4"],
-    "cmake.parallelJobs": 4,
     "cmake.testConfig": "Debug Tests",
     "cmake.ctest.testExplorerIntegrationEnabled": true,
     "cmake.preferredGenerators": [
         "Ninja"
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
     "files.exclude": {
         "**/.git": true,
         "**/build": false
