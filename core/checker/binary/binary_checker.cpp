@@ -34,7 +34,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
         return;
     }
 
-    std::map<std::string, std::string> model_identifiers;
+    std::set<std::string> model_identifiers;
     const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
 
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
@@ -51,7 +51,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 auto model_id = getXmlAttribute(xpath_obj->nodesetval->nodeTab[0], "modelIdentifier");
                 if (model_id)
-                    model_identifiers[elem] = *model_id;
+                    model_identifiers.insert(*model_id);
             }
             if (xpath_obj)
                 xmlXPathFreeObject(xpath_obj);
@@ -78,7 +78,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
             const std::string platform = platform_entry.path().filename().string();
 
-            for (const auto& [interface, model_id] : model_identifiers)
+            for (const auto& model_id : model_identifiers)
             {
                 const std::vector<std::string> extensions = {".dll", ".so", ".dylib"};
                 for (const auto& ext : extensions)
