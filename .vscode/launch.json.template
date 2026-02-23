@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug FMU/SSP",
+            "name": "Debug FSLint (Pick Model)",
             "type": "cmake",
             "request": "launch",
             "target": "FSLint-cli",
@@ -12,44 +12,6 @@
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
-        },
-        {
-            "name": "Validate Active File",
-            "type": "cmake",
-            "request": "launch",
-            "target": "FSLint-cli",
-            "args": [
-                "${file}"
-            ],
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Debug Tests",
-            "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
-            "type": "cppdbg",
-            "linux": {
-                "MIMode": "gdb",
-                "miDebuggerPath": "/usr/bin/gdb",
-                "setupCommands": [
-                    {
-                        "description": "Enable pretty-printing for gdb",
-                        "text": "-enable-pretty-printing",
-                        "ignoreFailures": true
-                    }
-                ]
-            },
-            "osx": {
-                "type": "lldb"
-            },
-            "windows": {
-                "type": "cppvsdbg"
-            },
-            "preLaunchTask": "Build Tests"
         }
     ],
     "inputs": [
