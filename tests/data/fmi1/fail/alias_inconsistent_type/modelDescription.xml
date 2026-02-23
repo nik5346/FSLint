@@ -2,10 +2,10 @@
 <fmiModelDescription fmiVersion="1.0" modelName="AliasFailType" modelIdentifier="AliasFailType" guid="123">
   <ModelVariables>
     <ScalarVariable name="v1" valueReference="1" causality="internal">
-      <Real start="0.0"/>
+      <Real start="0.0" />
     </ScalarVariable>
     <ScalarVariable name="v2" valueReference="1" causality="internal">
-      <Integer start="0"/>
+      <Integer start="0" />
     </ScalarVariable>
   </ModelVariables>
 </fmiModelDescription>
