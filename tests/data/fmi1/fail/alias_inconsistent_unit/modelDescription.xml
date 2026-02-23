@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="AliasFail" modelIdentifier="AliasFail" guid="123">
+  <UnitDefinitions>
+    <BaseUnit unit="m"/>
+    <BaseUnit unit="s"/>
+  </UnitDefinitions>
+  <ModelVariables>
+    <ScalarVariable name="v1" valueReference="1" causality="internal">
+      <Real unit="m"/>
+    </ScalarVariable>
+    <ScalarVariable name="v2" valueReference="1" causality="internal">
+      <Real unit="s"/>
+    </ScalarVariable>
+  </ModelVariables>
+</fmiModelDescription>

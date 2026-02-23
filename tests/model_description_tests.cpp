@@ -26,6 +26,12 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("metadata/fmi_version_invalid", "is invalid for FMI 1.0");
     }
 
+    SECTION("Aliases")
+    {
+        validate_fail("alias_inconsistent_unit", "Variables sharing VR 1 must have the same unit");
+        validate_fail("alias_inconsistent_type", "Variables sharing VR 1 must have the same type");
+    }
+
     SECTION("Implementation")
     {
         validate_fail("implementation/entry_point_missing_file",

@@ -29,6 +29,7 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     checkRequiredStartValues(variables, cert);
     checkIllegalStartValues(variables, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
+    checkAliases(variables, cert);
 }
 
 void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
@@ -348,6 +349,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.declared_type = getXmlAttribute(scalar_var_node, "declaredType");
         var.sourceline = scalar_var_node->line;
         var.index = static_cast<uint32_t>(i + 1);
+        var.alias = getXmlAttribute(scalar_var_node, "alias");
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
         if (vr)
@@ -621,4 +623,48 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
                                     ") references missing file in FMU: '" + relative_path + "'.");
         }
     }
+}
+
+void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
+{
+    TestResult test{"Alias Variables (FMI1)", TestStatus::PASS, {}};
+
+    // Group variables by valueReference
+    std::map<uint32_t, std::vector<const Variable*>> vr_to_vars;
+    for (const auto& var : variables)
+        if (var.value_reference.has_value())
+            vr_to_vars[*var.value_reference].push_back(&var);
+
+    for (const auto& [vr, alias_set] : vr_to_vars)
+    {
+        if (alias_set.size() <= 1)
+            continue;
+
+        const Variable* first = alias_set[0];
+
+        for (size_t i = 1; i < alias_set.size(); ++i)
+        {
+            const Variable* var = alias_set[i];
+
+            // 1. Same base type
+            if (var->type != first->type)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same type. \"" +
+                                        var->name + "\" is " + var->type + " but \"" + first->name + "\" is " +
+                                        first->type + ".");
+            }
+
+            // 2. If Real, same unit
+            if (var->type == "Real" && var->unit != first->unit)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same unit. \"" +
+                                        var->name + "\" has unit \"" + var->unit.value_or("(none)") + "\" but \"" +
+                                        first->name + "\" has unit \"" + first->unit.value_or("(none)") + "\".");
+            }
+        }
+    }
+
+    cert.printTestResult(test);
 }
