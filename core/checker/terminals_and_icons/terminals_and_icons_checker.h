@@ -17,12 +17,12 @@ struct TerminalDimension
 {
     std::optional<uint64_t> start;
     std::optional<uint32_t> value_reference;
-
-    bool operator==(const TerminalDimension& other) const
-    {
-        return start == other.start && value_reference == other.value_reference;
-    }
 };
+
+inline bool operator==(const TerminalDimension& lhs, const TerminalDimension& rhs)
+{
+    return lhs.start == rhs.start && lhs.value_reference == rhs.value_reference;
+}
 
 struct TerminalVariableInfo
 {

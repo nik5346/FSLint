@@ -9,6 +9,11 @@ Checks: >
   misc-const-correctness,
   misc-redundant-expression,
   misc-definitions-in-headers,
+  misc-non-private-member-variables-in-classes,
+  misc-redundant-expression,
+  misc-override-with-different-visibility,
+  misc-unconventional-assign-operator,
+  misc-unused-using-decls,
   -clang-analyzer-*,
   -cppcoreguidelines-avoid-magic-numbers,
   -modernize-use-trailing-return-type

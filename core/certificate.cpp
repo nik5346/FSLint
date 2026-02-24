@@ -41,8 +41,8 @@ void Certificate::log(const std::string& message)
         std::cout << "\n";
     }
 
-    _report_buffer << message;
-    _report_buffer << "\n";
+    _report_buffer.append(message);
+    _report_buffer.append("\n");
 }
 
 void Certificate::printMainHeader(const std::string& filename, const std::string& hash)
@@ -237,6 +237,6 @@ bool Certificate::saveToFile(const std::filesystem::path& path) const
     std::ofstream file(path);
     if (!file)
         return false;
-    file << _report_buffer.str();
+    file << _report_buffer;
     return true;
 }

@@ -4,7 +4,6 @@
 
 #include <cstddef>
 #include <filesystem>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -33,7 +32,7 @@ class Certificate
 {
   private:
     bool _quiet = false;
-    std::stringstream _report_buffer;
+    std::string _report_buffer;
     std::vector<TestResult> _results;
     std::vector<NestedModelResult> _nested_models;
 
@@ -71,7 +70,7 @@ class Certificate
     bool saveToFile(const std::filesystem::path& path) const;
     std::string getFullReport() const
     {
-        return _report_buffer.str();
+        return _report_buffer;
     }
 
     const std::vector<TestResult>& getResults() const
