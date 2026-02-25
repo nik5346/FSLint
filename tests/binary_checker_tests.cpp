@@ -174,27 +174,33 @@ TEST_CASE("FMI 1.0 Binary Validation Failure", "[binary][fmi1][checker]")
     fs::path temp_path = "tests/fmi1_binary_fail";
     fs::create_directories(temp_path);
 
-    // Write a minimal FMI 1.0 modelDescription.xml
-    std::ofstream md_file(temp_path / "modelDescription.xml");
-    md_file << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-            << "<fmiModelDescription fmiVersion=\"1.0\" modelName=\"fail_test\" modelIdentifier=\"fail_test\" "
-               "guid=\"{123}\">\n"
-            << "  <ModelVariables/>\n"
-            << "</fmiModelDescription>\n";
-    md_file.close();
+    // Use an existing valid FMI 1.0 modelDescription.xml (modelIdentifier="TestME")
+    fs::copy_file("tests/data/fmi1/pass/TestME/modelDescription.xml", temp_path / "modelDescription.xml",
+                  fs::copy_options::overwrite_existing);
+
+#if defined(_WIN32)
+    std::string platform = "win64";
+    std::string ext = ".dll";
+#elif defined(__APPLE__)
+    std::string platform = "darwin64";
+    std::string ext = ".dylib";
+#else
+    std::string platform = "linux64";
+    std::string ext = ".so";
+#endif
 
     // Create binaries dir
-    fs::path binaries_dir = temp_path / "binaries" / "linux64";
+    fs::path binaries_dir = temp_path / "binaries" / platform;
     fs::create_directories(binaries_dir);
 
-    // Extract BouncingBall.so (which has BouncingBall_ prefixes) and save it as fail_test.so
-    // The checker will expect fail_test_ prefixes and thus fail.
+    // Extract BouncingBall binary and save it as TestME with host extension
+    // The BouncingBall binary has BouncingBall_ prefixes, but the checker will expect TestME_ prefixes.
     {
         Zipper zipper;
         REQUIRE(zipper.open("tests/reference_fmus/1.0/cs/BouncingBall.fmu"));
         std::vector<uint8_t> content;
-        REQUIRE(zipper.extractFile("binaries/linux64/BouncingBall.so", content));
-        std::ofstream outfile(binaries_dir / "fail_test.so", std::ios::binary);
+        REQUIRE(zipper.extractFile("binaries/" + platform + "/BouncingBall" + ext, content));
+        std::ofstream outfile(binaries_dir / ("TestME" + ext), std::ios::binary);
         outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
     }
 
@@ -203,7 +209,7 @@ TEST_CASE("FMI 1.0 Binary Validation Failure", "[binary][fmi1][checker]")
     checker.validate(temp_path, cert);
 
     CHECK(has_fail(cert));
-    CHECK(has_error_with_text(cert, "Mandatory function 'fail_test_fmiGetVersion' is not exported."));
+    CHECK(has_error_with_text(cert, "Mandatory function 'TestME_fmiGetVersion' is not exported."));
 
     // Cleanup
     fs::remove_all(temp_path);
