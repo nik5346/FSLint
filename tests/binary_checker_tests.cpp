@@ -96,10 +96,17 @@ TEST_CASE("FMI 1.0 Binary Exports", "[binary][fmi1]")
     if (!reference_fmus_available())
         SKIP("Reference FMUs not available");
 
-    SECTION("ME")
+    SECTION("CS")
     {
         ModelChecker mc;
         Certificate cert = mc.validate("tests/reference_fmus/1.0/cs/BouncingBall.fmu", true);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("ME")
+    {
+        ModelChecker mc;
+        Certificate cert = mc.validate("tests/reference_fmus/1.0/me/BouncingBall.fmu", true);
         CHECK_FALSE(has_fail(cert));
     }
 }
@@ -153,6 +160,56 @@ TEST_CASE("Binary Checker Validation Failure", "[binary][checker]")
 
     CHECK(has_fail(cert));
     CHECK(has_error_with_text(cert, "Mandatory function 'fmi2GetVersion' is not exported."));
+
+    // Cleanup
+    fs::remove_all(temp_path);
+}
+
+TEST_CASE("FMI 1.0 Binary Validation Failure", "[binary][fmi1][checker]")
+{
+    if (!reference_fmus_available())
+        SKIP("Reference FMUs not available");
+
+    // Create a temporary test dir
+    fs::path temp_path = "tests/fmi1_binary_fail";
+    fs::create_directories(temp_path);
+
+    // Use an existing valid FMI 1.0 modelDescription.xml (modelIdentifier="TestME")
+    fs::copy_file("tests/data/fmi1/pass/TestME/modelDescription.xml", temp_path / "modelDescription.xml",
+                  fs::copy_options::overwrite_existing);
+
+#if defined(_WIN32)
+    std::string platform = "win64";
+    std::string ext = ".dll";
+#elif defined(__APPLE__)
+    std::string platform = "darwin64";
+    std::string ext = ".dylib";
+#else
+    std::string platform = "linux64";
+    std::string ext = ".so";
+#endif
+
+    // Create binaries dir
+    fs::path binaries_dir = temp_path / "binaries" / platform;
+    fs::create_directories(binaries_dir);
+
+    // Extract BouncingBall binary and save it as TestME with host extension
+    // The BouncingBall binary has BouncingBall_ prefixes, but the checker will expect TestME_ prefixes.
+    {
+        Zipper zipper;
+        REQUIRE(zipper.open("tests/reference_fmus/1.0/cs/BouncingBall.fmu"));
+        std::vector<uint8_t> content;
+        REQUIRE(zipper.extractFile("binaries/" + platform + "/BouncingBall" + ext, content));
+        std::ofstream outfile(binaries_dir / ("TestME" + ext), std::ios::binary);
+        outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
+    }
+
+    Fmi1BinaryChecker checker;
+    Certificate cert;
+    checker.validate(temp_path, cert);
+
+    CHECK(has_fail(cert));
+    CHECK(has_error_with_text(cert, "Mandatory function 'TestME_fmiGetVersion' is not exported."));
 
     // Cleanup
     fs::remove_all(temp_path);
