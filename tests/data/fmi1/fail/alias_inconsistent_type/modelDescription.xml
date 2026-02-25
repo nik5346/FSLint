@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="AliasFailType" modelIdentifier="AliasFailType" guid="{57567222-2621-4475-ae90-7607a72d1f7c}">
+<fmiModelDescription fmiVersion="1.0" modelName="AliasFailType" modelIdentifier="alias_inconsistent_type" guid="{57567222-2621-4475-ae90-7607a72d1f7c}">
+  <TypeDefinitions>
+    <Type name="MyEnum">
+      <EnumerationType>
+        <Item name="A" value="1"/>
+      </EnumerationType>
+    </Type>
+  </TypeDefinitions>
   <ModelVariables>
     <ScalarVariable name="v1" valueReference="1" causality="internal">
-      <Real start="0.0" />
+      <Integer start="1"/>
     </ScalarVariable>
-    <ScalarVariable name="v2" valueReference="1" causality="internal">
-      <Integer start="0" />
+    <ScalarVariable name="v2" valueReference="1" causality="internal" alias="alias">
+      <Enumeration declaredType="MyEnum" start="1"/>
     </ScalarVariable>
   </ModelVariables>
 </fmiModelDescription>
