@@ -67,4 +67,5 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkImplementation(xmlDocPtr doc, Certificate& cert);
     void checkUri(const std::string& uri, const std::string& attr_name, int line, TestResult& test);
     void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
+    bool checkReachability(const std::string& url);
 };

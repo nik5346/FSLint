@@ -7,8 +7,14 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
+
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <map>
@@ -681,6 +687,88 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
                                     ") references missing file in FMU: '" + relative_path + "'.");
         }
     }
+    else if (uri.compare(0, 7, "file://") == 0)
+    {
+        std::string path_str = uri.substr(7);
+        if (path_str.empty())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                    ") has an empty file:// URI.");
+        }
+        else
+        {
+            // Simple heuristic for absolute path: starts with / or [A-Z]:
+            const bool is_absolute = (path_str[0] == '/') || (path_str.size() > 1 && path_str[1] == ':');
+            if (is_absolute)
+            {
+                // On Windows, if it starts with /C:/, remove the leading / for std::filesystem
+                if (path_str.size() > 2 && path_str[0] == '/' && path_str[2] == ':')
+                    path_str.erase(0, 1);
+
+                if (!std::filesystem::exists(path_str))
+                {
+                    if (test.status == TestStatus::PASS)
+                        test.status = TestStatus::WARNING;
+                    test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                            ") references an external file that does not exist on this system: '" +
+                                            uri + "'. This may affect portability.");
+                }
+            }
+        }
+    }
+    else if (uri.compare(0, 7, "http://") == 0 || uri.compare(0, 8, "https://") == 0)
+    {
+        // Restrictive regex for URL validation to prevent command injection and ensure standard compliance.
+        static const std::regex url_regex(R"(^https?://[a-zA-Z0-9\-\._~:/?#%@\+&!=\[\]]+$)", std::regex::optimize);
+        if (!std::regex_match(uri, url_regex))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                    ") has an invalid or unsafe HTTP/HTTPS URI: '" + uri + "'.");
+        }
+        else if (!checkReachability(uri))
+        {
+            if (test.status == TestStatus::PASS)
+                test.status = TestStatus::WARNING;
+            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                    ") references a web source that appears to be unreachable: '" + uri + "'.");
+        }
+    }
+    else
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                ") has an unsupported or invalid URI scheme: '" + uri + "'.");
+    }
+}
+
+bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url)
+{
+    // Re-verify with the safe regex (already checked in checkUri, but good for defense-in-depth).
+    static const std::regex safe_url_regex(R"(^https?://[a-zA-Z0-9\-\._~:/?#%@\+&!=\[\]]+$)", std::regex::optimize);
+    if (!std::regex_match(url, safe_url_regex))
+        return false;
+
+    // Determine the platform-specific null device for redirection
+    std::string null_device = "/dev/null";
+#ifdef _WIN32
+    null_device = "NUL";
+#endif
+
+    // Use curl to check reachability.
+    // -I: Fetch headers only, -s: Silent, -L: Follow redirects, --max-time: timeout, --fail: exit non-zero on 4xx/5xx
+    std::string command = "curl -I -s -L --max-time 5 --fail \"" + url + "\" > " + null_device + " 2>&1";
+
+#ifdef _WIN32
+    int result = std::system(command.c_str());
+#else
+    // On POSIX, system() returns the termination status as defined by waitpid()
+    int status = std::system(command.c_str());
+    int result = (status != -1) ? WEXITSTATUS(status) : -1;
+#endif
+
+    return result == 0;
 }
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
