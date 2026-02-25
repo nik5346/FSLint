@@ -698,9 +698,7 @@ bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url)
     // Re-verify with the safe regex (already checked in checkUri, but good for defense-in-depth).
     static const std::regex safe_url_regex(R"(^https?://[a-zA-Z0-9\-\._~:/?#%@\+&!=\[\]]+$)", std::regex::optimize);
     if (!std::regex_match(url, safe_url_regex))
-    {
         return false;
-    }
 
     // Determine the platform-specific null device for redirection
     std::string null_device = "/dev/null";
