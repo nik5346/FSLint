@@ -511,8 +511,8 @@ void Fmi1ModelDescriptionChecker::checkModelIdentifierFormat(xmlDocPtr doc, Cert
 
 void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate& cert)
 {
-    // If it's CS, Implementation should be present
-    // Implementation can be CoSimulation_StandAlone or CoSimulation_Tool
+    // For FMI 1.0, the presence of the Implementation element distinguishes Co-Simulation from Model Exchange.
+    // If present, we validate its contents (CoSimulation_StandAlone or CoSimulation_Tool).
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/Implementation");
     if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
     {
