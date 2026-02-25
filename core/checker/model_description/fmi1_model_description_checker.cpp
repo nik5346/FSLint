@@ -122,24 +122,24 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
 {
     TestResult test{"Causality/Variability/Initial Combinations (FMI1)", TestStatus::PASS, {}};
 
-    // FMI 1.0 rules are simpler but let's enforce what's in the spec.
-    // Variability: constant, parameter, discrete, continuous
-    // Causality: input, output, internal, none
+    // FMI 1.0 rules for allowed combinations of causality and variability:
+    // constant: causality must be output, internal, or none (NOT input)
+    // parameter: causality must be input, internal, or none (NOT output)
 
     for (const auto& var : variables)
     {
-        if (var.causality == "input" && !var.initial.empty())
-        {
-            // Spec says: "This attribute is only allowed if "start" is also present and causality is not input"
-            // Wait, "if causality is not input" means it's NOT allowed for input.
-            // Our mapping of 'fixed' to 'initial' should reflect this.
-        }
-
-        if (var.variability == "continuous" && var.type != "Real")
+        if (var.variability == "constant" && var.causality == "input")
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") is of type " + var.type + " and cannot have variability \"continuous\".");
+                                    ") has illegal combination: variability=\"constant\" and causality=\"input\".");
+        }
+
+        if (var.variability == "parameter" && var.causality == "output")
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has illegal combination: variability=\"parameter\" and causality=\"output\".");
         }
     }
     cert.printTestResult(test);
@@ -150,11 +150,20 @@ void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
     TestResult test{"Legal Variability (FMI1)", TestStatus::PASS, {}};
     for (const auto& var : variables)
     {
+        // Only Real can be continuous
         if (var.variability == "continuous" && var.type != "Real")
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                     ") is of type " + var.type + " and cannot have variability \"continuous\".");
+        }
+
+        // Constant cannot be input
+        if (var.variability == "constant" && var.causality == "input")
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has variability \"constant\" and causality \"input\", which is illegal.");
         }
     }
     cert.printTestResult(test);
@@ -167,11 +176,17 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
     {
         bool needs_start = false;
         if (var.causality == "input")
+        {
             needs_start = true;
-        if (var.variability == "constant")
+        }
+        else if (var.variability == "constant")
+        {
             needs_start = true;
-        if (var.causality == "parameter" && (var.initial == "exact" || var.initial.empty()))
-            needs_start = true; // Most parameters need start
+        }
+        else if (var.variability == "parameter" && var.initial == "exact")
+        {
+            needs_start = true;
+        }
 
         if (needs_start && !var.start.has_value())
         {
@@ -185,9 +200,26 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
 
 void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    // FMI 1.0 doesn't have many illegal start values rules, mostly they are just ignored if not used.
-    (void)variables;
-    (void)cert;
+    TestResult test{"Illegal Start Values (FMI1)", TestStatus::PASS, {}};
+    for (const auto& var : variables)
+    {
+        // FMI 1.0: "fixed" attribute is only allowed if "start" is present
+        if (var.fixed.has_value() && !var.start.has_value())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has 'fixed' attribute but is missing 'start' value.");
+        }
+
+        // FMI 1.0: "fixed" attribute is not allowed for causality="input"
+        if (var.causality == "input" && var.fixed.has_value())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has causality=\"input\" and must not have a 'fixed' attribute.");
+        }
+    }
+    cert.printTestResult(test);
 }
 
 void Fmi1ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Variable>& variables,
@@ -395,7 +427,10 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
                 auto fixed = getXmlAttribute(child, "fixed");
                 if (fixed)
-                    var.initial = (*fixed == "true" ? "exact" : "approx");
+                {
+                    var.fixed = (*fixed == "true");
+                    var.initial = (var.fixed.value() ? "exact" : "approx");
+                }
 
                 if (elem_name == "Real")
                 {
