@@ -143,16 +143,20 @@ std::unique_ptr<Checker> CheckerFactory::createSchemaChecker(const ModelInfo& in
 
 std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const ModelInfo& info)
 {
+    std::unique_ptr<ModelDescriptionCheckerBase> checker;
     switch (info.standard)
     {
     case ModelStandard::FMI1_ME:
         [[fallthrough]];
     case ModelStandard::FMI1_CS:
-        return std::make_unique<Fmi1ModelDescriptionChecker>();
+        checker = std::make_unique<Fmi1ModelDescriptionChecker>();
+        break;
     case ModelStandard::FMI2:
-        return std::make_unique<Fmi2ModelDescriptionChecker>();
+        checker = std::make_unique<Fmi2ModelDescriptionChecker>();
+        break;
     case ModelStandard::FMI3:
-        return std::make_unique<Fmi3ModelDescriptionChecker>();
+        checker = std::make_unique<Fmi3ModelDescriptionChecker>();
+        break;
     case ModelStandard::SSP1:
         [[fallthrough]];
     case ModelStandard::SSP2:
@@ -160,6 +164,11 @@ std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const Mod
     default:
         return nullptr;
     }
+
+    if (checker)
+        checker->setOriginalPath(info.original_path);
+
+    return checker;
 }
 
 std::unique_ptr<Checker> CheckerFactory::createTerminalsAndIconsChecker(const ModelInfo& info)

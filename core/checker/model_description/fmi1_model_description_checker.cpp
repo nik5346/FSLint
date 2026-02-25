@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <map>
 #include <optional>
 #include <regex>
@@ -22,7 +23,6 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
     [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
 {
-    checkModelIdentifierFormat(doc, cert);
     checkImplementation(doc, cert);
     checkLegalVariability(variables, cert);
     checkCausalityVariabilityInitialCombinations(variables, cert);
@@ -487,26 +487,34 @@ void Fmi1ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult&
     // Special floats are allowed in FMI 1.0
 }
 
-void Fmi1ModelDescriptionChecker::checkModelIdentifierFormat(xmlDocPtr doc, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkModelIdentifier(const std::string& model_identifier,
+                                                       const std::string& interface_name, Certificate& cert)
 {
-    TestResult test{"Model Identifier Format", TestStatus::PASS, {}};
-    auto model_id = getXmlAttribute(xmlDocGetRootElement(doc), "modelIdentifier");
-    if (!model_id)
+    ModelDescriptionCheckerBase::checkModelIdentifier(model_identifier, interface_name, cert);
+    checkModelIdentifierMatch(model_identifier, cert);
+}
+
+void Fmi1ModelDescriptionChecker::checkModelIdentifierMatch(const std::string& model_identifier, Certificate& cert)
+{
+    const auto& original_path = getOriginalPath();
+    const auto& fmu_root_path = getFmuRootPath();
+
+    // If original_path is not set, we can't perform this check reliably in some contexts,
+    // but in normal execution it should be set. If it's empty, we fall back to root path stem.
+    const auto& path_to_check = original_path.empty() ? fmu_root_path : original_path;
+    const std::string expected_id = path_to_check.stem().string();
+
+    if (model_identifier != expected_id)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("modelIdentifier attribute is missing.");
+        cert.printTestResult({"Model Identifier Filename Match",
+                              TestStatus::FAIL,
+                              {std::format("FMI 1.0: modelIdentifier '{}' must match the FMU filename '{}'.",
+                                           model_identifier, expected_id)}});
     }
     else
     {
-        const std::regex id_pattern("^[a-zA-Z_][a-zA-Z0-9_]*$");
-        if (!std::regex_match(*model_id, id_pattern))
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("modelIdentifier \"" + *model_id +
-                                    "\" is invalid. It must be a valid C identifier.");
-        }
+        cert.printTestResult({"Model Identifier Filename Match", TestStatus::PASS, {}});
     }
-    cert.printTestResult(test);
 }
 
 void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate& cert)
