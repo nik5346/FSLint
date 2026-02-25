@@ -87,7 +87,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Model Description
 - **GUID Presence**: The `guid` attribute **must** be present and non-empty.
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
-- **Co-Simulation / Model Exchange Distinction**: Co-Simulation Tool FMUs are identified by the presence of an `<Implementation>` element; otherwise, the FMU is treated as Model Exchange.
 - **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes using `fmu://` **must** point to existing files within the archive.
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
