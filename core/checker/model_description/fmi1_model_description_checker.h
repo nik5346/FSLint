@@ -30,6 +30,9 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
     void checkAnnotations(xmlDocPtr doc, Certificate& cert) override;
 
+    void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
+                              Certificate& cert) override;
+
     void applyDefaultInitialValues(std::vector<Variable>& variables) override;
     void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
                                                       Certificate& cert) override;
@@ -60,7 +63,7 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                             const std::string& attr_name) override;
 
   private:
-    void checkModelIdentifierFormat(xmlDocPtr doc, Certificate& cert);
+    void checkModelIdentifierMatch(const std::string& model_identifier, Certificate& cert);
     void checkImplementation(xmlDocPtr doc, Certificate& cert);
     void checkUri(const std::string& uri, const std::string& attr_name, int line, TestResult& test);
     void checkAliases(const std::vector<Variable>& variables, Certificate& cert);

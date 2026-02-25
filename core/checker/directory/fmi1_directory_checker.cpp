@@ -41,23 +41,6 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     auto model_id = getXmlAttribute(root, "modelIdentifier");
     if (model_id)
     {
-        // Check if modelIdentifier matches filename (FMI 1.0 specific)
-        const auto& path_to_check = m_original_path.empty() ? path : m_original_path;
-        const std::string expected_id = path_to_check.stem().string();
-
-        if (*model_id != expected_id)
-        {
-            const TestResult test{"Model Identifier Filename Match",
-                                  TestStatus::FAIL,
-                                  {std::format("FMI 1.0: modelIdentifier '{}' must match the FMU filename '{}'.",
-                                               *model_id, expected_id)}};
-            cert.printTestResult(test);
-        }
-        else
-        {
-            cert.printTestResult({"Model Identifier Filename Match", TestStatus::PASS, {}});
-        }
-
         bool is_cs = false;
         xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
         if (xpath_context)

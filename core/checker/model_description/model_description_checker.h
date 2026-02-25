@@ -161,6 +161,11 @@ class ModelDescriptionCheckerBase : public Checker
         return std::nullopt;
     }
 
+    void setOriginalPath(const std::filesystem::path& path)
+    {
+        _original_path = path;
+    }
+
   protected:
     // Each derived class implements version-specific validation
     virtual void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
@@ -172,6 +177,11 @@ class ModelDescriptionCheckerBase : public Checker
     const std::filesystem::path& getFmuRootPath() const
     {
         return _fmu_root_path;
+    }
+
+    const std::filesystem::path& getOriginalPath() const
+    {
+        return _original_path;
     }
 
     virtual std::string getFmiVersion() const = 0;
@@ -198,8 +208,8 @@ class ModelDescriptionCheckerBase : public Checker
     virtual void checkAnnotations(xmlDocPtr doc, Certificate& cert) = 0;
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
                                             Certificate& cert);
-    void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
-                              Certificate& cert);
+    virtual void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
+                                      Certificate& cert);
     void checkDefaultExperiment(xmlDocPtr doc, Certificate& cert);
 
     // Common reference checks
@@ -261,6 +271,7 @@ class ModelDescriptionCheckerBase : public Checker
 
   private:
     std::filesystem::path _fmu_root_path;
+    std::filesystem::path _original_path;
     std::set<std::string> _used_type_definitions;
     std::set<std::string> _used_units;
 };

@@ -39,6 +39,15 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("implementation/file_missing_file",
                       "references missing file in FMU: 'resources/missing_extra.txt'");
     }
+
+    SECTION("Model Identifier Filename Match")
+    {
+        Certificate cert;
+        checker.setOriginalPath("WrongName.fmu");
+        checker.validate("tests/data/fmi1/pass/TestME", cert);
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
+    }
 }
 
 TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")

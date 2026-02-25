@@ -3,6 +3,7 @@
 #include "checker_factory.h"
 #include "fmi1_binary_checker.h"
 #include "fmi1_directory_checker.h"
+#include "fmi1_model_description_checker.h"
 #include "fmi2_build_description_checker.h"
 #include "fmi2_directory_checker.h"
 #include "fmi2_model_description_checker.h"
@@ -59,7 +60,8 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
     SECTION("Model Identifier Mismatch")
     {
         Certificate cert;
-        Fmi1DirectoryChecker mismatch_checker("WrongName.fmu");
+        Fmi1ModelDescriptionChecker mismatch_checker;
+        mismatch_checker.setOriginalPath("WrongName.fmu");
         mismatch_checker.validate("tests/data/fmi1/pass/TestME", cert);
         CHECK(has_fail(cert));
         CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
