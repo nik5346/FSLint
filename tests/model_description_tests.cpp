@@ -33,6 +33,8 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
     {
         validate_fail("alias_inconsistent_unit", "Variables sharing VR 1 must have the same unit");
         validate_fail("alias_inconsistent_type", "Variables sharing VR 1 must have the same type");
+        validate_fail("alias_inconsistent_start", "must have equivalent start values");
+        validate_fail("alias_inconsistent_start_negated", "must have equivalent start values");
     }
 
     SECTION("Implementation")
@@ -50,6 +52,24 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         checker.validate("tests/data/fmi1/pass/TestME", cert);
         REQUIRE(has_fail(cert));
         CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
+    }
+
+    SECTION("Legal Variability and Combinations")
+    {
+        validate_fail("variability_continuous_non_real", "cannot have variability \"continuous\"");
+        validate_fail("constant_input", "has illegal combination: variability=\"constant\" and causality=\"input\"");
+        validate_fail("parameter_output",
+                      "has illegal combination: variability=\"parameter\" and causality=\"output\"");
+    }
+
+    SECTION("Start Values")
+    {
+        validate_fail("start_missing_input", "must have a start value");
+        validate_fail("start_missing_constant", "must have a start value");
+        validate_fail("start_missing_parameter", "must have a start value");
+        validate_fail("start_missing_parameter_no_fixed", "must have a start value");
+        validate_fail("fixed_no_start", "has 'fixed' attribute but is missing 'start' value");
+        validate_fail("fixed_on_input", "has causality=\"input\" and must not have a 'fixed' attribute");
     }
 }
 
@@ -79,6 +99,12 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
     SECTION("FMI 1.0 Special Floats Valid")
     {
         checker.validate("tests/data/fmi1/pass/SpecialFloats", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("FMI 1.0 Alias Negated Valid")
+    {
+        checker.validate("tests/data/fmi1/pass/AliasNegated", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }

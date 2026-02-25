@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="Test" modelIdentifier="start_missing_constant" guid="{123}">
+  <ModelVariables>
+    <ScalarVariable name="v" valueReference="1" variability="constant">
+      <Real />
+    </ScalarVariable>
+  </ModelVariables>
+</fmiModelDescription>

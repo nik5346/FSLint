@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="Test" modelIdentifier="parameter_output" guid="{123}">
+  <ModelVariables>
+    <ScalarVariable name="v" valueReference="1" causality="output" variability="parameter">
+      <Real start="1.0" />
+    </ScalarVariable>
+  </ModelVariables>
+</fmiModelDescription>

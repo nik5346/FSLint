@@ -36,6 +36,7 @@ struct Variable
     std::string causality;
     std::string variability;
     std::string initial;
+    std::optional<bool> fixed;
     std::optional<std::string> start;
     size_t num_start_values = 0;
     std::optional<std::string> min;

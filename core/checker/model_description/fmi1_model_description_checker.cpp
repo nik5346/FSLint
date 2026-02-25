@@ -122,24 +122,24 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
 {
     TestResult test{"Causality/Variability/Initial Combinations (FMI1)", TestStatus::PASS, {}};
 
-    // FMI 1.0 rules are simpler but let's enforce what's in the spec.
-    // Variability: constant, parameter, discrete, continuous
-    // Causality: input, output, internal, none
+    // FMI 1.0 rules for allowed combinations of causality and variability:
+    // constant: causality must be output, internal, or none (NOT input)
+    // parameter: causality must be input, internal, or none (NOT output)
 
     for (const auto& var : variables)
     {
-        if (var.causality == "input" && !var.initial.empty())
-        {
-            // Spec says: "This attribute is only allowed if "start" is also present and causality is not input"
-            // Wait, "if causality is not input" means it's NOT allowed for input.
-            // Our mapping of 'fixed' to 'initial' should reflect this.
-        }
-
-        if (var.variability == "continuous" && var.type != "Real")
+        if (var.variability == "constant" && var.causality == "input")
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") is of type " + var.type + " and cannot have variability \"continuous\".");
+                                    ") has illegal combination: variability=\"constant\" and causality=\"input\".");
+        }
+
+        if (var.variability == "parameter" && var.causality == "output")
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has illegal combination: variability=\"parameter\" and causality=\"output\".");
         }
     }
     cert.printTestResult(test);
@@ -150,11 +150,20 @@ void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
     TestResult test{"Legal Variability (FMI1)", TestStatus::PASS, {}};
     for (const auto& var : variables)
     {
+        // Only Real can be continuous
         if (var.variability == "continuous" && var.type != "Real")
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                     ") is of type " + var.type + " and cannot have variability \"continuous\".");
+        }
+
+        // Constant cannot be input
+        if (var.variability == "constant" && var.causality == "input")
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has variability \"constant\" and causality \"input\", which is illegal.");
         }
     }
     cert.printTestResult(test);
@@ -168,10 +177,10 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
         bool needs_start = false;
         if (var.causality == "input")
             needs_start = true;
-        if (var.variability == "constant")
+        else if (var.variability == "constant")
             needs_start = true;
-        if (var.causality == "parameter" && (var.initial == "exact" || var.initial.empty()))
-            needs_start = true; // Most parameters need start
+        else if (var.variability == "parameter" && var.initial == "exact")
+            needs_start = true;
 
         if (needs_start && !var.start.has_value())
         {
@@ -185,9 +194,26 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
 
 void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    // FMI 1.0 doesn't have many illegal start values rules, mostly they are just ignored if not used.
-    (void)variables;
-    (void)cert;
+    TestResult test{"Illegal Start Values (FMI1)", TestStatus::PASS, {}};
+    for (const auto& var : variables)
+    {
+        // FMI 1.0: "fixed" attribute is only allowed if "start" is present
+        if (var.fixed.has_value() && !var.start.has_value())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has 'fixed' attribute but is missing 'start' value.");
+        }
+
+        // FMI 1.0: "fixed" attribute is not allowed for causality="input"
+        if (var.causality == "input" && var.fixed.has_value())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has causality=\"input\" and must not have a 'fixed' attribute.");
+        }
+    }
+    cert.printTestResult(test);
 }
 
 void Fmi1ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Variable>& variables,
@@ -395,7 +421,10 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
                 auto fixed = getXmlAttribute(child, "fixed");
                 if (fixed)
-                    var.initial = (*fixed == "true" ? "exact" : "approx");
+                {
+                    var.fixed = (*fixed == "true");
+                    var.initial = (var.fixed.value() ? "exact" : "approx");
+                }
 
                 if (elem_name == "Real")
                 {
@@ -658,39 +687,106 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 {
     TestResult test{"Alias Variables (FMI1)", TestStatus::PASS, {}};
 
-    // Group variables by valueReference
-    std::map<uint32_t, std::vector<const Variable*>> vr_to_vars;
+    auto get_base_type = [](const std::string& type) -> std::string
+    {
+        if (type == "Integer" || type == "Enumeration")
+            return "Integer/Enumeration";
+        return type;
+    };
+
+    // Group variables by base type and valueReference
+    // In FMI 1.0, valueReference is unique only per base type.
+    std::map<std::pair<std::string, uint32_t>, std::vector<const Variable*>> alias_sets;
     for (const auto& var : variables)
         if (var.value_reference.has_value())
-            vr_to_vars[*var.value_reference].push_back(&var);
+            alias_sets[{get_base_type(var.type), *var.value_reference}].push_back(&var);
 
-    for (const auto& [vr, alias_set] : vr_to_vars)
+    for (const auto& [key, alias_set] : alias_sets)
     {
         if (alias_set.size() <= 1)
             continue;
 
+        const auto& [base_type, vr] = key;
         const Variable* first = alias_set[0];
+        const Variable* first_with_start = nullptr;
+        double first_normalized_start = 0.0;
 
-        for (size_t i = 1; i < alias_set.size(); ++i)
+        for (const auto* var : alias_set)
         {
-            const Variable* var = alias_set[i];
-
             // 1. Same base type
             if (var->type != first->type)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same type. \"" +
-                                        var->name + "\" is " + var->type + " but \"" + first->name + "\" is " +
-                                        first->type + ".");
+                test.messages.push_back(
+                    std::format("Variables sharing VR {} must have the same type. \"{}\" is {} but \"{}\" is {}.", vr,
+                                var->name, var->type, first->name, first->type));
             }
 
             // 2. If Real, same unit
-            if (var->type == "Real" && var->unit != first->unit)
+            if (base_type == "Real" && var->unit != first->unit)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same unit. \"" +
-                                        var->name + "\" has unit \"" + var->unit.value_or("(none)") + "\" but \"" +
-                                        first->name + "\" has unit \"" + first->unit.value_or("(none)") + "\".");
+                test.messages.push_back(std::format("Variables sharing VR {} must have the same unit. \"{}\" has unit "
+                                                    "\"{}\" but \"{}\" has unit \"{}\".",
+                                                    vr, var->name, var->unit.value_or("(none)"), first->name,
+                                                    first->unit.value_or("(none)")));
+            }
+
+            // 3. Equivalent start values
+            if (var->start.has_value())
+            {
+                double current_val = 0;
+                bool valid = false;
+                const bool negated = (var->alias && *var->alias == "negatedAlias");
+
+                if (base_type == "Real")
+                {
+                    if (const auto val = parseNumber<double>(*var->start))
+                    {
+                        current_val = (negated ? -*val : *val);
+                        valid = true;
+                    }
+                }
+                else if (base_type == "Integer/Enumeration")
+                {
+                    if (const auto val = parseNumber<int32_t>(*var->start))
+                    {
+                        current_val = static_cast<double>(negated ? -*val : *val);
+                        valid = true;
+                    }
+                }
+                else if (base_type == "Boolean")
+                {
+                    if (const auto val = parseNumber<int32_t>(*var->start))
+                    {
+                        // In FMI 1.0 Booleans are 0 or 1.
+                        current_val = static_cast<double>(negated ? -*val : *val);
+                        valid = true;
+                    }
+                }
+
+                if (valid)
+                {
+                    if (!first_with_start)
+                    {
+                        first_with_start = var;
+                        first_normalized_start = current_val;
+                    }
+                    else
+                    {
+                        // Use a small epsilon for float comparison, exact for others
+                        const double eps = (base_type == "Real") ? 1e-10 : 0.0;
+                        if (std::abs(current_val - first_normalized_start) > eps)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(std::format(
+                                "Variables sharing VR {} must have equivalent start values. \"{}\" has start=\"{}\" "
+                                "(normalized: {}) but \"{}\" has start=\"{}\" (normalized: {}).",
+                                vr, var->name, *var->start, current_val, first_with_start->name,
+                                *first_with_start->start, first_normalized_start));
+                        }
+                    }
+                }
             }
         }
     }
