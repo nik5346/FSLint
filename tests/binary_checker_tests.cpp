@@ -96,10 +96,17 @@ TEST_CASE("FMI 1.0 Binary Exports", "[binary][fmi1]")
     if (!reference_fmus_available())
         SKIP("Reference FMUs not available");
 
-    SECTION("ME")
+    SECTION("CS")
     {
         ModelChecker mc;
         Certificate cert = mc.validate("tests/reference_fmus/1.0/cs/BouncingBall.fmu", true);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("ME")
+    {
+        ModelChecker mc;
+        Certificate cert = mc.validate("tests/reference_fmus/1.0/me/BouncingBall.fmu", true);
         CHECK_FALSE(has_fail(cert));
     }
 }
@@ -153,6 +160,50 @@ TEST_CASE("Binary Checker Validation Failure", "[binary][checker]")
 
     CHECK(has_fail(cert));
     CHECK(has_error_with_text(cert, "Mandatory function 'fmi2GetVersion' is not exported."));
+
+    // Cleanup
+    fs::remove_all(temp_path);
+}
+
+TEST_CASE("FMI 1.0 Binary Validation Failure", "[binary][fmi1][checker]")
+{
+    if (!reference_fmus_available())
+        SKIP("Reference FMUs not available");
+
+    // Create a temporary test dir
+    fs::path temp_path = "tests/fmi1_binary_fail";
+    fs::create_directories(temp_path);
+
+    // Write a minimal FMI 1.0 modelDescription.xml
+    std::ofstream md_file(temp_path / "modelDescription.xml");
+    md_file << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            << "<fmiModelDescription fmiVersion=\"1.0\" modelName=\"fail_test\" modelIdentifier=\"fail_test\" "
+               "guid=\"{123}\">\n"
+            << "  <ModelVariables/>\n"
+            << "</fmiModelDescription>\n";
+    md_file.close();
+
+    // Create binaries dir
+    fs::path binaries_dir = temp_path / "binaries" / "linux64";
+    fs::create_directories(binaries_dir);
+
+    // Extract BouncingBall.so (which has BouncingBall_ prefixes) and save it as fail_test.so
+    // The checker will expect fail_test_ prefixes and thus fail.
+    {
+        Zipper zipper;
+        REQUIRE(zipper.open("tests/reference_fmus/1.0/cs/BouncingBall.fmu"));
+        std::vector<uint8_t> content;
+        REQUIRE(zipper.extractFile("binaries/linux64/BouncingBall.so", content));
+        std::ofstream outfile(binaries_dir / "fail_test.so", std::ios::binary);
+        outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
+    }
+
+    Fmi1BinaryChecker checker;
+    Certificate cert;
+    checker.validate(temp_path, cert);
+
+    CHECK(has_fail(cert));
+    CHECK(has_error_with_text(cert, "Mandatory function 'fail_test_fmiGetVersion' is not exported."));
 
     // Cleanup
     fs::remove_all(temp_path);
