@@ -39,7 +39,7 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("implementation/file_missing_file",
                       "references missing file in FMU: 'resources/missing_extra.txt'");
         validate_fail("implementation/InvalidUriScheme", "has an unsupported or invalid URI scheme");
-        validate_fail("implementation/InvalidHttpUrl", "has an invalid HTTP/HTTPS URI");
+        validate_fail("implementation/InvalidHttpUrl", "has an invalid or unsafe HTTP/HTTPS URI");
     }
 
     SECTION("Model Identifier Filename Match")
