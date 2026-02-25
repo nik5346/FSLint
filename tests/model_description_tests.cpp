@@ -38,6 +38,8 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
                       "references missing file in FMU: 'resources/non_existent.mdl'");
         validate_fail("implementation/file_missing_file",
                       "references missing file in FMU: 'resources/missing_extra.txt'");
+        validate_fail("implementation/invalid_uri_scheme", "has an unsupported or invalid URI scheme");
+        validate_fail("implementation/invalid_http_url", "has an invalid HTTP/HTTPS URI");
     }
 
     SECTION("Model Identifier Filename Match")
@@ -47,6 +49,26 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         checker.validate("tests/data/fmi1/pass/TestME", cert);
         REQUIRE(has_fail(cert));
         CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
+    }
+}
+
+TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
+{
+    Fmi1ModelDescriptionChecker checker;
+
+    auto validate_warning = [&](const std::string& path, const std::string& expected_warning)
+    {
+        Certificate cert;
+        checker.validate("tests/data/fmi1/warn/" + path, cert);
+        INFO("Checking path: " << path);
+        REQUIRE(has_warning(cert));
+        CHECK(has_warning_with_text(cert, expected_warning));
+    };
+
+    SECTION("Implementation")
+    {
+        validate_warning("implementation/external_file_missing",
+                         "references an external file that does not exist on this system");
     }
 }
 

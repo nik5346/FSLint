@@ -631,6 +631,55 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
                                     ") references missing file in FMU: '" + relative_path + "'.");
         }
     }
+    else if (uri.compare(0, 7, "file://") == 0)
+    {
+        std::string path_str = uri.substr(7);
+        if (path_str.empty())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                    ") has an empty file:// URI.");
+        }
+        else
+        {
+            // Simple heuristic for absolute path: starts with / or [A-Z]:
+            const bool is_absolute = (path_str[0] == '/') || (path_str.size() > 1 && path_str[1] == ':');
+            if (is_absolute)
+            {
+                // On Windows, if it starts with /C:/, remove the leading / for std::filesystem
+                if (path_str.size() > 2 && path_str[0] == '/' && path_str[2] == ':')
+                {
+                    path_str.erase(0, 1);
+                }
+
+                if (!std::filesystem::exists(path_str))
+                {
+                    if (test.status == TestStatus::PASS)
+                        test.status = TestStatus::WARNING;
+                    test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                            ") references an external file that does not exist on this system: '" +
+                                            uri + "'.");
+                }
+            }
+        }
+    }
+    else if (uri.compare(0, 7, "http://") == 0 || uri.compare(0, 8, "https://") == 0)
+    {
+        // Simple regex for URL validation
+        static const std::regex url_regex(R"(^https?://[^\s/$.?#].[^\s]*$)", std::regex::optimize);
+        if (!std::regex_match(uri, url_regex))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                    ") has an invalid HTTP/HTTPS URI: '" + uri + "'.");
+        }
+    }
+    else
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                ") has an unsupported or invalid URI scheme: '" + uri + "'.");
+    }
 }
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)

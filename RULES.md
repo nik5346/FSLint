@@ -87,7 +87,10 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Model Description
 - **GUID Presence**: The `guid` attribute **must** be present and non-empty.
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
-- **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes using `fmu://` **must** point to existing files within the archive.
+- **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **must** use a valid URI scheme (`fmu://`, `file://`, `http://`, or `https://`).
+  - URIs using `fmu://` **must** point to existing files within the archive.
+  - URIs using `http://` or `https://` **must** follow the standard URL format.
+  - URIs using `file://` **should** point to existing files if they use an absolute path; a warning is issued if they do not exist on the current system.
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
 ### Variable Consistency
