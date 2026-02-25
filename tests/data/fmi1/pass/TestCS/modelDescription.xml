@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="TestCS" modelIdentifier="TestCS" guid="456">
+<fmiModelDescription fmiVersion="1.0" modelName="TestCS" modelIdentifier="TestCS" guid="{57567222-2621-4475-ae90-7607a72d1f7c}">
   <Implementation>
     <CoSimulation_StandAlone />
   </Implementation>
