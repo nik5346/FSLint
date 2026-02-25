@@ -3,16 +3,16 @@
   <TypeDefinitions>
     <Type name="MyEnum">
       <EnumerationType>
-        <Item name="A" value="1"/>
+        <Item name="A" value="1" />
       </EnumerationType>
     </Type>
   </TypeDefinitions>
   <ModelVariables>
     <ScalarVariable name="v1" valueReference="1" causality="internal">
-      <Integer start="1"/>
+      <Integer start="1" />
     </ScalarVariable>
     <ScalarVariable name="v2" valueReference="1" causality="internal" alias="alias">
-      <Enumeration declaredType="MyEnum" start="1"/>
+      <Enumeration declaredType="MyEnum" start="1" />
     </ScalarVariable>
   </ModelVariables>
 </fmiModelDescription>
