@@ -89,8 +89,8 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
 - **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **must** use a valid URI scheme (`fmu://`, `file://`, `http://`, or `https://`).
   - URIs using `fmu://` **must** point to existing files within the archive.
-  - URIs using `http://` or `https://` **must** follow the standard URL format.
-  - URIs using `file://` **should** point to existing files if they use an absolute path; a warning is issued if they do not exist on the current system.
+  - URIs using `http://` or `https://` **should** be reachable; a warning is issued if the source appears to be offline or unreachable.
+  - URIs using `file://` **should** point to existing files if they use an absolute path; a warning is issued if they do not exist on the current system (this may affect portability).
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
 ### Variable Consistency

@@ -7,6 +7,12 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
+
+#include <cstdlib>
+#include <cstdio>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -658,7 +664,7 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
                         test.status = TestStatus::WARNING;
                     test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
                                             ") references an external file that does not exist on this system: '" +
-                                            uri + "'.");
+                                            uri + "'. This may affect portability.");
                 }
             }
         }
@@ -673,6 +679,13 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
             test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
                                     ") has an invalid HTTP/HTTPS URI: '" + uri + "'.");
         }
+        else if (!checkReachability(uri))
+        {
+            if (test.status == TestStatus::PASS)
+                test.status = TestStatus::WARNING;
+            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                    ") references a web source that appears to be unreachable: '" + uri + "'.");
+        }
     }
     else
     {
@@ -680,6 +693,27 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
         test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
                                 ") has an unsupported or invalid URI scheme: '" + uri + "'.");
     }
+}
+
+bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url)
+{
+    // Use curl to check reachability.
+    // -I: Fetch headers only
+    // -s: Silent mode
+    // -L: Follow redirects
+    // --max-time: Timeout in seconds
+    // --fail: Fail silently on server errors (non-2xx)
+    std::string command = "curl -I -s -L --max-time 5 --fail \"" + url + "\" > /dev/null 2>&1";
+
+#ifdef _WIN32
+    int result = std::system(command.c_str());
+#else
+    // On POSIX, system() returns the termination status as defined by waitpid()
+    int status = std::system(command.c_str());
+    int result = (status != -1) ? WEXITSTATUS(status) : -1;
+#endif
+
+    return result == 0;
 }
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)

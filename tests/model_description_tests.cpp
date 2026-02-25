@@ -38,8 +38,8 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
                       "references missing file in FMU: 'resources/non_existent.mdl'");
         validate_fail("implementation/file_missing_file",
                       "references missing file in FMU: 'resources/missing_extra.txt'");
-        validate_fail("implementation/invalid_uri_scheme", "has an unsupported or invalid URI scheme");
-        validate_fail("implementation/invalid_http_url", "has an invalid HTTP/HTTPS URI");
+        validate_fail("implementation/InvalidUriScheme", "has an unsupported or invalid URI scheme");
+        validate_fail("implementation/InvalidHttpUrl", "has an invalid HTTP/HTTPS URI");
     }
 
     SECTION("Model Identifier Filename Match")
@@ -67,8 +67,10 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
 
     SECTION("Implementation")
     {
-        validate_warning("implementation/external_file_missing",
+        validate_warning("implementation/ExternalFileMissing",
                          "references an external file that does not exist on this system");
+        validate_warning("implementation/UnreachableWebSource",
+                         "references a web source that appears to be unreachable");
     }
 }
 
