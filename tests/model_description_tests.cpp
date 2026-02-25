@@ -24,6 +24,9 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
     SECTION("Metadata")
     {
         validate_fail("metadata/fmi_version_invalid", "is invalid for FMI 1.0");
+        validate_fail("metadata/guid_missing", "guid attribute is missing");
+        validate_fail("metadata/guid_empty", "guid attribute is empty");
+        validate_fail("metadata/guid_invalid", "does not match expected GUID format");
     }
 
     SECTION("Aliases")

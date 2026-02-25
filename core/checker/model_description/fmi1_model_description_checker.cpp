@@ -43,12 +43,33 @@ void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
 
 void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid, Certificate& cert)
 {
-    TestResult test{"GUID Presence", TestStatus::PASS, {}};
-    if (!guid.has_value() || guid->empty())
+    TestResult test{"GUID Format", TestStatus::PASS, {}};
+    if (!guid.has_value())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("guid attribute is missing or empty.");
+        test.messages.push_back("guid attribute is missing.");
+        cert.printTestResult(test);
+        return;
     }
+
+    if (guid->empty())
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("guid attribute is empty.");
+        cert.printTestResult(test);
+        return;
+    }
+
+    static const std::regex guid_pattern(
+        R"(^(\{)?[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}(\})?$)");
+
+    if (!std::regex_match(*guid, guid_pattern))
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("guid \"" + *guid +
+                                "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
+    }
+
     cert.printTestResult(test);
 }
 
