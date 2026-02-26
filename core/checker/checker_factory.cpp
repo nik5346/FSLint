@@ -3,6 +3,7 @@
 #include "model_info.h"
 
 #include "checker.h"
+#include "model_description_checker.h"
 
 #include "fmi1_schema_checker.h"
 #include "fmi2_schema_checker.h"

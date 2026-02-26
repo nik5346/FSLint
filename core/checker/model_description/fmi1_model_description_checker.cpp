@@ -7,9 +7,15 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 
-#ifndef _WIN32
+// NOLINTBEGIN(misc-include-cleaner)
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <fcntl.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #endif
+// NOLINTEND(misc-include-cleaner)
 
 #include <cstddef>
 #include <cstdint>
@@ -22,6 +28,7 @@
 #include <regex>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
@@ -181,11 +188,8 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
     for (const auto& var : variables)
     {
         bool needs_start = false;
-        if (var.causality == "input")
-            needs_start = true;
-        else if (var.variability == "constant")
-            needs_start = true;
-        else if (var.variability == "parameter" && var.initial == "exact")
+        if (var.causality == "input" || var.variability == "constant" ||
+            (var.variability == "parameter" && var.initial == "exact"))
             needs_start = true;
 
         if (needs_start && !var.start.has_value())
@@ -743,32 +747,74 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
     }
 }
 
+// NOLINTBEGIN(misc-include-cleaner)
+#ifdef _WIN32
+static int runProcess(const std::string& url)
+{
+    // Build the command line — no shell, direct curl invocation
+    std::string cmdLine = "curl -I -s -L --max-time 5 --fail \"" + url + "\"";
+
+    STARTUPINFOA si{};
+    si.cb = sizeof(si);
+    // Suppress curl output by redirecting handles to NUL
+    HANDLE hNull = CreateFileA("NUL", GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = hNull;
+    si.hStdError = hNull;
+
+    PROCESS_INFORMATION pi{};
+    if (!CreateProcessA(nullptr, cmdLine.data(), nullptr, nullptr,
+                        /*bInheritHandles=*/TRUE, 0, nullptr, nullptr, &si, &pi))
+    {
+        CloseHandle(hNull);
+        return -1;
+    }
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD exitCode = 1;
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(hNull);
+    return static_cast<int>(exitCode);
+}
+#else
+static int runProcess(const std::string& url)
+{
+    pid_t pid = fork();
+    if (pid < 0)
+        return -1;
+
+    if (pid == 0) // child
+    {
+        // Redirect stdout/stderr to /dev/null
+        int fd = open("/dev/null", O_WRONLY);
+        if (fd >= 0)
+        {
+            dup2(fd, STDOUT_FILENO);
+            dup2(fd, STDERR_FILENO);
+            close(fd);
+        }
+
+        // execvp does NOT invoke a shell
+        execlp("curl", "curl", "-I", "-s", "-L", "--max-time", "5", "--fail", url.c_str(), nullptr);
+        _exit(127); // exec failed
+    }
+
+    int status = 0;
+    waitpid(pid, &status, 0);
+    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+}
+#endif
+// NOLINTEND(misc-include-cleaner)
+
 bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url)
 {
-    // Re-verify with the safe regex (already checked in checkUri, but good for defense-in-depth).
     static const std::regex safe_url_regex(R"(^https?://[a-zA-Z0-9\-\._~:/?#%@\+&!=\[\]]+$)", std::regex::optimize);
     if (!std::regex_match(url, safe_url_regex))
         return false;
 
-    // Determine the platform-specific null device for redirection
-    std::string null_device = "/dev/null";
-#ifdef _WIN32
-    null_device = "NUL";
-#endif
-
-    // Use curl to check reachability.
-    // -I: Fetch headers only, -s: Silent, -L: Follow redirects, --max-time: timeout, --fail: exit non-zero on 4xx/5xx
-    std::string command = "curl -I -s -L --max-time 5 --fail \"" + url + "\" > " + null_device + " 2>&1";
-
-#ifdef _WIN32
-    int result = std::system(command.c_str());
-#else
-    // On POSIX, system() returns the termination status as defined by waitpid()
-    int status = std::system(command.c_str());
-    int result = (status != -1) ? WEXITSTATUS(status) : -1;
-#endif
-
-    return result == 0;
+    return runProcess(url) == 0;
 }
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
