@@ -38,6 +38,8 @@ endif()
 # ============================================================================
 # Clang-Tidy Integration
 # ============================================================================
+option(CLANG_TIDY_AS_ERRORS "Treat clang-tidy warnings as errors" OFF)
+
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 find_program(RUN_CLANG_TIDY_EXE NAMES "run-clang-tidy" "run-clang-tidy.py")
 
@@ -66,6 +68,9 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
         -p ${CMAKE_BINARY_DIR}
         "-header-filter=(core|cli|tests)/.*"
     )
+    if(CLANG_TIDY_AS_ERRORS)
+        list(APPEND CLANG_TIDY_ARGS "--warnings-as-errors=*")
+    endif()
     set(CLANG_TIDY_TARGET_FILES ${TIDY_SOURCES})
 
     if(RUN_CLANG_TIDY_EXE AND Python3_Interpreter_FOUND)
@@ -81,6 +86,9 @@ if(CLANG_TIDY_EXE OR RUN_CLANG_TIDY_EXE)
             -clang-tidy-binary ${CLANG_TIDY_EXE}
             "-header-filter=.*"
         )
+        if(CLANG_TIDY_AS_ERRORS)
+            list(APPEND CLANG_TIDY_ARGS "-warnings-as-errors=*")
+        endif()
 
         # run-clang-tidy uses regex matching for files. To be cross-platform (handling both / and \),
         # we convert implementation file paths to relative regex patterns that are slash-agnostic.
