@@ -32,7 +32,7 @@ jobs:
     - name: Check Encodings
       run: python scripts/check_encodings.py
     - name: Configure CMake
-      run: cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      run: cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON
     - name: XML Format Check
       run: cmake --build build --target format-xml-check
     - name: Clang-Format Check
