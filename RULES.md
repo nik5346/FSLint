@@ -45,7 +45,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Generation Date and Time**:
   - **Must** be in ISO 8601 format (e.g., `YYYY-MM-DDThh:mm:ssZ`).
   - **Must** be a valid date in the past (not after the current system time).
-  - **Should** not be unreasonably old (before 2010).
 - **Model Version Format**: The `version` attribute of the model. Semantic versioning (`MAJOR.MINOR.PATCH`) is **recommended**.
 - **Copyright Notice**:
   - **Should** begin with ©, "Copyright", or "Copr.".
@@ -90,6 +89,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ## FMI 1.0 Rules
 
 ### Model Description
+- **Generation Date and Time**: **Should** not be unreasonably old (before 2010).
 - **GUID Presence**: The `guid` attribute **must** be present and non-empty.
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
 - **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **must** use a valid URI scheme (`fmu://`, `file://`, `http://`, or `https://`).
@@ -133,6 +133,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **terminalsAndIcons.xml**: **Must** be valid against `fmi3TerminalsAndIcons.xsd` (if present in `terminalsAndIcons/`).
 
 ### Model Description
+- **Generation Date and Time**: **Should** not be unreasonably old (before 2014).
 - **Enumeration Variables**: **Must** have a `declaredType` attribute.
 - **Alias Variables (same VR)**:
   - At most one variable in an alias set **can** be settable with `fmi2SetXXX`.
@@ -198,6 +199,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ## FMI 3.0 Rules
 
 ### Model Description
+- **Generation Date and Time**: **Should** not be unreasonably old (before 2022).
 - **instantiationToken**: The `instantiationToken` **should** follow the GUID format.
 - **Annotations**: Annotation types within `Annotations` **must** be unique within their container.
 - **Independent Variable**: Exactly one **is** allowed; it **must** be `Float32` or `Float64`, and have no `initial` or `start` attribute.

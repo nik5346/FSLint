@@ -12,6 +12,7 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <ctime>
 #include <format>
 #include <map>
 #include <optional>
@@ -2371,6 +2372,12 @@ void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
 
     xmlXPathFreeObject(xpath_obj);
     cert.printTestResult(test);
+}
+
+void Fmi3ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
+                                                                 TestResult& test)
+{
+    checkGenerationDateReleaseYearBase(dt, generation_time, 2022, "3.0", test);
 }
 
 void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)

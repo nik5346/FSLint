@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <format>
 #include <map>
@@ -88,6 +89,12 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     }
 
     cert.printTestResult(test);
+}
+
+void Fmi1ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
+                                                                 TestResult& test)
+{
+    checkGenerationDateReleaseYearBase(dt, generation_time, 2010, "1.0", test);
 }
 
 void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert)

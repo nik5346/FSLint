@@ -374,7 +374,8 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
                                                              "recommended to provide a generation timestamp for "
                                                              "traceability.");
         validate_warning("generation_date_and_time_empty", "Attribute 'generationDateAndTime' is empty.");
-        validate_warning("generation_date_and_time_old", "is before the first FMI standard release");
+        validate_warning("generation_date_and_time_old", "is before the FMI 2.0 standard release (2014)");
+        validate_warning("generation_date_and_time_too_old", "is before the FMI 2.0 standard release (2014)");
     }
 
     SECTION("Interfaces")
@@ -624,7 +625,8 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("generation_date_and_time_missing", "Attribute 'generationDateAndTime' is missing. It is "
                                                              "recommended to provide a generation timestamp for "
                                                              "traceability.");
-        validate_warning("generation_date_and_time_old", "is before the first FMI standard release");
+        validate_warning("generation_date_and_time_old", "is before the FMI 3.0 standard release (2022)");
+        validate_warning("generation_date_and_time_too_old", "is before the FMI 3.0 standard release (2022)");
 
         validate_warning("copyright_format_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
         validate_warning("copyright_format_no_year", "should include the year of publication");
