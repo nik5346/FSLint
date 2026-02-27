@@ -45,7 +45,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Generation Date and Time**:
   - **Must** be in ISO 8601 format (e.g., `YYYY-MM-DDThh:mm:ssZ`).
   - **Must** be a valid date in the past (not after the current system time).
-  - **Should** not be unreasonably old (before 2010).
+  - **Should** not be unreasonably old (before 2010 for FMI 1.0, 2014 for FMI 2.0, 2022 for FMI 3.0).
 - **Model Version Format**: The `version` attribute of the model. Semantic versioning (`MAJOR.MINOR.PATCH`) is **recommended**.
 - **Copyright Notice**:
   - **Should** begin with ©, "Copyright", or "Copr.".
