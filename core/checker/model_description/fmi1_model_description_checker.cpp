@@ -176,8 +176,9 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinationsIm
             if (var.causality == "output")
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has illegal combination: variability=\"parameter\" and causality=\"output\".");
+                test.messages.push_back(
+                    "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                    ") has illegal combination: variability=\"parameter\" and causality=\"output\".");
             }
             if (!_is_cs && var.causality == "input")
             {
