@@ -37,10 +37,11 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
 {
     checkImplementation(doc, cert);
-    checkLegalVariability(variables, cert);
-    checkCausalityVariabilityInitialCombinations(variables, cert);
-    checkRequiredStartValues(variables, cert);
-    checkIllegalStartValues(variables, cert);
+    // Already called by base class:
+    // checkLegalVariability(variables, cert);
+    // checkCausalityVariabilityInitialCombinations(variables, cert);
+    // checkRequiredStartValues(variables, cert);
+    // checkIllegalStartValues(variables, cert);
     checkMinMaxStartValues(variables, type_definitions, cert);
     checkAliases(variables, cert);
 }
@@ -136,23 +137,41 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
     TestResult test{"Causality/Variability/Initial Combinations (FMI1)", TestStatus::PASS, {}};
 
     // FMI 1.0 rules for allowed combinations of causality and variability:
-    // constant: causality must be output, internal, or none (NOT input)
+    // For both ME and CS:
+    // constant: causality must be internal, or none (NOT input, NOT output)
+    // For ME (Section 3.3):
+    // parameter: causality must be internal, or none (NOT input, NOT output)
+    // For CS (Section 2.2.4):
     // parameter: causality must be input, internal, or none (NOT output)
 
     for (const auto& var : variables)
     {
-        if (var.variability == "constant" && var.causality == "input")
+        if (var.variability == "constant")
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has illegal combination: variability=\"constant\" and causality=\"input\".");
+            if (var.causality == "input" || var.causality == "output")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has illegal combination: variability=\"constant\" and causality=\"" +
+                                        var.causality + "\".");
+            }
         }
 
-        if (var.variability == "parameter" && var.causality == "output")
+        if (var.variability == "parameter")
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has illegal combination: variability=\"parameter\" and causality=\"output\".");
+            if (var.causality == "output")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has illegal combination: variability=\"parameter\" and causality=\"output\".");
+            }
+            if (!_is_cs && var.causality == "input")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has illegal combination for Model Exchange: variability=\"parameter\" and "
+                                        "causality=\"input\".");
+            }
         }
     }
     cert.printTestResult(test);
@@ -164,19 +183,20 @@ void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
     for (const auto& var : variables)
     {
         // Only Real can be continuous
-        if (var.variability == "continuous" && var.type != "Real")
+        if (var.variability == "continuous")
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") is of type " + var.type + " and cannot have variability \"continuous\".");
-        }
-
-        // Constant cannot be input
-        if (var.variability == "constant" && var.causality == "input")
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has variability \"constant\" and causality \"input\", which is illegal.");
+            if (_is_cs)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") has variability \"continuous\", which is not allowed in Co-Simulation.");
+            }
+            else if (var.type != "Real")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                        ") is of type " + var.type + " and cannot have variability \"continuous\".");
+            }
         }
     }
     cert.printTestResult(test);
@@ -221,6 +241,22 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                     ") has causality=\"input\" and must not have a 'fixed' attribute.");
+        }
+
+        // FMI 1.0: "fixed" attribute is not allowed for variability="constant"
+        if (var.variability == "constant" && var.fixed.has_value())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has variability=\"constant\" and must not have a 'fixed' attribute.");
+        }
+
+        // FMI 1.0: "fixed" attribute is not allowed for variability="continuous"
+        if (var.variability == "continuous" && var.fixed.has_value())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    ") has variability=\"continuous\" and must not have a 'fixed' attribute.");
         }
     }
     cert.printTestResult(test);
@@ -386,6 +422,13 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
 
 std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
 {
+    _is_cs = false;
+    xmlXPathObjectPtr xpath_obj_impl = getXPathNodes(doc, "/fmiModelDescription/Implementation");
+    if (xpath_obj_impl && xpath_obj_impl->nodesetval && xpath_obj_impl->nodesetval->nodeNr > 0)
+        _is_cs = true;
+    if (xpath_obj_impl)
+        xmlXPathFreeObject(xpath_obj_impl);
+
     std::vector<Variable> variables;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/ModelVariables/ScalarVariable");
     if (!xpath_obj || !xpath_obj->nodesetval)
