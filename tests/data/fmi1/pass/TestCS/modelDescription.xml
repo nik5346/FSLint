@@ -4,7 +4,7 @@
     <CoSimulation_StandAlone />
   </Implementation>
   <ModelVariables>
-    <ScalarVariable name="u" valueReference="1" causality="input">
+    <ScalarVariable name="u" valueReference="1" causality="input" variability="discrete">
       <Real start="0.0" />
     </ScalarVariable>
   </ModelVariables>

@@ -99,10 +99,18 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
 ### Variable Consistency
-- **Legal Variability**: Variability **must** be compatible with the variable's type and causality. Only floating-point types (`Real`) can be `continuous`.
+- **Legal Variability**:
+  - Variability **must** be compatible with the variable's type and causality.
+  - Only floating-point types (`Real`) **can** be `continuous`.
+  - `variability="continuous"` is **not allowed** in Co-Simulation.
 - **Required Start Values**: Variables **must** have a `start` value if `causality` is `input`, `variability` is `constant`, or `causality` is `parameter` and `fixed="true"` (or `fixed` is missing).
-- **Illegal Start Values**: Variables **should** only provide a `start` value if allowed by their causality and variability.
-- **Causality/Variability/Initial Combinations**: Combinations **must** follow the allowed set defined in the FMI 1.0 specification.
+- **Illegal Start Values**:
+  - The `fixed` attribute **must** only be present if a `start` value is also provided.
+  - The `fixed` attribute is **not allowed** for variables with `causality="input"`, `variability="constant"`, or `variability="continuous"`.
+- **Causality/Variability/Initial Combinations**:
+  - Combinations **must** follow the allowed set defined in the FMI 1.0 specifications.
+  - `constant` variability: `causality` **must not** be `input` or `output`.
+  - `parameter` variability: `causality` **must not** be `output`. In Model Exchange, it **must not** be `input`.
 
 ### Binary Exports
 - **Function Prefixing**: All exported functions must be prefixed with `<modelIdentifier>_`.

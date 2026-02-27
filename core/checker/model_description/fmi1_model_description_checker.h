@@ -36,7 +36,9 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void applyDefaultInitialValues(std::vector<Variable>& variables) override;
     void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
                                                       Certificate& cert) override;
+    void checkCausalityVariabilityInitialCombinationsImpl(const std::vector<Variable>& variables, Certificate& cert);
     void checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) override;
+    void checkLegalVariabilityImpl(const std::vector<Variable>& variables, Certificate& cert);
     void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) override;
     void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) override;
     void checkMinMaxStartValues(const std::vector<Variable>& variables,
@@ -68,4 +70,6 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkUri(const std::string& uri, const std::string& attr_name, int line, TestResult& test);
     void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
     bool checkReachability(const std::string& url);
+
+    bool _is_cs = false;
 };
