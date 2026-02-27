@@ -12,6 +12,7 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <ctime>
 #include <format>
 #include <map>
 #include <optional>

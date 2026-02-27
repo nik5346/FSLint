@@ -418,6 +418,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     cert.printTestResult(test);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::string& dt, std::time_t generation_time,
                                                                      int32_t release_year,
                                                                      const std::string& fmi_version, TestResult& test)
