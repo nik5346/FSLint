@@ -41,8 +41,7 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) override;
     void checkAnnotations(xmlDocPtr doc, Certificate& cert) override;
     void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
-    void checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
-                                        TestResult& test) override;
+    void checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time, TestResult& test) override;
 
     void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
                                       const std::string& attr_name) override;
