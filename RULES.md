@@ -60,7 +60,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Unique Variable Names**: All variables **must** have unique names.
 - **Type and Variable Name Clashes**: Type definition names **must** not clash with variable names.
 - **Variable Naming Convention**:
-  - `flat`: No illegal control characters (U+000D, U+000A, U+0009).
+  - `flat`: No illegal control characters (U+000D: Carriage Return, U+000A: Line Feed, U+0009: Horizontal Tab).
+  - `structured`: **Must** follow the structured name syntax. This includes:
+    - Identifiers: `name.subname`
+    - Array indices: `name[1,2]`
+    - Quoted names for special characters: `'name with spaces'` (supports escapes like `\'`, `\n`, etc.)
+    - Derivatives: `der(name)` or `der(name, 2)`
 - **Type and Unit References**: All references to types (`declaredType`) and units must exist in `TypeDefinitions` or `UnitDefinitions`.
 - **Unused Definitions**: All type and unit definitions **should** be referenced by at least one variable.
 - **Min/Max/Start Constraints**:
@@ -121,12 +126,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Model Description
 - **Enumeration Variables**: **Must** have a `declaredType` attribute.
-- **Variable Naming Convention**:
-  - `structured`: **Must** follow the structured name syntax. This includes:
-    - Identifiers: `name.subname`
-    - Array indices: `name[1,2]`
-    - Quoted names for special characters: `'name with spaces'` (supports escapes like `\'`, `\n`, etc.)
-    - Derivatives: `der(name)` or `der(name, 2)`
 - **Alias Variables (same VR)**:
   - At most one variable in an alias set **can** be settable with `fmi2SetXXX`.
   - At most one variable in an alias set (where at least one is not constant) **can** have a `start` attribute.
@@ -192,12 +191,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Model Description
 - **instantiationToken**: The `instantiationToken` **should** follow the GUID format.
-- **Variable Naming Convention**:
-  - `structured`: **Must** follow the structured name syntax. This includes:
-    - Identifiers: `name.subname`
-    - Array indices: `name[1,2]`
-    - Quoted names for special characters: `'name with spaces'` (supports escapes like `\'`, `\n`, etc.)
-    - Derivatives: `der(name)` or `der(name, 2)`
 - **Annotations**: Annotation types within `Annotations` **must** be unique within their container.
 - **Independent Variable**: Exactly one **is** allowed; it **must** be `Float32` or `Float64`, and have no `initial` or `start` attribute.
 - **Derivative Consistency**:
