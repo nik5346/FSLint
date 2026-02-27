@@ -57,6 +57,8 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Variable and Type Consistency
 - **Unique Variable Names**: All variables **must** have unique names.
+- **Unique Type Names**: All type definitions **must** have unique names.
+- **Unique Unit Names**: All unit definitions **must** have unique names.
 - **Variable Naming Convention**:
   - `flat`: No illegal control characters (U+000D: Carriage Return, U+000A: Line Feed, U+0009: Horizontal Tab).
   - `structured`: **Must** follow the structured name syntax. This includes:

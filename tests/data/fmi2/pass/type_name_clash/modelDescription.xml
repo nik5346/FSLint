@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="test" guid="{12345678-1234-1234-1234-123456789012}">
   <ModelExchange modelIdentifier="test" />
+  <UnitDefinitions>
+    <Unit name="v" />
+  </UnitDefinitions>
   <TypeDefinitions>
     <SimpleType name="v">
-      <Real />
+      <Real unit="v" />
     </SimpleType>
   </TypeDefinitions>
   <ModelVariables>
-    <ScalarVariable name="v" valueReference="0" causality="output" initial="calculated">
-      <Real />
+    <ScalarVariable name="v" valueReference="0" causality="output" initial="calculated" declaredType="v">
+      <Real unit="v" />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>

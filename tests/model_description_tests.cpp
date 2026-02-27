@@ -404,7 +404,7 @@ TEST_CASE("FMI 2.0 Model Description Passing Cases", "[fmi2][pass]")
         CHECK_FALSE(has_fail(cert));
     }
 
-    SECTION("FMI 2.0 Type Name Clash with Variable Name")
+    SECTION("FMI 2.0 Type and Unit Name Clash with Variable Name")
     {
         Fmi2ModelDescriptionChecker checker;
         checker.validate("tests/data/fmi2/pass/type_name_clash", cert);
