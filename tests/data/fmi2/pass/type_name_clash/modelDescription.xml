@@ -7,7 +7,7 @@
     </SimpleType>
   </TypeDefinitions>
   <ModelVariables>
-    <ScalarVariable name="v" valueReference="0" causality="output">
+    <ScalarVariable name="v" valueReference="0" causality="output" initial="calculated">
       <Real />
     </ScalarVariable>
   </ModelVariables>
@@ -15,5 +15,8 @@
     <Outputs>
       <Unknown index="1" />
     </Outputs>
+    <InitialUnknowns>
+      <Unknown index="1" />
+    </InitialUnknowns>
   </ModelStructure>
 </fmiModelDescription>

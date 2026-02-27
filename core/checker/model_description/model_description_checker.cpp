@@ -89,7 +89,6 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkAnnotations(doc, cert);
 
     checkUniqueVariableNames(variables, cert);
-    checkTypeNameClashes(variables, type_definitions, cert);
     if (!metadata.fmiVersion || !metadata.fmiVersion->starts_with("1."))
     {
         checkLegalVariability(variables, cert);
@@ -126,30 +125,6 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
                                     ") is not unique.");
         }
         seen_names.insert(var.name);
-    }
-
-    cert.printTestResult(test);
-}
-
-void ModelDescriptionCheckerBase::checkTypeNameClashes(const std::vector<Variable>& variables,
-                                                       const std::map<std::string, TypeDefinition>& type_definitions,
-                                                       Certificate& cert)
-{
-    TestResult test{"Type and Variable Name Clashes", TestStatus::PASS, {}};
-
-    std::set<std::string> variable_names;
-    for (const auto& var : variables)
-        variable_names.insert(var.name);
-
-    for (const auto& [name, type_def] : type_definitions)
-    {
-        if (variable_names.contains(name))
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Type definition name \"" + name + "\" (line " +
-                                    std::to_string(type_def.sourceline) +
-                                    ") must be different from all variable names.");
-        }
     }
 
     cert.printTestResult(test);
