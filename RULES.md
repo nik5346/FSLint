@@ -60,11 +60,27 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Type and Variable Name Clashes**: Type definition names **must** not clash with variable names.
 - **Variable Naming Convention**:
   - `flat`: No illegal control characters (U+000D: Carriage Return, U+000A: Line Feed, U+0009: Horizontal Tab).
-  - `structured`: **Must** follow the structured name syntax. This includes:
-    - Identifiers: `name.subname`
-    - Array indices: `name[1,2]`
-    - Quoted names for special characters: `'name with spaces'` (supports escapes like `\'`, `\n`, etc.)
-    - Derivatives: `der(name)` or `der(name, 2)`
+  - `structured`: **Must** follow the structured name syntax.
+
+    **BNF:**
+    ```bnf
+    name            = identifier | "der(" identifier ["," unsignedInteger ] ")"
+    identifier      = B-name [ arrayIndices ] { "." B-name [ arrayIndices ] }
+    B-name          = nondigit { digit | nondigit } | Q-name
+    Q-name          = "'" ( Q-char | escape ) { Q-char | escape } "'"
+    Q-char          = nondigit | digit | "!" | "#" | "$" | "%" | "&" | "(" | ")" | "*" | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | ">" | "=" | "?" | "@" | "[" | "]" | "^" | "{" | "}" | "|" | "~" | " "
+    escape          = "\'" | "\"" | "\?" | "\\" | "\a" | "\b" | "\f" | "\n" | "\r" | "\t" | "\v"
+    arrayIndices    = "[" unsignedInteger { "," unsignedInteger } "]"
+    unsignedInteger = digit { digit }
+    nondigit        = "_" | "a" | ... | "z" | "A" | ... | "Z"
+    digit           = "0" | "1" | ... | "9"
+    ```
+
+    **Examples:**
+    - Identifiers: `engine.speed`, `vehicle.wheel[1].torque`
+    - Array indices: `matrix[1,2]`, `vector[5]`
+    - Quoted names: `'velocity m/s'`, `'x \"quoted\"'`, `'\n_new_line'`
+    - Derivatives: `der(position)`, `der(velocity, 2)`
 - **Type and Unit References**: All references to types (`declaredType`) and units must exist in `TypeDefinitions` or `UnitDefinitions`.
 - **Unused Definitions**: All type and unit definitions **should** be referenced by at least one variable.
 - **Min/Max/Start Constraints**:
