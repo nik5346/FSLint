@@ -1584,6 +1584,12 @@ void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
     cert.printTestResult(test);
 }
 
+void Fmi2ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
+                                                                 TestResult& test)
+{
+    checkGenerationDateReleaseYearBase(dt, generation_time, 2014, "2.0", test);
+}
+
 void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)
 {
     TestResult test{"GUID Format", TestStatus::PASS, {}};

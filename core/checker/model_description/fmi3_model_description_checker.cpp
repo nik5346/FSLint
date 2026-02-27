@@ -2373,6 +2373,12 @@ void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
     cert.printTestResult(test);
 }
 
+void Fmi3ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
+                                                                 TestResult& test)
+{
+    checkGenerationDateReleaseYearBase(dt, generation_time, 2022, "3.0", test);
+}
+
 void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)
 {
     TestResult test{"Instantiation Token Format", TestStatus::PASS, {}};

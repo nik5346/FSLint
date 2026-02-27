@@ -401,30 +401,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
                 }
             }
 
-            // Check if generation time is unreasonably old
-            int32_t fmi_release_year = 2010;
-            const std::string version = getFmiVersion();
-            if (version.starts_with("2."))
-                fmi_release_year = 2014;
-            else if (version.starts_with("3."))
-                fmi_release_year = 2022;
-
-            std::tm fmi_release = {};
-            fmi_release.tm_year = fmi_release_year - UNIX_EPOCH_YEAR;
-            fmi_release.tm_mon = 0; // January
-            fmi_release.tm_mday = 1;
-            fmi_release.tm_hour = 0;
-            fmi_release.tm_min = 0;
-            fmi_release.tm_sec = 0;
-            const std::time_t fmi_release_time = std::mktime(&fmi_release);
-
-            if (generation_time < fmi_release_time)
-            {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Generation date and time \"" + dt + "\" is before the FMI " + version +
-                                        " standard release (" + std::to_string(fmi_release_year) + "). " +
-                                        "This is unusual and may indicate an incorrect timestamp.");
-            }
+            checkGenerationDateReleaseYear(dt, generation_time, test);
         }
         catch (const std::logic_error& e)
         {
@@ -439,6 +416,36 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     }
 
     cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::string& dt, std::time_t generation_time,
+                                                                     int32_t release_year,
+                                                                     const std::string& fmi_version, TestResult& test)
+{
+    constexpr int32_t UNIX_EPOCH_YEAR = 1900;
+
+    std::tm fmi_release = {};
+    fmi_release.tm_year = release_year - UNIX_EPOCH_YEAR;
+    fmi_release.tm_mon = 0; // January
+    fmi_release.tm_mday = 1;
+    fmi_release.tm_hour = 0;
+    fmi_release.tm_min = 0;
+    fmi_release.tm_sec = 0;
+
+    // Convert to time_t (UTC) using portable function
+#ifdef _WIN32
+    const std::time_t fmi_release_time = _mkgmtime(&fmi_release);
+#else
+    const std::time_t fmi_release_time = timegm(&fmi_release);
+#endif
+
+    if (generation_time < fmi_release_time)
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Generation date and time \"" + dt + "\" is before the FMI " + fmi_version +
+                                " standard release (" + std::to_string(release_year) + "). " +
+                                "This is unusual and may indicate an incorrect timestamp.");
+    }
 }
 
 void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert)
