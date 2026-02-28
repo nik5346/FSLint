@@ -239,6 +239,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("naming_flat_tab", "contains illegal tab character");
         validate_fail("naming_flat_cr", "contains illegal carriage return");
         validate_fail("naming_flat_lf", "contains illegal line feed");
+        validate_fail("naming_structured_empty", "is not a legal variable name");
         validate_fail("naming_structured_invalid", "is not a legal variable name");
         validate_fail("naming_structured_invalid_der", "is not a legal variable name");
         validate_fail("naming_structured_invalid_qname", "is not a legal variable name");

@@ -61,7 +61,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Unique Unit Names**: All unit definitions **must** have unique names.
 - **Variable Naming Convention**:
   - `flat`:
-    **BNF:**
     ```bnf
     name         = Unicode-char { Unicode-char }
     Unicode-char = any Unicode character without carriage return (#xD), line feed (#xA) nor tab (#x9)
