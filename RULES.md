@@ -35,6 +35,7 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
 These rules are applied to the `modelDescription.xml` file regardless of the FMI version.
 
 ### Metadata and Format
+
 - **Schema Validation**: `modelDescription.xml` is validated against the official FMI XSD schemas. Optional files like `buildDescription.xml` and `terminalsAndIcons.xml` are also schema-validated if present.
 - **XML Declaration**: Must be XML version 1.0.
 - **UTF-8 Encoding**:
@@ -56,14 +57,13 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Log Categories**: Category names **must** be unique within the `LogCategories` element.
 
 ### Variable and Type Consistency
+
 - **Unique Variable Names**: All variables **must** have unique names.
 - **Unique Type Names**: All type definitions **must** have unique names.
 - **Unique Unit Names**: All unit definitions **must** have unique names.
 - **Variable Naming Convention**:
   - `flat`: No illegal control characters (U+000D: Carriage Return, U+000A: Line Feed, U+0009: Horizontal Tab).
   - `structured`: **Must** follow the structured name syntax.
-
-    **BNF:**
     ```bnf
     name            = identifier | "der(" identifier ["," unsignedInteger ] ")"
     identifier      = B-name [ arrayIndices ] { "." B-name [ arrayIndices ] }
@@ -76,12 +76,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
     nondigit        = "_" | "a" | ... | "z" | "A" | ... | "Z"
     digit           = "0" | "1" | ... | "9"
     ```
-
-    **Examples:**
-    - Identifiers: `engine.speed`, `vehicle.wheel[1].torque`
-    - Array indices: `matrix[1,2]`, `vector[5]`
-    - Quoted names: `'velocity m/s'`, `'x \"quoted\"'`, `'\n_new_line'`
-    - Derivatives: `der(position)`, `der(velocity, 2)`
 - **Type and Unit References**: All references to types (`declaredType`) and units must exist in `TypeDefinitions` or `UnitDefinitions`.
 - **Unused Definitions**: All type and unit definitions **should** be referenced by at least one variable.
 - **Min/Max/Start Constraints**:
@@ -89,16 +83,19 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - The `max` attribute **must** be `>= min`.
 
 ### Model Structure and Interfaces
+
 - **Implemented Interfaces**: At least one interface (`CoSimulation`, `ModelExchange`, or `ScheduledExecution`) **must** be implemented.
 - **Default Experiment**: The `startTime`, `stopTime`, `tolerance`, and `stepSize` attributes **must** be non-negative and consistent (e.g., `stopTime > startTime`).
 
 ### Directory Structure
+
 - **Mandatory Files**: `modelDescription.xml` **must** be present in the FMU root.
 - **Distribution**: The FMU **must** contain at least one implementation (a binary for at least one platform or source code).
 - **Effectively Empty Directories**: Standard directories like `documentation/` or `resources/` **should not** be effectively empty.
 - **Root Entries**: Unknown files or directories in the FMU root **should** be avoided.
 
 ### Recursive Validation
+
 - **Nested Models**: FMUs and SSPs located in the `resources/` directory are automatically discovered and validated recursively.
 
 ---
@@ -106,6 +103,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ## FMI 1.0 Rules
 
 ### Model Description
+
 - **Generation Date and Time**: **Should** not be unreasonably old (before 2010).
 - **GUID Presence**: The `guid` attribute **must** be present and non-empty.
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
@@ -116,6 +114,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
 ### Variable Consistency
+
 - **Legal Variability**:
   - Variability **must** be compatible with the variable's type and causality.
   - Only floating-point types (`Real`) **can** be `continuous`.
@@ -130,6 +129,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - `parameter` variability: `causality` **must not** be `output`. In Model Exchange, it **must not** be `input`.
 
 ### Binary Exports
+
 - **Function Prefixing**: All exported functions must be prefixed with `<modelIdentifier>_`.
 - **Mandatory Functions (CS)**:
   `fmiGetTypesPlatform`, `fmiGetVersion`, `fmiInstantiateSlave`, `fmiInitializeSlave`, `fmiTerminateSlave`, `fmiResetSlave`, `fmiFreeSlaveInstance`, `fmiSetDebugLogging`, `fmiSetReal`, `fmiSetInteger`, `fmiSetBoolean`, `fmiSetString`, `fmiSetRealInputDerivatives`, `fmiGetReal`, `fmiGetInteger`, `fmiGetBoolean`, `fmiGetString`, `fmiGetRealOutputDerivatives`, `fmiDoStep`, `fmiCancelStep`, `fmiGetStatus`, `fmiGetRealStatus`, `fmiGetIntegerStatus`, `fmiGetBooleanStatus`, `fmiGetStringStatus`.
@@ -137,6 +137,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   `fmiGetModelTypesPlatform`, `fmiGetVersion`, `fmiInstantiateModel`, `fmiFreeModelInstance`, `fmiSetDebugLogging`, `fmiSetTime`, `fmiSetContinuousStates`, `fmiCompletedIntegratorStep`, `fmiSetReal`, `fmiSetInteger`, `fmiSetBoolean`, `fmiSetString`, `fmiInitialize`, `fmiGetDerivatives`, `fmiGetEventIndicators`, `fmiGetReal`, `fmiGetInteger`, `fmiGetBoolean`, `fmiGetString`, `fmiEventUpdate`, `fmiGetContinuousStates`, `fmiGetNominalContinuousStates`, `fmiGetStateValueReferences`, `fmiTerminate`.
 
 ### Directory Structure
+
 - **Documentation Entry Point**: The **recommended** entry point `documentation/_main.html` **should** be present if documentation exists.
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 1.0 headers: `fmiFunctions.h`, `fmiModelFunctions.h`, `fmiModelTypes.h`, `fmiPlatformTypes.h`.
 
@@ -145,11 +146,13 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ## FMI 2.0 Rules
 
 ### Schema Validation
+
 - **modelDescription.xml**: **Must** be valid against `fmi2ModelDescription.xsd`.
 - **buildDescription.xml**: **Must** be valid against `fmi3BuildDescription.xsd` (if present in `sources/`).
 - **terminalsAndIcons.xml**: **Must** be valid against `fmi3TerminalsAndIcons.xsd` (if present in `terminalsAndIcons/`).
 
 ### Model Description
+
 - **Generation Date and Time**: **Should** not be unreasonably old (before 2014).
 - **Enumeration Variables**: **Must** have a `declaredType` attribute.
 - **Alias Variables (same VR)**:
@@ -175,12 +178,14 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - `DefaultExperiment`: `startTime`, `stopTime`, `tolerance`, `stepSize`.
 
 ### Variable Consistency
+
 - **Legal Variability**: Variability **must** be compatible with the variable's type and causality. Only floating-point types (`Real`) **can** be `continuous`. Parameters (`causality="parameter"` or `"calculatedParameter"`) **must** be `"fixed"` or `"tunable"`.
 - **Required Start Values**: Variables **must** have a `start` value if `causality` is `input` or `parameter`, `variability` is `constant`, or `initial` is `exact` or `approx`.
 - **Illegal Start Values**: Variables with `initial="calculated"` or `causality="independent"` **must not** provide a `start` value.
 - **Causality/Variability/Initial Combinations**: Combinations **must** follow the allowed set defined in the FMI 2.0 specification tables.
 
 ### Terminals and Icons
+
 - **Unique Names**: Terminal and member names **must** be unique within their respective levels.
 - **Variable References**: All `variableName` references **must** exist in `modelDescription.xml`.
 - **Causality Constraints**: Variables used as stream members or flows **must** have compatible causalities (input, output, parameter, etc.).
@@ -190,10 +195,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Stream/Flow Constraints**: Only one inflow/outflow **is** allowed when a stream variable is present in a terminal.
 
 ### Binary Exports
+
 - **Mandatory Functions**:
   `fmi2GetTypesPlatform`, `fmi2GetVersion`, `fmi2SetDebugLogging`, `fmi2Instantiate`, `fmi2FreeInstance`, `fmi2SetupExperiment`, `fmi2EnterInitializationMode`, `fmi2ExitInitializationMode`, `fmi2Terminate`, `fmi2Reset`, `fmi2GetReal`, `fmi2GetInteger`, `fmi2GetBoolean`, `fmi2GetString`, `fmi2SetReal`, `fmi2SetInteger`, `fmi2SetBoolean`, `fmi2SetString`, `fmi2GetFMUstate`, `fmi2SetFMUstate`, `fmi2FreeFMUstate`, `fmi2SerializedFMUstateSize`, `fmi2SerializeFMUstate`, `fmi2DeSerializeFMUstate`, `fmi2GetDirectionalDerivative`, `fmi2EnterEventMode`, `fmi2NewDiscreteStates`, `fmi2EnterContinuousTimeMode`, `fmi2CompletedIntegratorStep`, `fmi2SetTime`, `fmi2SetContinuousStates`, `fmi2GetDerivatives`, `fmi2GetEventIndicators`, `fmi2GetContinuousStates`, `fmi2GetNominalsOfContinuousStates`, `fmi2SetRealInputDerivatives`, `fmi2GetRealOutputDerivatives`, `fmi2DoStep`, `fmi2CancelStep`, `fmi2GetStatus`, `fmi2GetRealStatus`, `fmi2GetIntegerStatus`, `fmi2GetBooleanStatus`, `fmi2GetStringStatus`.
 
 ### Directory Structure
+
 - **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` **must** be present.
 - **Licenses**: If a `licenses/` directory exists, it **should** contain an entry point (`license.txt` or `license.html`).
@@ -204,6 +211,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 2.0 headers: `fmi2Functions.h`, `fmi2FunctionTypes.h`, `fmi2TypesPlatform.h`.
 
 ### Build Description
+
 - **fmiVersion Check**: `buildDescription.xml` **must** have `fmiVersion="3.0"`. This attribute is fixed to "3.0" for FMI 2.0 FMUs because the feature was backported from FMI 3.0.
 - **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries **must** exist in `sources/` and **must not** contain `..` traversal.
 - **Attribute Validation**: The `language` and `compiler` attributes **should** be from the suggested sets:
@@ -216,6 +224,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ## FMI 3.0 Rules
 
 ### Model Description
+
 - **Generation Date and Time**: **Should** not be unreasonably old (before 2022).
 - **instantiationToken**: The `instantiationToken` **should** follow the GUID format.
 - **Annotations**: Annotation types within `Annotations` **must** be unique within their container.
@@ -240,12 +249,14 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Variable Dependencies**: `dependenciesKind` **must** be restricted to allowed types and is **not allowed** for `InitialUnknown`.
 
 ### Variable Consistency
+
 - **Legal Variability**: Variability **must** be compatible with the variable's type and causality. Only floating-point types (`Float32`, `Float64`) **can** be `continuous`. Parameters (`causality="parameter"`, `"calculatedParameter"`, or `"structuralParameter"`) **must** be `"fixed"` or `"tunable"`.
 - **Required Start Values**: Variables **must** have a `start` value if `causality` is `input`, `parameter`, or `structuralParameter`, `variability` is `constant`, or `initial` is `exact` or `approx`. Variables of type `Clock` are excluded from this requirement.
 - **Illegal Start Values**: Variables with `initial="calculated"` or `causality="independent"` **must not** provide a `start` value.
 - **Causality/Variability/Initial Combinations**: Combinations **must** follow the allowed set defined in the FMI 3.0 specification.
 
 ### Terminals and Icons
+
 - **Unique Names**: Terminal and member names **must** be unique within their respective levels.
 - **Variable References**: All `variableName` references **must** exist in `modelDescription.xml`.
 - **Causality Constraints**: Variables used as stream members or flows **must** have compatible causalities (input, output, parameter, etc.).
@@ -256,10 +267,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Stream/Flow Constraints**: Only one inflow/outflow allowed when a stream variable is present in a terminal.
 
 ### Binary Exports
+
 - **Mandatory Functions**:
   `fmi3GetVersion`, `fmi3SetDebugLogging`, `fmi3InstantiateModelExchange`, `fmi3InstantiateCoSimulation`, `fmi3InstantiateScheduledExecution`, `fmi3FreeInstance`, `fmi3EnterInitializationMode`, `fmi3ExitInitializationMode`, `fmi3EnterEventMode`, `fmi3Terminate`, `fmi3Reset`, `fmi3GetFloat32`, `fmi3GetFloat64`, `fmi3GetInt8`, `fmi3GetUInt8`, `fmi3GetInt16`, `fmi3GetUInt16`, `fmi3GetInt32`, `fmi3GetUInt32`, `fmi3GetInt64`, `fmi3GetUInt64`, `fmi3GetBoolean`, `fmi3GetString`, `fmi3GetBinary`, `fmi3GetClock`, `fmi3SetFloat32`, `fmi3SetFloat64`, `fmi3SetInt8`, `fmi3SetUInt8`, `fmi3SetInt16`, `fmi3SetUInt16`, `fmi3SetInt32`, `fmi3SetUInt32`, `fmi3SetInt64`, `fmi3SetUInt64`, `fmi3SetBoolean`, `fmi3SetString`, `fmi3SetBinary`, `fmi3SetClock`, `fmi3GetNumberOfVariableDependencies`, `fmi3GetVariableDependencies`, `fmi3GetFMUState`, `fmi3SetFMUState`, `fmi3FreeFMUState`, `fmi3SerializedFMUStateSize`, `fmi3SerializeFMUState`, `fmi3DeserializeFMUState`, `fmi3GetDirectionalDerivative`, `fmi3GetAdjointDerivative`, `fmi3EnterConfigurationMode`, `fmi3ExitConfigurationMode`, `fmi3GetIntervalDecimal`, `fmi3GetIntervalFraction`, `fmi3GetShiftDecimal`, `fmi3GetShiftFraction`, `fmi3SetIntervalDecimal`, `fmi3SetIntervalFraction`, `fmi3SetShiftDecimal`, `fmi3SetShiftFraction`, `fmi3EvaluateDiscreteStates`, `fmi3UpdateDiscreteStates`, `fmi3EnterContinuousTimeMode`, `fmi3CompletedIntegratorStep`, `fmi3SetTime`, `fmi3SetContinuousStates`, `fmi3GetContinuousStateDerivatives`, `fmi3GetEventIndicators`, `fmi3GetContinuousStates`, `fmi3GetNominalsOfContinuousStates`, `fmi3GetNumberOfEventIndicators`, `fmi3GetNumberOfContinuousStates`, `fmi3EnterStepMode`, `fmi3GetOutputDerivatives`, `fmi3DoStep`, `fmi3ActivateModelPartition`.
 
 ### Directory Structure
+
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` **must** be present.
 - **Documentation Entry Point**: `documentation/index.html` is the **recommended** entry point.
 - **Diagrams**: If `documentation/diagram.svg` is provided, a `documentation/diagram.png` fallback **must** also be present.
@@ -270,6 +283,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 3.0 headers: `fmi3Functions.h`, `fmi3FunctionTypes.h`, `fmi3PlatformTypes.h`.
 
 ### Build Description
+
 - **fmiVersion Check**: `buildDescription.xml` **must** have an `fmiVersion` attribute that matches the `fmiVersion` attribute in `modelDescription.xml`.
 - **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries **must** exist in `sources/` and **must not** contain `..` traversal.
 - **Attribute Validation**: The `language` and `compiler` attributes **should** be from the suggested sets:
@@ -282,6 +296,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ## SSP Rules (1.0 & 2.0)
 
 ### Schema Validation
+
 - **SystemStructure.ssd**: **Must** be valid against `SystemStructureDescription.xsd`.
 - **Parameter Mapping (.ssm)**: **Must** be valid against `SystemStructureParameterMapping.xsd`.
 - **Parameter Values (.ssv)**: **Must** be valid against `SystemStructureParameterValues.xsd`.
