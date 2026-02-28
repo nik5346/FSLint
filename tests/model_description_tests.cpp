@@ -235,6 +235,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     SECTION("Variable Names")
     {
         validate_fail("duplicate_name", "is not unique");
+        validate_fail("naming_flat_empty", "is empty");
         validate_fail("naming_flat_tab", "contains illegal tab character");
         validate_fail("naming_flat_cr", "contains illegal carriage return");
         validate_fail("naming_flat_lf", "contains illegal line feed");

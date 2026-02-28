@@ -164,12 +164,19 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
 
         if (convention == "flat")
         {
-            // For "flat" convention, "any name is allowed".
-            // However, we still check for control characters as they are highly problematic for tools and reporting.
+            // For "flat" convention, the name must be non-empty and must not contain
+            // carriage return (U+000D), line feed (U+000A), or tab (U+0009).
+            if (var.name.empty())
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Variable name (line " + std::to_string(var.sourceline) + ") is empty.");
+                is_valid = false;
+            }
+
             if (var.name.find('\r') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                const std::string escaped_name = std::regex_replace(var.name, std::regex("\r"), "\\r");
+                const std::string escaped_name = std::regex_replace(var.name, std::regex("\r"), "\\\\r");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal carriage return character (U+000D).");
                 is_valid = false;
@@ -177,7 +184,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             if (var.name.find('\n') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                const std::string escaped_name = std::regex_replace(var.name, std::regex("\n"), "\\n");
+                const std::string escaped_name = std::regex_replace(var.name, std::regex("\n"), "\\\\n");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal line feed character (U+000A).");
                 is_valid = false;
@@ -185,7 +192,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             if (var.name.find('\t') != std::string::npos)
             {
                 test.status = TestStatus::FAIL;
-                const std::string escaped_name = std::regex_replace(var.name, std::regex("\t"), "\\t");
+                const std::string escaped_name = std::regex_replace(var.name, std::regex("\t"), "\\\\t");
                 test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
                                         ") contains illegal tab character (U+0009).");
                 is_valid = false;

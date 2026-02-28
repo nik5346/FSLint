@@ -1,0 +1,8 @@
+<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" variableNamingConvention="flat">
+    <ModelVariables>
+        <ScalarVariable name="" valueReference="0">
+            <Real/>
+        </ScalarVariable>
+    </ModelVariables>
+    <ModelStructure/>
+</fmiModelDescription>
