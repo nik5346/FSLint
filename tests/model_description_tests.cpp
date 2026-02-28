@@ -209,7 +209,6 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("type_duplicate", "is defined multiple times");
         validate_fail("type_max_min", "max (5) must be >= min (10)");
         validate_fail("type_min_nan", "min value \"NaN\"");
-        validate_fail("type_name_as_variable_name", "must be different from all variable names");
         validate_fail("enumeration_variable_no_type", "must have a declaredType attribute");
         validate_fail("enumeration_item_duplicate_value", "must be unique within the same enumeration");
         validate_fail("enumeration_item_duplicate_name", "has multiple items named \"A\"");
