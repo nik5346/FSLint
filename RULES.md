@@ -40,7 +40,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **XML Declaration**: Must be XML version 1.0.
 - **UTF-8 Encoding**:
   - FMI 2.0 and 3.0: XML files **must** use UTF-8 encoding.
-  - FMI 1.0: UTF-8 encoding is highly **recommended**.
+  - For FMI 1.0, UTF-8 encoding is highly **recommended**.
 - **Model Name Format**: The `modelName` attribute **must** be present and non-empty.
 - **FMI Version Format**: The `fmiVersion` attribute **must** match the standard version string. For FMI 1.0 and 2.0, only "1.0" and "2.0" are allowed respectively. For FMI 3.0 and later, the version **must** match the official FMI regex: `3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?`.
 - **Generation Date and Time**:

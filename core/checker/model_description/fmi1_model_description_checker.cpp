@@ -37,17 +37,11 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
     [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
 {
-    // We call the checks here in a specific order to match the report structure expectations.
-    // The base class validate() also calls these virtual functions, but we've made the
-    // overrides for the base class calls do nothing to avoid double reporting.
-
-    checkImplementation(doc, cert);
-    checkLegalVariability(variables, cert);
-    checkCausalityVariabilityInitialCombinations(variables, cert);
-    checkRequiredStartValues(variables, cert);
-    checkIllegalStartValues(variables, cert);
-    checkMinMaxStartValues(variables, type_definitions, cert);
+    // Check Alias variables
     checkAliases(variables, cert);
+
+    // Check implementation (CoSimulation only)
+    checkImplementation(doc, cert);
 }
 
 void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
@@ -144,17 +138,6 @@ void Fmi1ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
 void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
                                                                                Certificate& cert)
 {
-    // The base class calls this, but we want it to run only in performVersionSpecificChecks
-    // to ensure the order of tests in the report matches the expected structure.
-    // We check if it's called from performVersionSpecificChecks by looking at the stack is not possible,
-    // but we can check if it's already been called or use a flag.
-    // However, the cleanest way is just to move the logic to an internal function.
-    checkCausalityVariabilityInitialCombinationsImpl(variables, cert);
-}
-
-void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinationsImpl(
-    const std::vector<Variable>& variables, Certificate& cert)
-{
     TestResult test{"Causality/Variability/Initial Combinations (FMI1)", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
@@ -174,11 +157,6 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinationsIm
 }
 
 void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert)
-{
-    checkLegalVariabilityImpl(variables, cert);
-}
-
-void Fmi1ModelDescriptionChecker::checkLegalVariabilityImpl(const std::vector<Variable>& variables, Certificate& cert)
 {
     TestResult test{"Legal Variability (FMI1)", TestStatus::PASS, {}};
     for (const auto& var : variables)
@@ -601,10 +579,10 @@ void Fmi1ModelDescriptionChecker::checkModelIdentifierMatch(const std::string& m
 
     if (model_identifier != expected_id)
     {
-        cert.printTestResult({"Model Identifier Filename Match",
-                              TestStatus::FAIL,
-                              {std::format("FMI 1.0: modelIdentifier '{}' must match the FMU filename '{}'.",
-                                           model_identifier, expected_id)}});
+        cert.printTestResult(
+            {"Model Identifier Filename Match",
+             TestStatus::FAIL,
+             {std::format("modelIdentifier '{}' must match the FMU filename '{}'.", model_identifier, expected_id)}});
     }
     else
     {

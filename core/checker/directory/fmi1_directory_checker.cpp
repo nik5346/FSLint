@@ -102,7 +102,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             if (!std::filesystem::exists(doc_path / "_main.html"))
             {
                 test.status = TestStatus::WARNING;
-                test.messages.push_back("FMI 1.0: Recommended entry point 'documentation/_main.html' is missing.");
+                test.messages.push_back("Recommended entry point 'documentation/_main.html' is missing.");
             }
             cert.printTestResult(test);
         }
