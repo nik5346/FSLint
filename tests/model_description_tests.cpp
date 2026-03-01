@@ -60,23 +60,15 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
     {
         validate_fail("variability_continuous_non_real", "cannot have variability \"continuous\"");
         validate_fail("constant_input", "has illegal combination: variability=\"constant\" and causality=\"input\"");
-        validate_fail("constant_output", "has illegal combination: variability=\"constant\" and causality=\"output\"");
-        validate_fail("parameter_output",
-                      "has illegal combination: variability=\"parameter\" and causality=\"output\"");
-        validate_fail("parameter_input_in_me", "has illegal combination for Model Exchange");
-        validate_fail("continuous_in_cs", "not allowed in Co-Simulation");
     }
 
     SECTION("Start Values")
     {
         validate_fail("start_missing_input", "must have a start value");
         validate_fail("start_missing_constant", "must have a start value");
-        validate_fail("start_missing_parameter", "must have a start value");
-        validate_fail("start_missing_parameter_no_fixed", "must have a start value");
         validate_fail("fixed_no_start", "has 'fixed' attribute but is missing 'start' value");
-        validate_fail("fixed_on_input", "has causality=\"input\" and must not have a 'fixed' attribute");
-        validate_fail("fixed_on_constant", "has variability=\"constant\" and must not have a 'fixed' attribute");
-        validate_fail("fixed_on_continuous", "has variability=\"continuous\" and must not have a 'fixed' attribute");
+        validate_fail("fixed_on_input", "has causality=\"input\" and a 'fixed' attribute");
+        validate_fail("fixed_on_constant_guess", "has variability=\"constant\" and fixed=\"false\"");
     }
 }
 
@@ -87,7 +79,7 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
     auto validate_warning = [&](const std::string& path, const std::string& expected_warning)
     {
         Certificate cert;
-        checker.validate("tests/data/fmi1/warn/" + path, cert);
+        checker.validate("tests/data/fmi1/" + path, cert);
         INFO("Checking path: " << path);
         REQUIRE(has_warning(cert));
         CHECK(has_warning_with_text(cert, expected_warning));
@@ -95,9 +87,9 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
 
     SECTION("Implementation")
     {
-        validate_warning("implementation/ExternalFileMissing",
+        validate_warning("warn/implementation/ExternalFileMissing",
                          "references an external file that does not exist on this system");
-        validate_warning("implementation/UnreachableWebSource",
+        validate_warning("warn/implementation/UnreachableWebSource",
                          "references a web source that appears to be unreachable");
     }
 }

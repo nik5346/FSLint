@@ -157,42 +157,16 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinationsIm
 {
     TestResult test{"Causality/Variability/Initial Combinations (FMI1)", TestStatus::PASS, {}};
 
-    // FMI 1.0 rules for allowed combinations of causality and variability:
-    // For both ME and CS:
-    // constant: causality must be internal, or none (NOT input, NOT output)
-    // For ME (Section 3.3):
-    // parameter: causality must be internal, or none (NOT input, NOT output)
-    // For CS (Section 2.2.4):
-    // parameter: causality must be input, internal, or none (NOT output)
-
     for (const auto& var : variables)
     {
         if (var.variability == "constant")
         {
-            if (var.causality == "input" || var.causality == "output")
+            if (var.causality == "input")
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has illegal combination: variability=\"constant\" and causality=\"" +
-                                        var.causality + "\".");
-            }
-        }
-
-        if (var.variability == "parameter")
-        {
-            if (var.causality == "output")
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                    ") has illegal combination: variability=\"parameter\" and causality=\"output\".");
-            }
-            if (!_is_cs && var.causality == "input")
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has illegal combination for Model Exchange: variability=\"parameter\" and "
-                                        "causality=\"input\".");
+                                        ") has illegal combination: variability=\"constant\" and causality=\"input\". "
+                                        "Logical contradiction: constants cannot be changed from the outside.");
             }
         }
     }
@@ -212,13 +186,7 @@ void Fmi1ModelDescriptionChecker::checkLegalVariabilityImpl(const std::vector<Va
         // Only Real can be continuous
         if (var.variability == "continuous")
         {
-            if (_is_cs)
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has variability \"continuous\", which is not allowed in Co-Simulation.");
-            }
-            else if (var.type != "Real")
+            if (var.type != "Real")
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -235,8 +203,11 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
     for (const auto& var : variables)
     {
         bool needs_start = false;
-        if (var.causality == "input" || var.variability == "constant" ||
-            (var.variability == "parameter" && var.initial == "exact"))
+        // FMI 1.0 ME Spec 3.3: "A variable of causality = “input”, must have a “start” value."
+        // FMI 1.0 ME Spec 3.3 Note: "all constants, independent parameters and inputs of the FMU must have a start
+        // value" Since we cannot distinguish "independent" parameters from calculated ones without the start value, we
+        // only enforce it for input and constant.
+        if (var.causality == "input" || var.variability == "constant")
             needs_start = true;
 
         if (needs_start && !var.start.has_value())
@@ -262,28 +233,22 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
                                     ") has 'fixed' attribute but is missing 'start' value.");
         }
 
-        // FMI 1.0: "fixed" attribute is not allowed for causality="input"
+        // FMI 1.0: "fixed" attribute is not defined for causality="input"
         if (var.causality == "input" && var.fixed.has_value())
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has causality=\"input\" and must not have a 'fixed' attribute.");
+                                    ") has causality=\"input\" and a 'fixed' attribute. The 'fixed' attribute is only "
+                                    "defined for causalities other than 'input' (Section 3.3).");
         }
 
-        // FMI 1.0: "fixed" attribute is not allowed for variability="constant"
-        if (var.variability == "constant" && var.fixed.has_value())
+        // FMI 1.0: "fixed" attribute for variability="constant"
+        if (var.variability == "constant" && var.fixed.has_value() && !var.fixed.value())
         {
+            // fixed="false" (guess value) makes no sense for a constant
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has variability=\"constant\" and must not have a 'fixed' attribute.");
-        }
-
-        // FMI 1.0: "fixed" attribute is not allowed for variability="continuous"
-        if (var.variability == "continuous" && var.fixed.has_value())
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has variability=\"continuous\" and must not have a 'fixed' attribute.");
+                                    ") has variability=\"constant\" and fixed=\"false\", which is a contradiction.");
         }
     }
     cert.printTestResult(test);

@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="fixed_on_continuous" modelIdentifier="fixed_on_continuous" guid="{57567222-2621-4475-ae90-7607a72d1f7c}">
-  <ModelVariables>
-    <ScalarVariable name="x" valueReference="1" variability="continuous">
-      <Real start="0.0" fixed="true" />
-    </ScalarVariable>
-  </ModelVariables>
-</fmiModelDescription>
