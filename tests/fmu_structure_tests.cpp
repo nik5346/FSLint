@@ -91,6 +91,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         validate_warning("tests/data/fmi1/warn/fmi_headers_in_sources",
                          "Standard FMI header file 'fmiFunctions.h' found in 'sources/' directory");
         validate_warning("tests/data/fmi1/warn/unknown_root_entry", "Unknown file in FMU root: 'unknown.txt'");
+        validate_warning("tests/data/fmi1/pass/TestME", "Recommended file 'model.png' is missing");
     }
 }
 
@@ -255,6 +256,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_fail("tests/data/fmi3/fail/missing_diagram_png", "diagram.png is missing");
         validate_fail("tests/data/fmi3/fail/missing_license", "license");
         validate_fail("tests/data/fmi3/fail/missing_ext_deps", "needsExecutionTool is true");
+        validate_fail("tests/data/fmi3/fail/missing_icon_png", "icon.png is missing");
     }
 
     SECTION("Warning Cases")
@@ -263,6 +265,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_warning("tests/data/fmi3/warn/invalid_binaries_tuple", "does not follow the <arch>-<sys>");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
         validate_warning("tests/data/fmi3/warn/missing_index_html", "documentation/index.html' is missing");
+        validate_warning("tests/data/fmi3/warn/missing_icon_png", "Recommended file 'terminalsAndIcons/icon.png' is missing");
     }
 
     SECTION("Passing Cases")

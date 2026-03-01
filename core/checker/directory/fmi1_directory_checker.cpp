@@ -93,7 +93,18 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 2. Documentation entry point
+    // 2. model.png Existence
+    {
+        TestResult test{"model.png Existence", TestStatus::PASS, {}};
+        if (!std::filesystem::exists(path / "model.png"))
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Recommended file 'model.png' is missing from the FMU root.");
+        }
+        cert.printTestResult(test);
+    }
+
+    // 3. Documentation entry point
     {
         auto doc_path = path / "documentation";
         if (std::filesystem::exists(doc_path) && !std::filesystem::is_empty(doc_path))
@@ -108,7 +119,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         }
     }
 
-    // 3. Distribution (Binaries and Sources)
+    // 4. Distribution (Binaries and Sources)
     {
         TestResult test{"Binaries and Sources", TestStatus::PASS, {}};
         bool has_binaries = false;
@@ -149,7 +160,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 4. Standard Headers
+    // 5. Standard Headers
     static const std::set<std::string> fmi1_headers = {"fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h",
                                                        "fmiPlatformTypes.h"};
     checkStandardHeaders(path, cert, fmi1_headers);

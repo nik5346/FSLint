@@ -138,6 +138,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Directory Structure
 
+- **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
 - **Documentation Entry Point**: The **recommended** entry point `documentation/_main.html` **should** be present if documentation exists.
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 1.0 headers: `fmiFunctions.h`, `fmiModelFunctions.h`, `fmiModelTypes.h`, `fmiPlatformTypes.h`.
 
@@ -276,6 +277,9 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` **must** be present.
 - **Documentation Entry Point**: `documentation/index.html` is the **recommended** entry point.
 - **Diagrams**: If `documentation/diagram.svg` is provided, a `documentation/diagram.png` fallback **must** also be present.
+- **icon.png Existence**:
+  - It is **recommended** to provide an icon `terminalsAndIcons/icon.png` if the `terminalsAndIcons/` directory exists.
+  - If `terminalsAndIcons/icon.svg` is provided, a `terminalsAndIcons/icon.png` fallback **must** also be present.
 - **Build Description**: If the `sources/` directory exists, `sources/buildDescription.xml` **must** be present.
 - **Platform Tuples**: Platform directories **should** follow the `<arch>-<sys>[-<abi>]` format.
 - **Static Linking**: If static libraries are present, `documentation/staticLinking.{txt|html}` **must** be present.
