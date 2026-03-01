@@ -125,7 +125,7 @@ void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, C
     if (!std::filesystem::exists(sources_path) || !std::filesystem::is_directory(sources_path))
         return;
 
-    TestResult test{"Standard FMI Headers", TestStatus::PASS, {}};
+    TestResult test{"Standard Headers", TestStatus::PASS, {}};
     for (const auto& entry : std::filesystem::recursive_directory_iterator(sources_path))
     {
         if (entry.is_regular_file())

@@ -425,7 +425,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::
     if (generation_time < fmi_release_time)
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Generation date and time \"" + dt + "\" is before the FMI " + fmi_version +
+        test.messages.push_back("Generation date and time \"" + dt + "\" is before the " + fmi_version +
                                 " standard release (" + std::to_string(release_year) + "). " +
                                 "This is unusual and may indicate an incorrect timestamp.");
     }
@@ -433,12 +433,12 @@ void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::
 
 void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert)
 {
-    TestResult test{"FMI Version Format", TestStatus::PASS, {}};
+    TestResult test{"Version", TestStatus::PASS, {}};
 
     if (!fmi_version.has_value())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("FMI version attribute is missing.");
+        test.messages.push_back("version attribute is missing.");
         cert.printTestResult(test);
         return;
     }
@@ -446,7 +446,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     if (fmi_version->empty())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("FMI version attribute is empty.");
+        test.messages.push_back("version attribute is empty.");
         cert.printTestResult(test);
         return;
     }

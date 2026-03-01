@@ -53,8 +53,7 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
     }
     else
     {
-        cert.printTestResult(
-            {"FMI Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
+        cert.printTestResult({"Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
         xmlFreeDoc(doc);
         return variables;
     }

@@ -15,7 +15,7 @@
 
 void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
-    cert.printSubsectionHeader("FMI 1.0 DIRECTORY STRUCTURE");
+    cert.printSubsectionHeader("DIRECTORY STRUCTURE");
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
@@ -72,7 +72,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
 {
     // 1. FMU Root Entries
     {
-        TestResult test{"FMU Root Entries (FMI1)", TestStatus::PASS, {}};
+        TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
         static const std::set<std::string> fmi1_standard_entries = {
             "modelDescription.xml", "model.png", "documentation", "sources", "binaries", "resources"};
 

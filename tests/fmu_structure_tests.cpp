@@ -265,7 +265,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_warning("tests/data/fmi3/warn/invalid_binaries_tuple", "does not follow the <arch>-<sys>");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
         validate_warning("tests/data/fmi3/warn/missing_index_html", "documentation/index.html' is missing");
-        validate_warning("tests/data/fmi3/warn/missing_icon_png", "Recommended file 'terminalsAndIcons/icon.png' is missing");
+        validate_warning("tests/data/fmi3/warn/missing_icon_png",
+                         "Recommended file 'terminalsAndIcons/icon.png' is missing");
     }
 
     SECTION("Passing Cases")
@@ -408,7 +409,7 @@ TEST_CASE("FMI 2.0 Build Description Validation", "[build_description][fmi2]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/fmi2/fail/build_description_v2", "must be '3.0' for FMI 2.0 FMUs");
+        validate_fail("tests/data/fmi2/fail/build_description_v2", "must be '3.0' for FMI 2.x FMUs");
     }
 }
 
