@@ -122,15 +122,14 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Legal Variability**:
   - Variability **must** be compatible with the variable's type and causality.
   - Only floating-point types (`Real`) **can** be `continuous`.
-  - `variability="continuous"` is **not allowed** in Co-Simulation.
-- **Required Start Values**: Variables **must** have a `start` value if `causality` is `input`, `variability` is `constant`, or `causality` is `parameter` and `fixed="true"` (or `fixed` is missing).
+- **Required Start Values**: Variables **must** have a `start` value if `causality` is `input` or `variability` is `constant`.
 - **Illegal Start Values**:
   - The `fixed` attribute **must** only be present if a `start` value is also provided.
-  - The `fixed` attribute is **not allowed** for variables with `causality="input"`, `variability="constant"`, or `variability="continuous"`.
+  - The `fixed` attribute is **not allowed** for variables with `causality="input"`.
+  - For variables with `variability="constant"`, `fixed="false"` (guess value) is **not allowed**.
 - **Causality/Variability/Initial Combinations**:
   - Combinations **must** follow the allowed set defined in the FMI 1.0 specifications.
-  - `constant` variability: `causality` **must not** be `input` or `output`.
-  - `parameter` variability: `causality` **must not** be `output`. In Model Exchange, it **must not** be `input`.
+  - `constant` variability: `causality` **must not** be `input`.
 
 ### Binary Exports
 
