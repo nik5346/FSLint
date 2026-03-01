@@ -203,9 +203,9 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
     {
         bool needs_start = false;
         // FMI 1.0 ME Spec 3.3: "A variable of causality = “input”, must have a “start” value."
-        // FMI 1.0 ME Spec 3.3 Note: "all constants, independent parameters and inputs of the FMU must have a start value"
-        // Since we cannot distinguish "independent" parameters from calculated ones without the start value,
-        // we only enforce it for input and constant.
+        // FMI 1.0 ME Spec 3.3 Note: "all constants, independent parameters and inputs of the FMU must have a start
+        // value" Since we cannot distinguish "independent" parameters from calculated ones without the start value, we
+        // only enforce it for input and constant.
         if (var.causality == "input" || var.variability == "constant")
             needs_start = true;
 

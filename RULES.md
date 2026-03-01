@@ -119,17 +119,14 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Variable Consistency
 
-- **Legal Variability**:
-  - Variability **must** be compatible with the variable's type and causality.
-  - Only floating-point types (`Real`) **can** be `continuous`.
-- **Required Start Values**: Variables **must** have a `start` value if `causality` is `input` or `variability` is `constant`.
+- **Legal Variability**: Only variables of type `Real` **can** have `variability="continuous"`.
+- **Required Start Values**: Variables **must** have a `start` attribute if `causality="input"` or `variability="constant"`.
 - **Illegal Start Values**:
-  - The `fixed` attribute **must** only be present if a `start` value is also provided.
+  - The `fixed` attribute **must** only be present if a `start` attribute is also provided.
   - The `fixed` attribute is **not allowed** for variables with `causality="input"`.
   - For variables with `variability="constant"`, `fixed="false"` (guess value) is **not allowed**.
-- **Causality/Variability/Initial Combinations**:
-  - Combinations **must** follow the allowed set defined in the FMI 1.0 specifications.
-  - `constant` variability: `causality` **must not** be `input`.
+- **Causality/Variability Combinations**:
+  - Variables with `variability="constant"` **must not** have `causality="input"`.
 
 ### Binary Exports
 
@@ -182,10 +179,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Variable Consistency
 
-- **Legal Variability**: Variability **must** be compatible with the variable's type and causality. Only floating-point types (`Real`) **can** be `continuous`. Parameters (`causality="parameter"` or `"calculatedParameter"`) **must** be `"fixed"` or `"tunable"`.
+- **Legal Variability**:
+  - Only variables of type `Real` **can** have `variability="continuous"`.
+  - Parameters (`causality="parameter"` or `"calculatedParameter"`) **must** have `variability="fixed"` or `"tunable"`.
 - **Required Start Values**: Variables **must** have a `start` value if `causality` is `input` or `parameter`, `variability` is `constant`, or `initial` is `exact` or `approx`.
 - **Illegal Start Values**: Variables with `initial="calculated"` or `causality="independent"` **must not** provide a `start` value.
-- **Causality/Variability/Initial Combinations**: Combinations **must** follow the allowed set defined in the FMI 2.0 specification tables.
+- **Causality/Variability/Initial Combinations**: Combinations **must** match one of the allowed triplets defined in the FMI 2.0 specification (e.g., `parameter`/`fixed`/`exact`, `input`/`discrete`/`exact`).
 
 ### Terminals and Icons
 
@@ -253,10 +252,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Variable Consistency
 
-- **Legal Variability**: Variability **must** be compatible with the variable's type and causality. Only floating-point types (`Float32`, `Float64`) **can** be `continuous`. Parameters (`causality="parameter"`, `"calculatedParameter"`, or `"structuralParameter"`) **must** be `"fixed"` or `"tunable"`.
+- **Legal Variability**:
+  - Only variables of floating-point type (`Float32`, `Float64`) **can** have `variability="continuous"`.
+  - Parameters (`causality="parameter"`, `"calculatedParameter"`, or `"structuralParameter"`) **must** have `variability="fixed"` or `"tunable"`.
 - **Required Start Values**: Variables **must** have a `start` value if `causality` is `input`, `parameter`, or `structuralParameter`, `variability` is `constant`, or `initial` is `exact` or `approx`. Variables of type `Clock` are excluded from this requirement.
 - **Illegal Start Values**: Variables with `initial="calculated"` or `causality="independent"` **must not** provide a `start` value.
-- **Causality/Variability/Initial Combinations**: Combinations **must** follow the allowed set defined in the FMI 3.0 specification.
+- **Causality/Variability/Initial Combinations**: Combinations **must** match one of the allowed triplets defined in the FMI 3.0 specification.
 
 ### Terminals and Icons
 
