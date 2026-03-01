@@ -179,12 +179,10 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Variable Consistency
 
-- **Legal Variability**:
-  - Only variables of type `Real` **can** have `variability="continuous"`.
-  - Parameters (`causality="parameter"` or `"calculatedParameter"`) **must** have `variability="fixed"` or `"tunable"`.
+- **Legal Variability**: Variability **must** be compatible with the variable's type and causality. Only floating-point types (`Real`) **can** be `continuous`. Parameters (`causality="parameter"` or `"calculatedParameter"`) **must** be `"fixed"` or `"tunable"`.
 - **Required Start Values**: Variables **must** have a `start` value if `causality` is `input` or `parameter`, `variability` is `constant`, or `initial` is `exact` or `approx`.
 - **Illegal Start Values**: Variables with `initial="calculated"` or `causality="independent"` **must not** provide a `start` value.
-- **Causality/Variability/Initial Combinations**: Combinations **must** match one of the allowed triplets defined in the FMI 2.0 specification (e.g., `parameter`/`fixed`/`exact`, `input`/`discrete`/`exact`).
+- **Causality/Variability/Initial Combinations**: Combinations **must** follow the allowed set defined in the FMI 2.0 specification tables.
 
 ### Terminals and Icons
 
@@ -252,12 +250,10 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Variable Consistency
 
-- **Legal Variability**:
-  - Only variables of floating-point type (`Float32`, `Float64`) **can** have `variability="continuous"`.
-  - Parameters (`causality="parameter"`, `"calculatedParameter"`, or `"structuralParameter"`) **must** have `variability="fixed"` or `"tunable"`.
+- **Legal Variability**: Variability **must** be compatible with the variable's type and causality. Only floating-point types (`Float32`, `Float64`) **can** be `continuous`. Parameters (`causality="parameter"`, `"calculatedParameter"`, or `"structuralParameter"`) **must** be `"fixed"` or `"tunable"`.
 - **Required Start Values**: Variables **must** have a `start` value if `causality` is `input`, `parameter`, or `structuralParameter`, `variability` is `constant`, or `initial` is `exact` or `approx`. Variables of type `Clock` are excluded from this requirement.
 - **Illegal Start Values**: Variables with `initial="calculated"` or `causality="independent"` **must not** provide a `start` value.
-- **Causality/Variability/Initial Combinations**: Combinations **must** match one of the allowed triplets defined in the FMI 3.0 specification.
+- **Causality/Variability/Initial Combinations**: Combinations **must** follow the allowed set defined in the FMI 3.0 specification.
 
 ### Terminals and Icons
 
