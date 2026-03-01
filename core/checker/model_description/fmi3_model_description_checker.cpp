@@ -492,8 +492,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) +
-                                        ") must not have an initial attribute.");
+                                        std::to_string(var.sourceline) + ") must not have an initial attribute.");
             }
 
             // FMI3: Check for illegal start attribute
@@ -501,8 +500,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) +
-                                        ") must not have a start attribute.");
+                                        std::to_string(var.sourceline) + ") must not have a start attribute.");
             }
         }
     }

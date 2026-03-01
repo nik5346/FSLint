@@ -4,4 +4,5 @@
   <ModelVariables>
     <Float64 name="time" valueReference="0" causality="independent" />
   </ModelVariables>
+  <ModelStructure />
 </fmiModelDescription>

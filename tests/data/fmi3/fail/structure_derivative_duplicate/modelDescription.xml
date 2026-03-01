@@ -2,6 +2,7 @@
 <fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
     <Float64 name="x" valueReference="1" />
     <Float64 name="der_x" valueReference="2" derivative="1" />
   </ModelVariables>

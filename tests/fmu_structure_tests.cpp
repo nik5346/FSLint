@@ -254,9 +254,9 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     {
         validate_fail("tests/data/fmi3/fail/no_impl", "at least one implementation");
         validate_fail("tests/data/fmi3/fail/missing_diagram_png", "diagram.png is missing");
-        validate_fail("tests/data/fmi3/fail/missing_license", "license");
-        validate_fail("tests/data/fmi3/fail/missing_ext_deps", "needsExecutionTool is true");
-        validate_fail("tests/data/fmi3/fail/missing_icon_png", "icon.png is missing");
+        validate_fail("tests/data/fmi3/fail/missing_license", "license.spdx");
+        validate_fail("tests/data/fmi3/fail/missing_ext_deps", "externalDependencies");
+        validate_fail("tests/data/fmi3/fail/missing_icon_png", "fallback");
     }
 
     SECTION("Warning Cases")
