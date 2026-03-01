@@ -163,9 +163,11 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinationsIm
         {
             if (var.causality == "input")
             {
-                test.status = TestStatus::FAIL;
+                if (test.status == TestStatus::PASS)
+                    test.status = TestStatus::WARNING;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has illegal combination: variability=\"constant\" and causality=\"input\".");
+                                        ") has variability=\"constant\" and causality=\"input\". This is a logical "
+                                        "contradiction as constants cannot be changed from the outside.");
             }
         }
     }
@@ -232,12 +234,14 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
                                     ") has 'fixed' attribute but is missing 'start' value.");
         }
 
-        // FMI 1.0: "fixed" attribute is not allowed for causality="input"
+        // FMI 1.0: "fixed" attribute is not defined for causality="input"
         if (var.causality == "input" && var.fixed.has_value())
         {
-            test.status = TestStatus::FAIL;
+            if (test.status == TestStatus::PASS)
+                test.status = TestStatus::WARNING;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has causality=\"input\" and must not have a 'fixed' attribute.");
+                                    ") has causality=\"input\" and a 'fixed' attribute. The 'fixed' attribute is only "
+                                    "defined for causalities other than 'input'.");
         }
 
         // FMI 1.0: "fixed" attribute for variability="constant"

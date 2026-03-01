@@ -123,10 +123,10 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Required Start Values**: Variables **must** have a `start` attribute if `causality="input"` or `variability="constant"`.
 - **Illegal Start Values**:
   - The `fixed` attribute **must** only be present if a `start` attribute is also provided.
-  - The `fixed` attribute is **not allowed** for variables with `causality="input"`.
+  - The `fixed` attribute **should not** be used for variables with `causality="input"`.
   - For variables with `variability="constant"`, `fixed="false"` (guess value) is **not allowed**.
 - **Causality/Variability Combinations**:
-  - Variables with `variability="constant"` **must not** have `causality="input"`.
+  - Variables with `variability="constant"` **should not** have `causality="input"`.
 
 ### Binary Exports
 
