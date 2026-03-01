@@ -53,26 +53,47 @@ jobs:
       - id: set-matrix
         env:
           WIN_RUNNER: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
+          WIN_ARM64_RUNNER: ${{ vars.WINDOWS_ARM64_RUNNER || vars.WINDOWS_RUNNER || 'windows-latest' }}
           LINUX_RUNNER: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
+          LINUX_ARM64_RUNNER: ${{ vars.LINUX_ARM64_RUNNER || vars.LINUX_RUNNER || 'ubuntu-latest' }}
           MACOS_RUNNER: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
+          MACOS_ARM64_RUNNER: ${{ vars.MACOS_ARM64_RUNNER || vars.MACOS_RUNNER || 'macos-latest' }}
           BUILD_LINUX: ${{ vars.BUILD_LINUX || 'false' }}
           BUILD_MACOS: ${{ vars.BUILD_MACOS || 'false' }}
+          BUILD_ARM64: ${{ vars.BUILD_ARM64 || 'false' }}
         shell: python
         run: |
           import json
           import os
 
           win_runner = os.environ.get('WIN_RUNNER', 'windows-latest')
+          win_arm64_runner = os.environ.get('WIN_ARM64_RUNNER', 'windows-latest')
           linux_runner = os.environ.get('LINUX_RUNNER', 'ubuntu-latest')
+          linux_arm64_runner = os.environ.get('LINUX_ARM64_RUNNER', 'ubuntu-latest')
           macos_runner = os.environ.get('MACOS_RUNNER', 'macos-latest')
+          macos_arm64_runner = os.environ.get('MACOS_ARM64_RUNNER', 'macos-latest')
           build_linux = os.environ.get('BUILD_LINUX', 'false').lower() == 'true'
           build_macos = os.environ.get('BUILD_MACOS', 'false').lower() == 'true'
+          build_arm64 = os.environ.get('BUILD_ARM64', 'false').lower() == 'true'
 
-          include = [{"os": "windows-latest", "runner": win_runner}]
+          include = []
+
+          # Windows
+          include.append({"os": "windows-latest", "arch": "x64", "runner": win_runner, "cmake_args": "-A x64"})
+          if build_arm64:
+              include.append({"os": "windows-latest", "arch": "arm64", "runner": win_arm64_runner, "cmake_args": "-A ARM64"})
+
+          # Linux
           if build_linux:
-              include.append({"os": "ubuntu-latest", "runner": linux_runner})
+              include.append({"os": "ubuntu-latest", "arch": "x64", "runner": linux_runner, "cmake_args": ""})
+              if build_arm64:
+                  include.append({"os": "ubuntu-latest", "arch": "arm64", "runner": linux_arm64_runner, "cmake_args": ""})
+
+          # macOS
           if build_macos:
-              include.append({"os": "macos-latest", "runner": macos_runner})
+              include.append({"os": "macos-latest", "arch": "x64", "runner": macos_runner, "cmake_args": "-DCMAKE_OSX_ARCHITECTURES=x86_64"})
+              if build_arm64:
+                  include.append({"os": "macos-latest", "arch": "arm64", "runner": macos_arm64_runner, "cmake_args": "-DCMAKE_OSX_ARCHITECTURES=arm64"})
 
           matrix = {"include": include}
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
@@ -80,7 +101,7 @@ jobs:
 
   build:
     needs: [setup]
-    name: Build on ${{ matrix.os }}
+    name: Build on ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -95,7 +116,7 @@ jobs:
         python-version: '3.x'
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
 
     - name: Build
       run: cmake --build build --config Release --target FSLint-cli
@@ -156,16 +177,16 @@ jobs:
         shutil.move('test_fmu/2.0/BouncingBall.fmu', 'BouncingBall.fmu')
 
     - name: Test with Bouncing Ball FMU (Unix)
-      if: runner.os != 'Windows'
+      if: runner.os != 'Windows' && ((matrix.arch == 'x64' && (runner.arch == 'X64' || runner.os == 'macOS')) || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
       run: ./dist/FSLint-cli BouncingBall.fmu
 
     - name: Test with Bouncing Ball FMU (Windows)
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && ((matrix.arch == 'x64' && runner.arch == 'X64') || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
       shell: pwsh
       run: ./dist/FSLint-cli.exe BouncingBall.fmu
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: FSLint-cli-${{ matrix.os }}
+        name: FSLint-cli-${{ matrix.os }}-${{ matrix.arch }}
         path: dist/
