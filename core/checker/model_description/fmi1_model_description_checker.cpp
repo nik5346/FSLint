@@ -135,8 +135,8 @@ void Fmi1ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
     }
 }
 
-void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(
-    const std::vector<Variable>& variables, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
+                                                                               Certificate& cert)
 {
     TestResult test{"Causality/Variability/Initial Combinations (FMI1)", TestStatus::PASS, {}};
 
@@ -579,10 +579,10 @@ void Fmi1ModelDescriptionChecker::checkModelIdentifierMatch(const std::string& m
 
     if (model_identifier != expected_id)
     {
-        cert.printTestResult({"Model Identifier Filename Match",
-                              TestStatus::FAIL,
-                              {std::format("modelIdentifier '{}' must match the FMU filename '{}'.",
-                                           model_identifier, expected_id)}});
+        cert.printTestResult(
+            {"Model Identifier Filename Match",
+             TestStatus::FAIL,
+             {std::format("modelIdentifier '{}' must match the FMU filename '{}'.", model_identifier, expected_id)}});
     }
     else
     {
