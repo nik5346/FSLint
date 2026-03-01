@@ -25,6 +25,17 @@ TEST_CASE("Recursive Model Validation", "[recursive]")
         CHECK(nested[0].nested_models[0].nested_models[0].name == "deep_inner.fmu/");
     }
 
+    SECTION("FMI 1.0 Nested FMU structure")
+    {
+        std::filesystem::path root_path = "tests/data/fmi1/pass/nested";
+
+        Certificate result_cert = checker.validate(root_path, true);
+
+        const auto& nested = result_cert.getNestedModels();
+        REQUIRE(nested.size() == 1);
+        CHECK(nested[0].name == "inner.fmu/");
+    }
+
     SECTION("SSP structure")
     {
         std::filesystem::path ssp_path = "tests/data/nested/root_ssp";

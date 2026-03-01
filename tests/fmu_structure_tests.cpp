@@ -70,7 +70,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
     SECTION("Failure Cases")
     {
         Certificate cert;
-        checker.validate("tests/data/directory/fail/no_impl_fmi1", cert);
+        checker.validate("tests/data/fmi1/fail/no_impl", cert);
         REQUIRE(has_fail(cert));
         CHECK(has_error_with_text(cert, "must contain either a precompiled binary"));
     }

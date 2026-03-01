@@ -153,8 +153,9 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
 
     SECTION("Unused Definitions")
     {
-        validate_warning("warn/unit_unused", "Unit \"s\" is unused");
-        validate_warning("warn/type_unused", "Type definition \"MyType\" (line 4) is unused");
+        validate_warning("warn/unit_unused", "Unit "s" is unused");
+        validate_warning("warn/type_unused", "Type definition "MyType" (line 4) is unused");
+                         "references a web source that appears to be unreachable");
     }
 }
 
@@ -243,6 +244,12 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("date_invalid", "is out of range");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
+    }
+
+    SECTION("Model Identifier")
+    {
+        validate_fail("model_identifier_invalid", "cannot start with a digit");
+        validate_fail("model_identifier_too_long", "is too long");
     }
 
     SECTION("Interfaces")
@@ -513,6 +520,12 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("date_invalid", "is out of range");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
+    }
+
+    SECTION("Model Identifier")
+    {
+        validate_fail("model_identifier_invalid", "cannot start with a digit");
+        validate_fail("model_identifier_too_long", "is too long");
     }
 
     SECTION("Interfaces")
