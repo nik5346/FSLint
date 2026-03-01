@@ -27,6 +27,19 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("metadata/guid_missing", "guid attribute is missing");
         validate_fail("metadata/guid_empty", "guid attribute is empty");
         validate_fail("metadata/guid_invalid", "does not match expected GUID format");
+
+        validate_fail("model_name_missing", "modelName attribute is missing");
+        validate_fail("model_name_empty", "modelName attribute is empty");
+
+        validate_fail("date_invalid", "is out of range");
+        validate_fail("date_future", "is in the future");
+        validate_fail("date_format", "does not match ISO 8601 format");
+    }
+
+    SECTION("Model Identifier")
+    {
+        validate_fail("model_identifier_invalid", "cannot start with a digit");
+        validate_fail("model_identifier_too_long", "is too long");
     }
 
     SECTION("Aliases")
@@ -54,6 +67,39 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         checker.validate("tests/data/fmi1/pass/TestME", cert);
         REQUIRE(has_fail(cert));
         CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
+    }
+
+    SECTION("Vendor Annotations")
+    {
+        validate_fail("vendor_annotation_duplicate", "is defined multiple times");
+    }
+
+    SECTION("Consistency")
+    {
+        validate_fail("log_category_duplicate", "is defined multiple times");
+        validate_fail("duplicate_name", "is not unique");
+        validate_fail("type_duplicate", "is defined multiple times");
+        validate_fail("unit_duplicate", "is defined multiple times");
+    }
+
+    SECTION("Variable Naming")
+    {
+        validate_fail("naming_flat_tab", "contains illegal tab character");
+        validate_fail("naming_flat_cr", "contains illegal carriage return");
+        validate_fail("naming_flat_lf", "contains illegal line feed");
+    }
+
+    SECTION("References")
+    {
+        validate_fail("ref_type_undef", "references undefined type");
+        validate_fail("ref_unit_undef", "references undefined unit");
+    }
+
+    SECTION("DefaultExperiment")
+    {
+        validate_fail("exp_start_neg", "startTime");
+        validate_fail("exp_stop_less_start", "must be greater than startTime");
+        validate_fail("exp_tolerance_zero", "tolerance");
     }
 
     SECTION("Legal Variability and Combinations")
@@ -90,6 +136,26 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         validate_warning("warn/implementation/ExternalFileMissing",
                          "references an external file that does not exist on this system");
         validate_warning("warn/implementation/UnreachableWebSource",
+                         "references a web source that appears to be unreachable");
+    }
+
+    SECTION("Metadata")
+    {
+        validate_warning("warn/generation_date_too_old", "is before the FMI 1.0 standard release (2010)");
+        validate_warning("warn/author_missing", "Attribute 'author' is missing");
+        validate_warning("warn/author_empty", "Attribute 'author' is empty");
+        validate_warning("warn/generation_tool_missing", "Attribute 'generationTool' is missing");
+        validate_warning("warn/license_missing", "Attribute 'license' is missing");
+        validate_warning("warn/copyright_missing", "Attribute 'copyright' is missing");
+        validate_warning("warn/model_version_missing", "Attribute 'version' is missing");
+        validate_warning("warn/generation_date_missing", "Attribute 'generationDateAndTime' is missing");
+    }
+
+    SECTION("Unused Definitions")
+    {
+        validate_warning("warn/unit_unused", "Unit "s
+                                             " is unused");
+        validate_warning("warn/type_unused", "Type definition " MyType " (line 4) is unused");
                          "references a web source that appears to be unreachable");
     }
 }
@@ -179,6 +245,12 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("date_invalid", "is out of range");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
+    }
+
+    SECTION("Model Identifier")
+    {
+        validate_fail("model_identifier_invalid", "cannot start with a digit");
+        validate_fail("model_identifier_too_long", "is too long");
     }
 
     SECTION("Interfaces")
@@ -449,6 +521,12 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("date_invalid", "is out of range");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
+    }
+
+    SECTION("Model Identifier")
+    {
+        validate_fail("model_identifier_invalid", "cannot start with a digit");
+        validate_fail("model_identifier_too_long", "is too long");
     }
 
     SECTION("Interfaces")

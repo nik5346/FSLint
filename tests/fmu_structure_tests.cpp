@@ -66,6 +66,32 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         CHECK(has_fail(cert));
         CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
     }
+
+    SECTION("Failure Cases")
+    {
+        Certificate cert;
+        checker.validate("tests/data/fmi1/fail/no_impl", cert);
+        REQUIRE(has_fail(cert));
+        CHECK(has_error_with_text(cert, "must contain either a precompiled binary"));
+    }
+
+    SECTION("Warning Cases")
+    {
+        auto validate_warning = [&](const fs::path& path, const std::string& expected_warning)
+        {
+            Certificate cert;
+            checker.validate(path, cert);
+            INFO("Checking path: " << path);
+            REQUIRE(has_warning(cert));
+            CHECK(has_warning_with_text(cert, expected_warning));
+        };
+
+        validate_warning("tests/data/fmi1/warn/missing_main_html",
+                         "Recommended entry point 'documentation/_main.html' is missing");
+        validate_warning("tests/data/fmi1/warn/fmi_headers_in_sources",
+                         "Standard FMI header file 'fmiFunctions.h' found in 'sources/' directory");
+        validate_warning("tests/data/fmi1/warn/unknown_root_entry", "Unknown file in FMU root: 'unknown.txt'");
+    }
 }
 
 TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")

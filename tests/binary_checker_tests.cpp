@@ -175,7 +175,7 @@ TEST_CASE("FMI 1.0 Binary Validation Failure", "[binary][fmi1][checker]")
     fs::create_directories(temp_path);
 
     // Use an existing valid FMI 1.0 modelDescription.xml (modelIdentifier="TestME")
-    fs::copy_file("tests/data/fmi1/pass/TestME/modelDescription.xml", temp_path / "modelDescription.xml",
+    fs::copy_file("tests/data/fmi1/fail/binary_invalid_prefix/modelDescription.xml", temp_path / "modelDescription.xml",
                   fs::copy_options::overwrite_existing);
 
 #if defined(_WIN32)

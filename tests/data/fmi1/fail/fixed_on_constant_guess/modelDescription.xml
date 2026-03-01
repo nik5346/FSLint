@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="fixed_on_constant_guess" modelIdentifier="fixed_on_constant_guess" guid="{57567222-2621-4475-ae90-7607a72d1f7c}">
+<fmiModelDescription fmiVersion="1.0" modelName="Test" modelIdentifier="Test" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f000}">
   <ModelVariables>
     <ScalarVariable name="c" valueReference="1" variability="constant">
-      <Real start="0.0" fixed="false" />
+      <Real start="1.0" fixed="false" />
     </ScalarVariable>
   </ModelVariables>
 </fmiModelDescription>
