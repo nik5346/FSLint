@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="1.0" modelName="Test" modelIdentifier="Test" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f000}">
   <ModelVariables>
-    <ScalarVariable name="c" valueReference="1" variability="constant">
-      <Real start="1.0" fixed="false"/>
+    <ScalarVariable name="x" valueReference="1">
+      <Real/>
+    </ScalarVariable>
+    <ScalarVariable name="x" valueReference="2">
+      <Real/>
     </ScalarVariable>
   </ModelVariables>
 </fmiModelDescription>
