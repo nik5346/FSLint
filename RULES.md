@@ -8,7 +8,7 @@ Each rule check in FSLint results in one of the following statuses:
 
 - **PASS**: The rule is fully satisfied.
 - **FAIL**: The rule **must** be satisfied. Violation indicates non-compliance with the FMI or SSP specification that would prevent the model from working correctly in most tools.
-- **WARNING**: The rule **should** be satisfied. Violation indicates deviation from recommended best practices, use of deprecated features, or unusual values that might indicate an error.
+- **WARN**: The rule **should** be satisfied. Violation indicates deviation from recommended best practices, use of deprecated features, or unusual values that might indicate an error.
 
 ## Archive Validation (FMU and SSP)
 
@@ -42,7 +42,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - FMI 2.0 and 3.0: XML files **must** use UTF-8 encoding.
   - FMI 1.0: UTF-8 encoding is highly **recommended**.
 - **Model Name Format**: The `modelName` attribute **must** be present and non-empty.
-- **FMI Version Format**: The `fmiVersion` attribute **must** match the standard version string ("1.0", "2.0", or a version matching the FMI 3.0+ regex). For FMI 1.0 and 2.0, only "1.0" and "2.0" are allowed respectively. For FMI 3.0, minor and patch versions are supported (e.g., "3.0", "3.0.1").
+- **FMI Version Format**: The `fmiVersion` attribute **must** match the standard version string. For FMI 1.0 and 2.0, only "1.0" and "2.0" are allowed respectively. For FMI 3.0 and later, the version **must** match the official FMI regex: `3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?`.
 - **Generation Date and Time**:
   - **Must** be in ISO 8601 format (e.g., `YYYY-MM-DDThh:mm:ssZ`).
   - **Must** be a valid date in the past (not after the current system time).
@@ -89,7 +89,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Model Structure and Interfaces
 
 - **Implemented Interfaces**: At least one interface (`CoSimulation`, `ModelExchange`, or `ScheduledExecution`) **must** be implemented.
-- **Default Experiment**: The `startTime`, `stopTime`, `tolerance`, and `stepSize` attributes **must** be non-negative and consistent (e.g., `stopTime > startTime`).
+- **Default Experiment**: The `startTime` and `stopTime` attributes **must** be non-negative. The `tolerance` and `stepSize` attributes **must** be greater than zero. If both `startTime` and a finite `stopTime` are provided, `stopTime` **must** be greater than `startTime`.
 
 ### Directory Structure
 
