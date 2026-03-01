@@ -2,11 +2,11 @@
 <fmiModelDescription fmiVersion="1.0" modelName="Test" modelIdentifier="Test" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f000}">
   <TypeDefinitions>
     <Type name="MyType">
-      <RealType/>
+      <RealType />
     </Type>
     <Type name="MyType">
-      <RealType/>
+      <RealType />
     </Type>
   </TypeDefinitions>
-  <ModelVariables/>
+  <ModelVariables />
 </fmiModelDescription>
