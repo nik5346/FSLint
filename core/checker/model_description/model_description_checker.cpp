@@ -89,13 +89,10 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkAnnotations(doc, cert);
 
     checkUniqueVariableNames(variables, cert);
-    if (!metadata.fmiVersion || !metadata.fmiVersion->starts_with("1."))
-    {
-        checkLegalVariability(variables, cert);
-        checkRequiredStartValues(variables, cert);
-        checkCausalityVariabilityInitialCombinations(variables, cert);
-        checkIllegalStartValues(variables, cert);
-    }
+    checkLegalVariability(variables, cert);
+    checkRequiredStartValues(variables, cert);
+    checkCausalityVariabilityInitialCombinations(variables, cert);
+    checkIllegalStartValues(variables, cert);
     checkTypeAndUnitReferences(variables, type_definitions, units, cert);
 
     checkUnusedDefinitions(type_definitions, units, cert);
