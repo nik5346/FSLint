@@ -56,7 +56,7 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
 
 void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Enumeration Variable Type (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Enumeration Variable Type", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -74,7 +74,7 @@ void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
 void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                        Certificate& cert)
 {
-    TestResult test{"Reinit Attribute (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Reinit Attribute", TestStatus::PASS, {}};
 
     const bool has_me = !extractModelIdentifiers(doc, {"ModelExchange"}).empty();
     const bool has_cs = !extractModelIdentifiers(doc, {"CoSimulation"}).empty();
@@ -110,7 +110,7 @@ void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
 void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                             Certificate& cert)
 {
-    TestResult test{"Multiple Set Attribute (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Multiple Set Attribute", TestStatus::PASS, {}};
 
     const bool has_me = !extractModelIdentifiers(doc, {"ModelExchange"}).empty();
     const bool has_cs = !extractModelIdentifiers(doc, {"CoSimulation"}).empty();
@@ -143,7 +143,7 @@ void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const
 void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std::vector<Variable>& variables,
                                                                       Certificate& cert)
 {
-    TestResult test{"Continuous-time States and Derivatives (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Continuous-time States and Derivatives", TestStatus::PASS, {}};
 
     std::set<uint32_t> state_indices;
     std::map<uint32_t, const Variable*> index_map;
@@ -227,7 +227,7 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
 
 void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Independent Variable (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Independent Variable", TestStatus::PASS, {}};
 
     const Variable* independent_var = nullptr;
 
@@ -282,7 +282,7 @@ void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
 
 void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Alias Variables (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Alias Variables", TestStatus::PASS, {}};
 
     // Group variables by base type and valueReference
     auto get_base_type = [](const std::string& type) -> std::string
@@ -582,7 +582,7 @@ void Fmi2ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
 
 void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Legal Variability (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Legal Variability", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -614,13 +614,13 @@ void Fmi2ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
     if (version != "2.0")
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("FMI version \"" + version + "\" is invalid for FMI 2.0 (must be exactly \"2.0\").");
+        test.messages.push_back("version \"" + version + "\" is invalid (must be exactly \"2.0\").");
     }
 }
 
 void Fmi2ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Required Start Values (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Required Start Values", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -652,7 +652,7 @@ void Fmi2ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
 void Fmi2ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
                                                                                Certificate& cert)
 {
-    TestResult test{"Causality/Variability/Initial Combinations (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Causality/Variability/Initial Combinations", TestStatus::PASS, {}};
 
     // Legal combinations for FMI 2.0
     const std::set<std::tuple<std::string, std::string, std::string>> legal_combinations = {
@@ -711,7 +711,7 @@ void Fmi2ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
 
 void Fmi2ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Illegal Start Values (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Illegal Start Values", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -775,7 +775,7 @@ void Fmi2ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::
 void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                   Certificate& cert)
 {
-    TestResult test{"ModelStructure Outputs (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"ModelStructure Outputs", TestStatus::PASS, {}};
 
     // Get expected outputs (all variables with causality="output")
     std::set<std::string> expected_outputs;
@@ -940,7 +940,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                       Certificate& cert)
 {
-    TestResult test{"ModelStructure Derivatives (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"ModelStructure Derivatives", TestStatus::PASS, {}};
 
     // Build map of variables that have derivatives
     std::set<std::string> expected_derivatives;
@@ -1106,7 +1106,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                           Certificate& cert)
 {
-    TestResult test{"ModelStructure Initial Unknowns (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
     // Build expected set of initial unknowns (FMI2 spec)
     std::set<std::string> expected;
@@ -1339,7 +1339,7 @@ void Fmi2ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test,
     test.status = TestStatus::FAIL;
     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                             "): " + attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
-                            ", which is not allowed in FMI 2.0.");
+                            ", which is not allowed.");
 }
 
 void Fmi2ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
@@ -1347,7 +1347,7 @@ void Fmi2ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResu
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back(attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
-                            ", which is not allowed in FMI 2.0.");
+                            ", which is not allowed.");
 }
 
 void Fmi2ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
@@ -1356,7 +1356,7 @@ void Fmi2ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, con
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
-                            "\" is " + getSpecialFloatDescription(val) + ", which is not allowed in FMI 2.0.");
+                            "\" is " + getSpecialFloatDescription(val) + ", which is not allowed.");
 }
 
 void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
@@ -1366,7 +1366,7 @@ void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult&
     test.status = TestStatus::FAIL;
     test.messages.push_back("Type definition \"" + type_def.name + "\" (line " + std::to_string(type_def.sourceline) +
                             "): " + attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
-                            ", which is not allowed in FMI 2.0.");
+                            ", which is not allowed.");
 }
 
 void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert)
@@ -1800,7 +1800,7 @@ std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDe
 
 void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certificate& cert)
 {
-    TestResult test{"Source Files Semantic Validation (FMI2)", TestStatus::PASS, {}};
+    TestResult test{"Source Files Semantic Validation", TestStatus::PASS, {}};
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//SourceFiles/File");
     if (xpath_obj && xpath_obj->nodesetval)

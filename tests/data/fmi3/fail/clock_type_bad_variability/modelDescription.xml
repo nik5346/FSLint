@@ -5,6 +5,7 @@
     <ClockType name="BadClock" intervalVariability="constant" />
   </TypeDefinitions>
   <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
     <Clock name="c" valueReference="1" causality="input" declaredType="BadClock" />
   </ModelVariables>
   <ModelStructure />

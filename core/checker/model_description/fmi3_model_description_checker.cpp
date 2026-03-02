@@ -213,7 +213,7 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
 
 void Fmi3ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Legal Variability (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Legal Variability", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -245,7 +245,7 @@ void Fmi3ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
 
 void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& cert)
 {
-    TestResult test{"Clock Type Validation (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Clock Type Validation", TestStatus::PASS, {}};
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/ClockType");
     if (!xpath_obj || !xpath_obj->nodesetval)
@@ -284,11 +284,11 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
 
 void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Required Start Values (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Required Start Values", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
-        // Skip Clock types (FMI3)
+        // Skip Clock types
         if (var.type == "Clock")
             continue;
 
@@ -320,7 +320,7 @@ void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
 void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
                                                                                Certificate& cert)
 {
-    TestResult test{"Causality/Variability/Initial Combinations (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Causality/Variability/Initial Combinations", TestStatus::PASS, {}};
 
     // Legal combinations for FMI 3.0
     const std::set<std::tuple<std::string, std::string, std::string>> legal_combinations = {
@@ -382,7 +382,7 @@ void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
 
 void Fmi3ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Illegal Start Values (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Illegal Start Values", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -452,7 +452,7 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
 }
 void Fmi3ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Enumeration Variable Type (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Enumeration Variable Type", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -469,7 +469,7 @@ void Fmi3ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
 
 void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Independent Variable (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Independent Variable", TestStatus::PASS, {}};
 
     int32_t independent_count = 0;
     for (const auto& var : variables)
@@ -492,8 +492,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) +
-                                        ") must not have an initial attribute (FMI3 spec).");
+                                        std::to_string(var.sourceline) + ") must not have an initial attribute.");
             }
 
             // FMI3: Check for illegal start attribute
@@ -501,8 +500,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) +
-                                        ") must not have a start attribute (FMI3 spec).");
+                                        std::to_string(var.sourceline) + ") must not have a start attribute.");
             }
         }
     }
@@ -520,7 +518,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
 
 void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Derivative Consistency (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Derivative Consistency", TestStatus::PASS, {}};
 
     std::map<uint32_t, const Variable*> vr_map;
     for (const auto& var : variables)
@@ -580,7 +578,7 @@ void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<V
 
 void Fmi3ModelDescriptionChecker::checkCanHandleMultipleSet(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"CanHandleMultipleSetPerTimeInstant (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"CanHandleMultipleSetPerTimeInstant", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -598,7 +596,7 @@ void Fmi3ModelDescriptionChecker::checkCanHandleMultipleSet(const std::vector<Va
 
 void Fmi3ModelDescriptionChecker::checkReinitAttribute(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Reinit Attribute (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Reinit Attribute", TestStatus::PASS, {}};
 
     // Continuous-time states are variables referenced by 'derivative' attribute of some other variable
     std::set<uint32_t> state_vrs;
@@ -634,7 +632,7 @@ void Fmi3ModelDescriptionChecker::checkReinitAttribute(const std::vector<Variabl
 
 void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Alias Variables (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Alias Variables", TestStatus::PASS, {}};
 
     // Group variables by valueReference
     std::map<uint32_t, std::vector<const Variable*>> vr_to_vars;
@@ -764,7 +762,7 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 
 void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Structural Parameter Validation (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Structural Parameter Validation", TestStatus::PASS, {}};
 
     // Build map of structural parameters by VR
     std::map<uint32_t, const Variable*> sp_map;
@@ -842,7 +840,7 @@ void Fmi3ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::
 void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                   Certificate& cert)
 {
-    TestResult test{"ModelStructure Outputs (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"ModelStructure Outputs", TestStatus::PASS, {}};
 
     // Get expected outputs (all variables with causality="output")
     std::set<uint32_t> expected_vrs;
@@ -962,7 +960,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                         Certificate& cert)
 {
-    TestResult test{"ModelStructure Clocked States (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"ModelStructure Clocked States", TestStatus::PASS, {}};
 
     // Get expected clocked states: variables with causality="local" or "output" and has clocks attribute
     std::set<uint32_t> expected_vrs;
@@ -1076,7 +1074,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
 void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                       Certificate& cert)
 {
-    TestResult test{"ModelStructure Derivatives (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"ModelStructure Derivatives", TestStatus::PASS, {}};
 
     // Build map of variables that are derivatives
     std::set<uint32_t> expected_vrs;
@@ -1291,7 +1289,7 @@ std::string Fmi3ModelDescriptionChecker::formatDimensions(const Variable& var)
 void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                             Certificate& cert)
 {
-    TestResult test{"Variable Dependencies (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Variable Dependencies", TestStatus::PASS, {}};
 
     // Build a map for lookup
     std::map<uint32_t, const Variable*> vr_to_var;
@@ -1425,7 +1423,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
 void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                           Certificate& cert)
 {
-    TestResult test{"ModelStructure Event Indicators (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"ModelStructure Event Indicators", TestStatus::PASS, {}};
 
     // FMI 3.0: ModelStructure/EventIndicator elements define the event indicators.
     // There is no numberOfEventIndicators attribute on the root element.
@@ -1523,7 +1521,7 @@ void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const s
 void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                           Certificate& cert)
 {
-    TestResult test{"ModelStructure Initial Unknowns (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
     // Build expected set of initial unknown value references (FMI3 spec)
     std::set<uint32_t> expected_vrs;
@@ -1752,7 +1750,7 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
 
 void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Dimension References (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Dimension References", TestStatus::PASS, {}};
 
     // Build a map of value_reference -> Variable for structural parameters
     std::map<uint32_t, const Variable*> structural_params_by_vr;
@@ -1880,7 +1878,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
 
 void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Array Start Values (FMI3)", TestStatus::PASS, {}};
+    TestResult test{"Array Start Values", TestStatus::PASS, {}};
 
     // Build a map of value_reference -> Variable for structural parameters
     std::map<uint32_t, const Variable*> structural_params_by_vr;

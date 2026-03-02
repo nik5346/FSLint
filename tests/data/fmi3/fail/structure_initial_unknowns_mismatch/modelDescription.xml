@@ -7,6 +7,5 @@
   </ModelVariables>
   <ModelStructure>
     <Output valueReference="1" />
-    <!-- Missing InitialUnknown -->
   </ModelStructure>
 </fmiModelDescription>

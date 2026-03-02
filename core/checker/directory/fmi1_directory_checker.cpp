@@ -15,7 +15,7 @@
 
 void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
-    cert.printSubsectionHeader("FMI 1.0 DIRECTORY STRUCTURE");
+    cert.printSubsectionHeader("DIRECTORY STRUCTURE");
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
@@ -72,7 +72,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
 {
     // 1. FMU Root Entries
     {
-        TestResult test{"FMU Root Entries (FMI1)", TestStatus::PASS, {}};
+        TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
         static const std::set<std::string> fmi1_standard_entries = {
             "modelDescription.xml", "model.png", "documentation", "sources", "binaries", "resources"};
 
@@ -93,7 +93,18 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 2. Documentation entry point
+    // 2. model.png Existence
+    {
+        TestResult test{"model.png Existence", TestStatus::PASS, {}};
+        if (!std::filesystem::exists(path / "model.png"))
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Recommended file 'model.png' is missing from the FMU root.");
+        }
+        cert.printTestResult(test);
+    }
+
+    // 3. Documentation entry point
     {
         auto doc_path = path / "documentation";
         if (std::filesystem::exists(doc_path) && !std::filesystem::is_empty(doc_path))
@@ -108,7 +119,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         }
     }
 
-    // 3. Distribution (Binaries and Sources)
+    // 4. Distribution (Binaries and Sources)
     {
         TestResult test{"Binaries and Sources", TestStatus::PASS, {}};
         bool has_binaries = false;
@@ -149,7 +160,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 4. Standard Headers
+    // 5. Standard Headers
     static const std::set<std::string> fmi1_headers = {"fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h",
                                                        "fmiPlatformTypes.h"};
     checkStandardHeaders(path, cert, fmi1_headers);

@@ -6,7 +6,7 @@
 
 void Fmi3BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& cert)
 {
-    TestResult test{"Build Description FMI Version", TestStatus::PASS, {}};
+    TestResult test{"Version", TestStatus::PASS, {}};
     auto bd_fmi_version = getXmlAttribute(root, "fmiVersion");
     if (!bd_fmi_version)
     {

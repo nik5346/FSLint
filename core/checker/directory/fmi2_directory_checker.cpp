@@ -54,7 +54,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         if (!std::filesystem::exists(path / "model.png"))
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("FMI 2.0: Recommended file 'model.png' is missing from the FMU root.");
+            test.messages.push_back("Recommended file 'model.png' is missing from the FMU root.");
         }
         cert.printTestResult(test);
     }
@@ -71,7 +71,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             {
                 if (test.status != TestStatus::FAIL)
                     test.status = TestStatus::WARNING;
-                test.messages.push_back("FMI 2.0: needsExecutionTool is true, but "
+                test.messages.push_back("needsExecutionTool is true, but "
                                         "'documentation/externalDependencies.{txt|html}' is missing.");
             }
         }
@@ -84,7 +84,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             {
                 if (test.status != TestStatus::FAIL)
                     test.status = TestStatus::WARNING;
-                test.messages.push_back("FMI 2.0: 'licenses/' exists but does not contain "
+                test.messages.push_back("'licenses/' exists but does not contain "
                                         "a 'license.txt' or 'license.html' entry point.");
             }
         }
@@ -171,7 +171,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         cert.printTestResult(test);
     }
 
-    // 6. FMI 2.0.4 Compatibility
+    // 6. 2.0.4 Compatibility
     {
         const bool has_build_description_anywhere = has_build_description;
         const bool has_sources = !listed_sources_in_md.empty() || has_build_description_anywhere ||
@@ -179,20 +179,20 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         if (has_sources)
         {
-            TestResult test{"FMI 2.0.4 Compatibility", TestStatus::PASS, {}};
+            TestResult test{"2.0.4 Compatibility", TestStatus::PASS, {}};
             const bool has_sources_in_md = !listed_sources_in_md.empty();
             if (has_sources_in_md && !has_build_description_anywhere)
             {
                 test.status = TestStatus::WARNING;
-                test.messages.push_back("FMI 2.0 source code FMU only contains <SourceFiles> in modelDescription.xml. "
-                                        "It is recommended to also provide a buildDescription.xml for FMI 2.0.4+ "
+                test.messages.push_back("Source code FMU only contains <SourceFiles> in modelDescription.xml. "
+                                        "It is recommended to also provide a buildDescription.xml for 2.0.4+ "
                                         "compatibility.");
             }
             else if (!has_sources_in_md && has_build_description_anywhere)
             {
                 test.status = TestStatus::WARNING;
-                test.messages.push_back("FMI 2.0 source code FMU only contains buildDescription.xml. For backwards "
-                                        "compatibility with older FMI 2.0 importers, it is recommended to also provide "
+                test.messages.push_back("Source code FMU only contains buildDescription.xml. For backwards "
+                                        "compatibility with older importers, it is recommended to also provide "
                                         "<SourceFiles> in modelDescription.xml.");
             }
             cert.printTestResult(test);

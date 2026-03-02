@@ -15,7 +15,7 @@
 
 void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
-    cert.printSubsectionHeader("FMI 1.0 BINARY EXPORTS");
+    cert.printSubsectionHeader("BINARY EXPORTS");
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))

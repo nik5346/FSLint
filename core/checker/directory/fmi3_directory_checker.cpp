@@ -52,7 +52,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 !std::filesystem::exists(doc_path / "externalDependencies.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("FMI 3.0: needsExecutionTool is true, but "
+                test.messages.push_back("needsExecutionTool is true, but "
                                         "'documentation/externalDependencies.{txt|html}' is missing.");
             }
         }
@@ -64,16 +64,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 if (test.status != TestStatus::FAIL)
                     test.status = TestStatus::WARNING;
-                test.messages.push_back("FMI 3.0: 'documentation/index.html' is missing (recommended entry point).");
+                test.messages.push_back("'documentation/index.html' is missing (recommended entry point).");
             }
 
             // diagram.svg/png check
             if (std::filesystem::exists(doc_path / "diagram.svg") && !std::filesystem::exists(doc_path / "diagram.png"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    "FMI 3.0: diagram.svg exists in documentation/ but diagram.png is missing (required "
-                    "if diagram.svg is provided).");
+                test.messages.push_back("diagram.svg exists in documentation/ but diagram.png is missing (required "
+                                        "if diagram.svg is provided).");
             }
 
             // licenses directory check
@@ -85,7 +84,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     !std::filesystem::exists(licenses_path / "license.html"))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("FMI 3.0: 'documentation/licenses/' exists but does not contain "
+                    test.messages.push_back("'documentation/licenses/' exists but does not contain "
                                             "a 'license.spdx', 'license.txt', or 'license.html' entry point.");
                 }
             }
@@ -97,6 +96,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"Terminals and Icons Files", TestStatus::PASS, {}};
         auto tai_path = path / "terminalsAndIcons";
+        const bool icon_png_missing = !std::filesystem::exists(tai_path / "icon.png");
+        const bool icon_svg_exists = std::filesystem::exists(tai_path / "icon.svg");
+
         if (std::filesystem::exists(tai_path))
         {
             for (const auto& entry : std::filesystem::directory_iterator(tai_path))
@@ -109,12 +111,19 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         test.status = TestStatus::FAIL;
                         test.messages.push_back(
-                            std::format("FMI 3.0: '{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
+                            std::format("'{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
                                         "fallback).",
                                         entry.path().filename().string(), png_path.filename().string()));
                     }
                 }
             }
+        }
+
+        if (icon_png_missing && !icon_svg_exists)
+        {
+            if (test.status != TestStatus::FAIL)
+                test.status = TestStatus::WARNING;
+            test.messages.push_back("Recommended file 'terminalsAndIcons/icon.png' is missing.");
         }
         cert.printTestResult(test);
     }
@@ -128,8 +137,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             if (!std::filesystem::exists(sources_path / "buildDescription.xml"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    "FMI 3.0: 'sources/' directory exists but 'sources/buildDescription.xml' is missing.");
+                test.messages.push_back("'sources/' directory exists but 'sources/buildDescription.xml' is missing.");
             }
         }
         cert.printTestResult(test);
@@ -155,8 +163,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back(std::format(
-                            "FMI 3.0: Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
+                        test.messages.push_back(
+                            std::format("Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
                     else if (match[4].matched) // ABI present
                     {
@@ -167,7 +175,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back(std::format(
-                                "FMI 3.0: ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
+                                "ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
                                 "letter and contain only lowercase letters, digits, or underscores).",
                                 abi, tuple));
                         }
@@ -196,8 +204,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
                         test.messages.push_back(std::format(
-                            "FMI 3.0: Platform directory '{}' does not contain a binary matching any modelIdentifier.",
-                            tuple));
+                            "Platform directory '{}' does not contain a binary matching any modelIdentifier.", tuple));
                     }
                 }
             }
@@ -210,7 +217,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back(
-                    "FMI 3.0: Static library detected, but 'documentation/staticLinking.{txt|html}' is missing.");
+                    "Static library detected, but 'documentation/staticLinking.{txt|html}' is missing.");
             }
         }
         cert.printTestResult(test);
@@ -221,7 +228,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         if (!has_binaries && !has_sources)
         {
             impl_test.status = TestStatus::FAIL;
-            impl_test.messages.push_back("FMI 3.0: FMU must contain at least one implementation (binary or source code "
+            impl_test.messages.push_back("FMU must contain at least one implementation (binary or source code "
                                          "with buildDescription.xml).");
         }
         cert.printTestResult(impl_test);
@@ -246,7 +253,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
                         test.messages.push_back(
-                            std::format("FMI 3.0: Subdirectory '{}' in extra/ should use reverse domain name notation "
+                            std::format("Subdirectory '{}' in extra/ should use reverse domain name notation "
                                         "(e.g. 'com.example').",
                                         name));
                     }

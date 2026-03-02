@@ -49,7 +49,7 @@ void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
     if (version != "1.0")
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("FMI version \"" + version + "\" is invalid for FMI 1.0 (must be exactly \"1.0\").");
+        test.messages.push_back("version \"" + version + "\" is invalid (must be exactly \"1.0\").");
     }
 }
 
@@ -138,7 +138,7 @@ void Fmi1ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
 void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
                                                                                Certificate& cert)
 {
-    TestResult test{"Causality/Variability/Initial Combinations (FMI1)", TestStatus::PASS, {}};
+    TestResult test{"Causality/Variability/Initial Combinations", TestStatus::PASS, {}};
 
     for (const auto& var : variables)
     {
@@ -158,7 +158,7 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
 
 void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Legal Variability (FMI1)", TestStatus::PASS, {}};
+    TestResult test{"Legal Variability", TestStatus::PASS, {}};
     for (const auto& var : variables)
     {
         // Only Real can be continuous
@@ -177,7 +177,7 @@ void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
 
 void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Required Start Values (FMI1)", TestStatus::PASS, {}};
+    TestResult test{"Required Start Values", TestStatus::PASS, {}};
     for (const auto& var : variables)
     {
         bool needs_start = false;
@@ -200,7 +200,7 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
 
 void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Illegal Start Values (FMI1)", TestStatus::PASS, {}};
+    TestResult test{"Illegal Start Values", TestStatus::PASS, {}};
     for (const auto& var : variables)
     {
         // FMI 1.0: "fixed" attribute is only allowed if "start" is present
@@ -832,7 +832,7 @@ bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url)
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
 {
-    TestResult test{"Alias Variables (FMI1)", TestStatus::PASS, {}};
+    TestResult test{"Alias Variables", TestStatus::PASS, {}};
 
     auto get_base_type = [](const std::string& type) -> std::string
     {
