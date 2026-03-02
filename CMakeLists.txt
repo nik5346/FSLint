@@ -476,14 +476,17 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(FSLint-tests)
 
-# Copy test data to build directory
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
-
-# Check for Reference FMUs (required for binary tests)
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus/BouncingBall_20")
-    message(WARNING "Reference FMUs for binary tests are missing. Some tests will be skipped. "
-                    "Run 'scripts/download_reference_fmus.py' to download them.")
-endif()
+# Synchronize test data and reference FMUs to build directory
+add_custom_command(TARGET FSLint-tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tests
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/data
+        ${CMAKE_CURRENT_BINARY_DIR}/tests/data
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus
+        ${CMAKE_CURRENT_BINARY_DIR}/tests/reference_fmus
+    COMMENT "Synchronizing test data and reference FMUs"
+)
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT FSLint-cli)
 
