@@ -96,8 +96,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"Terminals and Icons Files", TestStatus::PASS, {}};
         auto tai_path = path / "terminalsAndIcons";
-        bool icon_png_missing = !std::filesystem::exists(tai_path / "icon.png");
-        bool icon_svg_exists = std::filesystem::exists(tai_path / "icon.svg");
+        const bool icon_png_missing = !std::filesystem::exists(tai_path / "icon.png");
+        const bool icon_svg_exists = std::filesystem::exists(tai_path / "icon.svg");
 
         if (std::filesystem::exists(tai_path))
         {
