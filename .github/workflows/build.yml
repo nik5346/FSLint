@@ -115,11 +115,25 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Download Reference FMUs for tests
+      run: python scripts/download_reference_fmus.py
+
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
 
     - name: Build
-      run: cmake --build build --config Release --target FSLint-cli
+      run: cmake --build build --config Release --target FSLint-cli FSLint-tests
+
+    - name: Run Tests (Unix)
+      if: runner.os != 'Windows'
+      run: cd build && ctest -C Release --output-on-failure
+
+    - name: Run Tests (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        cd build
+        ctest -C Release --output-on-failure
 
     - name: Prepare Artifact (Linux)
       if: runner.os == 'Linux'

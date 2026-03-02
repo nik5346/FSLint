@@ -450,14 +450,16 @@ add_executable(FSLint-cli
 enable_testing()
 
 add_executable(FSLint-tests
-    tests/model_description_tests.cpp
-    tests/certificate_tests.cpp
-    tests/certificate_management_tests.cpp
-    tests/fmu_structure_tests.cpp
-    tests/terminals_and_icons_tests.cpp
-    tests/binary_checker_tests.cpp
-    tests/recursive_checker_tests.cpp
-    tests/schema_checker_tests.cpp
+    tests/core/test_certificate.cpp
+    tests/core/test_certificate_management.cpp
+    tests/core/test_recursive_checker.cpp
+    tests/fmi/test_binary_checker.cpp
+    tests/fmi/test_fmi1_model_description.cpp
+    tests/fmi/test_fmi2_model_description.cpp
+    tests/fmi/test_fmi3_model_description.cpp
+    tests/fmi/test_fmu_structure.cpp
+    tests/fmi/test_schema_checker.cpp
+    tests/fmi/test_terminals_and_icons.cpp
 )
 
 target_link_libraries(FSLint-tests PRIVATE
@@ -466,6 +468,10 @@ target_link_libraries(FSLint-tests PRIVATE
 )
 
 # Mark external dependencies as SYSTEM to suppress warnings
+target_include_directories(FSLint-tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests
+)
+
 target_include_directories(FSLint-tests SYSTEM PRIVATE
     $<TARGET_PROPERTY:Catch2::Catch2,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:Catch2::Catch2WithMain,INTERFACE_INCLUDE_DIRECTORIES>
@@ -477,11 +483,17 @@ add_custom_command(TARGET FSLint-tests POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/data
         ${CMAKE_CURRENT_BINARY_DIR}/tests/data
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus
-        ${CMAKE_CURRENT_BINARY_DIR}/tests/reference_fmus
-    COMMENT "Synchronizing test data and reference FMUs"
+    COMMENT "Synchronizing test data"
 )
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus")
+    add_custom_command(TARGET FSLint-tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus
+            ${CMAKE_CURRENT_BINARY_DIR}/tests/reference_fmus
+        COMMENT "Synchronizing reference FMUs"
+    )
+endif()
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT FSLint-cli)
 
