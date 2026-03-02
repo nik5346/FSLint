@@ -45,6 +45,12 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         TestResult test{"Documentation Files", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
 
+        if (!std::filesystem::exists(doc_path))
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Recommended directory 'documentation/' is missing.");
+        }
+
         // externalDependencies check (must be present even if documentation/ is missing)
         if (needs_execution_tool)
         {

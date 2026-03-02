@@ -104,19 +104,21 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 3. Documentation entry point
+    // 3. Documentation
     {
+        TestResult test{"Documentation", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
-        if (std::filesystem::exists(doc_path) && !std::filesystem::is_empty(doc_path))
+        if (!std::filesystem::exists(doc_path))
         {
-            TestResult test{"Documentation Entry Point", TestStatus::PASS, {}};
-            if (!std::filesystem::exists(doc_path / "_main.html"))
-            {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Recommended entry point 'documentation/_main.html' is missing.");
-            }
-            cert.printTestResult(test);
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Recommended directory 'documentation/' is missing.");
         }
+        else if (!std::filesystem::exists(doc_path / "_main.html"))
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Recommended entry point 'documentation/_main.html' is missing.");
+        }
+        cert.printTestResult(test);
     }
 
     // 4. Distribution (Binaries and Sources)
