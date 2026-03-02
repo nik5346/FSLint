@@ -471,11 +471,6 @@ target_include_directories(FSLint-tests SYSTEM PRIVATE
     $<TARGET_PROPERTY:Catch2::Catch2WithMain,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
-# Add tests to CTest via Catch2 discovery
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
-include(Catch)
-catch_discover_tests(FSLint-tests)
-
 # Synchronize test data and reference FMUs to build directory
 add_custom_command(TARGET FSLint-tests POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tests
@@ -565,6 +560,11 @@ if(WIN32)
         )
     endif()
 endif()
+
+# Add tests to CTest via Catch2 discovery
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(Catch)
+catch_discover_tests(FSLint-tests)
 
 # ============================================================================
 # Install
