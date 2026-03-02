@@ -94,7 +94,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **Mandatory Files**: `modelDescription.xml` **must** be present in the FMU root.
-- **Documentation**: The `documentation/` directory **should** be present in the FMU root.
+- **Documentation Entry Point**: A documentation entry point (e.g., `documentation/index.html` or `documentation/_main.html`) **should** be present.
 - **Distribution**: The FMU **must** contain at least one implementation (a binary for at least one platform or source code).
 - **Effectively Empty Directories**: Standard directories like `documentation/` or `resources/` **should not** be effectively empty.
 - **Root Entries**: Unknown files or directories in the FMU root **should** be avoided.

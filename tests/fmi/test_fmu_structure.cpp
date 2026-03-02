@@ -88,7 +88,8 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
 
         validate_warning("tests/data/fmi1/warn/missing_main_html",
                          "Recommended entry point 'documentation/_main.html' is missing");
-        validate_warning("tests/data/fmi1/fail/no_impl", "Recommended directory 'documentation/' is missing");
+        validate_warning("tests/data/directory/warn/missing_doc_entry",
+                         "Recommended entry point 'documentation/_main.html' is missing");
         validate_warning("tests/data/fmi1/warn/fmi_headers_in_sources",
                          "Standard FMI header file 'fmiFunctions.h' found in 'sources/' directory");
         validate_warning("tests/data/fmi1/warn/unknown_root_entry", "Unknown file in FMU root: 'unknown.txt'");
@@ -168,7 +169,9 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi2/warn/missing_model_png", "Recommended file 'model.png' is missing");
-        validate_warning("tests/data/directory/fail/no_impl", "Recommended directory 'documentation/' is missing");
+        validate_warning(
+            "tests/data/directory/warn/missing_doc_entry",
+            "Recommended entry point 'documentation/index.html' or 'documentation/_main.html' is missing.");
         validate_warning("tests/data/fmi2/warn/missing_license_txt",
                          "licenses/' exists but does not contain a 'license.txt'");
         validate_warning("tests/data/fmi2/warn/empty_documentation", "Standard directory 'documentation' is empty");
@@ -264,7 +267,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
-        validate_warning("tests/data/fmi3/fail/no_impl", "Recommended directory 'documentation/' is missing");
+        validate_warning("tests/data/directory/warn/missing_doc_entry",
+                         "Recommended entry point 'documentation/index.html' is missing.");
         validate_warning("tests/data/fmi3/warn/invalid_binaries_tuple", "does not follow the <arch>-<sys>");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
         validate_warning("tests/data/fmi3/warn/missing_index_html", "documentation/index.html' is missing");

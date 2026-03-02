@@ -64,12 +64,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
 
-        if (!std::filesystem::exists(doc_path))
-        {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended directory 'documentation/' is missing.");
-        }
-        else if (!std::filesystem::exists(doc_path / "index.html") && !std::filesystem::exists(doc_path / "_main.html"))
+        if (!std::filesystem::exists(doc_path / "index.html") && !std::filesystem::exists(doc_path / "_main.html"))
         {
             test.status = TestStatus::WARNING;
             test.messages.push_back(
