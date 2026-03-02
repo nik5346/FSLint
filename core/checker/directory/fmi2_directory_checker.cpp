@@ -72,7 +72,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         else if (!std::filesystem::exists(doc_path / "index.html") && !std::filesystem::exists(doc_path / "_main.html"))
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended entry point 'documentation/index.html' or 'documentation/_main.html' is missing.");
+            test.messages.push_back(
+                "Recommended entry point 'documentation/index.html' or 'documentation/_main.html' is missing.");
         }
 
         if (needs_execution_tool)
