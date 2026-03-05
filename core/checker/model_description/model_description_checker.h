@@ -213,6 +213,7 @@ class ModelDescriptionCheckerBase : public Checker
                                             Certificate& cert);
     virtual void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
                                       Certificate& cert);
+    void checkModelIdentifierMatch(const std::string& model_identifier, Certificate& cert);
     void checkDefaultExperiment(xmlDocPtr doc, Certificate& cert);
 
     // Common reference checks

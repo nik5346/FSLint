@@ -58,10 +58,11 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
     SECTION("Model Identifier Filename Match")
     {
         Certificate cert;
-        checker.setOriginalPath("WrongName.fmu");
+        // Explicitly set a mismatched path to test the validation logic
+        checker.setOriginalPath("MismatchedName.fmu");
         checker.validate("tests/data/fmi1/pass/TestME", cert);
         REQUIRE(has_fail(cert));
-        CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
+        CHECK(has_error_with_text(cert, "must match the FMU filename 'MismatchedName'"));
     }
 
     SECTION("Vendor Annotations")

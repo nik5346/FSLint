@@ -253,35 +253,39 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
 TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
 {
-    Certificate cert;
     Fmi3ModelDescriptionChecker checker;
 
     SECTION("FMI 3.0 Valid")
     {
+        Certificate cert;
         checker.validate("tests/data/fmi3/pass", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("FMI 3.0 Patch Version")
     {
+        Certificate cert;
         checker.validate("tests/data/fmi3/pass/fmi_version_patch", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("DefaultExperiment INF")
     {
+        Certificate cert;
         checker.validate("tests/data/fmi3/pass/stop_time_inf", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("DefaultExperiment NaN")
     {
+        Certificate cert;
         checker.validate("tests/data/fmi3/pass/exp_nan", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("Unit Offset INF")
     {
+        Certificate cert;
         checker.validate("tests/data/fmi3/pass/unit_offset_inf", cert);
         CHECK_FALSE(has_fail(cert));
     }

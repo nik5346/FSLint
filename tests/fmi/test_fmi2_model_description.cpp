@@ -268,18 +268,18 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
 TEST_CASE("FMI 2.0 Model Description Passing Cases", "[fmi2][pass]")
 {
-    Certificate cert;
+    Fmi2ModelDescriptionChecker checker;
 
     SECTION("FMI 2.0 Valid")
     {
-        Fmi2ModelDescriptionChecker checker;
+        Certificate cert;
         checker.validate("tests/data/fmi2/pass", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("Structured Naming")
     {
-        Fmi2ModelDescriptionChecker checker;
+        Certificate cert;
         checker.validate("tests/data/fmi2/pass/structured_naming", cert);
         CHECK_FALSE(has_fail(cert));
     }

@@ -79,8 +79,26 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     const auto model_identifiers = extractModelIdentifiers(doc, interface_elements);
     checkNumberOfImplementedInterfaces(model_identifiers, cert);
+
+    std::set<std::string> identifiers;
     for (const auto& [interface_name, model_id] : model_identifiers)
+    {
         checkModelIdentifier(model_id, interface_name, cert);
+        identifiers.insert(model_id);
+    }
+
+    // Standard FMI requirement: All modelIdentifiers must be identical (and match the filename)
+    if (identifiers.size() > 1)
+    {
+        cert.printTestResult({"Model Identifiers Consistency",
+                             TestStatus::FAIL,
+                             {"All modelIdentifiers in ModelExchange, CoSimulation, and ScheduledExecution must be "
+                              "identical."}});
+    }
+    else if (!identifiers.empty())
+    {
+        checkModelIdentifierMatch(*identifiers.begin(), cert);
+    }
 
     checkUnits(doc, cert);
     checkTypeDefinitions(doc, cert);
@@ -313,10 +331,10 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     {
         try
         {
-            constexpr int32_t UNIX_EPOCH_YEAR = 1900;
+            static constexpr int32_t TM_YEAR_BASE = 1900;
             // Parse the datetime string into a time_point
             std::tm tm_time = {};
-            tm_time.tm_year = year - UNIX_EPOCH_YEAR;
+            tm_time.tm_year = year - TM_YEAR_BASE;
             tm_time.tm_mon = month - 1;
             tm_time.tm_mday = day;
             tm_time.tm_hour = hour;
@@ -356,7 +374,54 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
             const std::time_t current_time = std::chrono::system_clock::to_time_t(now);
 
             // Check if generation time is in the future
-            if (generation_time > current_time)
+            bool is_future = false;
+            if (generation_time == static_cast<std::time_t>(-1))
+            {
+                // Far future dates like 9999-01-01 return -1 on some systems.
+                // We do a simple component-based comparison with current time.
+                std::tm current_tm = {};
+#ifdef _WIN32
+                gmtime_s(&current_tm, &current_time);
+#else
+                gmtime_r(&current_time, &current_tm);
+#endif
+                const int32_t current_year = current_tm.tm_year + TM_YEAR_BASE;
+                const int32_t current_month = current_tm.tm_mon + 1;
+
+                if (year > current_year)
+                    is_future = true;
+                else if (year == current_year)
+                {
+                    if (month > current_month)
+                        is_future = true;
+                    else if (month == current_month)
+                    {
+                        if (day > current_tm.tm_mday)
+                            is_future = true;
+                        else if (day == current_tm.tm_mday)
+                        {
+                            if (hour > current_tm.tm_hour)
+                                is_future = true;
+                            else if (hour == current_tm.tm_hour)
+                            {
+                                if (minute > current_tm.tm_min)
+                                    is_future = true;
+                                else if (minute == current_tm.tm_min)
+                                {
+                                    if (second > current_tm.tm_sec)
+                                        is_future = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (generation_time > current_time)
+            {
+                is_future = true;
+            }
+
+            if (is_future)
             {
                 test.status = TestStatus::FAIL;
 
@@ -405,10 +470,17 @@ void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::
                                                                      int32_t release_year,
                                                                      const std::string& fmi_version, TestResult& test)
 {
-    constexpr int32_t UNIX_EPOCH_YEAR = 1900;
+    if (generation_time == static_cast<std::time_t>(-1) && test.status == TestStatus::FAIL)
+    {
+        // Far future dates (e.g. 9999) return -1.
+        // We skip the "too old" check because we already established it's in the future.
+        return;
+    }
+
+    static constexpr int32_t TM_YEAR_BASE = 1900;
 
     std::tm fmi_release = {};
-    fmi_release.tm_year = release_year - UNIX_EPOCH_YEAR;
+    fmi_release.tm_year = release_year - TM_YEAR_BASE;
     fmi_release.tm_mon = 0; // January
     fmi_release.tm_mday = 1;
     fmi_release.tm_hour = 0;
@@ -725,6 +797,32 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
     }
 
     cert.printTestResult(test);
+}
+
+void ModelDescriptionCheckerBase::checkModelIdentifierMatch(const std::string& model_identifier, Certificate& cert)
+{
+    const auto& original_path = getOriginalPath();
+
+    // In unit tests, we often validate directories directly without an original FMU path.
+    // We only enforce the filename match if an original path was explicitly provided (e.g., by the CLI).
+    if (original_path.empty())
+    {
+        return;
+    }
+
+    const std::string expected_id = original_path.stem().string();
+
+    if (model_identifier != expected_id)
+    {
+        cert.printTestResult({"Model Identifier Filename Match",
+                             TestStatus::FAIL,
+                             {"modelIdentifier '" + model_identifier + "' must match the FMU filename '" + expected_id +
+                              "'."}});
+    }
+    else
+    {
+        cert.printTestResult({"Model Identifier Filename Match", TestStatus::PASS, {}});
+    }
 }
 
 ModelDescriptionCheckerBase::EffectiveBounds
