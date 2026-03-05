@@ -204,7 +204,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
-- **Documentation Entry Point**: The **recommended** entry point `documentation/index.html` **should** be present if documentation exists.
+- **Documentation Entry Point**: The **recommended** entry point `documentation/index.html` **should** be present.
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` **must** be present.
 - **Licenses**: If a `licenses/` directory exists, it **should** contain an entry point (`license.txt` or `license.html`).
 - **Source Files Consistency**:
