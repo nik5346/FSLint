@@ -94,7 +94,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **Mandatory Files**: `modelDescription.xml` **must** be present in the FMU root.
-- **Documentation Entry Point**: A documentation entry point (e.g., `documentation/index.html` or `documentation/_main.html`) **should** be present.
+- **Documentation Entry Point**: A documentation entry point **should** be present (`documentation/_main.html` for FMI 1.0, `documentation/index.html` for FMI 2.0 and later).
 - **Distribution**: The FMU **must** contain at least one implementation (a binary for at least one platform or source code).
 - **Effectively Empty Directories**: Standard directories like `documentation/` or `resources/` **should not** be effectively empty.
 - **Root Entries**: Unknown files or directories in the FMU root **should** be avoided.
@@ -140,7 +140,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
-- **Documentation Entry Point**: The **recommended** entry point `documentation/_main.html` **should** be present if documentation exists.
+- **Documentation Entry Point**: The **recommended** entry point `documentation/_main.html` **should** be present.
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 1.0 headers: `fmiFunctions.h`, `fmiModelFunctions.h`, `fmiModelTypes.h`, `fmiPlatformTypes.h`.
 
 ---
@@ -277,7 +277,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` **must** be present.
-- **Documentation Entry Point**: `documentation/index.html` is the **recommended** entry point.
+- **Documentation Entry Point**: The **recommended** entry point `documentation/index.html` **should** be present.
 - **Diagrams**: If `documentation/diagram.svg` is provided, a `documentation/diagram.png` fallback **must** also be present.
 - **icon.png Existence**:
   - It is **recommended** to provide an icon `terminalsAndIcons/icon.png` if the `terminalsAndIcons/` directory exists.
