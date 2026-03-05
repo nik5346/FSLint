@@ -64,6 +64,12 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
 
+        if (!std::filesystem::exists(doc_path / "index.html"))
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Recommended entry point 'documentation/index.html' is missing.");
+        }
+
         if (needs_execution_tool)
         {
             if (!std::filesystem::exists(doc_path / "externalDependencies.txt") &&

@@ -450,16 +450,14 @@ add_executable(FSLint-cli
 enable_testing()
 
 add_executable(FSLint-tests
-    tests/core/test_certificate.cpp
-    tests/core/test_certificate_management.cpp
-    tests/core/test_recursive_checker.cpp
-    tests/fmi/test_binary_checker.cpp
-    tests/fmi/test_fmi1_model_description.cpp
-    tests/fmi/test_fmi2_model_description.cpp
-    tests/fmi/test_fmi3_model_description.cpp
-    tests/fmi/test_fmu_structure.cpp
-    tests/fmi/test_schema_checker.cpp
-    tests/fmi/test_terminals_and_icons.cpp
+    tests/model_description_tests.cpp
+    tests/certificate_tests.cpp
+    tests/certificate_management_tests.cpp
+    tests/fmu_structure_tests.cpp
+    tests/terminals_and_icons_tests.cpp
+    tests/binary_checker_tests.cpp
+    tests/recursive_checker_tests.cpp
+    tests/schema_checker_tests.cpp
 )
 
 target_link_libraries(FSLint-tests PRIVATE
@@ -468,31 +466,23 @@ target_link_libraries(FSLint-tests PRIVATE
 )
 
 # Mark external dependencies as SYSTEM to suppress warnings
-target_include_directories(FSLint-tests PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests
-)
-
 target_include_directories(FSLint-tests SYSTEM PRIVATE
     $<TARGET_PROPERTY:Catch2::Catch2,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:Catch2::Catch2WithMain,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
-# Synchronize test data and reference FMUs to build directory
-add_custom_command(TARGET FSLint-tests POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tests
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/data
-        ${CMAKE_CURRENT_BINARY_DIR}/tests/data
-    COMMENT "Synchronizing test data"
-)
+# Add tests to CTest via Catch2 discovery
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(Catch)
+catch_discover_tests(FSLint-tests)
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus")
-    add_custom_command(TARGET FSLint-tests POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus
-            ${CMAKE_CURRENT_BINARY_DIR}/tests/reference_fmus
-        COMMENT "Synchronizing reference FMUs"
-    )
+# Copy test data to build directory
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
+
+# Check for Reference FMUs (required for binary tests)
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus/BouncingBall_20")
+    message(WARNING "Reference FMUs for binary tests are missing. Some tests will be skipped. "
+                    "Run 'scripts/download_reference_fmus.py' to download them.")
 endif()
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT FSLint-cli)
@@ -572,11 +562,6 @@ if(WIN32)
         )
     endif()
 endif()
-
-# Add tests to CTest via Catch2 discovery
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
-include(Catch)
-catch_discover_tests(FSLint-tests)
 
 # ============================================================================
 # Install
