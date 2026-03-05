@@ -91,9 +91,9 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     if (identifiers.size() > 1)
     {
         cert.printTestResult({"Model Identifiers Consistency",
-                             TestStatus::FAIL,
-                             {"All modelIdentifiers in ModelExchange, CoSimulation, and ScheduledExecution must be "
-                              "identical."}});
+                              TestStatus::FAIL,
+                              {"All modelIdentifiers in ModelExchange, CoSimulation, and ScheduledExecution must be "
+                               "identical."}});
     }
     else if (!identifiers.empty())
     {
@@ -806,18 +806,16 @@ void ModelDescriptionCheckerBase::checkModelIdentifierMatch(const std::string& m
     // In unit tests, we often validate directories directly without an original FMU path.
     // We only enforce the filename match if an original path was explicitly provided (e.g., by the CLI).
     if (original_path.empty())
-    {
         return;
-    }
 
     const std::string expected_id = original_path.stem().string();
 
     if (model_identifier != expected_id)
     {
-        cert.printTestResult({"Model Identifier Filename Match",
-                             TestStatus::FAIL,
-                             {"modelIdentifier '" + model_identifier + "' must match the FMU filename '" + expected_id +
-                              "'."}});
+        cert.printTestResult(
+            {"Model Identifier Filename Match",
+             TestStatus::FAIL,
+             {"modelIdentifier '" + model_identifier + "' must match the FMU filename '" + expected_id + "'."}});
     }
     else
     {
