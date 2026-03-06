@@ -82,7 +82,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 {
                     if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
                     {
-                        TestResult empty_test{
+                        const TestResult empty_test{
                             "Empty Subdirectory",
                             TestStatus::WARNING,
                             {"Standard directory 'documentation/" + std::string(entry_name) + "' is empty."}};

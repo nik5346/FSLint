@@ -68,7 +68,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         if (std::filesystem::exists(licenses_sub_path) && std::filesystem::is_directory(licenses_sub_path) &&
             isEffectivelyEmpty(licenses_sub_path))
         {
-            TestResult empty_test{
+            const TestResult empty_test{
                 "Empty Subdirectory", TestStatus::WARNING, {"Standard directory 'documentation/licenses' is empty."}};
             cert.printTestResult(empty_test);
         }
