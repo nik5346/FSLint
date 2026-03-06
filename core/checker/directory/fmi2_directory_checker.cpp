@@ -25,8 +25,10 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                                                                     "sources",
                                                                     "binaries",
                                                                     "resources",
+                                                                    "resource",
                                                                     "extra",
                                                                     "terminalsAndIcons",
+                                                                    "terminalAndIcons",
                                                                     "buildDescription.xml"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
@@ -63,6 +65,19 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     {
         TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
+
+        for (const auto& entry_name : {"license", "licenses"})
+        {
+            auto sub_path = doc_path / entry_name;
+            if (std::filesystem::exists(sub_path) && std::filesystem::is_directory(sub_path) &&
+                isEffectivelyEmpty(sub_path))
+            {
+                TestResult empty_test{"Empty Subdirectory", TestStatus::WARNING,
+                                      {"Standard directory 'documentation/" + std::string(entry_name) +
+                                       "' is empty."}};
+                cert.printTestResult(empty_test);
+            }
+        }
 
         if (!std::filesystem::exists(doc_path / "index.html"))
         {

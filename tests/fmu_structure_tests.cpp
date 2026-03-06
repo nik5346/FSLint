@@ -451,3 +451,168 @@ TEST_CASE("FMI 2.0 legacy source files validation", "[fmi2][sources]")
                       "listed in 'modelDescription.xml' (line 5) does not exist");
     }
 }
+
+static void create_fmu_skeleton(const fs::path& base, const std::string& version)
+{
+    fs::create_directories(base);
+    std::ofstream md(base / "modelDescription.xml");
+    if (version == "1.0")
+    {
+        md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+           << "<fmiModelDescription fmiVersion=\"1.0\" modelName=\"test\" guid=\"123\">\n"
+           << "  <ModelVariables/>\n"
+           << "</fmiModelDescription>";
+    }
+    else if (version == "2.0")
+    {
+        md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+           << "<fmiModelDescription fmiVersion=\"2.0\" modelName=\"test\" guid=\"{123}\">\n"
+           << "  <ModelVariables/>\n"
+           << "  <ModelStructure/>\n"
+           << "</fmiModelDescription>";
+    }
+    else
+    {
+        md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+           << "<fmiModelDescription fmiVersion=\"3.0\" modelName=\"test\" instantiationToken=\"{123}\">\n"
+           << "  <ModelVariables/>\n"
+           << "  <ModelStructure/>\n"
+           << "</fmiModelDescription>";
+    }
+}
+
+TEST_CASE("Empty Directory Warnings", "[directory][empty]")
+{
+    SECTION("FMI 1.0")
+    {
+        fs::path base = "temp_fmi1_empty";
+        create_fmu_skeleton(base, "1.0");
+        fs::create_directories(base / "sources");
+        std::ofstream src(base / "sources/test.c");
+        src << " ";
+        src.close();
+
+        Fmi1DirectoryChecker checker;
+
+        SECTION("Empty documentation")
+        {
+            fs::create_directories(base / "documentation");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'documentation' is empty"));
+        }
+
+        SECTION("Empty resources")
+        {
+            fs::create_directories(base / "resources");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'resources' is empty"));
+        }
+
+        SECTION("Empty resource (singular)")
+        {
+            fs::create_directories(base / "resource");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'resource' is empty"));
+        }
+
+        fs::remove_all(base);
+    }
+
+    SECTION("FMI 2.0")
+    {
+        fs::path base = "temp_fmi2_empty";
+        create_fmu_skeleton(base, "2.0");
+        fs::create_directories(base / "sources");
+        std::ofstream src(base / "sources/test.c");
+        src << " ";
+        src.close();
+
+        Fmi2DirectoryChecker checker;
+
+        SECTION("Empty extra")
+        {
+            fs::create_directories(base / "extra");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'extra' is empty"));
+        }
+
+        SECTION("Empty terminalsAndIcons")
+        {
+            fs::create_directories(base / "terminalsAndIcons");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'terminalsAndIcons' is empty"));
+        }
+
+        SECTION("Empty terminalAndIcons (singular)")
+        {
+            fs::create_directories(base / "terminalAndIcons");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'terminalAndIcons' is empty"));
+        }
+
+        SECTION("Empty documentation/license")
+        {
+            fs::create_directories(base / "documentation/license");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "directory 'documentation/license' is empty"));
+        }
+
+        SECTION("Empty documentation/licenses")
+        {
+            fs::create_directories(base / "documentation/licenses");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "directory 'documentation/licenses' is empty"));
+        }
+
+        fs::remove_all(base);
+    }
+
+    SECTION("FMI 3.0")
+    {
+        fs::path base = "temp_fmi3_empty";
+        create_fmu_skeleton(base, "3.0");
+        fs::create_directories(base / "sources");
+        std::ofstream bd(base / "sources/buildDescription.xml");
+        bd << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+           << "<fmiBuildDescription fmiVersion=\"3.0\">\n"
+           << "  <BuildConfiguration modelIdentifier=\"test\"/>\n"
+           << "</fmiBuildDescription>";
+        bd.close();
+
+        Fmi3DirectoryChecker checker;
+
+        SECTION("Empty extra")
+        {
+            fs::create_directories(base / "extra");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'extra' is empty"));
+        }
+
+        SECTION("Empty documentation/license")
+        {
+            fs::create_directories(base / "documentation/license");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "directory 'documentation/license' is empty"));
+        }
+
+        SECTION("Empty documentation/licenses")
+        {
+            fs::create_directories(base / "documentation/licenses");
+            Certificate cert;
+            checker.validate(base, cert);
+            CHECK(has_warning_with_text(cert, "directory 'documentation/licenses' is empty"));
+        }
+
+        fs::remove_all(base);
+    }
+}

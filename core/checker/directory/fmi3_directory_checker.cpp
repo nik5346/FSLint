@@ -18,8 +18,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
 
-        static const std::set<std::string> fmi3_standard_entries = {
-            "modelDescription.xml", "documentation", "terminalsAndIcons", "sources", "binaries", "resources", "extra"};
+        static const std::set<std::string> fmi3_standard_entries = {"modelDescription.xml",
+                                                                    "documentation",
+                                                                    "terminalsAndIcons",
+                                                                    "terminalAndIcons",
+                                                                    "sources",
+                                                                    "binaries",
+                                                                    "resources",
+                                                                    "resource",
+                                                                    "extra"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
@@ -75,16 +82,28 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             }
 
             // licenses directory check
-            auto licenses_path = doc_path / "licenses";
-            if (std::filesystem::exists(licenses_path))
+            for (const auto& entry_name : {"license", "licenses"})
             {
-                if (!std::filesystem::exists(licenses_path / "license.spdx") &&
-                    !std::filesystem::exists(licenses_path / "license.txt") &&
-                    !std::filesystem::exists(licenses_path / "license.html"))
+                auto licenses_path = doc_path / entry_name;
+                if (std::filesystem::exists(licenses_path))
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("'documentation/licenses/' exists but does not contain "
-                                            "a 'license.spdx', 'license.txt', or 'license.html' entry point.");
+                    if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
+                    {
+                        TestResult empty_test{"Empty Subdirectory", TestStatus::WARNING,
+                                              {"Standard directory 'documentation/" + std::string(entry_name) +
+                                               "' is empty."}};
+                        cert.printTestResult(empty_test);
+                    }
+
+                    if (!std::filesystem::exists(licenses_path / "license.spdx") &&
+                        !std::filesystem::exists(licenses_path / "license.txt") &&
+                        !std::filesystem::exists(licenses_path / "license.html"))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("'documentation/" + std::string(entry_name) +
+                                                "/' exists but does not contain "
+                                                "a 'license.spdx', 'license.txt', or 'license.html' entry point.");
+                    }
                 }
             }
         }

@@ -74,7 +74,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
         static const std::set<std::string> fmi1_standard_entries = {
-            "modelDescription.xml", "model.png", "documentation", "sources", "binaries", "resources"};
+            "modelDescription.xml", "model.png", "documentation", "sources", "binaries", "resources", "resource"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
@@ -88,6 +88,12 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
                 test.status = TestStatus::WARNING;
                 const std::string type = entry.is_directory() ? "directory" : "file";
                 test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
+            }
+
+            if (entry.is_directory() && fmi1_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
+            {
+                test.status = TestStatus::WARNING;
+                test.messages.push_back("Standard directory '" + name + "' is empty.");
             }
         }
         cert.printTestResult(test);
