@@ -282,6 +282,16 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
     cert.printTestResult(test);
 }
 
+void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
+{
+    // For compatibility reasons, we only allow exactly "3.0"
+    if (version != "3.0")
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("version \"" + version + "\" is invalid (must be exactly \"3.0\").");
+    }
+}
+
 void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
     TestResult test{"Required Start Values", TestStatus::PASS, {}};
