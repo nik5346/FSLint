@@ -16,6 +16,4 @@ class Fmi2DirectoryChecker : public DirectoryChecker
                                       const std::map<std::string, std::string>& model_identifiers,
                                       const std::set<std::string>& listed_sources_in_md,
                                       bool needs_execution_tool) override;
-
-    std::set<std::string> getStandardHeaderNames() override;
 };

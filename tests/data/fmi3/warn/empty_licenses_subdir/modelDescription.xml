@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="test" instantiationToken="{123}">
-  <ModelVariables/>
-  <ModelStructure/>
+  <ModelVariables />
+  <ModelStructure />
 </fmiModelDescription>

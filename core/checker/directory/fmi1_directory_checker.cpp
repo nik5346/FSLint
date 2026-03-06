@@ -63,9 +63,6 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     xmlFreeDoc(doc);
 
     performVersionSpecificChecks(path, cert, model_identifiers, {}, false);
-
-    performCommonChecks(path, cert);
-
     cert.printSubsectionSummary(true);
 }
 
@@ -164,9 +161,9 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         }
         cert.printTestResult(test);
     }
-}
 
-std::set<std::string> Fmi1DirectoryChecker::getStandardHeaderNames()
-{
-    return {"fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h", "fmiPlatformTypes.h"};
+    // 5. Standard Headers
+    static const std::set<std::string> fmi1_headers = {"fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h",
+                                                       "fmiPlatformTypes.h"};
+    checkStandardHeaders(path, cert, fmi1_headers);
 }
