@@ -18,15 +18,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
 
-        static const std::set<std::string> fmi3_standard_entries = {"modelDescription.xml",
-                                                                    "documentation",
-                                                                    "terminalsAndIcons",
-                                                                    "terminalAndIcons",
-                                                                    "sources",
-                                                                    "binaries",
-                                                                    "resources",
-                                                                    "resource",
-                                                                    "extra"};
+        static const std::set<std::string> fmi3_standard_entries = {
+            "modelDescription.xml", "documentation", "terminalsAndIcons", "sources", "binaries", "resources", "extra"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
@@ -89,9 +82,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 {
                     if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
                     {
-                        TestResult empty_test{"Empty Subdirectory", TestStatus::WARNING,
-                                              {"Standard directory 'documentation/" + std::string(entry_name) +
-                                               "' is empty."}};
+                        TestResult empty_test{
+                            "Empty Subdirectory",
+                            TestStatus::WARNING,
+                            {"Standard directory 'documentation/" + std::string(entry_name) + "' is empty."}};
                         cert.printTestResult(empty_test);
                     }
 
