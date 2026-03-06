@@ -513,6 +513,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("fmi_version_missing", "attribute is missing");
         validate_fail("fmi_version_empty", "attribute is empty");
         validate_fail("fmi_version_patch", "is invalid (must be exactly \"3.0\")");
+        validate_fail("fmi_version_3_1", "is invalid (must be exactly \"3.0\")");
 
         validate_fail("instantiation_token_missing", "instantiationToken attribute is missing");
         validate_fail("instantiation_token_empty", "instantiationToken attribute is empty");
