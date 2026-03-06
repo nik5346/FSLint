@@ -25,6 +25,8 @@ class Fmi1DirectoryChecker : public DirectoryChecker
                                       const std::set<std::string>& listed_sources_in_md,
                                       bool needs_execution_tool) override;
 
+    std::set<std::string> getStandardHeaderNames() override;
+
   private:
     std::filesystem::path m_original_path;
 };

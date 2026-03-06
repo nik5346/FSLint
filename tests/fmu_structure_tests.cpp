@@ -90,8 +90,21 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                          "Recommended entry point 'documentation/_main.html' is missing");
         validate_warning("tests/data/directory/warn/missing_doc_entry",
                          "Recommended entry point 'documentation/_main.html' is missing");
-        validate_warning("tests/data/fmi1/warn/fmi_headers_in_sources",
-                         "Standard FMI header file 'fmiFunctions.h' found in 'sources/' directory");
+        auto validate_headers = [&](const fs::path& path, const std::vector<std::string>& headers)
+        {
+            Certificate cert;
+            checker.validate(path, cert);
+            INFO("Checking path: " << path);
+            REQUIRE(has_warning(cert));
+            for (const auto& h : headers)
+            {
+                CHECK(
+                    has_warning_with_text(cert, "Standard FMI header file '" + h + "' found in 'sources/' directory"));
+            }
+        };
+
+        validate_headers("tests/data/fmi1/warn/fmi_headers_in_sources",
+                         {"fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h", "fmiPlatformTypes.h"});
         validate_warning("tests/data/fmi1/warn/unknown_root_entry", "Unknown file in FMU root: 'unknown.txt'");
         validate_warning("tests/data/fmi1/pass/TestME", "Recommended file 'model.png' is missing");
     }
@@ -180,8 +193,21 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/directory/warn/unknown_entry", "Unknown file");
         validate_warning("tests/data/fmi2/warn/dist_sources_only", "only contains <SourceFiles>");
         validate_warning("tests/data/fmi2/warn/dist_build_desc_only", "only contains buildDescription.xml");
-        validate_warning("tests/data/fmi2/warn/fmi_header_in_sources",
-                         "Standard FMI header file 'fmi2Functions.h' found in 'sources/' directory");
+        auto validate_headers = [&](const fs::path& path, const std::vector<std::string>& headers)
+        {
+            Certificate cert;
+            checker.validate(path, cert);
+            INFO("Checking path: " << path);
+            REQUIRE(has_warning(cert));
+            for (const auto& h : headers)
+            {
+                CHECK(
+                    has_warning_with_text(cert, "Standard FMI header file '" + h + "' found in 'sources/' directory"));
+            }
+        };
+
+        validate_headers("tests/data/fmi2/warn/fmi_header_in_sources",
+                         {"fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"});
     }
 
     SECTION("Passing Cases")
@@ -273,6 +299,21 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_warning("tests/data/fmi3/warn/missing_index_html", "documentation/index.html' is missing");
         validate_warning("tests/data/fmi3/warn/missing_icon_png",
                          "Recommended file 'terminalsAndIcons/icon.png' is missing");
+        auto validate_headers = [&](const fs::path& path, const std::vector<std::string>& headers)
+        {
+            Certificate cert;
+            checker.validate(path, cert);
+            INFO("Checking path: " << path);
+            REQUIRE(has_warning(cert));
+            for (const auto& h : headers)
+            {
+                CHECK(
+                    has_warning_with_text(cert, "Standard FMI header file '" + h + "' found in 'sources/' directory"));
+            }
+        };
+
+        validate_headers("tests/data/fmi3/warn/fmi_header_in_sources",
+                         {"fmi3Functions.h", "fmi3FunctionTypes.h", "fmi3PlatformTypes.h"});
     }
 
     SECTION("Passing Cases")

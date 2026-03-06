@@ -99,6 +99,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
 
     performVersionSpecificChecks(path, cert, model_identifiers, listed_sources_in_md, needs_execution_tool);
 
+    performCommonChecks(path, cert);
+
     cert.printSubsectionSummary(true);
 }
 
@@ -116,6 +118,11 @@ std::optional<std::string> DirectoryChecker::getXmlAttribute(xmlNodePtr node, co
     std::string value(reinterpret_cast<char*>(attr));
     xmlFree(attr);
     return value;
+}
+
+void DirectoryChecker::performCommonChecks(const std::filesystem::path& path, Certificate& cert)
+{
+    checkStandardHeaders(path, cert, getStandardHeaderNames());
 }
 
 void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, Certificate& cert,
