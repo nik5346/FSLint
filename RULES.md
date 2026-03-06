@@ -42,7 +42,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - FMI 2.0 and 3.0: XML files **must** use UTF-8 encoding.
   - For FMI 1.0, UTF-8 encoding is highly **recommended**.
 - **Model Name Format**: The `modelName` attribute **must** be present and non-empty.
-- **FMI Version Format**: The `fmiVersion` attribute **must** match the standard version string. For FMI 1.0 and 2.0, only "1.0" and "2.0" are allowed respectively. For FMI 3.0 and later, the version **must** match the official FMI regex: `3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?`.
+- **FMI Version Format**: The `fmiVersion` attribute **must** match the standard version string. For FMI 1.0, 2.0, and 3.0, only "1.0", "2.0", and "3.0" are allowed respectively.
 - **Generation Date and Time**:
   - **Must** be in ISO 8601 format (e.g., `YYYY-MM-DDThh:mm:ssZ`).
   - **Must** be a valid date in the past (not after the current system time).
@@ -98,6 +98,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Distribution**: The FMU **must** contain at least one implementation (a binary for at least one platform or source code).
 - **Effectively Empty Directories**: Standard directories like `documentation/` or `resources/` **should not** be effectively empty.
 - **Root Entries**: Unknown files or directories in the FMU root **should** be avoided.
+- **Standard Headers**: The `sources/` directory **should not** include standard FMI header files (e.g., `fmiFunctions.h`, `fmi2Functions.h`, or `fmi3Functions.h` depending on the version). These headers should be provided by the environment.
 
 ### Recursive Validation
 
@@ -141,8 +142,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 - **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
 - **Documentation Entry Point**: The **recommended** entry point `documentation/_main.html` **should** be present.
-- **Standard Headers**: The `sources/` directory **should not** include standard FMI 1.0 headers: `fmiFunctions.h`, `fmiModelFunctions.h`, `fmiModelTypes.h`, `fmiPlatformTypes.h`.
-
 ---
 
 ## FMI 2.0 Rules
@@ -211,8 +210,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - Typical source files (extensions: `.c`, `.cc`, `.cpp`, `.cxx`, `.C`, `.c++`) in `sources/` **should** be listed in `modelDescription.xml` `<SourceFiles>`.
   - `SourceFiles/File` entries **must** point to existing files in `sources/`.
 - **FMI 2.0.4 Compatibility**: Source-only FMUs **should** provide both `<SourceFiles>` in `modelDescription.xml` and a `buildDescription.xml` for maximum compatibility.
-- **Standard Headers**: The `sources/` directory **should not** include standard FMI 2.0 headers: `fmi2Functions.h`, `fmi2FunctionTypes.h`, `fmi2TypesPlatform.h`.
-
 ### Build Description
 
 - **fmiVersion Check**: `buildDescription.xml` **must** have `fmiVersion="3.0"`. This attribute is fixed to "3.0" for FMI 2.0 FMUs because the feature was backported from FMI 3.0.
@@ -286,8 +283,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Platform Tuples**: Platform directories **should** follow the `<arch>-<sys>[-<abi>]` format.
 - **Static Linking**: If static libraries are present, `documentation/staticLinking.{txt|html}` **must** be present.
 - **Extra Directory**: Subdirectories in `extra/` **should** use reverse domain name notation (e.g., `com.example`).
-- **Standard Headers**: The `sources/` directory **should not** include standard FMI 3.0 headers: `fmi3Functions.h`, `fmi3FunctionTypes.h`, `fmi3PlatformTypes.h`.
-
 ### Build Description
 
 - **fmiVersion Check**: `buildDescription.xml` **must** have an `fmiVersion` attribute that matches the `fmiVersion` attribute in `modelDescription.xml`.
