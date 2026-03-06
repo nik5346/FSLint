@@ -512,6 +512,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     {
         validate_fail("fmi_version_missing", "attribute is missing");
         validate_fail("fmi_version_empty", "attribute is empty");
+        validate_fail("fmi_version_patch", "is invalid (must be exactly \"3.0\")");
 
         validate_fail("instantiation_token_missing", "instantiationToken attribute is missing");
         validate_fail("instantiation_token_empty", "instantiationToken attribute is empty");
@@ -732,12 +733,6 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
     SECTION("FMI 3.0 Valid")
     {
         checker.validate("tests/data/fmi3/pass", cert);
-        CHECK_FALSE(has_fail(cert));
-    }
-
-    SECTION("FMI 3.0 Patch Version")
-    {
-        checker.validate("tests/data/fmi3/pass/fmi_version_patch", cert);
         CHECK_FALSE(has_fail(cert));
     }
 
