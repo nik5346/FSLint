@@ -204,7 +204,6 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             cert.printTestResult(test);
         }
     }
-
 }
 
 std::set<std::string> Fmi2DirectoryChecker::getStandardHeaderNames()

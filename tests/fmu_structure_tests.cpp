@@ -277,6 +277,51 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
                          "Standard FMI header file 'fmi3Functions.h' found in 'sources/' directory");
     }
 
+    SECTION("Standard Headers Comprehensive")
+    {
+        auto test_header = [&](const std::string& version, const std::string& header_name)
+        {
+            fs::path temp_dir = fs::temp_directory_path() / ("fslint_test_" + version + "_" + header_name);
+            fs::create_directories(temp_dir / "sources");
+
+            std::ofstream md(temp_dir / "modelDescription.xml");
+            md << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+            md << "<fmiModelDescription fmiVersion=\"" << version << "\" modelName=\"test\" "
+               << (version == "3.0" ? "instantiationToken=\"1\"" : "guid=\"1\"") << ">\n";
+            if (version == "1.0")
+                md << "  <ModelVariables/>\n";
+            else
+                md << "  <ModelVariables/><ModelStructure/>\n";
+            md << "</fmiModelDescription>";
+            md.close();
+
+            std::ofstream header(temp_dir / "sources" / header_name);
+            header << "// dummy content\n";
+            header.close();
+
+            Certificate cert;
+            if (version == "1.0")
+                Fmi1DirectoryChecker().validate(temp_dir, cert);
+            else if (version == "2.0")
+                Fmi2DirectoryChecker().validate(temp_dir, cert);
+            else if (version == "3.0")
+                Fmi3DirectoryChecker().validate(temp_dir, cert);
+
+            INFO("Testing " << version << " with header " << header_name);
+            CHECK(has_warning_with_text(cert, "Standard FMI header file '" + header_name +
+                                                  "' found in 'sources/' directory"));
+
+            fs::remove_all(temp_dir);
+        };
+
+        for (const auto& h : {"fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h", "fmiPlatformTypes.h"})
+            test_header("1.0", h);
+        for (const auto& h : {"fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"})
+            test_header("2.0", h);
+        for (const auto& h : {"fmi3Functions.h", "fmi3FunctionTypes.h", "fmi3PlatformTypes.h"})
+            test_header("3.0", h);
+    }
+
     SECTION("Passing Cases")
     {
         if (reference_fmus_available())

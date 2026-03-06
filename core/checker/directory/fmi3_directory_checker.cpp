@@ -261,7 +261,6 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         }
         cert.printTestResult(test);
     }
-
 }
 
 std::set<std::string> Fmi3DirectoryChecker::getStandardHeaderNames()
