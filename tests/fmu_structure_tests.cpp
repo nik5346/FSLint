@@ -273,6 +273,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_warning("tests/data/fmi3/warn/missing_index_html", "documentation/index.html' is missing");
         validate_warning("tests/data/fmi3/warn/missing_icon_png",
                          "Recommended file 'terminalsAndIcons/icon.png' is missing");
+        validate_warning("tests/data/fmi3/warn/fmi_header_in_sources",
+                         "Standard FMI header file 'fmi3Functions.h' found in 'sources/' directory");
     }
 
     SECTION("Passing Cases")
