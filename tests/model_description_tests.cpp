@@ -738,7 +738,8 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
     SECTION("FMI 3.0 Patch Version")
     {
         checker.validate("tests/data/fmi3/pass/fmi_version_patch", cert);
-        CHECK_FALSE(has_fail(cert));
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "version \"3.0.1\" is invalid (must be exactly \"3.0\")."));
     }
 
     SECTION("DefaultExperiment INF")
