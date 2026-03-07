@@ -878,24 +878,16 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 
             // noAlias count
             if (!var->alias.has_value() || *var->alias == "noAlias")
-            {
                 no_alias_count++;
-            }
 
             // variability
             if (var->variability == "constant")
-            {
                 constant_var = var;
-            }
             else
-            {
                 non_constant_var = var;
-            }
 
             if (var->variability != first->variability)
-            {
                 variability_mismatch = true;
-            }
 
             // 1. Same base type
             if (var->type != first->type)

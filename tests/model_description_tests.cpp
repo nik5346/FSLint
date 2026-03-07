@@ -49,7 +49,8 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("alias_inconsistent_start", "must have equivalent start values");
         validate_fail("alias_inconsistent_start_negated", "must have equivalent start values");
         validate_fail("alias_negated_boolean", "alias=\"negatedAlias\" but is of type Boolean");
-        validate_fail("alias_multiple_noalias", "Multiple variables sharing VR 1 (base type Real) are marked as base variables");
+        validate_fail("alias_multiple_noalias",
+                      "Multiple variables sharing VR 1 (base type Real) are marked as base variables");
         validate_fail("alias_no_noalias", "No base variable (noAlias) found for VR 1");
         validate_fail("alias_inconsistent_variability_constant", "contains both constant and non-constant variables");
     }
