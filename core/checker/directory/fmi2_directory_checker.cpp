@@ -64,6 +64,15 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
 
+        auto licenses_sub_path = doc_path / "licenses";
+        if (std::filesystem::exists(licenses_sub_path) && std::filesystem::is_directory(licenses_sub_path) &&
+            isEffectivelyEmpty(licenses_sub_path))
+        {
+            const TestResult empty_test{
+                "Empty Subdirectory", TestStatus::WARNING, {"Standard directory 'documentation/licenses' is empty."}};
+            cert.printTestResult(empty_test);
+        }
+
         if (!std::filesystem::exists(doc_path / "index.html"))
         {
             test.status = TestStatus::WARNING;
@@ -204,9 +213,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             cert.printTestResult(test);
         }
     }
-}
 
-std::set<std::string> Fmi2DirectoryChecker::getStandardHeaderNames()
-{
-    return {"fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"};
+    // 7. Standard Headers
+    static const std::set<std::string> fmi2_headers = {"fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"};
+    checkStandardHeaders(path, cert, fmi2_headers);
 }

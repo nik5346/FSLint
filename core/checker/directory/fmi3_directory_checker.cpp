@@ -75,16 +75,29 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             }
 
             // licenses directory check
-            auto licenses_path = doc_path / "licenses";
-            if (std::filesystem::exists(licenses_path))
+            for (const auto& entry_name : {"license", "licenses"})
             {
-                if (!std::filesystem::exists(licenses_path / "license.spdx") &&
-                    !std::filesystem::exists(licenses_path / "license.txt") &&
-                    !std::filesystem::exists(licenses_path / "license.html"))
+                auto licenses_path = doc_path / entry_name;
+                if (std::filesystem::exists(licenses_path))
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("'documentation/licenses/' exists but does not contain "
-                                            "a 'license.spdx', 'license.txt', or 'license.html' entry point.");
+                    if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
+                    {
+                        const TestResult empty_test{
+                            "Empty Subdirectory",
+                            TestStatus::WARNING,
+                            {"Standard directory 'documentation/" + std::string(entry_name) + "' is empty."}};
+                        cert.printTestResult(empty_test);
+                    }
+
+                    if (!std::filesystem::exists(licenses_path / "license.spdx") &&
+                        !std::filesystem::exists(licenses_path / "license.txt") &&
+                        !std::filesystem::exists(licenses_path / "license.html"))
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back("'documentation/" + std::string(entry_name) +
+                                                "/' exists but does not contain "
+                                                "a 'license.spdx', 'license.txt', or 'license.html' entry point.");
+                    }
                 }
             }
         }
@@ -261,9 +274,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         }
         cert.printTestResult(test);
     }
-}
 
-std::set<std::string> Fmi3DirectoryChecker::getStandardHeaderNames()
-{
-    return {"fmi3Functions.h", "fmi3FunctionTypes.h", "fmi3PlatformTypes.h"};
+    // 8. Standard Headers
+    static const std::set<std::string> fmi3_headers = {"fmi3Functions.h", "fmi3FunctionTypes.h", "fmi3PlatformTypes.h"};
+    checkStandardHeaders(path, cert, fmi3_headers);
 }

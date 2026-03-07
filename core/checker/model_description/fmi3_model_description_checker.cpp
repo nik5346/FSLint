@@ -282,16 +282,6 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
-{
-    // For compatibility reasons, we only allow exactly "3.0"
-    if (version != "3.0")
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("version \"" + version + "\" is invalid (must be exactly \"3.0\").");
-    }
-}
-
 void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
 {
     TestResult test{"Required Start Values", TestStatus::PASS, {}};
@@ -2569,4 +2559,25 @@ std::map<std::string, UnitDefinition> Fmi3ModelDescriptionChecker::extractUnitDe
 
     xmlXPathFreeObject(xpath_obj);
     return units;
+}
+
+void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
+{
+    // FMI 3.0: must be exactly "3.0" (or follow the official FMI 3.0+ regex)
+    // The user requested that for 1.0, 2.0, and 3.0, only "1.0", "2.0", and "3.0" are allowed.
+    if (version != "3.0")
+    {
+        static const std::regex fmi3_regex(R"(^3[.](0|[1-9][0-9]*)([.](0|[1-9][0-9]*))?(-.+)?$)");
+        if (!std::regex_match(version, fmi3_regex))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("version \"" + version + "\" is invalid.");
+        }
+        else if (version != "3.0")
+        {
+            // If it matches the regex but is not "3.0", we still follow the user's rule
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("version \"" + version + "\" is invalid (must be exactly \"3.0\").");
+        }
+    }
 }
