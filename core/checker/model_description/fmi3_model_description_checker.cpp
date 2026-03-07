@@ -13,7 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
-#include <format>
+#include "format_shim.h"
 #include <map>
 #include <optional>
 #include <regex>

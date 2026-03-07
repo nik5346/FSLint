@@ -396,6 +396,8 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         path[static_cast<size_t>(len)] = '\0';
         bin_dir = std::filesystem::path(path.data()).parent_path();
     }
+#elif defined(__EMSCRIPTEN__)
+    bin_dir = "/";
 #endif
 
     if (bin_dir.empty())

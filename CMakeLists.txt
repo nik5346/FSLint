@@ -433,7 +433,7 @@ target_link_libraries(FSLint-core
 )
 
 # Windows-specific libraries
-if(WIN32)
+if(WIN32 AND NOT EMSCRIPTEN)
     target_link_libraries(FSLint-core PRIVATE ws2_32)
 endif()
 
@@ -443,6 +443,28 @@ endif()
 add_executable(FSLint-cli
     cli/main.cpp
 )
+
+if(EMSCRIPTEN)
+    set_target_properties(FSLint-cli PROPERTIES SUFFIX ".js")
+    target_link_options(FSLint-cli PRIVATE
+        "-sWASM=1"
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sEXIT_RUNTIME=1"
+        "-sSINGLE_FILE=1"
+        "-sFORCE_FILESYSTEM=1"
+        "--preload-file=${CMAKE_SOURCE_DIR}/standard@/standard"
+    )
+    # Use fmt library as a replacement for std::format in Emscripten
+    include(FetchContent)
+    FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG        10.1.1
+    )
+    FetchContent_MakeAvailable(fmt)
+    target_link_libraries(FSLint-core PUBLIC fmt::fmt)
+    target_compile_definitions(FSLint-core PUBLIC USE_FMT_LIBRARY)
+endif()
 
 # ============================================================================
 # Tests
@@ -566,6 +588,10 @@ endif()
 # ============================================================================
 # Install
 # ============================================================================
+if(EMSCRIPTEN)
+    return()
+endif()
+
 include(CMakePackageConfigHelpers)
 
 write_basic_config_version_file(

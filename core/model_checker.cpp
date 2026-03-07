@@ -54,7 +54,11 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         // Step 2: Extract to temporary directory
         auto now = std::chrono::high_resolution_clock::now();
         auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+#ifdef __EMSCRIPTEN__
+        extract_dir = "/tmp/model_validation_" + std::to_string(nanos);
+#else
         extract_dir = std::filesystem::temp_directory_path() / ("model_validation_" + std::to_string(nanos));
+#endif
         is_temporary = true;
 
         Zipper zipper;
@@ -131,7 +135,11 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
         archive_checker.validate(path, cert);
 
         // Step 2: Extract to temporary directory
+#ifdef __EMSCRIPTEN__
+        extract_dir = "/tmp/model_cert_add_" + std::to_string(std::time(nullptr));
+#else
         extract_dir = std::filesystem::temp_directory_path() / ("model_cert_add_" + std::to_string(std::time(nullptr)));
+#endif
         is_temporary = true;
 
         Zipper zipper;
@@ -227,8 +235,12 @@ bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
     }
 
     // Remove existing certificate first
+#ifdef __EMSCRIPTEN__
+    const std::filesystem::path temp_dir = "/tmp/model_cert_update_" + std::to_string(std::time(nullptr));
+#else
     const std::filesystem::path temp_dir =
         std::filesystem::temp_directory_path() / ("model_cert_update_" + std::to_string(std::time(nullptr)));
+#endif
     if (!extract(path, temp_dir))
     {
         std::cerr << "Error: Failed to extract model\n";
@@ -284,8 +296,12 @@ bool ModelChecker::removeCertificate(const std::filesystem::path& path) const
         return true;
     }
 
+#ifdef __EMSCRIPTEN__
+    const std::filesystem::path temp_dir = "/tmp/model_cert_remove_" + std::to_string(std::time(nullptr));
+#else
     const std::filesystem::path temp_dir =
         std::filesystem::temp_directory_path() / ("model_cert_remove_" + std::to_string(std::time(nullptr)));
+#endif
 
     if (!extract(path, temp_dir))
     {

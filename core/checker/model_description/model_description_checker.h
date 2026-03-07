@@ -9,6 +9,7 @@
 
 #include <cctype>
 #include <charconv>
+#include <cstdlib>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -155,11 +156,38 @@ class ModelDescriptionCheckerBase : public Checker
                 return -std::numeric_limits<T>::infinity();
         }
 
+#if defined(__EMSCRIPTEN__) && !defined(__cpp_lib_to_chars)
+        if constexpr (std::is_floating_point_v<T>)
+        {
+            char* endptr = nullptr;
+            std::string str(s);
+            T val_tmp;
+            if constexpr (std::is_same_v<T, float>)
+                val_tmp = std::strtof(str.c_str(), &endptr);
+            else if constexpr (std::is_same_v<T, double>)
+                val_tmp = std::strtod(str.c_str(), &endptr);
+            else if constexpr (std::is_same_v<T, long double>)
+                val_tmp = std::strtold(str.c_str(), &endptr);
+
+            if (endptr == str.c_str() + str.size())
+                return val_tmp;
+            return std::nullopt;
+        }
+        else
+        {
+            T val;
+            const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+            if (ec == std::errc() && ptr == s.data() + s.size())
+                return val;
+            return std::nullopt;
+        }
+#else
         T val;
         const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
         if (ec == std::errc() && ptr == s.data() + s.size())
             return val;
         return std::nullopt;
+#endif
     }
 
     void setOriginalPath(const std::filesystem::path& path)
