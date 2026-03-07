@@ -858,8 +858,45 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         const Variable* first_with_start = nullptr;
         double first_normalized_start = 0.0;
 
+        int no_alias_count = 0;
+        const Variable* constant_var = nullptr;
+        const Variable* non_constant_var = nullptr;
+        bool variability_mismatch = false;
+
         for (const auto* var : alias_set)
         {
+            // negatedAlias check
+            const bool negated = (var->alias && *var->alias == "negatedAlias");
+            if (negated && base_type != "Real" && base_type != "Integer/Enumeration")
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(std::format(
+                    "Variable \"{}\" (line {}) has alias=\"negatedAlias\" but is of type {}. Only Real and Integer "
+                    "variables can be negated.",
+                    var->name, var->sourceline, var->type));
+            }
+
+            // noAlias count
+            if (!var->alias.has_value() || *var->alias == "noAlias")
+            {
+                no_alias_count++;
+            }
+
+            // variability
+            if (var->variability == "constant")
+            {
+                constant_var = var;
+            }
+            else
+            {
+                non_constant_var = var;
+            }
+
+            if (var->variability != first->variability)
+            {
+                variability_mismatch = true;
+            }
+
             // 1. Same base type
             if (var->type != first->type)
             {
@@ -884,7 +921,6 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             {
                 double current_val = 0;
                 bool valid = false;
-                const bool negated = (var->alias && *var->alias == "negatedAlias");
 
                 if (base_type == "Real")
                 {
@@ -935,6 +971,42 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                     }
                 }
             }
+        }
+
+        if (no_alias_count > 1)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back(std::format(
+                "Multiple variables sharing VR {} (base type {}) are marked as base variables (noAlias). There must be "
+                "exactly one base variable per alias set.",
+                vr, base_type));
+        }
+        else if (no_alias_count == 0)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back(std::format(
+                "No base variable (noAlias) found for VR {} (base type {}). Every alias set must have exactly one base "
+                "variable.",
+                vr, base_type));
+        }
+
+        if (constant_var && non_constant_var)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back(std::format(
+                "Alias set for VR {} (base type {}) contains both constant and non-constant variables (\"{}\" and "
+                "\"{}\"). Constants can only be aliased to other constants.",
+                vr, base_type, constant_var->name, non_constant_var->name));
+        }
+        else if (variability_mismatch)
+        {
+            cert.printTestResult(
+                {"Alias Variability Consistency",
+                 TestStatus::WARNING,
+                 {std::format(
+                     "Variables in alias set VR {} (base type {}) have different variabilities. It is recommended that "
+                     "aliased variables have the same variability.",
+                     vr, base_type)}});
         }
     }
 

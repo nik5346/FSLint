@@ -48,6 +48,10 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("alias_inconsistent_type", "Variables sharing VR 1 must have the same type");
         validate_fail("alias_inconsistent_start", "must have equivalent start values");
         validate_fail("alias_inconsistent_start_negated", "must have equivalent start values");
+        validate_fail("alias_negated_boolean", "alias=\"negatedAlias\" but is of type Boolean");
+        validate_fail("alias_multiple_noalias", "Multiple variables sharing VR 1 (base type Real) are marked as base variables");
+        validate_fail("alias_no_noalias", "No base variable (noAlias) found for VR 1");
+        validate_fail("alias_inconsistent_variability_constant", "contains both constant and non-constant variables");
     }
 
     SECTION("Implementation")
@@ -156,6 +160,11 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         validate_warning("warn/unit_unused", "Unit \"s\" is unused.");
         validate_warning("warn/type_unused", "Type definition \"MyType\" (line 4) is unused.");
     }
+
+    SECTION("Aliases")
+    {
+        validate_warning("warn/alias_inconsistent_variability", "have different variabilities");
+    }
 }
 
 TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
@@ -165,32 +174,37 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
 
     SECTION("FMI 1.0 ME Valid")
     {
-        checker.validate("tests/data/fmi1/pass/TestME", cert);
-        CHECK_FALSE(has_fail(cert));
+        Certificate cert_me;
+        checker.validate("tests/data/fmi1/pass/TestME", cert_me);
+        CHECK_FALSE(has_fail(cert_me));
     }
 
     SECTION("FMI 1.0 CS Valid")
     {
-        checker.validate("tests/data/fmi1/pass/TestCS", cert);
-        CHECK_FALSE(has_fail(cert));
+        Certificate cert_cs;
+        checker.validate("tests/data/fmi1/pass/TestCS", cert_cs);
+        CHECK_FALSE(has_fail(cert_cs));
     }
 
     SECTION("FMI 1.0 CS Tool Valid")
     {
-        checker.validate("tests/data/fmi1/pass/TestCSTool", cert);
-        CHECK_FALSE(has_fail(cert));
+        Certificate cert_cs_tool;
+        checker.validate("tests/data/fmi1/pass/TestCSTool", cert_cs_tool);
+        CHECK_FALSE(has_fail(cert_cs_tool));
     }
 
     SECTION("FMI 1.0 Special Floats Valid")
     {
-        checker.validate("tests/data/fmi1/pass/SpecialFloats", cert);
-        CHECK_FALSE(has_fail(cert));
+        Certificate cert_floats;
+        checker.validate("tests/data/fmi1/pass/SpecialFloats", cert_floats);
+        CHECK_FALSE(has_fail(cert_floats));
     }
 
     SECTION("FMI 1.0 Alias Negated Valid")
     {
-        checker.validate("tests/data/fmi1/pass/AliasNegated", cert);
-        CHECK_FALSE(has_fail(cert));
+        Certificate cert_alias;
+        checker.validate("tests/data/fmi1/pass/AliasNegated", cert_alias);
+        CHECK_FALSE(has_fail(cert_alias));
     }
 }
 
