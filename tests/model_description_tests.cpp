@@ -207,6 +207,13 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
         checker.validate("tests/data/fmi1/pass/AliasNegated", cert_alias);
         CHECK_FALSE(has_fail(cert_alias));
     }
+
+    SECTION("FMI 1.0 Alias Negated Integer Valid")
+    {
+        Certificate cert_alias_int;
+        checker.validate("tests/data/fmi1/pass/AliasNegatedInteger", cert_alias_int);
+        CHECK_FALSE(has_fail(cert_alias_int));
+    }
 }
 
 TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
