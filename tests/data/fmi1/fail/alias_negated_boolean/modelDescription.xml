@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="AliasNegatedBoolean" modelIdentifier="AliasNegatedBoolean" guid="{57567222-2621-4475-ae90-7607a72d1f7c}">
+  <ModelVariables>
+    <ScalarVariable name="b1" valueReference="1" causality="internal" alias="noAlias">
+      <Boolean start="true" />
+    </ScalarVariable>
+    <ScalarVariable name="b2" valueReference="1" causality="internal" alias="negatedAlias">
+      <Boolean start="false" />
+    </ScalarVariable>
+  </ModelVariables>
+</fmiModelDescription>

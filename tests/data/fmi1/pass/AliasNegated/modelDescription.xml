@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="Test" modelIdentifier="AliasNegated" guid="{57567222-2621-4475-ae90-7607a72d1f7c}">
+<fmiModelDescription fmiVersion="1.0" modelName="Test" modelIdentifier="AliasNegated" guid="{57567222-2621-4475-ae90-7607a72d1f7c}" numberOfContinuousStates="0" numberOfEventIndicators="0">
   <ModelVariables>
-    <ScalarVariable name="v1" valueReference="1" alias="alias">
+    <ScalarVariable name="v1" valueReference="1" alias="noAlias">
       <Real start="1.0" />
     </ScalarVariable>
     <ScalarVariable name="v2" valueReference="1" alias="negatedAlias">
