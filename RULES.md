@@ -128,6 +128,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - For variables with `variability="constant"`, `fixed="false"` (guess value) is **not allowed**.
 - **Causality/Variability Combinations**:
   - Variables with `variability="constant"` **must not** have `causality="input"` (logical contradiction: constants cannot be changed from the outside).
+- **Alias Variables (same VR)**:
+  - Exactly one variable in an alias set **must** be the base variable (marked `noAlias` or having no `alias` attribute).
+  - `negatedAlias` **can** only be used for `Real` and `Integer` variables.
+  - All variables in an alias set **must** have equivalent `start` values (taking negation into account).
+  - If any variable in an alias set has `variability="constant"`, all variables in that set **must** be `constant`.
+  - All variables in an alias set **should** have the same `variability`.
 
 ### Binary Exports
 
