@@ -2,9 +2,9 @@
 
 #include "certificate.h"
 
+#include "format_shim.h"
 #include <algorithm>
 #include <filesystem>
-#include "format_shim.h"
 #include <map>
 #include <set>
 #include <string>
@@ -36,7 +36,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             {
                 test.status = TestStatus::WARNING;
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
+                test.messages.push_back(fslint::format("Unknown {} in FMU root: '{}'.", type, name));
             }
 
             if (entry.is_directory() && fmi2_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
@@ -175,9 +175,9 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                         {
                             test.status = TestStatus::WARNING;
                             test.messages.push_back(
-                                std::format("Source file '{}' exists in 'sources/' directory but is not listed in "
-                                            "'modelDescription.xml'.",
-                                            filename));
+                                fslint::format("Source file '{}' exists in 'sources/' directory but is not listed in "
+                                               "'modelDescription.xml'.",
+                                               filename));
                         }
                     }
                 }

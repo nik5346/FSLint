@@ -208,3 +208,37 @@ jobs:
       with:
         name: FSLint-cli-${{ matrix.os }}-${{ matrix.arch }}
         path: dist/
+
+  build-wasm:
+    name: Build WASM (Emscripten)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Emscripten
+      uses: emscripten-core/setup-emsdk@v11
+    - name: Configure CMake
+      run: emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release
+    - name: Build
+      run: emmake cmake --build build-wasm --target FSLint-cli
+    - name: Prepare Artifact
+      run: |
+        mkdir -p dist-wasm
+        cp build-wasm/FSLint-cli.js dist-wasm/
+    - name: Download Reference FMUs
+      run: curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
+    - name: Extract Bouncing Ball FMUs
+      shell: python
+      run: |
+        import zipfile
+        import os
+        import shutil
+        with zipfile.ZipFile('Reference-FMUs.zip') as z:
+            z.extract('2.0/BouncingBall.fmu', 'test_fmu_20')
+        os.rename('test_fmu_20/2.0/BouncingBall.fmu', 'BouncingBall_2.0.fmu')
+    - name: Test WASM build
+      run: node dist-wasm/FSLint-cli.js BouncingBall_2.0.fmu
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: FSLint-cli-wasm
+        path: dist-wasm/

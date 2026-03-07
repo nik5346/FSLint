@@ -17,13 +17,13 @@
 #endif
 // NOLINTEND(misc-include-cleaner)
 
+#include "format_shim.h"
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <filesystem>
-#include "format_shim.h"
 #include <map>
 #include <optional>
 #include <regex>
@@ -579,10 +579,10 @@ void Fmi1ModelDescriptionChecker::checkModelIdentifierMatch(const std::string& m
 
     if (model_identifier != expected_id)
     {
-        cert.printTestResult(
-            {"Model Identifier Filename Match",
-             TestStatus::FAIL,
-             {std::format("modelIdentifier '{}' must match the FMU filename '{}'.", model_identifier, expected_id)}});
+        cert.printTestResult({"Model Identifier Filename Match",
+                              TestStatus::FAIL,
+                              {fslint::format("modelIdentifier '{}' must match the FMU filename '{}'.",
+                                              model_identifier, expected_id)}});
     }
     else
     {
@@ -865,18 +865,18 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back(
-                    std::format("Variables sharing VR {} must have the same type. \"{}\" is {} but \"{}\" is {}.", vr,
-                                var->name, var->type, first->name, first->type));
+                    fslint::format("Variables sharing VR {} must have the same type. \"{}\" is {} but \"{}\" is {}.",
+                                   vr, var->name, var->type, first->name, first->type));
             }
 
             // 2. If Real, same unit
             if (base_type == "Real" && var->unit != first->unit)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(std::format("Variables sharing VR {} must have the same unit. \"{}\" has unit "
-                                                    "\"{}\" but \"{}\" has unit \"{}\".",
-                                                    vr, var->name, var->unit.value_or("(none)"), first->name,
-                                                    first->unit.value_or("(none)")));
+                test.messages.push_back(fslint::format(
+                    "Variables sharing VR {} must have the same unit. \"{}\" has unit "
+                    "\"{}\" but \"{}\" has unit \"{}\".",
+                    vr, var->name, var->unit.value_or("(none)"), first->name, first->unit.value_or("(none)")));
             }
 
             // 3. Equivalent start values
@@ -926,7 +926,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                         if (std::abs(current_val - first_normalized_start) > eps)
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(std::format(
+                            test.messages.push_back(fslint::format(
                                 "Variables sharing VR {} must have equivalent start values. \"{}\" has start=\"{}\" "
                                 "(normalized: {}) but \"{}\" has start=\"{}\" (normalized: {}).",
                                 vr, var->name, *var->start, current_val, first_with_start->name,

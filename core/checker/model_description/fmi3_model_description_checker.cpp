@@ -8,12 +8,12 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
+#include "format_shim.h"
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
-#include "format_shim.h"
 #include <map>
 #include <optional>
 #include <regex>
@@ -270,10 +270,10 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
             if (!id && !ic)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    std::format("ClockType \"{}\" (line {}) has intervalVariability='{}' but missing 'intervalDecimal' "
-                                "or 'intervalCounter'.",
-                                name, node->line, iv));
+                test.messages.push_back(fslint::format(
+                    "ClockType \"{}\" (line {}) has intervalVariability='{}' but missing 'intervalDecimal' "
+                    "or 'intervalCounter'.",
+                    name, node->line, iv));
             }
         }
     }
@@ -1206,7 +1206,7 @@ void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Va
                 const std::string derivative_dims = formatDimensions(var);
                 const std::string state_dims = formatDimensions(*state_var);
 
-                test.messages.push_back(std::format(
+                test.messages.push_back(fslint::format(
                     "Variable \"{}\" (line {}) is derivative of \"{}\" (line {}) but has different dimensions. "
                     "Derivative dimensions: {}, State dimensions: {}.",
                     var.name, var.sourceline, state_var->name, state_var->sourceline, derivative_dims, state_dims));
@@ -1369,16 +1369,17 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
                         if (is_initial_unknown)
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(std::format("{} (VR {}) has illegal dependencyKind '{}' (not "
-                                                                "allowed for InitialUnknown).",
-                                                                elem_name, unknown_vr, k));
+                            test.messages.push_back(fslint::format("{} (VR {}) has illegal dependencyKind '{}' (not "
+                                                                   "allowed for InitialUnknown).",
+                                                                   elem_name, unknown_vr, k));
                         }
                         else if (unknown_var && unknown_var->type != "Float32" && unknown_var->type != "Float64")
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(std::format("{} (VR {}) has dependencyKind '{}' but unknown is not "
-                                                                "a float type.",
-                                                                elem_name, unknown_vr, k));
+                            test.messages.push_back(
+                                fslint::format("{} (VR {}) has dependencyKind '{}' but unknown is not "
+                                               "a float type.",
+                                               elem_name, unknown_vr, k));
                         }
                     }
                 }
@@ -2490,7 +2491,7 @@ void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
             if (elem_name == "DisplayUnit")
             {
                 auto du_name = getXmlAttribute(child, "name").value_or("unnamed");
-                const std::string context = std::format("Unit \"{}\" DisplayUnit \"{}\"", name, du_name);
+                const std::string context = fslint::format("Unit \"{}\" DisplayUnit \"{}\"", name, du_name);
                 checkSpecial(getXmlAttribute(child, "factor"), "factor", context, child->line);
                 checkSpecial(getXmlAttribute(child, "offset"), "offset", context, child->line);
             }

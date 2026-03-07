@@ -1,11 +1,11 @@
 #include "certificate.h"
 
+#include "format_shim.h"
 #include <array>
 #include <chrono>
 #include <cstdint>
 #include <ctime>
 #include <filesystem>
-#include "format_shim.h"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -60,10 +60,10 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╔════════════════════════════════════════════════════════════╗");
         log("║ MODEL VALIDATION REPORT                                    ║");
         log("╚════════════════════════════════════════════════════════════╝");
-        log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
+        log(fslint::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log(std::format("Model Path: {}", filename));
-        log(std::format("SHA256:     {}", hash));
+        log(fslint::format("Model Path: {}", filename));
+        log(fslint::format("SHA256:     {}", hash));
         return;
     }
 #else
@@ -73,10 +73,10 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╔════════════════════════════════════════════════════════════╗");
         log("║ MODEL VALIDATION REPORT                                    ║");
         log("╚════════════════════════════════════════════════════════════╝");
-        log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
+        log(fslint::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log(std::format("Model Path: {}", filename));
-        log(std::format("SHA256:     {}", hash));
+        log(fslint::format("Model Path: {}", filename));
+        log(fslint::format("SHA256:     {}", hash));
         return;
     }
 #endif
@@ -87,20 +87,20 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╔════════════════════════════════════════════════════════════╗");
         log("║ MODEL VALIDATION REPORT                                    ║");
         log("╚════════════════════════════════════════════════════════════╝");
-        log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
+        log(fslint::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log(std::format("Model Path: {}", filename));
-        log(std::format("SHA256:     {}", hash));
+        log(fslint::format("Model Path: {}", filename));
+        log(fslint::format("SHA256:     {}", hash));
         return;
     }
 
     log("╔════════════════════════════════════════════════════════════╗");
     log("║ MODEL VALIDATION REPORT                                    ║");
     log("╚════════════════════════════════════════════════════════════╝");
-    log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
-    log(std::format("Timestamp:  {}", time_str.data()));
-    log(std::format("Model Path: {}", filename));
-    log(std::format("SHA256:     {}", hash));
+    log(fslint::format("Tool:       FSLint {}", PROJECT_VERSION));
+    log(fslint::format("Timestamp:  {}", time_str.data()));
+    log(fslint::format("Model Path: {}", filename));
+    log(fslint::format("SHA256:     {}", hash));
 }
 
 void Certificate::printSubsectionHeader(const std::string& name)
@@ -194,12 +194,12 @@ static void printTree(Certificate& cert, const std::vector<NestedModelResult>& m
 
         if (is_top_level)
         {
-            cert.log(std::format("  {} {}", status_tag, model.name));
+            cert.log(fslint::format("  {} {}", status_tag, model.name));
         }
         else
         {
             const std::string marker = is_last ? "└─ " : "├─ ";
-            cert.log(std::format("  {} {}{}{}", status_tag, tree_prefix, marker, model.name));
+            cert.log(fslint::format("  {} {}{}{}", status_tag, tree_prefix, marker, model.name));
         }
 
         if (!model.nested_models.empty())
