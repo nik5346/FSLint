@@ -219,13 +219,14 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 }
             }
 
-            auto compiler_opt = getXmlAttribute(node, "compiler");
-            if (compiler_opt)
+            const auto compiler_opt = getXmlAttribute(node, "compiler");
+            if (compiler_opt.has_value())
             {
+                const std::string& compiler = compiler_opt.value();
                 bool known = false;
                 for (const auto& suggested : suggested_compilers)
                 {
-                    if (compiler_opt.value().find(suggested) != std::string::npos)
+                    if (compiler.find(suggested) != std::string::npos)
                     {
                         known = true;
                         break;
@@ -235,7 +236,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 {
                     if (test.status == TestStatus::PASS)
                         test.status = TestStatus::WARNING;
-                    test.messages.push_back("Compiler '" + compiler_opt.value() + "' in BuildConfiguration (line " +
+                    test.messages.push_back("Compiler '" + compiler + "' in BuildConfiguration (line " +
                                             std::to_string(node->line) +
                                             ") is not one of the suggested values (e.g. gcc, clang, msvc).");
                 }

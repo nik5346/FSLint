@@ -336,8 +336,14 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     if (min_val.has_value() && max_val.has_value() && max_val.value() < min_val.value())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (" +
-                                effective_max.value() + ") must be >= min (" + effective_min.value() + ").");
+        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (";
+        if (effective_max.has_value())
+            msg += effective_max.value();
+        msg += ") must be >= min (";
+        if (effective_min.has_value())
+            msg += effective_min.value();
+        msg += ").";
+        test.messages.push_back(msg);
         success = false;
     }
 
@@ -345,8 +351,13 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     if (start_val.has_value() && min_val.has_value() && start_val.value() < min_val.value())
     {
         test.status = TestStatus::FAIL;
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (" +
-                          var.start.value() + ") must be >= min (" + effective_min.value() + ")";
+        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
+        if (var.start.has_value())
+            msg += var.start.value();
+        msg += ") must be >= min (";
+        if (effective_min.has_value())
+            msg += effective_min.value();
+        msg += ")";
         if (!var.min && var.declared_type)
             msg += " (min inherited from type '" + *var.declared_type + "')";
         msg += ".";
@@ -358,8 +369,13 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     if (start_val.has_value() && max_val.has_value() && start_val.value() > max_val.value())
     {
         test.status = TestStatus::FAIL;
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (" +
-                          var.start.value() + ") must be <= max (" + effective_max.value() + ")";
+        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
+        if (var.start.has_value())
+            msg += var.start.value();
+        msg += ") must be <= max (";
+        if (effective_max.has_value())
+            msg += effective_max.value();
+        msg += ")";
         if (!var.max && var.declared_type)
             msg += " (max inherited from type '" + *var.declared_type + "')";
         msg += ".";
