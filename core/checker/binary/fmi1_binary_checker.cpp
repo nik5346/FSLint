@@ -7,7 +7,7 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
-#include "format_shim.h"
+#include <format>
 #include <filesystem>
 #include <set>
 #include <string>
@@ -128,12 +128,12 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
                 if (std::filesystem::exists(binary_file))
                 {
                     TestResult test{
-                        fslint::format("Exported Functions: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
+                        std::format("Exported Functions: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
                     const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
 
                     for (const auto& func : base_functions)
                     {
-                        const std::string prefixed_func = fslint::format("{}_{}", model_id, func);
+                        const std::string prefixed_func = std::format("{}_{}", model_id, func);
                         if (!actual_exports.contains(prefixed_func))
                         {
                             test.status = TestStatus::FAIL;

@@ -17,7 +17,7 @@
 #endif
 // NOLINTEND(misc-include-cleaner)
 
-#include "format_shim.h"
+#include <format>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -582,7 +582,7 @@ void Fmi1ModelDescriptionChecker::checkModelIdentifierMatch(const std::string& m
     {
         cert.printTestResult({"Model Identifier Filename Match",
                               TestStatus::FAIL,
-                              {fslint::format("modelIdentifier '{}' must match the FMU filename '{}'.",
+                              {std::format("modelIdentifier '{}' must match the FMU filename '{}'.",
                                               model_identifier, expected_id)}});
     }
     else
@@ -866,7 +866,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back(
-                    fslint::format("Variables sharing VR {} must have the same type. \"{}\" is {} but \"{}\" is {}.",
+                    std::format("Variables sharing VR {} must have the same type. \"{}\" is {} but \"{}\" is {}.",
                                    vr, var->name, var->type, first->name, first->type));
             }
 
@@ -874,7 +874,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             if (base_type == "Real" && var->unit != first->unit)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(fslint::format(
+                test.messages.push_back(std::format(
                     "Variables sharing VR {} must have the same unit. \"{}\" has unit "
                     "\"{}\" but \"{}\" has unit \"{}\".",
                     vr, var->name, var->unit.value_or("(none)"), first->name, first->unit.value_or("(none)")));
@@ -927,7 +927,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                         if (std::abs(current_val - first_normalized_start) > eps)
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(fslint::format(
+                            test.messages.push_back(std::format(
                                 "Variables sharing VR {} must have equivalent start values. \"{}\" has start=\"{}\" "
                                 "(normalized: {}) but \"{}\" has start=\"{}\" (normalized: {}).",
                                 vr, var->name, *var->start, current_val, first_with_start->name,

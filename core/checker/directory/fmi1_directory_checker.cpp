@@ -7,7 +7,7 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
-#include "format_shim.h"
+#include <format>
 #include <filesystem>
 #include <map>
 #include <set>
@@ -87,7 +87,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             {
                 test.status = TestStatus::WARNING;
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back(fslint::format("Unknown {} in FMU root: '{}'.", type, name));
+                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
             }
 
             if (entry.is_directory() && fmi1_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))

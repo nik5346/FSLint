@@ -8,7 +8,7 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
-#include "format_shim.h"
+#include <format>
 #include <filesystem>
 #include <optional>
 #include <set>
@@ -85,7 +85,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     auto binary_file = platform_entry.path() / (model_id + ext);
                     if (std::filesystem::exists(binary_file))
                     {
-                        TestResult test{fslint::format("Exported Functions: {}/{}{}", platform, model_id, ext),
+                        TestResult test{std::format("Exported Functions: {}/{}{}", platform, model_id, ext),
                                         TestStatus::PASS,
                                         {}};
                         const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);

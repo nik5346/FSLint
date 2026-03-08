@@ -2,7 +2,7 @@
 
 #include "certificate.h"
 
-#include "format_shim.h"
+#include <format>
 #include <filesystem>
 #include <map>
 #include <regex>
@@ -28,7 +28,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 test.status = TestStatus::WARNING;
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back(fslint::format("Unknown {} in FMU root: '{}'.", type, name));
+                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
             }
 
             if (entry.is_directory() && fmi3_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
@@ -123,7 +123,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         test.status = TestStatus::FAIL;
                         test.messages.push_back(
-                            fslint::format("'{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
+                            std::format("'{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
                                            "fallback).",
                                            entry.path().filename().string(), png_path.filename().string()));
                     }
@@ -175,7 +175,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back(fslint::format(
+                        test.messages.push_back(std::format(
                             "Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
                     else if (match[4].matched) // ABI present
@@ -186,7 +186,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (!std::regex_match(abi, abi_regex))
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(fslint::format(
+                            test.messages.push_back(std::format(
                                 "ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
                                 "letter and contain only lowercase letters, digits, or underscores).",
                                 abi, tuple));
@@ -215,7 +215,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back(fslint::format(
+                        test.messages.push_back(std::format(
                             "Platform directory '{}' does not contain a binary matching any modelIdentifier.", tuple));
                     }
                 }
@@ -265,7 +265,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
                         test.messages.push_back(
-                            fslint::format("Subdirectory '{}' in extra/ should use reverse domain name notation "
+                            std::format("Subdirectory '{}' in extra/ should use reverse domain name notation "
                                            "(e.g. 'com.example').",
                                            name));
                     }

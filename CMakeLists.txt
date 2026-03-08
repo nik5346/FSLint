@@ -591,20 +591,6 @@ if(EMSCRIPTEN)
     return()
 endif()
 
-include(CMakePackageConfigHelpers)
-
-write_basic_config_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfigVersion.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
-
-configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/FSLintConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/FSLint
-)
-
 # We use manual installation for the CLI to avoid export dependency issues with fetched libraries
 install(PROGRAMS $<TARGET_FILE:FSLint-cli> DESTINATION .)
 install(DIRECTORY standard DESTINATION .)
@@ -612,24 +598,4 @@ install(DIRECTORY standard DESTINATION .)
 # Install headers for developer use
 install(DIRECTORY core/ DESTINATION include
     FILES_MATCHING PATTERN "*.h"
-)
-
-install(TARGETS FSLint-core
-    EXPORT FSLintTargets
-    DESTINATION lib
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-)
-
-install(EXPORT FSLintTargets
-    FILE FSLintTargets.cmake
-    NAMESPACE FSLint::
-    DESTINATION lib/cmake/FSLint
-)
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfigVersion.cmake"
-    DESTINATION lib/cmake/FSLint
 )
