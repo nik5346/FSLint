@@ -41,26 +41,32 @@ jobs:
       matrix:
         include:
           - os: windows-latest
+            short_os: windows
             arch: x64
             runner: windows-latest
             cmake_args: "-A x64"
           - os: windows-latest
+            short_os: windows
             arch: arm64
             runner: windows-latest
             cmake_args: "-A ARM64"
           - os: ubuntu-latest
+            short_os: linux
             arch: x64
             runner: ubuntu-latest
             cmake_args: ""
           - os: ubuntu-latest
+            short_os: linux
             arch: arm64
             runner: ubuntu-latest
             cmake_args: ""
           - os: macos-latest
+            short_os: darwin
             arch: x64
             runner: macos-latest
             cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
           - os: macos-latest
+            short_os: darwin
             arch: arm64
             runner: macos-latest
             cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64"
@@ -83,14 +89,14 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         mkdir -p dist
-        cp build/FSLint-cli dist/
+        cp build/FSLint-cli dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}
         cp -r standard dist/
 
     - name: Prepare Artifact (macOS)
       if: runner.os == 'macOS'
       run: |
         mkdir -p dist
-        cp build/FSLint-cli dist/
+        cp build/FSLint-cli dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}
         cp -r standard dist/
 
     - name: Prepare Artifact (Windows)
@@ -98,7 +104,7 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path dist
-        Copy-Item -Path "build/Release/FSLint-cli.exe" -Destination "dist/"
+        Copy-Item -Path "build/Release/FSLint-cli.exe" -Destination "dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}.exe"
         Copy-Item -Path "standard" -Destination "dist/" -Recurse
 
     - name: Download Reference FMUs (Unix)
@@ -132,25 +138,63 @@ jobs:
                 os.remove(dest)
             shutil.move(src, dest)
 
-    - name: Test with Bouncing Ball FMUs (Unix)
-      if: runner.os != 'Windows' && ((matrix.arch == 'x64' && (runner.arch == 'X64' || runner.os == 'macOS')) || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
+    - name: Test with Bouncing Ball FMUs (Linux)
+      if: runner.os == 'Linux' && ((matrix.arch == 'x64' && runner.arch == 'X64') || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
       run: |
-        ./dist/FSLint-cli BouncingBall_1.0_cs.fmu
-        ./dist/FSLint-cli BouncingBall_1.0_me.fmu
-        ./dist/FSLint-cli BouncingBall_2.0.fmu
-        ./dist/FSLint-cli BouncingBall_3.0.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }} BouncingBall_1.0_cs.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }} BouncingBall_1.0_me.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }} BouncingBall_2.0.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }} BouncingBall_3.0.fmu
+
+    - name: Test with Bouncing Ball FMUs (macOS)
+      if: runner.os == 'macOS' && ((matrix.arch == 'x64' && (runner.arch == 'X64' || runner.os == 'macOS')) || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
+      run: |
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }} BouncingBall_1.0_cs.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }} BouncingBall_1.0_me.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }} BouncingBall_2.0.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }} BouncingBall_3.0.fmu
 
     - name: Test with Bouncing Ball FMUs (Windows)
       if: runner.os == 'Windows' && ((matrix.arch == 'x64' && runner.arch == 'X64') || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
       shell: pwsh
       run: |
-        ./dist/FSLint-cli.exe BouncingBall_1.0_cs.fmu
-        ./dist/FSLint-cli.exe BouncingBall_1.0_me.fmu
-        ./dist/FSLint-cli.exe BouncingBall_2.0.fmu
-        ./dist/FSLint-cli.exe BouncingBall_3.0.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}.exe BouncingBall_1.0_cs.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}.exe BouncingBall_1.0_me.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}.exe BouncingBall_2.0.fmu
+        ./dist/FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}.exe BouncingBall_3.0.fmu
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: FSLint-cli-${{ matrix.os }}-${{ matrix.arch }}
+        name: FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}
+        path: dist/
+
+  build-wasm:
+    name: Build WASM
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Emscripten
+      uses: emscripten-core/setup-emsdk@v11
+      with:
+        version: 'latest'
+
+    - name: Configure CMake
+      run: emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: emmake cmake --build build-wasm --config Release --target FSLint-cli
+
+    - name: Prepare Artifact
+      run: |
+        mkdir -p dist
+        cp build-wasm/FSLint-cli.js dist/FSLint-cli-wasm.js
+        cp build-wasm/FSLint-cli.wasm dist/
+        cp -r standard dist/
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: FSLint-cli-wasm
         path: dist/
