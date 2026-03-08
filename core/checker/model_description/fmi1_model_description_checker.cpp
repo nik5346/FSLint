@@ -794,14 +794,14 @@ static int runProcess(const std::string& url)
 #else
 static int runProcess(const std::string& url)
 {
-    pid_t pid = fork();
+    const pid_t pid = fork();
     if (pid < 0)
         return -1;
 
     if (pid == 0) // child
     {
         // Redirect stdout/stderr to /dev/null
-        int fd = open("/dev/null", O_WRONLY);
+        const int fd = open("/dev/null", O_WRONLY);
         if (fd >= 0)
         {
             dup2(fd, STDOUT_FILENO);

@@ -1,12 +1,5 @@
 name: Build and Package CLI
 
-# This workflow can be toggled to use self-hosted runners by setting the following
-# Repository Variables in GitHub Settings -> Secrets and variables -> Actions -> Variables:
-# - LINT_RUNNER:    Set to 'self-hosted' to run lint on any available runner, or a specific label
-# - LINUX_RUNNER:   Set to 'self-hosted' (or your specific label) to override ubuntu-latest
-# - WINDOWS_RUNNER: Set to 'self-hosted' (or your specific label) to override windows-latest
-# - MACOS_RUNNER:   Set to 'self-hosted' (or your specific label) to override macos-latest
-
 on:
   push:
     branches: [ master ]
@@ -17,7 +10,7 @@ on:
 jobs:
   lint:
     name: Formatting and Static Analysis
-    runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -40,72 +33,37 @@ jobs:
     - name: Clang-Tidy
       run: cmake --build build --target clang-tidy
 
-  setup:
-    name: Setup Build Matrix
-    runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - id: set-matrix
-        env:
-          WIN_RUNNER: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
-          WIN_ARM64_RUNNER: ${{ vars.WINDOWS_ARM64_RUNNER || vars.WINDOWS_RUNNER || 'windows-latest' }}
-          LINUX_RUNNER: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
-          LINUX_ARM64_RUNNER: ${{ vars.LINUX_ARM64_RUNNER || vars.LINUX_RUNNER || 'ubuntu-latest' }}
-          MACOS_RUNNER: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
-          MACOS_ARM64_RUNNER: ${{ vars.MACOS_ARM64_RUNNER || vars.MACOS_RUNNER || 'macos-latest' }}
-          BUILD_LINUX: ${{ vars.BUILD_LINUX || 'false' }}
-          BUILD_MACOS: ${{ vars.BUILD_MACOS || 'false' }}
-          BUILD_ARM64: ${{ vars.BUILD_ARM64 || 'false' }}
-        shell: python
-        run: |
-          import json
-          import os
-
-          win_runner = os.environ.get('WIN_RUNNER', 'windows-latest')
-          win_arm64_runner = os.environ.get('WIN_ARM64_RUNNER', 'windows-latest')
-          linux_runner = os.environ.get('LINUX_RUNNER', 'ubuntu-latest')
-          linux_arm64_runner = os.environ.get('LINUX_ARM64_RUNNER', 'ubuntu-latest')
-          macos_runner = os.environ.get('MACOS_RUNNER', 'macos-latest')
-          macos_arm64_runner = os.environ.get('MACOS_ARM64_RUNNER', 'macos-latest')
-          build_linux = os.environ.get('BUILD_LINUX', 'false').lower() == 'true'
-          build_macos = os.environ.get('BUILD_MACOS', 'false').lower() == 'true'
-          build_arm64 = os.environ.get('BUILD_ARM64', 'false').lower() == 'true'
-
-          include = []
-
-          # Windows
-          include.append({"os": "windows-latest", "arch": "x64", "runner": win_runner, "cmake_args": "-A x64"})
-          if build_arm64:
-              include.append({"os": "windows-latest", "arch": "arm64", "runner": win_arm64_runner, "cmake_args": "-A ARM64"})
-
-          # Linux
-          if build_linux:
-              include.append({"os": "ubuntu-latest", "arch": "x64", "runner": linux_runner, "cmake_args": ""})
-              if build_arm64:
-                  include.append({"os": "ubuntu-latest", "arch": "arm64", "runner": linux_arm64_runner, "cmake_args": ""})
-
-          # macOS
-          if build_macos:
-              include.append({"os": "macos-latest", "arch": "x64", "runner": macos_runner, "cmake_args": "-DCMAKE_OSX_ARCHITECTURES=x86_64"})
-              if build_arm64:
-                  include.append({"os": "macos-latest", "arch": "arm64", "runner": macos_arm64_runner, "cmake_args": "-DCMAKE_OSX_ARCHITECTURES=arm64"})
-
-          matrix = {"include": include}
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"matrix={json.dumps(matrix)}\n")
-
   build:
-    needs: [setup]
     name: Build on ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+            runner: windows-latest
+            cmake_args: "-A x64"
+          - os: windows-latest
+            arch: arm64
+            runner: windows-latest
+            cmake_args: "-A ARM64"
+          - os: ubuntu-latest
+            arch: x64
+            runner: ubuntu-latest
+            cmake_args: ""
+          - os: ubuntu-latest
+            arch: arm64
+            runner: ubuntu-latest
+            cmake_args: ""
+          - os: macos-latest
+            arch: x64
+            runner: macos-latest
+            cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+          - os: macos-latest
+            arch: arm64
+            runner: macos-latest
+            cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64"
 
     steps:
     - uses: actions/checkout@v4
@@ -127,8 +85,6 @@ jobs:
         mkdir -p dist
         cp build/FSLint-cli dist/
         cp -r standard dist/
-        # Copy libxml2 shared library (including symlinks)
-        find build/_deps/libxml2-build -name "libxml2.so*" -exec cp -P {} dist/ \;
 
     - name: Prepare Artifact (macOS)
       if: runner.os == 'macOS'
@@ -136,8 +92,6 @@ jobs:
         mkdir -p dist
         cp build/FSLint-cli dist/
         cp -r standard dist/
-        # Copy libxml2 shared library (including symlinks)
-        find build/_deps/libxml2-build -name "libxml2*.dylib" -exec cp -P {} dist/ \;
 
     - name: Prepare Artifact (Windows)
       if: runner.os == 'Windows'
@@ -146,14 +100,6 @@ jobs:
         New-Item -ItemType Directory -Force -Path dist
         Copy-Item -Path "build/Release/FSLint-cli.exe" -Destination "dist/"
         Copy-Item -Path "standard" -Destination "dist/" -Recurse
-        if (Test-Path "build/Release/*.dll") {
-            Copy-Item -Path "build/Release/*.dll" -Destination "dist/"
-        }
-        if (Test-Path "build/_deps/libxml2-build") {
-            Get-ChildItem -Path "build/_deps/libxml2-build" -Filter "*.dll" -Recurse | ForEach-Object {
-                Copy-Item -Path $_.FullName -Destination "dist/" -ErrorAction SilentlyContinue
-            }
-        }
 
     - name: Download Reference FMUs (Unix)
       if: runner.os != 'Windows'

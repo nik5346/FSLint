@@ -140,8 +140,7 @@ class ModelDescriptionCheckerBase : public Checker
 
         if constexpr (std::is_floating_point_v<T>)
         {
-            // Handle special values manually for robustness as std::from_chars
-            // implementation of these is platform-dependent or missing in some versions.
+            // Handle special values manually for robustness
             std::string lower;
             lower.reserve(s.size());
             for (const char c : s)
@@ -153,13 +152,31 @@ class ModelDescriptionCheckerBase : public Checker
                 return std::numeric_limits<T>::infinity();
             if (lower == "-inf" || lower == "-infinity")
                 return -std::numeric_limits<T>::infinity();
-        }
 
-        T val;
-        const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
-        if (ec == std::errc() && ptr == s.data() + s.size())
-            return val;
-        return std::nullopt;
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
+            // Fallback for platforms without full std::from_chars support for floats
+            char* endptr = nullptr;
+            std::string s_str(s);
+            T val = static_cast<T>(std::strtod(s_str.c_str(), &endptr));
+            if (endptr == s_str.c_str() + s_str.size())
+                return val;
+            return std::nullopt;
+#else
+            T val;
+            const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+            if (ec == std::errc() && ptr == s.data() + s.size())
+                return val;
+            return std::nullopt;
+#endif
+        }
+        else
+        {
+            T val;
+            const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+            if (ec == std::errc() && ptr == s.data() + s.size())
+                return val;
+            return std::nullopt;
+        }
     }
 
     void setOriginalPath(const std::filesystem::path& path)
@@ -316,20 +333,31 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     bool success = true;
 
     // 1. Check: max >= min
-    if (min_val && max_val && *max_val < *min_val)
+    if (min_val.has_value() && max_val.has_value() && max_val.value() < min_val.value())
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (" +
-                                *effective_max + ") must be >= min (" + *effective_min + ").");
+        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (";
+        if (effective_max.has_value())
+            msg += effective_max.value();
+        msg += ") must be >= min (";
+        if (effective_min.has_value())
+            msg += effective_min.value();
+        msg += ").";
+        test.messages.push_back(msg);
         success = false;
     }
 
     // 2. Check: start >= min
-    if (start_val && min_val && *start_val < *min_val)
+    if (start_val.has_value() && min_val.has_value() && start_val.value() < min_val.value())
     {
         test.status = TestStatus::FAIL;
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (" +
-                          *var.start + ") must be >= min (" + *effective_min + ")";
+        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
+        if (var.start.has_value())
+            msg += var.start.value();
+        msg += ") must be >= min (";
+        if (effective_min.has_value())
+            msg += effective_min.value();
+        msg += ")";
         if (!var.min && var.declared_type)
             msg += " (min inherited from type '" + *var.declared_type + "')";
         msg += ".";
@@ -338,11 +366,16 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     }
 
     // 3. Check: start <= max
-    if (start_val && max_val && *start_val > *max_val)
+    if (start_val.has_value() && max_val.has_value() && start_val.value() > max_val.value())
     {
         test.status = TestStatus::FAIL;
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (" +
-                          *var.start + ") must be <= max (" + *effective_max + ")";
+        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
+        if (var.start.has_value())
+            msg += var.start.value();
+        msg += ") must be <= max (";
+        if (effective_max.has_value())
+            msg += effective_max.value();
+        msg += ")";
         if (!var.max && var.declared_type)
             msg += " (max inherited from type '" + *var.declared_type + "')";
         msg += ".";
