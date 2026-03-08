@@ -467,6 +467,14 @@ add_executable(FSLint-cli
     cli/main.cpp
 )
 
+if(EMSCRIPTEN)
+    target_link_options(FSLint-cli PRIVATE
+        "-sWASM=1"
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sEXIT_RUNTIME=1"
+    )
+endif()
+
 # ============================================================================
 # Tests
 # ============================================================================
