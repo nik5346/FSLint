@@ -333,20 +333,20 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     bool success = true;
 
     // 1. Check: max >= min
-    if (min_val && max_val && *max_val < *min_val)
+    if (min_val.has_value() && max_val.has_value() && max_val.value() < min_val.value())
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (" +
-                                *effective_max + ") must be >= min (" + *effective_min + ").");
+                                effective_max.value() + ") must be >= min (" + effective_min.value() + ").");
         success = false;
     }
 
     // 2. Check: start >= min
-    if (start_val && min_val && *start_val < *min_val)
+    if (start_val.has_value() && min_val.has_value() && start_val.value() < min_val.value())
     {
         test.status = TestStatus::FAIL;
         std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (" +
-                          *var.start + ") must be >= min (" + *effective_min + ")";
+                          var.start.value() + ") must be >= min (" + effective_min.value() + ")";
         if (!var.min && var.declared_type)
             msg += " (min inherited from type '" + *var.declared_type + "')";
         msg += ".";
@@ -355,11 +355,11 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     }
 
     // 3. Check: start <= max
-    if (start_val && max_val && *start_val > *max_val)
+    if (start_val.has_value() && max_val.has_value() && start_val.value() > max_val.value())
     {
         test.status = TestStatus::FAIL;
         std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (" +
-                          *var.start + ") must be <= max (" + *effective_max + ")";
+                          var.start.value() + ") must be <= max (" + effective_max.value() + ")";
         if (!var.max && var.declared_type)
             msg += " (max inherited from type '" + *var.declared_type + "')";
         msg += ".";

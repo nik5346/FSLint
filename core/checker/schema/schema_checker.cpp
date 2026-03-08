@@ -28,6 +28,7 @@
 #ifdef __linux__
 #include <linux/limits.h>
 #include <string>
+#include <sys/types.h>
 #include <unistd.h>
 #endif
 
@@ -390,7 +391,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 
 #elif defined(__linux__)
     std::array<char, PATH_MAX> path{};
-    ssize_t len = readlink("/proc/self/exe", path.data(), path.size() - 1);
+    const ssize_t len = readlink("/proc/self/exe", path.data(), path.size() - 1);
     if (len != -1)
     {
         path[static_cast<size_t>(len)] = '\0';
