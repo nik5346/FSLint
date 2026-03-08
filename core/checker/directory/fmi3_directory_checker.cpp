@@ -2,8 +2,8 @@
 
 #include "certificate.h"
 
-#include <format>
 #include <filesystem>
+#include <format>
 #include <map>
 #include <regex>
 #include <set>
@@ -124,8 +124,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         test.status = TestStatus::FAIL;
                         test.messages.push_back(
                             std::format("'{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
-                                           "fallback).",
-                                           entry.path().filename().string(), png_path.filename().string()));
+                                        "fallback).",
+                                        entry.path().filename().string(), png_path.filename().string()));
                     }
                 }
             }
@@ -175,8 +175,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back(std::format(
-                            "Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
+                        test.messages.push_back(
+                            std::format("Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
                     else if (match[4].matched) // ABI present
                     {
@@ -266,8 +266,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                             test.status = TestStatus::WARNING;
                         test.messages.push_back(
                             std::format("Subdirectory '{}' in extra/ should use reverse domain name notation "
-                                           "(e.g. 'com.example').",
-                                           name));
+                                        "(e.g. 'com.example').",
+                                        name));
                     }
                 }
             }

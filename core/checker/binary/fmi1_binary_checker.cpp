@@ -7,8 +7,8 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
-#include <format>
 #include <filesystem>
+#include <format>
 #include <set>
 #include <string>
 #include <vector>

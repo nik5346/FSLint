@@ -183,11 +183,14 @@ class ModelDescriptionCheckerBase : public Checker
                 return val_tmp;
             return std::nullopt;
         }
+        else
 #endif
-        const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
-        if (ec == std::errc() && ptr == s.data() + s.size())
-            return val;
-        return std::nullopt;
+        {
+            const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+            if (ec == std::errc() && ptr == s.data() + s.size())
+                return val;
+            return std::nullopt;
+        }
     }
 
     void setOriginalPath(const std::filesystem::path& path)

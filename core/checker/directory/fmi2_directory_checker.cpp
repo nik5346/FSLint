@@ -2,9 +2,9 @@
 
 #include "certificate.h"
 
-#include <format>
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <map>
 #include <set>
 #include <string>
@@ -176,8 +176,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                             test.status = TestStatus::WARNING;
                             test.messages.push_back(
                                 std::format("Source file '{}' exists in 'sources/' directory but is not listed in "
-                                               "'modelDescription.xml'.",
-                                               filename));
+                                            "'modelDescription.xml'.",
+                                            filename));
                         }
                     }
                 }

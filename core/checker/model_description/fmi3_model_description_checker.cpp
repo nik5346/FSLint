@@ -8,12 +8,12 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
-#include <format>
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
+#include <format>
 #include <map>
 #include <optional>
 #include <regex>
@@ -270,10 +270,10 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
             if (!id && !ic)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(std::format(
-                    "ClockType \"{}\" (line {}) has intervalVariability='{}' but missing 'intervalDecimal' "
-                    "or 'intervalCounter'.",
-                    name, node->line, iv));
+                test.messages.push_back(
+                    std::format("ClockType \"{}\" (line {}) has intervalVariability='{}' but missing 'intervalDecimal' "
+                                "or 'intervalCounter'.",
+                                name, node->line, iv));
             }
         }
     }
@@ -1370,16 +1370,15 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back(std::format("{} (VR {}) has illegal dependencyKind '{}' (not "
-                                                                   "allowed for InitialUnknown).",
-                                                                   elem_name, unknown_vr, k));
+                                                                "allowed for InitialUnknown).",
+                                                                elem_name, unknown_vr, k));
                         }
                         else if (unknown_var && unknown_var->type != "Float32" && unknown_var->type != "Float64")
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(
-                                std::format("{} (VR {}) has dependencyKind '{}' but unknown is not "
-                                               "a float type.",
-                                               elem_name, unknown_vr, k));
+                            test.messages.push_back(std::format("{} (VR {}) has dependencyKind '{}' but unknown is not "
+                                                                "a float type.",
+                                                                elem_name, unknown_vr, k));
                         }
                     }
                 }

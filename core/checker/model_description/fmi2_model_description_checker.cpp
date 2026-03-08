@@ -7,12 +7,12 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
-#include <format>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
 #include <filesystem>
+#include <format>
 #include <iostream>
 #include <map>
 #include <optional>
@@ -1717,7 +1717,7 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
                         test.status = TestStatus::FAIL;
                         test.messages.push_back(
                             std::format("DisplayUnit \"{}\" (line {}) is defined multiple times for unit \"{}\".",
-                                           *du_name_opt, child->line, name));
+                                        *du_name_opt, child->line, name));
                     }
                     unit_display_names.insert(*du_name_opt);
                 }

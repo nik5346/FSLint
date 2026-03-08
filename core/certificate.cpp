@@ -1,11 +1,11 @@
 #include "certificate.h"
 
-#include <format>
 #include <array>
 #include <chrono>
 #include <cstdint>
 #include <ctime>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
