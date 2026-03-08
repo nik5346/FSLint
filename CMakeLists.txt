@@ -303,6 +303,8 @@ FetchContent_Declare(
 
 set(LIBXML2_WITH_TESTS OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_SHARED OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_STATIC ON CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_ICONV OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_PYTHON OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_ZLIB ON CACHE BOOL "" FORCE)
@@ -387,7 +389,7 @@ include_directories(core/checker/build_description)
 include_directories(core/checker/terminals_and_icons)
 include_directories(core/checker/binary)
 include_directories(core/checker/resources)
-add_library(FSLint-core ${CORE_SOURCES})
+add_library(FSLint-core STATIC ${CORE_SOURCES})
 
 file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "core/*")
 foreach(DIR ${HEADER_DIRS})
@@ -508,103 +510,10 @@ target_compile_definitions(FSLint-cli PRIVATE
 # ============================================================================
 # Copy DLLs to output directory on Windows
 # ============================================================================
-if(WIN32)
-    add_custom_command(TARGET FSLint-cli POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:LibXml2::LibXml2>
-            $<TARGET_FILE_DIR:FSLint-cli>
-        COMMENT "Copying libxml2 DLL to output directory"
-    )
-
-    # Also copy zlib DLL if it exists
-    if(TARGET zlib)
-        add_custom_command(TARGET FSLint-cli POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_FILE:zlib>
-                $<TARGET_FILE_DIR:FSLint-cli>
-            COMMENT "Copying zlib DLL to output directory"
-        )
-    endif()
-
-    if(TARGET Catch2)
-        add_custom_command(TARGET FSLint-tests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_FILE:Catch2>
-                $<TARGET_FILE_DIR:FSLint-tests>
-            COMMENT "Copying Catch2 DLL to output directory"
-        )
-    endif()
-
-    if(TARGET Catch2::Catch2WithMain)
-        add_custom_command(TARGET FSLint-tests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_FILE:Catch2::Catch2WithMain>
-                $<TARGET_FILE_DIR:FSLint-tests>
-            COMMENT "Copying Catch2Main DLL to output directory"
-        )
-    endif()
-
-    if(TARGET LibXml2::LibXml2)
-        add_custom_command(TARGET FSLint-tests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_FILE:LibXml2::LibXml2>
-                $<TARGET_FILE_DIR:FSLint-tests>
-            COMMENT "Copying libxml2 DLL to output directory"
-        )
-    endif()
-
-    if(TARGET zlib)
-        add_custom_command(TARGET FSLint-tests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_FILE:zlib>
-                $<TARGET_FILE_DIR:FSLint-tests>
-            COMMENT "Copying zlib DLL to output directory"
-        )
-    endif()
-endif()
+# libxml2, zlib and Catch2 are linked statically or handled by discover_tests, so no need to copy DLLs manually here
 
 # ============================================================================
 # Install
 # ============================================================================
-include(CMakePackageConfigHelpers)
-
-write_basic_config_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfigVersion.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
-
-configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/FSLintConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/FSLint
-)
-
-# We use manual installation for the CLI to avoid export dependency issues with fetched libraries
-install(PROGRAMS $<TARGET_FILE:FSLint-cli> DESTINATION .)
-install(DIRECTORY standard DESTINATION .)
-
-# Install headers for developer use
-install(DIRECTORY core/ DESTINATION include
-    FILES_MATCHING PATTERN "*.h"
-)
-
-install(TARGETS FSLint-core
-    EXPORT FSLintTargets
-    DESTINATION lib
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-)
-
-install(EXPORT FSLintTargets
-    FILE FSLintTargets.cmake
-    NAMESPACE FSLint::
-    DESTINATION lib/cmake/FSLint
-)
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/FSLintConfigVersion.cmake"
-    DESTINATION lib/cmake/FSLint
-)
+install(TARGETS FSLint-cli DESTINATION bin)
+install(DIRECTORY standard DESTINATION bin)

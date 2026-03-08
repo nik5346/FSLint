@@ -155,11 +155,33 @@ class ModelDescriptionCheckerBase : public Checker
                 return -std::numeric_limits<T>::infinity();
         }
 
-        T val;
-        const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
-        if (ec == std::errc() && ptr == s.data() + s.size())
-            return val;
-        return std::nullopt;
+        if constexpr (std::is_floating_point_v<T>)
+        {
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
+            // On these platforms, std::from_chars for floats is often missing/deleted in older SDKs
+            // even if the header exists. Use strtod as a reliable locale-independent fallback.
+            char* endptr = nullptr;
+            std::string s_str(s);
+            T val = static_cast<T>(std::strtod(s_str.c_str(), &endptr));
+            if (endptr == s_str.c_str() + s_str.size())
+                return val;
+            return std::nullopt;
+#else
+            T val;
+            const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+            if (ec == std::errc() && ptr == s.data() + s.size())
+                return val;
+            return std::nullopt;
+#endif
+        }
+        else
+        {
+            T val;
+            const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+            if (ec == std::errc() && ptr == s.data() + s.size())
+                return val;
+            return std::nullopt;
+        }
     }
 
     void setOriginalPath(const std::filesystem::path& path)
