@@ -47,6 +47,44 @@ Run the `FSLint-cli` tool from the `build` directory on an FMU file, an SSP file
 ./build/FSLint-cli path/to/your_model.fmu
 ```
 
+### Python Bindings
+
+FSLint provides Python bindings via `pybind11`.
+
+#### Building Python Bindings
+
+The Python bindings are automatically built when you build the project from source, provided that a Python interpreter is found. The resulting module `fslint` will be located in the `build/` directory.
+
+#### Basic Usage
+
+```python
+import sys
+import os
+
+# Add build directory to path
+sys.path.append('path/to/FSLint/build')
+
+import fslint
+
+# Create a checker
+checker = fslint.ModelChecker()
+
+# Validate an FMU
+cert = checker.validate('path/to/model.fmu')
+
+# Check results
+if cert.is_failed():
+    print("Validation failed!")
+    for result in cert.get_results():
+        if result.status == fslint.TestStatus.FAIL:
+            print(f"Failed test: {result.test_name}")
+            for msg in result.messages:
+                print(f"  - {msg}")
+else:
+    print("Validation passed!")
+    print(cert.get_full_report())
+```
+
 #### Certificate Management
 
 FSLint can manage validation certificates embedded within the models:
