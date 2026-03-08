@@ -1,8 +1,9 @@
-build/
-Testing/
-models/
-*.so
 *.dll
 *.dylib
-tests/reference_fmus/
+*.so
 .vscode/launch.json
+/build-wasm/
+/build/
+Testing/
+models/
+tests/reference_fmus/

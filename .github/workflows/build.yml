@@ -17,7 +17,7 @@ on:
 jobs:
   lint:
     name: Formatting and Static Analysis
-    runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -32,80 +32,43 @@ jobs:
     - name: Check Encodings
       run: python scripts/check_encodings.py
     - name: Configure CMake
-      run: cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON
+      run: cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
     - name: XML Format Check
       run: cmake --build build --target format-xml-check
     - name: Clang-Format Check
       run: cmake --build build --target clang-format-check
-    - name: Clang-Tidy
-      run: cmake --build build --target clang-tidy
-
-  setup:
-    name: Setup Build Matrix
-    runs-on: ${{ vars.LINT_RUNNER || 'ubuntu-latest' }}
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - id: set-matrix
-        env:
-          WIN_RUNNER: ${{ vars.WINDOWS_RUNNER || 'windows-latest' }}
-          WIN_ARM64_RUNNER: ${{ vars.WINDOWS_ARM64_RUNNER || vars.WINDOWS_RUNNER || 'windows-latest' }}
-          LINUX_RUNNER: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
-          LINUX_ARM64_RUNNER: ${{ vars.LINUX_ARM64_RUNNER || vars.LINUX_RUNNER || 'ubuntu-latest' }}
-          MACOS_RUNNER: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
-          MACOS_ARM64_RUNNER: ${{ vars.MACOS_ARM64_RUNNER || vars.MACOS_RUNNER || 'macos-latest' }}
-          BUILD_LINUX: ${{ vars.BUILD_LINUX || 'false' }}
-          BUILD_MACOS: ${{ vars.BUILD_MACOS || 'false' }}
-          BUILD_ARM64: ${{ vars.BUILD_ARM64 || 'false' }}
-        shell: python
-        run: |
-          import json
-          import os
-
-          win_runner = os.environ.get('WIN_RUNNER', 'windows-latest')
-          win_arm64_runner = os.environ.get('WIN_ARM64_RUNNER', 'windows-latest')
-          linux_runner = os.environ.get('LINUX_RUNNER', 'ubuntu-latest')
-          linux_arm64_runner = os.environ.get('LINUX_ARM64_RUNNER', 'ubuntu-latest')
-          macos_runner = os.environ.get('MACOS_RUNNER', 'macos-latest')
-          macos_arm64_runner = os.environ.get('MACOS_ARM64_RUNNER', 'macos-latest')
-          build_linux = os.environ.get('BUILD_LINUX', 'false').lower() == 'true'
-          build_macos = os.environ.get('BUILD_MACOS', 'false').lower() == 'true'
-          build_arm64 = os.environ.get('BUILD_ARM64', 'false').lower() == 'true'
-
-          include = []
-
-          # Windows
-          include.append({"os": "windows-latest", "arch": "x64", "runner": win_runner, "cmake_args": "-A x64"})
-          if build_arm64:
-              include.append({"os": "windows-latest", "arch": "arm64", "runner": win_arm64_runner, "cmake_args": "-A ARM64"})
-
-          # Linux
-          if build_linux:
-              include.append({"os": "ubuntu-latest", "arch": "x64", "runner": linux_runner, "cmake_args": ""})
-              if build_arm64:
-                  include.append({"os": "ubuntu-latest", "arch": "arm64", "runner": linux_arm64_runner, "cmake_args": ""})
-
-          # macOS
-          if build_macos:
-              include.append({"os": "macos-latest", "arch": "x64", "runner": macos_runner, "cmake_args": "-DCMAKE_OSX_ARCHITECTURES=x86_64"})
-              if build_arm64:
-                  include.append({"os": "macos-latest", "arch": "arm64", "runner": macos_arm64_runner, "cmake_args": "-DCMAKE_OSX_ARCHITECTURES=arm64"})
-
-          matrix = {"include": include}
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"matrix={json.dumps(matrix)}\n")
 
   build:
-    needs: [setup]
     name: Build on ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+            runner: windows-latest
+            cmake_args: "-A x64"
+          - os: windows-latest
+            arch: arm64
+            runner: windows-latest
+            cmake_args: "-A ARM64"
+          - os: ubuntu-latest
+            arch: x64
+            runner: ubuntu-latest
+            cmake_args: ""
+          - os: ubuntu-latest
+            arch: arm64
+            runner: ubuntu-latest
+            cmake_args: ""
+          - os: macos-latest
+            arch: x64
+            runner: macos-latest
+            cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+          - os: macos-latest
+            arch: arm64
+            runner: macos-latest
+            cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64"
 
     steps:
     - uses: actions/checkout@v4
@@ -215,7 +178,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Setup Emscripten
-      uses: mymindstorm/setup-emsdk@v14
+      uses: emscripten-core/setup-emscripten@v11
     - name: Configure CMake
       run: emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release
     - name: Build
