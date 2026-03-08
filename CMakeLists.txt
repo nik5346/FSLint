@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+# Force static linking for all dependencies
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
 # ============================================================================
 # Compiler-specific options
 # ============================================================================
@@ -309,8 +312,6 @@ set(LIBXML2_WITH_ZLIB ON CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_LZMA OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_HTTP OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_FTP OFF CACHE BOOL "" FORCE)
-set(LIBXML2_WITH_SHARED OFF CACHE BOOL "" FORCE)
-set(LIBXML2_WITH_STATIC ON CACHE BOOL "" FORCE)
 
 # Disable warnings for libxml2 compilation
 set(CMAKE_C_FLAGS_BACKUP "${CMAKE_C_FLAGS}")

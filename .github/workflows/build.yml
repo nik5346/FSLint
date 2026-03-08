@@ -166,7 +166,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Setup Emscripten
-      uses: emscripten-core/setup-emsdk@v11
+      uses: mymindstorm/setup-emsdk@v14
     - name: Configure CMake
       run: emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release
     - name: Build
