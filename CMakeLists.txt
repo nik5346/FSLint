@@ -451,8 +451,7 @@ if(EMSCRIPTEN)
         "-sALLOW_MEMORY_GROWTH=1"
         "-sEXIT_RUNTIME=1"
         "-sSINGLE_FILE=1"
-        "-sFORCE_FILESYSTEM=1"
-        "--preload-file=${CMAKE_SOURCE_DIR}/standard@/standard"
+        "-sNODERAWFS=1"
     )
     # Use fmt library as a replacement for std::format in Emscripten
     include(FetchContent)

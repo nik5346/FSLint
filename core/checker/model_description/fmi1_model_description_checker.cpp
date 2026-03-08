@@ -18,6 +18,7 @@
 // NOLINTEND(misc-include-cleaner)
 
 #include "format_shim.h"
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>

@@ -397,7 +397,16 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         bin_dir = std::filesystem::path(path.data()).parent_path();
     }
 #elif defined(__EMSCRIPTEN__)
-    bin_dir = "/";
+    // For WASM, we first try to find 'standard' in the current working directory
+    if (std::filesystem::exists("standard"))
+    {
+        bin_dir = std::filesystem::current_path();
+    }
+    else
+    {
+        // Fallback to / if not found (for some environments)
+        bin_dir = "/";
+    }
 #endif
 
     if (bin_dir.empty())

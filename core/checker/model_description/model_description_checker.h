@@ -9,6 +9,7 @@
 
 #include <cctype>
 #include <charconv>
+#include <clocale>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -156,12 +157,19 @@ class ModelDescriptionCheckerBase : public Checker
                 return -std::numeric_limits<T>::infinity();
         }
 
+        T val;
 #if defined(__EMSCRIPTEN__) && !defined(__cpp_lib_to_chars)
         if constexpr (std::is_floating_point_v<T>)
         {
             char* endptr = nullptr;
-            std::string str(s);
-            T val_tmp;
+            const std::string str(s);
+            T val_tmp = 0;
+
+            // Ensure locale-independent parsing (FMI uses '.' as decimal separator)
+            const char* current_locale = std::setlocale(LC_NUMERIC, nullptr);
+            const std::string old_locale = current_locale ? current_locale : "C";
+            std::setlocale(LC_NUMERIC, "C");
+
             if constexpr (std::is_same_v<T, float>)
                 val_tmp = std::strtof(str.c_str(), &endptr);
             else if constexpr (std::is_same_v<T, double>)
@@ -169,25 +177,17 @@ class ModelDescriptionCheckerBase : public Checker
             else if constexpr (std::is_same_v<T, long double>)
                 val_tmp = std::strtold(str.c_str(), &endptr);
 
+            std::setlocale(LC_NUMERIC, old_locale.c_str());
+
             if (endptr == str.c_str() + str.size())
                 return val_tmp;
             return std::nullopt;
         }
-        else
-        {
-            T val;
-            const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
-            if (ec == std::errc() && ptr == s.data() + s.size())
-                return val;
-            return std::nullopt;
-        }
-#else
-        T val;
+#endif
         const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
         if (ec == std::errc() && ptr == s.data() + s.size())
             return val;
         return std::nullopt;
-#endif
     }
 
     void setOriginalPath(const std::filesystem::path& path)
