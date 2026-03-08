@@ -54,11 +54,11 @@ jobs:
             cmake_args: ""
           - os: ubuntu-latest
             arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-latest
             cmake_args: ""
-          - os: macos-13
+          - os: macos-latest
             arch: x64
-            runner: macos-13
+            runner: macos-latest
             cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
           - os: macos-latest
             arch: arm64

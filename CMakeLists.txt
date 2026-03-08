@@ -7,6 +7,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+# Force static linking for all dependencies fetched via FetchContent
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+
+# Dependencies (libxml2, Catch2) have issues when installed alongside our static internal targets
+# because they try to export targets that depend on our internal zlibstatic.
+# We define a dummy install macro to skip all installation rules in dependencies.
+macro(install)
+endmacro()
+
 # ============================================================================
 # Compiler-specific options
 # ============================================================================
@@ -215,6 +224,7 @@ endif()
 
 # Prevent zlib from building examples and adding tests
 set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(zlib)
 
@@ -306,11 +316,16 @@ set(LIBXML2_WITH_PROGRAMS OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_SHARED OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_STATIC ON CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_ICONV OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_ICU OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_PYTHON OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_ZLIB ON CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_LZMA OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_HTTP OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_FTP OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_THREADS ON CACHE BOOL "" FORCE)
+# Use a separate install prefix for dependencies to avoid export issues
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/dependency_install")
+
 
 # Disable warnings for libxml2 compilation
 set(CMAKE_C_FLAGS_BACKUP "${CMAKE_C_FLAGS}")
@@ -326,7 +341,13 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
-FetchContent_MakeAvailable(libxml2)
+# We don't use FetchContent_MakeAvailable(libxml2) here because we need the
+# dummy install macro to be active when add_subdirectory is called.
+FetchContent_GetProperties(libxml2)
+if(NOT libxml2_POPULATED)
+    FetchContent_Populate(libxml2)
+    add_subdirectory(${libxml2_SOURCE_DIR} ${libxml2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # Restore warning flags after libxml2
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
