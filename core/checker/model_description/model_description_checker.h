@@ -140,8 +140,7 @@ class ModelDescriptionCheckerBase : public Checker
 
         if constexpr (std::is_floating_point_v<T>)
         {
-            // Handle special values manually for robustness as std::from_chars
-            // implementation of these is platform-dependent or missing in some versions.
+            // Handle special values manually for robustness
             std::string lower;
             lower.reserve(s.size());
             for (const char c : s)
@@ -153,13 +152,9 @@ class ModelDescriptionCheckerBase : public Checker
                 return std::numeric_limits<T>::infinity();
             if (lower == "-inf" || lower == "-infinity")
                 return -std::numeric_limits<T>::infinity();
-        }
 
-        if constexpr (std::is_floating_point_v<T>)
-        {
 #if defined(__APPLE__) || defined(__EMSCRIPTEN__)
-            // On these platforms, std::from_chars for floats is often missing/deleted in older SDKs
-            // even if the header exists. Use strtod as a reliable locale-independent fallback.
+            // Fallback for platforms without full std::from_chars support for floats
             char* endptr = nullptr;
             std::string s_str(s);
             T val = static_cast<T>(std::strtod(s_str.c_str(), &endptr));
