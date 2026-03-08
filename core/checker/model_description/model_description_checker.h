@@ -158,7 +158,7 @@ class ModelDescriptionCheckerBase : public Checker
         }
 
         T val;
-#if defined(__EMSCRIPTEN__) && !defined(__cpp_lib_to_chars)
+#if (defined(__EMSCRIPTEN__) || defined(__APPLE__)) && !defined(__cpp_lib_to_chars)
         if constexpr (std::is_floating_point_v<T>)
         {
             char* endptr = nullptr;
