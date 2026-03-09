@@ -28,7 +28,7 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(Python3 COMPONENTS Interpreter)
+find_package(Python3 COMPONENTS Interpreter Development)
 
 # ============================================================================
 # Generate VS Code launch.json from template
@@ -556,7 +556,7 @@ target_compile_definitions(FSLint-cli PRIVATE
 # ============================================================================
 # Python bindings
 # ============================================================================
-if(Python3_Interpreter_FOUND)
+if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
     pybind11_add_module(fslint python/bindings.cpp)
     target_link_libraries(fslint PRIVATE FSLint-core)
     target_include_directories(fslint PRIVATE core)
@@ -576,7 +576,7 @@ endif()
 # Install
 # ============================================================================
 install(TARGETS FSLint-cli DESTINATION bin)
-if(Python3_Interpreter_FOUND)
+if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
     install(TARGETS fslint DESTINATION bin)
 endif()
 install(DIRECTORY standard DESTINATION bin)

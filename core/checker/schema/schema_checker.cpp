@@ -408,8 +408,8 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     if (!std::filesystem::exists(schema_path))
     {
         // Try fallback to current directory if binary directory didn't work (useful for Python bindings)
-        schema_path =
-            std::filesystem::current_path() / "standard" / getStandardName() / getStandardVersion() / "schema" / schema_filename;
+        schema_path = std::filesystem::current_path() / "standard" / getStandardName() / getStandardVersion() /
+                      "schema" / schema_filename;
     }
 
     if (!std::filesystem::exists(schema_path))
