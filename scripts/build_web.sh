@@ -14,7 +14,6 @@ echo "Copying artifacts..."
 mkdir -p web/public
 cp build-wasm/FSLint-cli.js web/public/FSLint-cli-wasm.js
 cp build-wasm/FSLint-cli.wasm web/public/
-cp build-wasm/FSLint-cli.data web/public/ || true
 
 # Build Web App
 echo "Building Web App..."
