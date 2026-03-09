@@ -5,6 +5,33 @@ import shutil
 import sys
 from pathlib import Path
 
+def check_prerequisites():
+    print("--- Checking Prerequisites ---")
+    prereqs = ["cmake", "npm", "emcmake", "emmake"]
+    missing = []
+
+    for cmd in prereqs:
+        resolved = shutil.which(cmd)
+        if not resolved and os.name == 'nt':
+            for ext in ['.bat', '.cmd', '.exe']:
+                if shutil.which(cmd + ext):
+                    resolved = True
+                    break
+
+        if not resolved:
+            missing.append(cmd)
+
+    if missing:
+        print(f"Error: Missing prerequisites: {', '.join(missing)}")
+        print("\nTo build the web interface, you must have Emscripten and Node.js installed.")
+        print("See https://emscripten.org/docs/getting_started/downloads.html for Emscripten.")
+        print("See https://nodejs.org/ for Node.js.")
+        if os.name == 'nt':
+            print("\nNote for Windows: Ensure you have activated the Emscripten environment in your terminal")
+            print("(e.g., by running 'emsdk_env.bat' from your Emscripten installation).")
+        sys.exit(1)
+    print("All prerequisites found.\n")
+
 def run_command(command, cwd=None):
     cmd_name = command[0]
 
@@ -38,6 +65,10 @@ def run_command(command, cwd=None):
 def main():
     # Get the workspace root (parent of the scripts directory)
     workspace_root = Path(__file__).parent.parent.resolve()
+
+    # 0. Check Prerequisites
+    check_prerequisites()
+
     build_wasm_dir = workspace_root / "build-wasm"
     web_dir = workspace_root / "web"
     web_public_dir = web_dir / "public"
