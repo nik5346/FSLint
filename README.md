@@ -30,6 +30,22 @@ cmake --build . -j
 
 After building, the `FSLint-cli` executable will be located in the `build/` directory.
 
+### Web Interface
+
+FSLint can also be built as a WebAssembly-powered web application:
+
+```bash
+# Requires Emscripten and Node.js
+./scripts/build_web.sh
+```
+
+To run the web interface locally after building:
+
+```bash
+cd web
+npm run dev
+```
+
 ### Running Tests
 
 To run the test suite, use `ctest` from the `build/` directory:

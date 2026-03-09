@@ -397,6 +397,16 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         path[static_cast<size_t>(len)] = '\0';
         bin_dir = std::filesystem::path(path.data()).parent_path();
     }
+#elif defined(__EMSCRIPTEN__)
+    // Under Emscripten, we look at the root directory where schemas are preloaded
+    if (std::filesystem::exists("/standard"))
+    {
+        bin_dir = "/";
+    }
+    else
+    {
+        bin_dir = ".";
+    }
 #endif
 
     if (bin_dir.empty())

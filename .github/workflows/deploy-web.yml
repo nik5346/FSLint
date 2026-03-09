@@ -1,0 +1,71 @@
+name: Deploy Web App to GitHub Pages
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 'latest'
+
+      - name: Configure CMake (WASM)
+        run: emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build WASM
+        run: emmake cmake --build build-wasm --config Release --target FSLint-cli
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Prepare Web Assets
+        run: |
+          mkdir -p web/public
+          cp build-wasm/FSLint-cli.js web/public/FSLint-cli-wasm.js
+          cp build-wasm/FSLint-cli.wasm web/public/
+          cp build-wasm/FSLint-cli.data web/public/ || true
+
+      - name: Install Dependencies
+        run: |
+          cd web
+          npm install
+
+      - name: Build Web App
+        run: |
+          cd web
+          npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './web/dist'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
