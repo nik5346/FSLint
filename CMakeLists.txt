@@ -28,7 +28,7 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(Python3 COMPONENTS Interpreter)
+find_package(Python3 COMPONENTS Interpreter Development)
 
 # ============================================================================
 # Generate VS Code launch.json from template
@@ -376,7 +376,13 @@ FetchContent_Declare(
   GIT_TAG        v3.4.0
 )
 
-FetchContent_MakeAvailable(picosha2 Catch2)
+FetchContent_Declare(
+  pybind11
+  GIT_REPOSITORY https://github.com/pybind/pybind11.git
+  GIT_TAG        v2.12.0
+)
+
+FetchContent_MakeAvailable(picosha2 Catch2 pybind11)
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
@@ -512,6 +518,12 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(FSLint-tests)
 
+if(Python3_Interpreter_FOUND)
+    add_test(NAME PythonBindingsTest
+             COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/python/test_bindings.py
+             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif()
+
 # Copy test data to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
 
@@ -547,7 +559,29 @@ target_compile_definitions(FSLint-cli PRIVATE
 # libxml2, zlib and Catch2 are linked statically or handled by discover_tests, so no need to copy DLLs manually here
 
 # ============================================================================
+# Python bindings
+# ============================================================================
+if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
+    pybind11_add_module(fslint python/bindings.cpp)
+    target_link_libraries(fslint PRIVATE FSLint-core)
+    target_include_directories(fslint PRIVATE core)
+
+    target_compile_definitions(fslint PRIVATE
+        PROJECT_VERSION="${CMAKE_PROJECT_VERSION}"
+        PROJECT_VERSION_MAJOR=${CMAKE_PROJECT_VERSION_MAJOR}
+        PROJECT_VERSION_MINOR=${CMAKE_PROJECT_VERSION_MINOR}
+        PROJECT_VERSION_PATCH=${CMAKE_PROJECT_VERSION_PATCH}
+    )
+
+    # Set output name to just 'fslint' (the .so/.pyd will have the appropriate suffix)
+    set_target_properties(fslint PROPERTIES OUTPUT_NAME "fslint")
+endif()
+
+# ============================================================================
 # Install
 # ============================================================================
 install(TARGETS FSLint-cli DESTINATION bin)
+if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
+    install(TARGETS fslint DESTINATION bin)
+endif()
 install(DIRECTORY standard DESTINATION bin)
