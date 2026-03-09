@@ -6,10 +6,33 @@ import sys
 from pathlib import Path
 
 def run_command(command, cwd=None):
-    print(f"Running: {' '.join(command)} in {cwd or os.getcwd()}")
-    process = subprocess.run(command, cwd=cwd, shell=True if os.name == 'nt' else False)
+    cmd_name = command[0]
+
+    # Try to resolve the executable path
+    resolved_cmd = shutil.which(cmd_name)
+    if resolved_cmd:
+        command[0] = resolved_cmd
+    elif os.name == 'nt':
+        # On Windows, try common extensions if not found
+        for ext in ['.bat', '.cmd', '.exe']:
+            resolved_cmd = shutil.which(cmd_name + ext)
+            if resolved_cmd:
+                command[0] = resolved_cmd
+                break
+
+    if os.name == 'nt':
+        # On Windows, use list2cmdline and shell=True for better compatibility with batch files and PATH
+        cmd_str = subprocess.list2cmdline(command)
+        print(f"Running: {cmd_str} in {cwd or os.getcwd()}")
+        process = subprocess.run(cmd_str, cwd=cwd, shell=True)
+    else:
+        print(f"Running: {' '.join(command)} in {cwd or os.getcwd()}")
+        process = subprocess.run(command, cwd=cwd, shell=False)
+
     if process.returncode != 0:
         print(f"Command failed with return code {process.returncode}")
+        if cmd_name in ["emcmake", "emmake", "npm"]:
+            print(f"Error: '{cmd_name}' not found or failed. Please ensure it is installed and in your PATH.")
         sys.exit(process.returncode)
 
 def main():
@@ -54,14 +77,12 @@ def main():
 
     # 3. Build Web App
     print("--- Building Web App ---")
-    # Use 'npm.cmd' on Windows
-    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
-
-    run_command([npm_cmd, "install"], cwd=web_dir)
-    run_command([npm_cmd, "run", "build"], cwd=web_dir)
+    run_command(["npm", "install"], cwd=web_dir)
+    run_command(["npm", "run", "build"], cwd=web_dir)
 
     print("\nWeb build complete. To run locally:")
-    print(f"cd web && {npm_cmd} run dev")
+    npm_info = "npm.cmd" if os.name == "nt" else "npm"
+    print(f"cd web && {npm_info} run dev")
 
 if __name__ == "__main__":
     main()
