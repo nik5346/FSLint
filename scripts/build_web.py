@@ -5,35 +5,137 @@ import shutil
 import sys
 from pathlib import Path
 
+def find_tool(cmd):
+    """Finds a tool in PATH or common Emscripten locations."""
+    resolved = shutil.which(cmd)
+    if resolved:
+        return resolved
+
+    if os.name == 'nt':
+        for ext in ['.bat', '.cmd', '.exe']:
+            resolved = shutil.which(cmd + ext)
+            if resolved:
+                return resolved
+
+    # Fallback for Emscripten tools
+    if cmd in ["emcmake", "emmake"]:
+        for env_var in ["EMSCRIPTEN", "EMSDK"]:
+            root = os.environ.get(env_var)
+            if not root:
+                continue
+
+            root_path = Path(root)
+            # Potential subdirectories where Emscripten tools might reside
+            potential_dirs = [
+                root_path,
+                root_path / "upstream" / "emscripten",
+                root_path / "bin",
+            ]
+
+            for d in potential_dirs:
+                if not d.exists():
+                    continue
+
+                cmd_path = d / cmd
+                if os.name == 'nt':
+                    for ext in ['.bat', '.cmd', '.exe']:
+                        p = d / (cmd + ext)
+                        if p.exists():
+                            return str(p)
+                elif cmd_path.exists():
+                    return str(cmd_path)
+
+    return None
+
+def activate_emsdk():
+    """Attempts to activate the Emscripten environment."""
+    print("--- Activating Emscripten Environment ---")
+    emsdk_roots = []
+    if os.environ.get("EMSDK"):
+        emsdk_roots.append(Path(os.environ.get("EMSDK")))
+    if os.environ.get("EMSCRIPTEN"):
+        emsdk_roots.append(Path(os.environ.get("EMSCRIPTEN")))
+
+    if not emsdk_roots:
+        print("Neither EMSDK nor EMSCRIPTEN environment variables are set.")
+        return False
+
+    # Expand search paths to include parent and grandparent directories
+    search_paths = set()
+    for root in emsdk_roots:
+        search_paths.add(root)
+        search_paths.add(root.parent)
+        search_paths.add(root.parent.parent)
+
+    env_script = None
+    for p in search_paths:
+        if not p.exists():
+            continue
+        if os.name == 'nt':
+            script = p / "emsdk_env.bat"
+        else:
+            script = p / "emsdk_env.sh"
+
+        if script.exists():
+            env_script = script
+            break
+
+    if not env_script:
+        return False
+
+    print(f"Attempting to activate Emscripten environment via {env_script}...")
+    try:
+        if os.name == 'nt':
+            # Run the batch file and then 'set' to get all environment variables
+            # We use 'call' and don't use 'check=True' because emsdk_env.bat might
+            # return non-zero exit codes even if it successfully sets variables.
+            command = f'call "{env_script}" && set'
+            result = subprocess.run(command, capture_output=True, text=True, shell=True, cwd=env_script.parent)
+
+            # If it failed but still produced output, we try to parse it anyway
+            output = result.stdout
+            if result.returncode != 0:
+                print(f"Warning: Activation script returned non-zero exit code {result.returncode}")
+                if result.stderr:
+                    print(f"Stderr: {result.stderr.strip()}")
+
+            count = 0
+            for line in output.splitlines():
+                if '=' in line:
+                    # Basic validation that it looks like an environment variable
+                    if line.startswith(('PATH=', 'EMSCRIPTEN', 'EMSDK', 'BINARYEN')):
+                        key, value = line.split('=', 1)
+                        os.environ[key] = value
+                        count += 1
+
+            if count > 0:
+                print(f"Emscripten environment activated ({count} variables updated).")
+                return True
+        else:
+            # Run the shell script and then 'env' to get all environment variables
+            command = f'source "{env_script}" && env'
+            result = subprocess.run(['/bin/bash', '-c', command], capture_output=True, text=True, cwd=env_script.parent)
+
+            for line in result.stdout.splitlines():
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key] = value
+
+            print("Emscripten environment activated successfully.")
+            return True
+
+        return False
+    except Exception as e:
+        print(f"Failed to activate Emscripten environment: {e}")
+        return False
+
 def check_prerequisites():
     print("--- Checking Prerequisites ---")
     prereqs = ["cmake", "npm", "emcmake", "emmake"]
     missing = []
 
-    emscripten_root = os.environ.get("EMSCRIPTEN")
-
     for cmd in prereqs:
-        resolved = shutil.which(cmd)
-
-        # Fallback to EMSCRIPTEN environment variable for emscripten tools
-        if not resolved and emscripten_root and cmd in ["emcmake", "emmake"]:
-            root_path = Path(emscripten_root)
-            cmd_path = root_path / cmd
-            if os.name == 'nt':
-                for ext in ['.bat', '.cmd', '.exe']:
-                    if (root_path / (cmd + ext)).exists():
-                        resolved = str(root_path / (cmd + ext))
-                        break
-            elif cmd_path.exists():
-                resolved = str(cmd_path)
-
-        if not resolved and os.name == 'nt' and not (emscripten_root and cmd in ["emcmake", "emmake"]):
-            for ext in ['.bat', '.cmd', '.exe']:
-                if shutil.which(cmd + ext):
-                    resolved = True
-                    break
-
-        if not resolved:
+        if not find_tool(cmd):
             missing.append(cmd)
 
     if missing:
@@ -51,32 +153,10 @@ def run_command(command, cwd=None):
     cmd_name = command[0]
 
     # Try to resolve the executable path
-    resolved_cmd = shutil.which(cmd_name)
-
-    # Fallback to EMSCRIPTEN environment variable
-    emscripten_root = os.environ.get("EMSCRIPTEN")
-    if not resolved_cmd and emscripten_root and cmd_name in ["emcmake", "emmake"]:
-        root_path = Path(emscripten_root)
-        if os.name == 'nt':
-            for ext in ['.bat', '.cmd', '.exe']:
-                potential_path = root_path / (cmd_name + ext)
-                if potential_path.exists():
-                    resolved_cmd = str(potential_path)
-                    break
-        else:
-            potential_path = root_path / cmd_name
-            if potential_path.exists():
-                resolved_cmd = str(potential_path)
+    resolved_cmd = find_tool(cmd_name)
 
     if resolved_cmd:
         command[0] = resolved_cmd
-    elif os.name == 'nt':
-        # On Windows, try common extensions if not found
-        for ext in ['.bat', '.cmd', '.exe']:
-            resolved_cmd = shutil.which(cmd_name + ext)
-            if resolved_cmd:
-                command[0] = resolved_cmd
-                break
 
     if os.name == 'nt':
         # On Windows, use list2cmdline and shell=True for better compatibility with batch files and PATH
@@ -97,7 +177,10 @@ def main():
     # Get the workspace root (parent of the scripts directory)
     workspace_root = Path(__file__).parent.parent.resolve()
 
-    # 0. Check Prerequisites
+    # 0. Activate Emscripten environment
+    activate_emsdk()
+
+    # 1. Check Prerequisites
     check_prerequisites()
 
     build_wasm_dir = workspace_root / "build-wasm"
