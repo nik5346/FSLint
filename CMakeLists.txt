@@ -471,7 +471,12 @@ if(EMSCRIPTEN)
     target_link_options(FSLint-cli PRIVATE
         "-sWASM=1"
         "-sALLOW_MEMORY_GROWTH=1"
-        "-sEXIT_RUNTIME=1"
+        "-sEXIT_RUNTIME=0"
+        "-sMODULARIZE=1"
+        "-sEXPORT_NAME=createFSLintModule"
+        "-sINVOKE_RUN=0"
+        "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain']"
+        "--preload-file ${CMAKE_SOURCE_DIR}/standard@/standard"
     )
 endif()
 
