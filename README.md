@@ -36,7 +36,7 @@ FSLint can also be built as a WebAssembly-powered web application:
 
 ```bash
 # Requires Emscripten and Node.js
-./scripts/build_web.sh
+python scripts/build_web.py
 ```
 
 To run the web interface locally after building:
