@@ -188,15 +188,23 @@ jobs:
     - name: Build
       run: emmake cmake --build build-wasm --config Release --target FSLint-cli
 
+    - name: Build Web App
+      run: |
+        mkdir -p web/public
+        cp build-wasm/FSLint-cli.js web/public/FSLint-cli-wasm.js
+        cp build-wasm/FSLint-cli.wasm web/public/
+        cp build-wasm/FSLint-cli.data web/public/ || true
+        cd web
+        npm install
+        npm run build
+
     - name: Prepare Artifact
       run: |
         mkdir -p dist
-        cp build-wasm/FSLint-cli.js dist/FSLint-cli-wasm.js
-        cp build-wasm/FSLint-cli.wasm dist/
-        cp -r standard dist/
+        cp -r web/dist/* dist/
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: FSLint-cli-wasm
+        name: FSLint-web-app
         path: dist/
