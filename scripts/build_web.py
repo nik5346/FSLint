@@ -10,9 +10,24 @@ def check_prerequisites():
     prereqs = ["cmake", "npm", "emcmake", "emmake"]
     missing = []
 
+    emscripten_root = os.environ.get("EMSCRIPTEN")
+
     for cmd in prereqs:
         resolved = shutil.which(cmd)
-        if not resolved and os.name == 'nt':
+
+        # Fallback to EMSCRIPTEN environment variable for emscripten tools
+        if not resolved and emscripten_root and cmd in ["emcmake", "emmake"]:
+            root_path = Path(emscripten_root)
+            cmd_path = root_path / cmd
+            if os.name == 'nt':
+                for ext in ['.bat', '.cmd', '.exe']:
+                    if (root_path / (cmd + ext)).exists():
+                        resolved = str(root_path / (cmd + ext))
+                        break
+            elif cmd_path.exists():
+                resolved = str(cmd_path)
+
+        if not resolved and os.name == 'nt' and not (emscripten_root and cmd in ["emcmake", "emmake"]):
             for ext in ['.bat', '.cmd', '.exe']:
                 if shutil.which(cmd + ext):
                     resolved = True
@@ -37,6 +52,22 @@ def run_command(command, cwd=None):
 
     # Try to resolve the executable path
     resolved_cmd = shutil.which(cmd_name)
+
+    # Fallback to EMSCRIPTEN environment variable
+    emscripten_root = os.environ.get("EMSCRIPTEN")
+    if not resolved_cmd and emscripten_root and cmd_name in ["emcmake", "emmake"]:
+        root_path = Path(emscripten_root)
+        if os.name == 'nt':
+            for ext in ['.bat', '.cmd', '.exe']:
+                potential_path = root_path / (cmd_name + ext)
+                if potential_path.exists():
+                    resolved_cmd = str(potential_path)
+                    break
+        else:
+            potential_path = root_path / cmd_name
+            if potential_path.exists():
+                resolved_cmd = str(potential_path)
+
     if resolved_cmd:
         command[0] = resolved_cmd
     elif os.name == 'nt':
