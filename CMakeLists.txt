@@ -522,6 +522,9 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME PythonBindingsTest
              COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/python/test_bindings.py
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    # scikit-build-core might use a different build directory, but for regular CMake builds
+    # the module is in the root of the binary directory.
+    set_tests_properties(PythonBindingsTest PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}")
 endif()
 
 # Copy test data to build directory
@@ -582,6 +585,12 @@ endif()
 # ============================================================================
 install(TARGETS FSLint-cli DESTINATION bin)
 if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
-    install(TARGETS fslint DESTINATION bin)
+    # When building as a Python wheel, we want to install the module to the root
+    # of the package. scikit-build-core handles the destination.
+    install(TARGETS fslint
+            COMPONENT python_bindings
+            LIBRARY DESTINATION .
+            RUNTIME DESTINATION .
+            ARCHIVE DESTINATION .)
 endif()
 install(DIRECTORY standard DESTINATION bin)

@@ -236,3 +236,31 @@ jobs:
       with:
         name: FSLint-web-app
         path: dist/
+
+  build-python:
+    name: Build Python Wheels on ${{ matrix.os }}
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.17.0
+        env:
+          # Build C++23 code
+          CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=12.0
+          # Skip 32-bit builds and some others
+          CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* *-win32 *_i686 *-musllinux_*"
+          # Test the wheels
+          CIBW_TEST_COMMAND: "python {project}/tests/python/test_bindings.py"
+
+      - name: Upload Wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: FSLint-python-wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
