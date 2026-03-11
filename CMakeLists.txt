@@ -1,5 +1,5 @@
 # CMakeLists.txt - Using just zlib with its included minizip
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18)
 project(FSLint VERSION 0.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -7,8 +7,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-# Force static linking for all dependencies fetched via FetchContent
+# Force static linking for all dependencies
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+
+# Prevent dependencies from creating install rules that might conflict or fail
+macro(install)
+    if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+        cmake_language(CALL install ${ARGN})
+    endif()
+endmacro()
 
 # ============================================================================
 # Compiler-specific options
@@ -317,6 +324,15 @@ set(LIBXML2_WITH_LZMA OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_HTTP OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_FTP OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_THREADS ON CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_ZLIB OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_LZMA OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_ICONV OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_PYTHON OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_TESTS OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_ZLIB OFF CACHE BOOL "" FORCE) # Avoid export conflicts with internal zlib
+set(LIBXML2_WITH_LZMA OFF CACHE BOOL "" FORCE)
+set(LIBXML2_WITH_ICONV OFF CACHE BOOL "" FORCE)
 
 # Disable warnings for libxml2 compilation
 set(CMAKE_C_FLAGS_BACKUP "${CMAKE_C_FLAGS}")
@@ -332,13 +348,7 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
-# We don't use FetchContent_MakeAvailable(libxml2) here because we need the
-# dummy install macro to be active when add_subdirectory is called.
-FetchContent_GetProperties(libxml2)
-if(NOT libxml2_POPULATED)
-    FetchContent_Populate(libxml2)
-    add_subdirectory(${libxml2_SOURCE_DIR} ${libxml2_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+FetchContent_MakeAvailable(libxml2)
 
 # Restore warning flags after libxml2
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -378,20 +388,7 @@ set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
 set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(picosha2)
-
-# Use EXCLUDE_FROM_ALL to prevent dependency installation
-FetchContent_GetProperties(Catch2)
-if(NOT Catch2_POPULATED)
-    FetchContent_Populate(Catch2)
-    add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
-FetchContent_GetProperties(pybind11)
-if(NOT pybind11_POPULATED)
-    FetchContent_Populate(pybind11)
-    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+FetchContent_MakeAvailable(picosha2 Catch2 pybind11)
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
