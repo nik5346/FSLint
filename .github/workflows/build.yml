@@ -193,7 +193,6 @@ jobs:
         mkdir -p dist-wasm
         cp build-wasm/FSLint-cli.js dist-wasm/FSLint-cli-wasm.js
         cp build-wasm/FSLint-cli.wasm dist-wasm/
-        cp build-wasm/FSLint-cli.data dist-wasm/ || true
 
     - name: Upload WASM Artifacts
       uses: actions/upload-artifact@v4
@@ -251,12 +250,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
+        uses: pypa/cibuildwheel@v2.22.0
         env:
           # Build C++23 code
           CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=12.0
+          # Use a newer manylinux for C++23 support
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           # Skip 32-bit builds and some others
           CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* *-win32 *_i686 *-musllinux_*"
+          # Increase verbosity
+          CIBW_BUILD_VERBOSITY: 1
           # Test the wheels
           CIBW_TEST_COMMAND: "python {project}/tests/python/test_bindings.py"
 
@@ -265,34 +269,3 @@ jobs:
         with:
           name: FSLint-python-wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
-
-  deploy-web:
-    name: Deploy Web App
-    needs: build-web
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Download Web App
-        uses: actions/download-artifact@v4
-        with:
-          name: FSLint-web-app
-          path: './web-dist'
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './web-dist'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
