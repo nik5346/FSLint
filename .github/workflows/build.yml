@@ -276,6 +276,22 @@ jobs:
             runner: macos-latest
             cibw_arch: arm64
 
+    env:
+      # Use venv instead of virtualenv to avoid HTTP 429 errors during setup
+      CIBW_VIRTUALENV_COMMAND: "python -m venv"
+      # Build C++23 code
+      CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=12.0
+      # Use a newer manylinux for C++23 support
+      CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+      CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+      # Skip 32-bit builds, PyPy, and old Python versions
+      CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* *-win32 *_i686 *-musllinux_* pp*"
+      # Increase verbosity and network robustness
+      CIBW_BUILD_VERBOSITY: 1
+      PIP_RETRIES: 10
+      # Test the wheels
+      CIBW_TEST_COMMAND: "python {project}/tests/python/test_bindings.py"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -290,19 +306,6 @@ jobs:
         env:
           # Target the specific architecture
           CIBW_ARCHS: ${{ matrix.cibw_arch }}
-          # Use venv instead of virtualenv to avoid HTTP 429 errors during setup
-          CIBW_VIRTUALENV_COMMAND: "python -m venv"
-          # Build C++23 code
-          CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=12.0
-          # Use a newer manylinux for C++23 support
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
-          # Skip 32-bit builds and some others
-          CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* *-win32 *_i686 *-musllinux_*"
-          # Increase verbosity
-          CIBW_BUILD_VERBOSITY: 1
-          # Test the wheels
-          CIBW_TEST_COMMAND: "python {project}/tests/python/test_bindings.py"
 
       - name: Upload Wheels
         uses: actions/upload-artifact@v4

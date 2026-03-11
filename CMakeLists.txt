@@ -10,12 +10,6 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Force static linking for all dependencies fetched via FetchContent
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
-# Dependencies (libxml2, Catch2) have issues when installed alongside our static internal targets
-# because they try to export targets that depend on our internal zlibstatic.
-# We define a dummy install macro to skip all installation rules in dependencies.
-macro(install)
-endmacro()
-
 # ============================================================================
 # Compiler-specific options
 # ============================================================================
@@ -323,9 +317,6 @@ set(LIBXML2_WITH_LZMA OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_HTTP OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_FTP OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_THREADS ON CACHE BOOL "" FORCE)
-# Use a separate install prefix for dependencies to avoid export issues
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/dependency_install")
-
 
 # Disable warnings for libxml2 compilation
 set(CMAKE_C_FLAGS_BACKUP "${CMAKE_C_FLAGS}")
@@ -382,7 +373,25 @@ FetchContent_Declare(
   GIT_TAG        v2.12.0
 )
 
-FetchContent_MakeAvailable(picosha2 Catch2 pybind11)
+# Prevent dependencies from installing
+set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
+set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(picosha2)
+
+# Use EXCLUDE_FROM_ALL to prevent dependency installation
+FetchContent_GetProperties(Catch2)
+if(NOT Catch2_POPULATED)
+    FetchContent_Populate(Catch2)
+    add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+FetchContent_GetProperties(pybind11)
+if(NOT pybind11_POPULATED)
+    FetchContent_Populate(pybind11)
+    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
