@@ -193,6 +193,7 @@ jobs:
         mkdir -p dist-wasm
         cp build-wasm/FSLint-cli.js dist-wasm/FSLint-cli-wasm.js
         cp build-wasm/FSLint-cli.wasm dist-wasm/
+        cp build-wasm/FSLint-cli.data dist-wasm/ || true
 
     - name: Upload WASM Artifacts
       uses: actions/upload-artifact@v4
@@ -264,3 +265,34 @@ jobs:
         with:
           name: FSLint-python-wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
+
+  deploy-web:
+    name: Deploy Web App
+    needs: build-web
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download Web App
+        uses: actions/download-artifact@v4
+        with:
+          name: FSLint-web-app
+          path: './web-dist'
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './web-dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
