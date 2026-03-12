@@ -220,11 +220,17 @@ endif()
 set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
-# Prevent zlib from adding its own install rules
+# Use EXCLUDE_FROM_ALL to prevent dependency install rules from polluting our package.
+# We also set CMAKE_SKIP_INSTALL_RULES to ensure these subdirectories don't generate
+# install rules that scikit-build-core might try to follow.
 set(CMAKE_SKIP_INSTALL_RULES_BACKUP ${CMAKE_SKIP_INSTALL_RULES})
 set(CMAKE_SKIP_INSTALL_RULES ON)
-FetchContent_MakeAvailable(zlib)
-set(CMAKE_SKIP_INSTALL_RULES ${CMAKE_SKIP_INSTALL_RULES_BACKUP})
+
+FetchContent_GetProperties(zlib)
+if(NOT zlib_POPULATED)
+    FetchContent_Populate(zlib)
+    add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # Restore warning flags after zlib
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -341,11 +347,12 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_BACKUP}")
 
-# Prevent libxml2 from adding its own install rules
-set(CMAKE_SKIP_INSTALL_RULES_BACKUP ${CMAKE_SKIP_INSTALL_RULES})
-set(CMAKE_SKIP_INSTALL_RULES ON)
-FetchContent_MakeAvailable(libxml2)
-set(CMAKE_SKIP_INSTALL_RULES ${CMAKE_SKIP_INSTALL_RULES_BACKUP})
+# Use EXCLUDE_FROM_ALL to prevent dependency install rules from polluting our package
+FetchContent_GetProperties(libxml2)
+if(NOT libxml2_POPULATED)
+    FetchContent_Populate(libxml2)
+    add_subdirectory(${libxml2_SOURCE_DIR} ${libxml2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # Disable clang-tidy for libxml2 (the actual library target, not the alias)
 if(TARGET xml2)
@@ -381,9 +388,23 @@ set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
 set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
 
-set(CMAKE_SKIP_INSTALL_RULES_BACKUP ${CMAKE_SKIP_INSTALL_RULES})
-set(CMAKE_SKIP_INSTALL_RULES ON)
-FetchContent_MakeAvailable(picosha2 Catch2 pybind11)
+FetchContent_GetProperties(picosha2)
+if(NOT picosha2_POPULATED)
+    FetchContent_Populate(picosha2)
+endif()
+
+FetchContent_GetProperties(Catch2)
+if(NOT catch2_POPULATED)
+    FetchContent_Populate(Catch2)
+    add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+FetchContent_GetProperties(pybind11)
+if(NOT pybind11_POPULATED)
+    FetchContent_Populate(pybind11)
+    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
 set(CMAKE_SKIP_INSTALL_RULES ${CMAKE_SKIP_INSTALL_RULES_BACKUP})
 
 # ============================================================================
