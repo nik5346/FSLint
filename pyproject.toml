@@ -1,0 +1,20 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11", "ninja", "cmake"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "fslint"
+version = "0.0.1"
+description = "FMI and SSP Linter Python Bindings"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    { name = "FSLint Contributors" },
+]
+license = { text = "MIT" }
+
+[tool.scikit-build]
+cmake.version = ">=3.15"
+ninja.version = ">=1.10"
+build-dir = "build/{wheel_tag}"
+install.components = ["python_bindings"]

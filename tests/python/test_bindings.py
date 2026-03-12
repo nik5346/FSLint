@@ -2,10 +2,6 @@ import os
 import sys
 import unittest
 
-# Add the build directory to the path so we can import fslint
-build_dir = os.path.join(os.getcwd(), 'build')
-sys.path.append(build_dir)
-
 import fslint
 
 class TestFSLintBindings(unittest.TestCase):

@@ -170,6 +170,82 @@ jobs:
         name: FSLint-cli-${{ matrix.short_os }}-${{ matrix.arch }}
         path: dist/
 
+  build-python:
+    name: Build Python Wheels on ${{ matrix.os }} (${{ matrix.arch }})
+    needs: lint
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            short_os: windows
+            arch: x64
+            runner: windows-latest
+            cibw_arch: AMD64
+          - os: windows-latest
+            short_os: windows
+            arch: arm64
+            runner: windows-latest
+            cibw_arch: ARM64
+          - os: ubuntu-latest
+            short_os: linux
+            arch: x64
+            runner: ubuntu-latest
+            cibw_arch: x86_64
+          - os: ubuntu-latest
+            short_os: linux
+            arch: arm64
+            runner: ubuntu-latest
+            cibw_arch: aarch64
+          - os: macos-latest
+            short_os: darwin
+            arch: x64
+            runner: macos-latest
+            cibw_arch: x86_64
+          - os: macos-latest
+            short_os: darwin
+            arch: arm64
+            runner: macos-latest
+            cibw_arch: arm64
+
+    env:
+      # Use venv instead of virtualenv to avoid HTTP 429 errors during setup
+      CIBW_VIRTUALENV_COMMAND: "python -m venv"
+      # Build C++23 code
+      CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=12.0
+      # Use a newer manylinux for C++23 support
+      CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+      CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+      # Skip 32-bit builds, PyPy, and old Python versions
+      CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* *-win32 *_i686 *-musllinux_* pp*"
+      # Increase verbosity and network robustness
+      CIBW_BUILD_VERBOSITY: 1
+      PIP_RETRIES: 10
+      # Test the wheels
+      CIBW_TEST_COMMAND: "python {project}/tests/python/test_bindings.py"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.22.0
+        env:
+          # Target the specific architecture
+          CIBW_ARCHS: ${{ matrix.cibw_arch }}
+
+      - name: Upload Wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: FSLint-python-wheels-${{ matrix.short_os }}-${{ matrix.arch }}
+          path: ./wheelhouse/*.whl
+
   build-wasm:
     name: Build WASM
     needs: lint
