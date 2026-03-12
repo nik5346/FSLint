@@ -22,7 +22,7 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter)
 
 # ============================================================================
 # Generate VS Code launch.json from template
@@ -370,16 +370,9 @@ FetchContent_Declare(
   GIT_TAG        v3.4.0
 )
 
-FetchContent_Declare(
-  pybind11
-  GIT_REPOSITORY https://github.com/pybind/pybind11.git
-  GIT_TAG        v2.12.0
-)
-
 # Prevent dependencies from installing
 set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
 set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
-set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
 
 FetchContent_GetProperties(picosha2)
 if(NOT picosha2_POPULATED)
@@ -390,12 +383,6 @@ FetchContent_GetProperties(Catch2)
 if(NOT catch2_POPULATED)
     FetchContent_Populate(Catch2)
     add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
-FetchContent_GetProperties(pybind11)
-if(NOT pybind11_POPULATED)
-    FetchContent_Populate(pybind11)
-    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
 # ============================================================================
@@ -532,12 +519,6 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(FSLint-tests)
 
-if(Python3_Interpreter_FOUND)
-    add_test(NAME PythonBindingsTest
-             COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/python/test_bindings.py
-             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    set_tests_properties(PythonBindingsTest PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}")
-endif()
 
 # Copy test data to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
@@ -569,48 +550,7 @@ target_compile_definitions(FSLint-cli PRIVATE
 )
 
 # ============================================================================
-# Python bindings
-# ============================================================================
-if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
-    pybind11_add_module(fslint python/bindings.cpp)
-    target_link_libraries(fslint PRIVATE FSLint-core)
-    target_include_directories(fslint PRIVATE core)
-
-    target_compile_definitions(fslint PRIVATE
-        PROJECT_VERSION="${CMAKE_PROJECT_VERSION}"
-        PROJECT_VERSION_MAJOR=${CMAKE_PROJECT_VERSION_MAJOR}
-        PROJECT_VERSION_MINOR=${CMAKE_PROJECT_VERSION_MINOR}
-        PROJECT_VERSION_PATCH=${CMAKE_PROJECT_VERSION_PATCH}
-    )
-
-    # Set output name to just 'fslint' (the .so/.pyd will have the appropriate suffix)
-    set_target_properties(fslint PROPERTIES OUTPUT_NAME "fslint")
-
-    # Hide all internal symbols to prevent conflicts and keep the wheel clean.
-    # This is crucial for passing 'auditwheel repair' on Linux.
-    set_target_properties(fslint PROPERTIES
-        CXX_VISIBILITY_PRESET hidden
-        VISIBILITY_INLINES_HIDDEN ON
-    )
-endif()
-
-# ============================================================================
 # Install
 # ============================================================================
 install(TARGETS FSLint-cli DESTINATION bin)
 install(DIRECTORY standard DESTINATION bin)
-
-if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
-    # When building as a Python wheel, we want to install the module to the root
-    # of the package. scikit-build-core handles the destination.
-    install(TARGETS fslint
-            COMPONENT python_bindings
-            LIBRARY DESTINATION .
-            RUNTIME DESTINATION .
-            ARCHIVE DESTINATION .)
-
-    # Include the 'standard' directory in the Python package for schema validation
-    install(DIRECTORY standard
-            COMPONENT python_bindings
-            DESTINATION .)
-endif()
