@@ -220,7 +220,11 @@ endif()
 set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
+# Prevent zlib from adding its own install rules
+set(CMAKE_SKIP_INSTALL_RULES_BACKUP ${CMAKE_SKIP_INSTALL_RULES})
+set(CMAKE_SKIP_INSTALL_RULES ON)
 FetchContent_MakeAvailable(zlib)
+set(CMAKE_SKIP_INSTALL_RULES ${CMAKE_SKIP_INSTALL_RULES_BACKUP})
 
 # Restore warning flags after zlib
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -333,11 +337,15 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
-FetchContent_MakeAvailable(libxml2)
-
 # Restore warning flags after libxml2
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_BACKUP}")
+
+# Prevent libxml2 from adding its own install rules
+set(CMAKE_SKIP_INSTALL_RULES_BACKUP ${CMAKE_SKIP_INSTALL_RULES})
+set(CMAKE_SKIP_INSTALL_RULES ON)
+FetchContent_MakeAvailable(libxml2)
+set(CMAKE_SKIP_INSTALL_RULES ${CMAKE_SKIP_INSTALL_RULES_BACKUP})
 
 # Disable clang-tidy for libxml2 (the actual library target, not the alias)
 if(TARGET xml2)
@@ -373,7 +381,10 @@ set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
 set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
 
+set(CMAKE_SKIP_INSTALL_RULES_BACKUP ${CMAKE_SKIP_INSTALL_RULES})
+set(CMAKE_SKIP_INSTALL_RULES ON)
 FetchContent_MakeAvailable(picosha2 Catch2 pybind11)
+set(CMAKE_SKIP_INSTALL_RULES ${CMAKE_SKIP_INSTALL_RULES_BACKUP})
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
@@ -569,6 +580,13 @@ if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
 
     # Set output name to just 'fslint' (the .so/.pyd will have the appropriate suffix)
     set_target_properties(fslint PROPERTIES OUTPUT_NAME "fslint")
+
+    # Hide all internal symbols to prevent conflicts and keep the wheel clean.
+    # This is crucial for passing 'auditwheel repair' on Linux.
+    set_target_properties(fslint PROPERTIES
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
+    )
 endif()
 
 # ============================================================================

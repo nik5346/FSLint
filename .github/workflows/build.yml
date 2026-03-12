@@ -224,6 +224,8 @@ jobs:
       PIP_RETRIES: 10
       # Test the wheels
       CIBW_TEST_COMMAND: "python {project}/tests/python/test_bindings.py"
+      # Increase repair verbosity
+      CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel -v repair -w {dest_dir} {wheel}"
 
     steps:
       - uses: actions/checkout@v4
