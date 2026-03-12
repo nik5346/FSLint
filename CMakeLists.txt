@@ -10,12 +10,6 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Force static linking for all dependencies fetched via FetchContent
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
-# Dependencies (libxml2, Catch2) have issues when installed alongside our static internal targets
-# because they try to export targets that depend on our internal zlibstatic.
-# We define a dummy install macro to skip all installation rules in dependencies.
-macro(install)
-endmacro()
-
 # ============================================================================
 # Compiler-specific options
 # ============================================================================
@@ -28,7 +22,7 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter)
 
 # ============================================================================
 # Generate VS Code launch.json from template
@@ -226,7 +220,11 @@ endif()
 set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(zlib)
+FetchContent_GetProperties(zlib)
+if(NOT zlib_POPULATED)
+    FetchContent_Populate(zlib)
+    add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # Restore warning flags after zlib
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -323,9 +321,7 @@ set(LIBXML2_WITH_LZMA OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_HTTP OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_FTP OFF CACHE BOOL "" FORCE)
 set(LIBXML2_WITH_THREADS ON CACHE BOOL "" FORCE)
-# Use a separate install prefix for dependencies to avoid export issues
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/dependency_install")
-
+set(LIBXML2_WITH_ZLIB OFF CACHE BOOL "" FORCE) # Avoid export conflicts with internal zlib
 
 # Disable warnings for libxml2 compilation
 set(CMAKE_C_FLAGS_BACKUP "${CMAKE_C_FLAGS}")
@@ -341,8 +337,6 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
-# We don't use FetchContent_MakeAvailable(libxml2) here because we need the
-# dummy install macro to be active when add_subdirectory is called.
 FetchContent_GetProperties(libxml2)
 if(NOT libxml2_POPULATED)
     FetchContent_Populate(libxml2)
@@ -376,13 +370,20 @@ FetchContent_Declare(
   GIT_TAG        v3.4.0
 )
 
-FetchContent_Declare(
-  pybind11
-  GIT_REPOSITORY https://github.com/pybind/pybind11.git
-  GIT_TAG        v2.12.0
-)
+# Prevent dependencies from installing
+set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
+set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(picosha2 Catch2 pybind11)
+FetchContent_GetProperties(picosha2)
+if(NOT picosha2_POPULATED)
+    FetchContent_Populate(picosha2)
+endif()
+
+FetchContent_GetProperties(Catch2)
+if(NOT catch2_POPULATED)
+    FetchContent_Populate(Catch2)
+    add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
@@ -518,11 +519,6 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(FSLint-tests)
 
-if(Python3_Interpreter_FOUND)
-    add_test(NAME PythonBindingsTest
-             COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/python/test_bindings.py
-             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-endif()
 
 # Copy test data to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
@@ -554,34 +550,7 @@ target_compile_definitions(FSLint-cli PRIVATE
 )
 
 # ============================================================================
-# Copy DLLs to output directory on Windows
-# ============================================================================
-# libxml2, zlib and Catch2 are linked statically or handled by discover_tests, so no need to copy DLLs manually here
-
-# ============================================================================
-# Python bindings
-# ============================================================================
-if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
-    pybind11_add_module(fslint python/bindings.cpp)
-    target_link_libraries(fslint PRIVATE FSLint-core)
-    target_include_directories(fslint PRIVATE core)
-
-    target_compile_definitions(fslint PRIVATE
-        PROJECT_VERSION="${CMAKE_PROJECT_VERSION}"
-        PROJECT_VERSION_MAJOR=${CMAKE_PROJECT_VERSION_MAJOR}
-        PROJECT_VERSION_MINOR=${CMAKE_PROJECT_VERSION_MINOR}
-        PROJECT_VERSION_PATCH=${CMAKE_PROJECT_VERSION_PATCH}
-    )
-
-    # Set output name to just 'fslint' (the .so/.pyd will have the appropriate suffix)
-    set_target_properties(fslint PROPERTIES OUTPUT_NAME "fslint")
-endif()
-
-# ============================================================================
 # Install
 # ============================================================================
 install(TARGETS FSLint-cli DESTINATION bin)
-if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
-    install(TARGETS fslint DESTINATION bin)
-endif()
 install(DIRECTORY standard DESTINATION bin)
