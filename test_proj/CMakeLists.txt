@@ -1,7 +1,0 @@
-cmake_minimum_required(VERSION 3.15)
-project(test_proj)
-macro(install)
-  message("Fake install called with ${ARGN}")
-endmacro()
-install(FILES CMakeLists.txt DESTINATION .)
-_install(FILES CMakeLists.txt DESTINATION .)
