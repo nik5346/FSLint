@@ -220,10 +220,11 @@ endif()
 set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
-# Suppress install rules for dependencies to keep the wheel clean
-set(CMAKE_SKIP_INSTALL_RULES ON)
-FetchContent_MakeAvailable(zlib)
-set(CMAKE_SKIP_INSTALL_RULES OFF)
+FetchContent_GetProperties(zlib)
+if(NOT zlib_POPULATED)
+    FetchContent_Populate(zlib)
+    add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # Restore warning flags after zlib
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -336,10 +337,11 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
-# Suppress install rules for dependencies
-set(CMAKE_SKIP_INSTALL_RULES ON)
-FetchContent_MakeAvailable(libxml2)
-set(CMAKE_SKIP_INSTALL_RULES OFF)
+FetchContent_GetProperties(libxml2)
+if(NOT libxml2_POPULATED)
+    FetchContent_Populate(libxml2)
+    add_subdirectory(${libxml2_SOURCE_DIR} ${libxml2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # Restore warning flags after libxml2
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -374,14 +376,27 @@ FetchContent_Declare(
   GIT_TAG        v2.12.0
 )
 
-# Prevent dependencies from installing their own files/tests
-set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
+# Prevent dependencies from installing
 set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
 set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
 
-set(CMAKE_SKIP_INSTALL_RULES ON)
-FetchContent_MakeAvailable(picosha2 Catch2 pybind11)
-set(CMAKE_SKIP_INSTALL_RULES OFF)
+FetchContent_GetProperties(picosha2)
+if(NOT picosha2_POPULATED)
+    FetchContent_Populate(picosha2)
+endif()
+
+FetchContent_GetProperties(Catch2)
+if(NOT catch2_POPULATED)
+    FetchContent_Populate(Catch2)
+    add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+FetchContent_GetProperties(pybind11)
+if(NOT pybind11_POPULATED)
+    FetchContent_Populate(pybind11)
+    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
@@ -521,6 +536,7 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME PythonBindingsTest
              COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/python/test_bindings.py
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    set_tests_properties(PythonBindingsTest PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}")
 endif()
 
 # Copy test data to build directory
@@ -553,11 +569,6 @@ target_compile_definitions(FSLint-cli PRIVATE
 )
 
 # ============================================================================
-# Copy DLLs to output directory on Windows
-# ============================================================================
-# libxml2, zlib and Catch2 are linked statically or handled by discover_tests, so no need to copy DLLs manually here
-
-# ============================================================================
 # Python bindings
 # ============================================================================
 if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
@@ -587,6 +598,8 @@ endif()
 # Install
 # ============================================================================
 install(TARGETS FSLint-cli DESTINATION bin)
+install(DIRECTORY standard DESTINATION bin)
+
 if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
     # When building as a Python wheel, we want to install the module to the root
     # of the package. scikit-build-core handles the destination.
@@ -601,4 +614,3 @@ if(Python3_Interpreter_FOUND AND Python3_Development_FOUND)
             COMPONENT python_bindings
             DESTINATION .)
 endif()
-install(DIRECTORY standard DESTINATION bin)
