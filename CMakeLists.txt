@@ -220,17 +220,10 @@ endif()
 set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
-# Use EXCLUDE_FROM_ALL to prevent dependency install rules from polluting our package.
-# We also set CMAKE_SKIP_INSTALL_RULES to ensure these subdirectories don't generate
-# install rules that scikit-build-core might try to follow.
-set(CMAKE_SKIP_INSTALL_RULES_BACKUP ${CMAKE_SKIP_INSTALL_RULES})
+# Suppress install rules for dependencies to keep the wheel clean
 set(CMAKE_SKIP_INSTALL_RULES ON)
-
-FetchContent_GetProperties(zlib)
-if(NOT zlib_POPULATED)
-    FetchContent_Populate(zlib)
-    add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+FetchContent_MakeAvailable(zlib)
+set(CMAKE_SKIP_INSTALL_RULES OFF)
 
 # Restore warning flags after zlib
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
@@ -343,16 +336,14 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
 
+# Suppress install rules for dependencies
+set(CMAKE_SKIP_INSTALL_RULES ON)
+FetchContent_MakeAvailable(libxml2)
+set(CMAKE_SKIP_INSTALL_RULES OFF)
+
 # Restore warning flags after libxml2
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_BACKUP}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_BACKUP}")
-
-# Use EXCLUDE_FROM_ALL to prevent dependency install rules from polluting our package
-FetchContent_GetProperties(libxml2)
-if(NOT libxml2_POPULATED)
-    FetchContent_Populate(libxml2)
-    add_subdirectory(${libxml2_SOURCE_DIR} ${libxml2_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
 
 # Disable clang-tidy for libxml2 (the actual library target, not the alias)
 if(TARGET xml2)
@@ -383,29 +374,14 @@ FetchContent_Declare(
   GIT_TAG        v2.12.0
 )
 
-# Prevent dependencies from installing
+# Prevent dependencies from installing their own files/tests
+set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
 set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
 set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
-set(PYBIND11_INSTALL OFF CACHE BOOL "" FORCE)
 
-FetchContent_GetProperties(picosha2)
-if(NOT picosha2_POPULATED)
-    FetchContent_Populate(picosha2)
-endif()
-
-FetchContent_GetProperties(Catch2)
-if(NOT catch2_POPULATED)
-    FetchContent_Populate(Catch2)
-    add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
-FetchContent_GetProperties(pybind11)
-if(NOT pybind11_POPULATED)
-    FetchContent_Populate(pybind11)
-    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
-set(CMAKE_SKIP_INSTALL_RULES ${CMAKE_SKIP_INSTALL_RULES_BACKUP})
+set(CMAKE_SKIP_INSTALL_RULES ON)
+FetchContent_MakeAvailable(picosha2 Catch2 pybind11)
+set(CMAKE_SKIP_INSTALL_RULES OFF)
 
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
@@ -545,9 +521,6 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME PythonBindingsTest
              COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/python/test_bindings.py
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    # scikit-build-core might use a different build directory, but for regular CMake builds
-    # the module is in the root of the binary directory.
-    set_tests_properties(PythonBindingsTest PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}")
 endif()
 
 # Copy test data to build directory
