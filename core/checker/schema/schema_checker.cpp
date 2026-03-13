@@ -76,6 +76,7 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
 
         // Find schema
         const auto schema_path = findSchemaPath(rule.schema_filename);
+
         if (schema_path.empty() || !std::filesystem::exists(schema_path))
         {
             const TestResult test{
@@ -378,7 +379,8 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
     return true;
 }
 
-std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schema_filename) const
+std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schema_filename,
+                                                        const std::string& version_override) const
 {
     std::filesystem::path bin_dir;
 
@@ -398,29 +400,43 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         bin_dir = std::filesystem::path(path.data()).parent_path();
     }
 #elif defined(__EMSCRIPTEN__)
-    // Under Emscripten, schemas are preloaded at /standard in the virtual filesystem
-    bin_dir = "/";
+    // Under Emscripten, schemas are preloaded at /standard in the virtual filesystem.
+    // We check for /standard to decide if we should use absolute or relative paths.
+    if (std::filesystem::exists("/standard"))
+        bin_dir = "/";
+    else
+        bin_dir = ".";
 #endif
 
     if (bin_dir.empty())
         bin_dir = std::filesystem::current_path();
 
-    std::filesystem::path schema_path =
-        bin_dir / "standard" / getStandardName() / getStandardVersion() / "schema" / schema_filename;
+    std::string version = version_override;
+    if (version.empty())
+    {
+        // Detect version from filename for FMI to handle backported schemas correctly
+        if (schema_filename.starts_with("fmi3"))
+            version = "3.0";
+        else if (schema_filename.starts_with("fmi2"))
+            version = "2.0";
+        else
+            version = getStandardVersion();
+    }
+
+    std::filesystem::path schema_path = bin_dir / "standard" / getStandardName() / version / "schema" / schema_filename;
 
     if (!std::filesystem::exists(schema_path))
     {
-        // Try fallback to current directory if binary directory didn't work (useful for Python bindings)
-        schema_path = std::filesystem::current_path() / "standard" / getStandardName() / getStandardVersion() /
-                      "schema" / schema_filename;
+        // Try fallback to current directory if binary directory didn't work
+        schema_path =
+            std::filesystem::current_path() / "standard" / getStandardName() / version / "schema" / schema_filename;
     }
 
     if (!std::filesystem::exists(schema_path))
     {
         // For Emscripten, also try without leading slash as a fallback
 #ifdef __EMSCRIPTEN__
-        schema_path =
-            std::filesystem::path("standard") / getStandardName() / getStandardVersion() / "schema" / schema_filename;
+        schema_path = std::filesystem::path("standard") / getStandardName() / version / "schema" / schema_filename;
 #endif
     }
 
