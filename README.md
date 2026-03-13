@@ -80,7 +80,7 @@ Example output:
 ╚════════════════════════════════════════════════════════════╝
 Tool:       FSLint 0.0.1
 Timestamp:  2026-02-01 17:22:28 UTC
-Model Path: /path/to/your_model/model.fmu
+Model Name: model.fmu
 SHA256:     0ad0a8b1ac49c7808aad524b171c1534c3ace783cdc1f2681dd13b0b54b8e889
 
 ┌────────────────────────────────────────┐
