@@ -292,6 +292,15 @@ def copy_artifacts():
     else:
         print(f"[WARNING] favicon not found: {favicon_src}")
 
+    # Copy banner to public folder
+    banner_src = ROOT / "images" / "banner.svg"
+    banner_dst = web_public_root / "banner.svg"
+    if banner_src.exists():
+        shutil.copy(banner_src, banner_dst)
+        print(f"  {banner_src.name} -> {banner_dst}")
+    else:
+        print(f"[WARNING] banner not found: {banner_src}")
+
 
 
 def build_web():
