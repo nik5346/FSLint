@@ -1,13 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 
+interface FSLintModule {
+  FS: {
+    writeFile: (path: string, data: Uint8Array) => void;
+    unlink: (path: string) => void;
+  };
+  callMain: (args: string[]) => void;
+}
+
 declare global {
   interface Window {
-    createFSLintModule: any;
+    createFSLintModule: (config: {
+      print: (text: string) => void;
+      printErr: (text: string) => void;
+    }) => Promise<FSLintModule>;
   }
 }
 
 function App() {
-  const [module, setModule] = useState<any>(null);
+  const [module, setModule] = useState<FSLintModule | null>(null);
   const [output, setOutput] = useState<string>('');
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,7 +57,7 @@ function App() {
     }
   };
 
-  const onDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+  const onDrop = async (event: React.DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files?.[0];
     if (file) {
@@ -80,22 +91,31 @@ function App() {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      padding: '20px',
-      boxSizing: 'border-box',
-      gap: '20px'
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        padding: '20px',
+        boxSizing: 'border-box',
+        gap: '20px',
+      }}
+    >
       <header>
         <h1 style={{ margin: 0 }}>FSLint Web</h1>
-        <p style={{ color: '#888' }}>Validate FMU (1.0, 2.0, 3.0) and SSP (1.0, 2.0) files in your browser.</p>
+        <p style={{ color: '#888' }}>
+          Validate FMU (1.0, 2.0, 3.0) and SSP (1.0, 2.0) files in your browser.
+        </p>
       </header>
 
-      <div
+      <button
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !isProcessing) {
+            document.getElementById('fileInput')?.click();
+          }
+        }}
         style={{
           border: '2px dashed #444',
           borderRadius: '8px',
@@ -103,9 +123,13 @@ function App() {
           textAlign: 'center',
           backgroundColor: '#252525',
           cursor: isReady && !isProcessing ? 'pointer' : 'wait',
-          opacity: isReady && !isProcessing ? 1 : 0.6
+          opacity: isReady && !isProcessing ? 1 : 0.6,
+          background: 'transparent',
+          color: 'inherit',
+          font: 'inherit',
         }}
         onClick={() => !isProcessing && document.getElementById('fileInput')?.click()}
+        disabled={!isReady || isProcessing}
       >
         <input
           id="fileInput"
@@ -119,7 +143,7 @@ function App() {
         ) : (
           <p>Drag & drop an FMU/SSP file here, or click to select</p>
         )}
-      </div>
+      </button>
 
       <pre
         ref={outputEndRef}
@@ -133,14 +157,15 @@ function App() {
           margin: 0,
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-all',
-          fontFamily: 'monospace'
+          fontFamily: 'monospace',
         }}
       >
         {output}
       </pre>
 
       <footer style={{ fontSize: '0.8em', color: '#666', textAlign: 'center' }}>
-        FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your browser.
+        FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your
+        browser.
       </footer>
     </div>
   );
