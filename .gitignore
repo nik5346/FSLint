@@ -2,6 +2,7 @@ build/
 build-wasm/
 web/node_modules/
 web/dist/
+web/public/
 Testing/
 models/
 *.so
