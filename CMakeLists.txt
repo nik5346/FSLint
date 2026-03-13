@@ -483,7 +483,15 @@ if(EMSCRIPTEN)
         "-sEXPORT_NAME=createFSLintModule"
         "-sINVOKE_RUN=0"
         "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain']"
-        "--preload-file ${CMAKE_SOURCE_DIR}/standard@/standard"
+        "--preload-file ${CMAKE_BINARY_DIR}/standard@/standard"
+    )
+    
+    # Copy the standard directory to web/public so it can be served by the web server
+    add_custom_command(TARGET FSLint-cli POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/standard"
+        "${CMAKE_SOURCE_DIR}/web/public/standard"
+        COMMENT "Copying schema files to web/public for server-side serving"
     )
 endif()
 

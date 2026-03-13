@@ -398,11 +398,8 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         bin_dir = std::filesystem::path(path.data()).parent_path();
     }
 #elif defined(__EMSCRIPTEN__)
-    // Under Emscripten, we look at the root directory where schemas are preloaded
-    if (std::filesystem::exists("/standard"))
-        bin_dir = "/";
-    else
-        bin_dir = ".";
+    // Under Emscripten, schemas are preloaded at /standard in the virtual filesystem
+    bin_dir = "/";
 #endif
 
     if (bin_dir.empty())
@@ -416,6 +413,15 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         // Try fallback to current directory if binary directory didn't work (useful for Python bindings)
         schema_path = std::filesystem::current_path() / "standard" / getStandardName() / getStandardVersion() /
                       "schema" / schema_filename;
+    }
+
+    if (!std::filesystem::exists(schema_path))
+    {
+        // For Emscripten, also try without leading slash as a fallback
+#ifdef __EMSCRIPTEN__
+        schema_path =
+            std::filesystem::path("standard") / getStandardName() / getStandardVersion() / "schema" / schema_filename;
+#endif
     }
 
     if (!std::filesystem::exists(schema_path))
