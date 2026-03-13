@@ -28,7 +28,10 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     if (!quiet)
     {
         const std::string hash = calculateSHA256(path);
-        cert.printMainHeader(path.string(), hash);
+        std::string model_name = path.filename().string();
+        if (model_name.empty() && path.has_parent_path())
+            model_name = path.parent_path().filename().string();
+        cert.printMainHeader(model_name, hash);
     }
 
     std::filesystem::path extract_dir;
@@ -115,7 +118,10 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 
     // Print header
     const std::string hash = calculateSHA256(path);
-    cert.printMainHeader(path.string(), hash);
+    std::string model_name = path.filename().string();
+    if (model_name.empty() && path.has_parent_path())
+        model_name = path.parent_path().filename().string();
+    cert.printMainHeader(model_name, hash);
 
     std::filesystem::path extract_dir;
     bool is_temporary = false;

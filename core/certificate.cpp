@@ -45,7 +45,7 @@ void Certificate::log(const std::string& message)
     _report_buffer.append("\n");
 }
 
-void Certificate::printMainHeader(const std::string& filename, const std::string& hash)
+void Certificate::printMainHeader(const std::string& model_name, const std::string& hash)
 {
     auto timestamp = std::chrono::system_clock::now();
     const std::time_t now_c = std::chrono::system_clock::to_time_t(timestamp);
@@ -62,7 +62,7 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╚════════════════════════════════════════════════════════════╝");
         log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log(std::format("Model Path: {}", filename));
+        log(std::format("Model Name: {}", model_name));
         log(std::format("SHA256:     {}", hash));
         return;
     }
@@ -75,7 +75,7 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╚════════════════════════════════════════════════════════════╝");
         log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log(std::format("Model Path: {}", filename));
+        log(std::format("Model Name: {}", model_name));
         log(std::format("SHA256:     {}", hash));
         return;
     }
@@ -89,7 +89,7 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
         log("╚════════════════════════════════════════════════════════════╝");
         log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
         log("Timestamp:  [Error formatting timestamp]");
-        log(std::format("Model Path: {}", filename));
+        log(std::format("Model Name: {}", model_name));
         log(std::format("SHA256:     {}", hash));
         return;
     }
@@ -99,7 +99,7 @@ void Certificate::printMainHeader(const std::string& filename, const std::string
     log("╚════════════════════════════════════════════════════════════╝");
     log(std::format("Tool:       FSLint {}", PROJECT_VERSION));
     log(std::format("Timestamp:  {}", time_str.data()));
-    log(std::format("Model Path: {}", filename));
+    log(std::format("Model Name: {}", model_name));
     log(std::format("SHA256:     {}", hash));
 }
 
