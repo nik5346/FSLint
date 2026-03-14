@@ -10,6 +10,8 @@ interface FSLintModule {
     stat: (path: string) => { mode: number };
     isFile: (mode: number) => boolean;
     isDir: (mode: number) => boolean;
+    chdir: (path: string) => void;
+    cwd: () => string;
   };
   callMain: (args: string[]) => void;
 }
@@ -29,9 +31,6 @@ async function getFilesFromEntry(entry: FileSystemEntry): Promise<File[]> {
     return new Promise((resolve, reject) => {
       (entry as FileSystemFileEntry).file(
         (file) => {
-          // We need to preserve the full path for directory processing.
-          // FileSystemFileEntry doesn't provide webkitRelativePath, but we can use fullPath.
-          // However, fullPath starts with '/', so we remove it.
           const path = entry.fullPath.startsWith('/')
             ? entry.fullPath.substring(1)
             : entry.fullPath;
@@ -109,7 +108,6 @@ function App() {
           print: (text: string) => setOutput((prev) => prev + text + '\n'),
           printErr: (text: string) => setOutput((prev) => prev + 'Error: ' + text + '\n'),
           locateFile: (path: string, prefix: string) => {
-            console.log(`Locating file: ${path} (prefix: ${prefix})`);
             if (path.endsWith('.wasm')) return prefix + 'FSLint-cli-wasm.wasm';
             return prefix + path;
           },
@@ -134,7 +132,6 @@ function App() {
     if (folderInputRef.current) {
       folderInputRef.current.setAttribute('webkitdirectory', '');
       folderInputRef.current.setAttribute('directory', '');
-      folderInputRef.current.setAttribute('mozdirectory', '');
     }
   }, []);
 
@@ -143,7 +140,6 @@ function App() {
     if (files && files.length > 0) {
       await processItems(Array.from(files));
     }
-    // Reset input value to allow selecting the same file/folder again
     event.target.value = '';
   };
 
@@ -180,8 +176,56 @@ function App() {
       } else {
         module.FS.unlink(path);
       }
-    } catch (err) {
-      console.error(`Error unlinking ${path}:`, err);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const listVFS = (path: string, indent = '') => {
+    if (!module) return;
+    try {
+      const entries = module.FS.readdir(path);
+      for (const entry of entries) {
+        if (entry === '.' || entry === '..') continue;
+        const fullPath = path === '/' ? `/${entry}` : `${path}/${entry}`;
+        const stat = module.FS.stat(fullPath);
+        if (module.FS.isDir(stat.mode)) {
+          console.log(`${indent}[DIR] ${entry}`);
+          listVFS(fullPath, indent + '  ');
+        } else {
+          console.log(`${indent}[FILE] ${entry}`);
+        }
+      }
+    } catch (e) {
+      console.error(`Failed to list VFS at ${path}:`, e);
+    }
+  };
+
+  const mkdirP = (fullPath: string) => {
+    if (!module) return;
+    const parts = fullPath.split('/').filter(Boolean);
+    let current = '';
+    for (const part of parts) {
+      current += '/' + part;
+      try {
+        const stat = module.FS.stat(current);
+        if (!module.FS.isDir(stat.mode)) {
+          throw new Error(`Path ${current} exists but is not a directory`);
+        }
+      } catch (e) {
+        const err = e as { errno?: number; name?: string };
+        if (err.errno === 2 || err.name === 'ErrnoError') {
+          // 2 is ENOENT
+          try {
+            module.FS.mkdir(current);
+          } catch (me) {
+            const mkdirErr = me as { errno?: number };
+            if (mkdirErr.errno !== 17) throw me; // 17 is EEXIST
+          }
+        } else {
+          throw err;
+        }
+      }
     }
   };
 
@@ -193,99 +237,72 @@ function App() {
 
     const timestamp = Date.now();
     const workDir = `/val_${timestamp}`;
+    const oldCwd = module.FS.cwd();
 
     try {
-      module.FS.mkdir(workDir);
+      mkdirP(workDir);
+      module.FS.chdir(workDir);
 
-      // Normalize paths and determine if we have a directory structure
-      const normalizedFiles = files.map((f) => {
-        const relPath = (f.webkitRelativePath || f.name).replace(/\\/g, '/');
-        return { file: f, relPath };
-      });
+      const normalizedFiles = files.map((f) => ({
+        file: f,
+        relPath: (f.webkitRelativePath || f.name).replace(/\\/g, '/'),
+      }));
 
-      const hasPaths = normalizedFiles.some((f) => f.relPath.includes('/'));
-
-      // Find actual FMU/SSP root by looking for modelDescription.xml or SystemStructure.ssd
+      // Root discovery
       let discoveredRootRel = '';
-      if (hasPaths) {
-        for (const f of normalizedFiles) {
-          if (
-            f.relPath.endsWith('/modelDescription.xml') ||
-            f.relPath.endsWith('/SystemStructure.ssd')
-          ) {
-            discoveredRootRel = f.relPath.substring(0, f.relPath.lastIndexOf('/'));
-            break;
-          }
-          if (f.relPath === 'modelDescription.xml' || f.relPath === 'SystemStructure.ssd') {
-            discoveredRootRel = '.';
-            break;
-          }
-        }
-        // Fallback: use the first component of the first path if not discovered
-        if (discoveredRootRel === '') {
-          discoveredRootRel = normalizedFiles[0].relPath.split('/')[0];
+      for (const f of normalizedFiles) {
+        if (
+          f.relPath.endsWith('modelDescription.xml') ||
+          f.relPath.endsWith('SystemStructure.ssd')
+        ) {
+          const lastSlash = f.relPath.lastIndexOf('/');
+          discoveredRootRel = lastSlash === -1 ? '' : f.relPath.substring(0, lastSlash);
+          break;
         }
       }
 
-      const isDirectory = hasPaths || files.length > 1;
-      let targetPath = '';
-      if (isDirectory) {
-        targetPath =
-          discoveredRootRel === '.' || discoveredRootRel === ''
-            ? workDir
-            : `${workDir}/${discoveredRootRel}`;
-      } else {
-        targetPath = `${workDir}/${normalizedFiles[0].relPath}`;
+      // If no mandatory file found, use the shortest common prefix
+      if (discoveredRootRel === '' && normalizedFiles.length > 1) {
+        const firstParts = normalizedFiles[0].relPath.split('/');
+        if (firstParts.length > 1) {
+          discoveredRootRel = firstParts[0];
+        }
       }
 
-      console.log(
-        `Processing ${files.length} files. isDirectory: ${isDirectory}, targetPath: ${targetPath}, workDir: ${workDir}, discoveredRootRel: ${discoveredRootRel}`,
-      );
+      console.log(`Working directory: ${workDir}`);
+      console.log(`Discovered root relative path: "${discoveredRootRel}"`);
 
       for (const { file, relPath } of normalizedFiles) {
-        const fullPath = `${workDir}/${relPath}`;
-
-        // Ensure parent directories exist
-        const lastSlashIndex = fullPath.lastIndexOf('/');
-        if (lastSlashIndex > 0) {
-          const dirPath = fullPath.substring(0, lastSlashIndex);
-          const parts = dirPath.split('/').filter(Boolean);
-          let current = '/';
-          for (const part of parts) {
-            current += part;
-            try {
-              module.FS.mkdir(current);
-            } catch (err) {
-              const e = err as { errno?: number };
-              if (e.errno !== 17) throw err;
-            }
-            current += '/';
-          }
+        const lastSlash = relPath.lastIndexOf('/');
+        if (lastSlash !== -1) {
+          mkdirP(`${workDir}/${relPath.substring(0, lastSlash)}`);
         }
-
-        const arrayBuffer = await file.arrayBuffer();
-        const data = new Uint8Array(arrayBuffer);
-        module.FS.writeFile(fullPath, data);
+        const data = new Uint8Array(await file.arrayBuffer());
+        module.FS.writeFile(`${workDir}/${relPath}`, data);
       }
 
-      console.log(`Calling main with: ${targetPath}`);
-      module.callMain([targetPath]);
+      console.log('Reconstructed VFS structure:');
+      listVFS(workDir);
+
+      const target = discoveredRootRel || '.';
+      console.log(`Executing main with target: "${target}"`);
+
+      module.callMain([target]);
     } catch (err) {
       let errorMessage: string;
       if (err instanceof Error) {
-        errorMessage = `${err.name}: ${err.message}`;
-        if (err.stack) errorMessage += `\nStack: ${err.stack}`;
+        errorMessage = `${err.name}: ${err.message}\nStack: ${err.stack}`;
       } else if (typeof err === 'object' && err !== null) {
-        const details = Object.entries(err)
+        errorMessage = Object.entries(err)
           .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
           .join(', ');
-        errorMessage = details || JSON.stringify(err);
       } else {
         errorMessage = String(err);
       }
       setOutput((prev) => prev + 'Error during validation: ' + errorMessage + '\n');
     } finally {
       try {
+        module.FS.chdir(oldCwd);
         recursiveUnlink(workDir);
       } catch (e) {
         console.error('Cleanup failed:', e);
@@ -405,7 +422,6 @@ function App() {
           )}
         </div>
 
-        {/* Top-right controls — stretch to full header height, stacked vertically */}
         <div
           style={{
             display: 'flex',
@@ -415,7 +431,6 @@ function App() {
             alignSelf: 'stretch',
           }}
         >
-          {/* GitHub button */}
           <a
             href="https://github.com/nik5346/FSLint"
             target="_blank"
@@ -439,13 +454,11 @@ function App() {
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.buttonHoverBg)}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
-            {/* GitHub logo */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
             </svg>
           </a>
 
-          {/* Theme toggle button */}
           <button
             onClick={() => setIsDark((d) => !d)}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -467,7 +480,6 @@ function App() {
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             {isDark ? (
-              // Sun icon for light mode
               <svg
                 width="16"
                 height="16"
@@ -489,7 +501,6 @@ function App() {
                 <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
               </svg>
             ) : (
-              // Moon icon for dark mode
               <svg
                 width="16"
                 height="16"
