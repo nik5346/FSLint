@@ -193,7 +193,6 @@ jobs:
           mkdir -p dist-wasm
           cp build-wasm/FSLint-cli.js dist-wasm/FSLint-cli-wasm.js
           cp build-wasm/FSLint-cli.wasm dist-wasm/FSLint-cli-wasm.wasm
-          cp build-wasm/FSLint-cli.data dist-wasm/FSLint-cli-wasm.data || true
 
       - name: Upload WASM Artifacts
         uses: actions/upload-artifact@v4

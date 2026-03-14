@@ -57,7 +57,6 @@ function App() {
           locateFile: (path: string, prefix: string) => {
             console.log(`Locating file: ${path} (prefix: ${prefix})`);
             if (path.endsWith('.wasm')) return prefix + 'FSLint-cli-wasm.wasm';
-            if (path.endsWith('.data')) return prefix + 'FSLint-cli-wasm.data';
             return prefix + path;
           },
         });

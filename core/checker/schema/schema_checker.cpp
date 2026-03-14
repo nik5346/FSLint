@@ -514,7 +514,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     for (const auto& candidate : candidates)
         std::cerr << "    - " << candidate.string() << "\n";
 
-    // Debug: List /standard directory if it exists
+    // Debug: List /standard directory if it exists, otherwise list root
     if (std::filesystem::exists("/standard"))
     {
         std::cerr << "  Contents of /standard:\n";
@@ -523,7 +523,9 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     }
     else
     {
-        std::cerr << "  /standard directory does NOT exist in VFS.\n";
+        std::cerr << "  /standard directory does NOT exist in VFS. Listing root /:\n";
+        for (const auto& entry : std::filesystem::recursive_directory_iterator("/"))
+            std::cerr << "    " << entry.path().string() << "\n";
     }
 #endif
 

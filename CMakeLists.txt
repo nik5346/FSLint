@@ -457,7 +457,6 @@ add_executable(FSLint-cli
 )
 
 if(EMSCRIPTEN)
-    file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/standard" STANDARD_DIR_CMAKE)
     target_link_options(FSLint-cli PRIVATE
         "-sWASM=1"
         "-sALLOW_MEMORY_GROWTH=1"
@@ -466,7 +465,7 @@ if(EMSCRIPTEN)
         "-sEXPORT_NAME=createFSLintModule"
         "-sINVOKE_RUN=0"
         "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain']"
-        "--preload-file ${STANDARD_DIR_CMAKE}@/standard"
+        "--embed-file" "${CMAKE_SOURCE_DIR}/standard@/standard"
     )
     
     # Copy the standard directory to web/public so it can be served by the web server

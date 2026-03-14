@@ -200,7 +200,7 @@ def clean():
                       onexc=on_err if sys.version_info >= (3, 12) else None,
                       onerror=None if sys.version_info >= (3, 12) else on_err)
 
-    for name in ("FSLint-cli-wasm.js", "FSLint-cli-wasm.wasm", "FSLint-cli-wasm.data"):
+    for name in ("FSLint-cli-wasm.js", "FSLint-cli-wasm.wasm"):
         f = WEB_PUBLIC / name
         if f.exists():
             f.unlink()
@@ -244,12 +244,11 @@ def copy_artifacts():
     artifacts = {
         "FSLint-cli.js":   "FSLint-cli-wasm.js",
         "FSLint-cli.wasm": "FSLint-cli-wasm.wasm",
-        "FSLint-cli.data": "FSLint-cli-wasm.data",
     }
 
     for src_name, dst_name in artifacts.items():
         src = BUILD_DIR / src_name
-        if src_name != "FSLint-cli.data" and not src.exists():
+        if not src.exists():
             print(f"[ERROR] expected output not found: {src}")
             sys.exit(1)
 
