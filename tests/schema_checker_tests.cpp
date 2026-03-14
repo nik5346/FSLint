@@ -85,6 +85,14 @@ TEST_CASE("Schema Path Discovery", "[schema][path]")
         CHECK(!path.empty());
         CHECK(std::filesystem::exists(path));
     }
+
+    SECTION("SSP 2.0")
+    {
+        checker.setStandard("ssp", "2.0");
+        auto path = checker.findSchemaPath("SystemStructureDescription.xsd");
+        CHECK(!path.empty());
+        CHECK(std::filesystem::exists(path));
+    }
 }
 
 TEST_CASE("FMI 1.0 Encoding Validation", "[fmi1][encoding]")
