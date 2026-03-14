@@ -132,8 +132,16 @@ function App() {
 
   useEffect(() => {
     if (folderInputRef.current) {
+      // Set attributes via both setAttribute and property assignment
       folderInputRef.current.setAttribute('webkitdirectory', '');
       folderInputRef.current.setAttribute('directory', '');
+      // Use cast to unknown then to specific interface to avoid any
+      const folderInput = folderInputRef.current as unknown as {
+        webkitdirectory: boolean;
+        directory: boolean;
+      };
+      folderInput.webkitdirectory = true;
+      folderInput.directory = true;
     }
   }, []);
 
@@ -195,6 +203,9 @@ function App() {
       // When multiple files are selected via webkitdirectory, they all have webkitRelativePath
       const firstPath = files[0].webkitRelativePath || files[0].name;
       const rootName = firstPath.split('/')[0];
+
+      // A directory is detected if there are multiple files OR if the first file has a path separator
+      // Note: we also consider it a directory if there's only one file but it has a webkitRelativePath with a slash.
       const isDirectory =
         files.length > 1 ||
         (files[0].webkitRelativePath && files[0].webkitRelativePath.includes('/'));
@@ -240,11 +251,12 @@ function App() {
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (typeof err === 'object' && err !== null) {
-        try {
-          errorMessage = JSON.stringify(err);
-        } catch {
-          errorMessage = String(err);
-        }
+        // Capture all enumerable properties
+        const obj = err as Record<string, unknown>;
+        const details = Object.entries(obj)
+          .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+          .join(', ');
+        errorMessage = details || JSON.stringify(err);
       } else {
         errorMessage = String(err);
       }
