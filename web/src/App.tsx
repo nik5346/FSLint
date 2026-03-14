@@ -79,16 +79,17 @@ function App() {
 
   const theme = useMemo(
     () => ({
-      bg: isDark ? '#1a1a1a' : '#f5f5f5',
-      surface: isDark ? '#252525' : '#ffffff',
-      border: isDark ? '#444' : '#ccc',
-      text: isDark ? '#e0e0e0' : '#1a1a1a',
-      muted: isDark ? '#666' : '#888',
-      termBg: isDark ? '#000' : '#e8e8e8',
-      termText: isDark ? '#fff' : '#1a1a1a',
-      iconHover: isDark ? '#222' : '#eee',
-      buttonBorder: isDark ? '#555' : '#ccc',
-      buttonHoverBg: isDark ? '#333' : '#eee',
+      bg: isDark ? '#1a1a1a' : '#eceef1',
+      surface: isDark ? '#2a2a2a' : '#ffffff',
+      border: isDark ? '#555' : '#b0b6bf',
+      text: isDark ? '#f0f0f0' : '#111418',
+      muted: isDark ? '#9a9a9a' : '#555b66',
+      termBg: isDark ? '#0d0d0d' : '#dde1e7',
+      termText: isDark ? '#f0f0f0' : '#111418',
+      termBtnHover: isDark ? '#2a2a2a' : '#c4c8ce',
+      iconHover: isDark ? '#2e2e2e' : '#d4d8de',
+      buttonBorder: isDark ? '#666' : '#b0b6bf',
+      buttonHoverBg: isDark ? '#383838' : '#d4d8de',
     }),
     [isDark],
   );
@@ -333,8 +334,41 @@ function App() {
         backgroundColor: theme.bg,
         color: theme.text,
         transition: 'background-color 0.2s, color 0.2s',
+        ['--btn-hover-bg' as string]: theme.buttonHoverBg,
+        ['--term-btn-hover-bg' as string]: theme.termBtnHover,
       }}
     >
+      <style>{`
+        .icon-btn {
+          background-color: transparent;
+          outline: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .icon-btn:hover {
+          background-color: var(--btn-hover-bg) !important;
+        }
+        .icon-btn:focus-visible {
+          outline: 2px solid var(--btn-hover-bg);
+        }
+        .icon-btn:not(:hover):not(:active) {
+          background-color: transparent !important;
+        }
+        .copy-btn {
+          background-color: transparent;
+          outline: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .copy-btn:hover:not(:disabled) {
+          background-color: var(--term-btn-hover-bg) !important;
+          opacity: 1 !important;
+        }
+        .copy-btn:not(:hover) {
+          background-color: transparent !important;
+        }
+        .copy-btn:focus-visible {
+          outline: none;
+        }
+      `}</style>
       <header
         style={{
           display: 'flex',
@@ -463,6 +497,7 @@ function App() {
           <button
             onClick={() => setIsDark((d) => !d)}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="icon-btn"
             style={{
               flex: 1,
               display: 'flex',
@@ -471,14 +506,11 @@ function App() {
               width: '34px',
               borderRadius: '6px',
               border: `1px solid ${theme.buttonBorder}`,
-              backgroundColor: 'transparent',
               color: theme.text,
               cursor: 'pointer',
               transition: 'background-color 0.15s, border-color 0.15s',
               flexShrink: 0,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.buttonHoverBg)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             {isDark ? (
               <svg
@@ -532,25 +564,23 @@ function App() {
           onClick={handleCopy}
           disabled={!output}
           title={copied ? 'Copied!' : 'Copy to clipboard'}
+          className="copy-btn"
           style={{
             position: 'absolute',
-            top: '8px',
-            right: '8px',
+            top: '6px',
+            right: '6px',
             zIndex: 1,
-            padding: '6px',
-            backgroundColor: 'transparent',
-            color: '#aaa',
+            padding: '5px',
+            color: theme.termText,
             border: 'none',
             borderRadius: '6px',
             cursor: output ? 'pointer' : 'default',
-            opacity: output ? 1 : 0.3,
+            opacity: output ? 0.6 : 0.2,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'background-color 0.15s',
+            transition: 'background-color 0.15s, opacity 0.15s',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.iconHover)}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
           {copied ? (
             <svg
@@ -589,7 +619,6 @@ function App() {
             backgroundColor: theme.termBg,
             color: theme.termText,
             padding: '15px',
-            paddingTop: '40px',
             borderRadius: '4px',
             overflowY: 'auto',
             margin: 0,
