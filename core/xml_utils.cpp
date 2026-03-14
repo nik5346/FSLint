@@ -1,0 +1,20 @@
+#include "xml_utils.h"
+#include <fstream>
+#include <vector>
+
+xmlDocPtr readXmlFile(const std::filesystem::path& path)
+{
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file)
+        return nullptr;
+
+    const std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<char> buffer(static_cast<size_t>(size));
+    if (!file.read(buffer.data(), size))
+        return nullptr;
+
+    return xmlReadMemory(buffer.data(), static_cast<int>(size), path.string().c_str(), nullptr,
+                         XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+}
