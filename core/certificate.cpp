@@ -3,6 +3,7 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <cstdio>
 #include <ctime>
 #include <filesystem>
 #include <format>
@@ -12,6 +13,65 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#else
+#ifdef _WIN32
+#include <io.h>
+#define ISATTY _isatty
+#define FILENO _fileno
+#else
+#include <stdio.h>
+#include <unistd.h>
+#define ISATTY isatty
+#define FILENO fileno
+#endif
+#endif
+
+namespace
+{
+constexpr const char* RED = "\x1b[31m";
+constexpr const char* YELLOW = "\x1b[33m";
+constexpr const char* RESET = "\x1b[0m";
+
+std::string stripAnsi(const std::string& str)
+{
+    std::string result;
+    bool in_escape = false;
+    for (size_t i = 0; i < str.length(); ++i)
+    {
+        if (str[i] == '\x1b')
+        {
+            in_escape = true;
+        }
+        else if (in_escape)
+        {
+            if (str[i] == 'm')
+                in_escape = false;
+        }
+        else
+        {
+            result += str[i];
+        }
+    }
+    return result;
+}
+
+bool shouldEnableColor()
+{
+#ifdef __EMSCRIPTEN__
+    return true;
+#else
+    return ISATTY(FILENO(stdout)) != 0;
+#endif
+}
+} // namespace
+
+Certificate::Certificate()
+    : _use_color(shouldEnableColor())
+{
+}
 
 TestStatus Certificate::getOverallStatus() const
 {
@@ -37,7 +97,7 @@ void Certificate::log(const std::string& message)
 {
     if (!_quiet)
     {
-        std::cout << message;
+        std::cout << (isColorEnabled() ? message : stripAnsi(message));
         std::cout << "\n";
     }
 
@@ -131,13 +191,13 @@ void Certificate::printTestResult(const TestResult& test)
     }
     else if (test.status == TestStatus::FAIL)
     {
-        ss << "  [✗ FAIL] ";
+        ss << "  [" << RED << "✗ FAIL" << RESET << "] ";
         _current_subsection_failed++;
         _total_failed++;
     }
     else
     {
-        ss << "  [⚠ WARN] ";
+        ss << "  [" << YELLOW << "⚠ WARN" << RESET << "] ";
         _current_subsection_passed++; // Warnings count as passed
     }
 
@@ -185,10 +245,10 @@ static void printTree(Certificate& cert, const std::vector<NestedModelResult>& m
             status_tag = "[✓ PASS]";
             break;
         case TestStatus::WARNING:
-            status_tag = "[⚠ WARN]";
+            status_tag = std::string("[") + YELLOW + "⚠ WARN" + RESET + "]";
             break;
         case TestStatus::FAIL:
-            status_tag = "[✗ FAIL]";
+            status_tag = std::string("[") + RED + "✗ FAIL" + RESET + "]";
             break;
         }
 
@@ -226,9 +286,15 @@ void Certificate::printFooter()
     log("");
     log("╔════════════════════════════════════════════════════════════╗");
     if (_total_failed == 0)
-        log("║ ✓ MODEL VALIDATION PASSED                                  ║");
+    {
+        log("║  MODEL VALIDATION PASSED                                   ║");
+    }
     else
-        log("║ ✗ MODEL VALIDATION FAILED                                  ║");
+    {
+        std::stringstream ss;
+        ss << "║  " << RED << "MODEL VALIDATION FAILED" << RESET << "                                   ║";
+        log(ss.str());
+    }
     log("╚════════════════════════════════════════════════════════════╝");
 }
 
@@ -237,6 +303,6 @@ bool Certificate::saveToFile(const std::filesystem::path& path) const
     std::ofstream file(path);
     if (!file)
         return false;
-    file << _report_buffer;
+    file << stripAnsi(_report_buffer);
     return true;
 }
