@@ -62,7 +62,7 @@ function App() {
         });
         setModule(mod);
         setIsReady(true);
-        setOutput('FSLint Web ready. Drop an FMU or SSP file to validate.\n');
+        setOutput('');
       } catch (err) {
         setOutput('Error initializing WASM module: ' + err + '\n');
       }
@@ -95,7 +95,7 @@ function App() {
     if (!module || isProcessing) return;
 
     setIsProcessing(true);
-    setOutput(`Validating ${file.name}...\n`);
+    setOutput('');
 
     try {
       const arrayBuffer = await file.arrayBuffer();
