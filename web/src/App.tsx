@@ -53,6 +53,11 @@ function App() {
         const mod = await window.createFSLintModule({
           print: (text: string) => setOutput((prev) => prev + text + '\n'),
           printErr: (text: string) => setOutput((prev) => prev + 'Error: ' + text + '\n'),
+          locateFile: (path: string, prefix: string) => {
+            if (path.endsWith('.wasm')) return prefix + 'FSLint-cli-wasm.wasm';
+            if (path.endsWith('.data')) return prefix + 'FSLint-cli-wasm.data';
+            return prefix + path;
+          },
         });
         setModule(mod);
         setIsReady(true);
