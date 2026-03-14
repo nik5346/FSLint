@@ -40,7 +40,8 @@ class SchemaCheckerBase : public Checker
     }
 
     // Common utility methods
-    std::filesystem::path findSchemaPath(const std::string& schema_filename) const;
+    std::filesystem::path findSchemaPath(const std::string& schema_filename,
+                                         const std::string& version_override = "") const;
 
     void validateXmlFile(const std::filesystem::path& xml_path, const std::filesystem::path& schema_path,
                          const std::string& validation_name, Certificate& cert);
