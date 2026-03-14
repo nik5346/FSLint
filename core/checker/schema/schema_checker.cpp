@@ -477,29 +477,34 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         }
     }
 
-    std::filesystem::path schema_path = bin_dir / "standard" / getStandardName() / version / "schema" / schema_filename;
+    const std::filesystem::path relative_schema_path =
+        std::filesystem::path("standard") / getStandardName() / version / "schema" / schema_filename;
 
-    if (!std::filesystem::exists(schema_path))
-    {
-        // Try fallback to current directory if binary directory didn't work
-        schema_path =
-            std::filesystem::current_path() / "standard" / getStandardName() / version / "schema" / schema_filename;
-    }
-
-    if (!std::filesystem::exists(schema_path))
-    {
-        // For Emscripten, also try without leading slash and in /standard explicitly
+    std::vector<std::filesystem::path> candidates;
+    if (!bin_dir.empty())
+        candidates.push_back(bin_dir / relative_schema_path);
+    candidates.push_back(std::filesystem::current_path() / relative_schema_path);
 #ifdef __EMSCRIPTEN__
-        schema_path = std::filesystem::path("standard") / getStandardName() / version / "schema" / schema_filename;
-        if (!std::filesystem::exists(schema_path))
-            schema_path = std::filesystem::path("/standard") / getStandardName() / version / "schema" / schema_filename;
+    candidates.push_back(std::filesystem::path("/") / relative_schema_path);
+    candidates.push_back(relative_schema_path);
 #endif
+
+    for (const auto& candidate : candidates)
+    {
+        if (std::filesystem::exists(candidate))
+            return candidate;
     }
 
-    if (!std::filesystem::exists(schema_path))
-        return std::filesystem::path();
+#ifdef __EMSCRIPTEN__
+    std::cerr << "[ERROR] Schema not found: " << schema_filename << "\n";
+    std::cerr << "  Standard Name: " << getStandardName() << ", Version: " << version << "\n";
+    std::cerr << "  Current CWD: " << std::filesystem::current_path().string() << "\n";
+    std::cerr << "  Attempted paths:\n";
+    for (const auto& candidate : candidates)
+        std::cerr << "    - " << candidate.string() << "\n";
+#endif
 
-    return schema_path;
+    return std::filesystem::path();
 }
 
 bool SchemaCheckerBase::hasElement(const std::filesystem::path& xml_path, const std::string& element_name)
