@@ -15,8 +15,10 @@ interface FSLintModule {
 }
 
 declare global {
-  interface File {
-    webkitRelativePath: string;
+  namespace React {
+    interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
+      webkitdirectory?: string;
+    }
   }
 
   interface Window {
