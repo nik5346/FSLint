@@ -49,7 +49,7 @@ jobs:
           - os: windows-latest
             short_os: windows
             arch: arm64
-            runner: windows-latest
+            runner: windows-11-arm
             cmake_args: "-A ARM64"
           - os: ubuntu-latest
             short_os: linux
@@ -59,7 +59,7 @@ jobs:
           - os: ubuntu-latest
             short_os: linux
             arch: arm64
-            runner: ubuntu-latest
+            runner: ubuntu-24.04-arm
             cmake_args: ""
           - os: macos-latest
             short_os: darwin
