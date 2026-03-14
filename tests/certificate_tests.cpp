@@ -32,7 +32,7 @@ TEST_CASE("Certificate reporting logic", "[certificate]")
 
         CHECK(cert.isFailed());
         cert.printFooter();
-        CHECK(cert.getFullReport().find("✗ MODEL VALIDATION FAILED") != std::string::npos);
+        CHECK(cert.getFullReport().find("MODEL VALIDATION FAILED") != std::string::npos);
     }
 
     SECTION("Subsection valid parameter override")

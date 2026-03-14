@@ -314,9 +314,34 @@ function App() {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(output).then(() => {
+    // Strip ANSI codes before copying
+    // eslint-disable-next-line no-control-regex
+    const stripped = output.replace(/\x1b\[[0-9;]*m/g, '');
+    navigator.clipboard.writeText(stripped).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const parseAnsi = (text: string) => {
+    // eslint-disable-next-line no-control-regex
+    const parts = text.split(/(\x1b\[[0-9;]*m)/);
+    let currentColor = '';
+
+    return parts.map((part, i) => {
+      if (part.startsWith('\x1b[')) {
+        if (part === '\x1b[31m') currentColor = '#ff5555';
+        else if (part === '\x1b[33m') currentColor = '#ffb86c';
+        else if (part === '\x1b[0m') currentColor = '';
+        return null;
+      }
+      return currentColor ? (
+        <span key={i} style={{ color: currentColor }}>
+          {part}
+        </span>
+      ) : (
+        part
+      );
     });
   };
 
@@ -629,7 +654,7 @@ function App() {
             textRendering: 'optimizeSpeed',
           }}
         >
-          {output}
+          {parseAnsi(output)}
         </pre>
       </div>
 
