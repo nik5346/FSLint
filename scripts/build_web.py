@@ -10,6 +10,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -297,8 +298,49 @@ def copy_artifacts():
 
 
 
+def sync_version():
+    print("\n--- synchronize version ---")
+    get_version_script = ROOT / "scripts" / "get_version.py"
+    try:
+        result = subprocess.run([sys.executable, str(get_version_script)],
+                               capture_output=True, text=True, check=True)
+        version = result.stdout.strip()
+        print(f"  Detected version: {version}")
+
+        # Update web/package.json
+        package_json_path = WEB_DIR / "package.json"
+        if package_json_path.exists():
+            with open(package_json_path, "r") as f:
+                data = json.load(f)
+            data["version"] = version
+            with open(package_json_path, "w") as f:
+                json.dump(data, f, indent=2)
+                f.write("\n")
+            print(f"  Updated {package_json_path}")
+
+        # Update web/package-lock.json if it exists
+        package_lock_path = WEB_DIR / "package-lock.json"
+        if package_lock_path.exists():
+            with open(package_lock_path, "r") as f:
+                data = json.load(f)
+            # Update root version
+            if "version" in data:
+                data["version"] = version
+            # Update package version in packages[""]
+            if "packages" in data and "" in data["packages"]:
+                data["packages"][""]["version"] = version
+            with open(package_lock_path, "w") as f:
+                json.dump(data, f, indent=2)
+                f.write("\n")
+            print(f"  Updated {package_lock_path}")
+
+    except Exception as e:
+        print(f"[WARNING] Failed to synchronize version: {e}")
+
+
 def build_web():
     print("\n--- build web app ---")
+    sync_version()
     npm = "npm.cmd" if os.name == "nt" else "npm"
     run(npm, "install", cwd=WEB_DIR)
     run(npm, "run", "build", cwd=WEB_DIR)

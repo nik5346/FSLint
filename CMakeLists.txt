@@ -1,6 +1,15 @@
 # CMakeLists.txt - Using just zlib with its included minizip
 cmake_minimum_required(VERSION 3.15)
-project(FSLint VERSION 0.0.1 LANGUAGES C CXX)
+
+# Get version from script
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/get_version.py
+    OUTPUT_VARIABLE PROJECT_VERSION_STRING
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+project(FSLint VERSION ${PROJECT_VERSION_STRING} LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,8 +30,6 @@ else()
     # GCC, Clang, and Clang on Unix-like systems
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
-
-find_package(Python3 COMPONENTS Interpreter)
 
 # ============================================================================
 # Generate VS Code launch.json from template
