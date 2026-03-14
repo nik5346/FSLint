@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 interface FSLintModule {
   FS: {
@@ -27,23 +27,26 @@ function App() {
   const [isDark, setIsDark] = useState(true);
   const outputEndRef = useRef<HTMLPreElement>(null);
 
-  const theme = {
-    bg: isDark ? '#1a1a1a' : '#f5f5f5',
-    surface: isDark ? '#252525' : '#ffffff',
-    border: isDark ? '#444' : '#ccc',
-    text: isDark ? '#e0e0e0' : '#1a1a1a',
-    muted: isDark ? '#666' : '#888',
-    termBg: isDark ? '#000' : '#e8e8e8',
-    termText: isDark ? '#fff' : '#1a1a1a',
-    iconHover: isDark ? '#222' : '#eee',
-    buttonBorder: isDark ? '#555' : '#ccc',
-    buttonHoverBg: isDark ? '#333' : '#eee',
-  };
+  const theme = useMemo(
+    () => ({
+      bg: isDark ? '#1a1a1a' : '#f5f5f5',
+      surface: isDark ? '#252525' : '#ffffff',
+      border: isDark ? '#444' : '#ccc',
+      text: isDark ? '#e0e0e0' : '#1a1a1a',
+      muted: isDark ? '#666' : '#888',
+      termBg: isDark ? '#000' : '#e8e8e8',
+      termText: isDark ? '#fff' : '#1a1a1a',
+      iconHover: isDark ? '#222' : '#eee',
+      buttonBorder: isDark ? '#555' : '#ccc',
+      buttonHoverBg: isDark ? '#333' : '#eee',
+    }),
+    [isDark],
+  );
 
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
     document.body.style.color = theme.text;
-  }, [isDark]);
+  }, [theme.bg, theme.text]);
 
   useEffect(() => {
     const script = document.createElement('script');
