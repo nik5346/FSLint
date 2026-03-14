@@ -379,6 +379,7 @@ bool SchemaCheckerBase::isValidUtf8(const unsigned char* data, size_t length)
     return true;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schema_filename,
                                                         const std::string& version_override) const
 {
