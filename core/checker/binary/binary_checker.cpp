@@ -18,12 +18,15 @@
 
 void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
 {
-    cert.printSubsectionHeader("FMU BINARY EXPORTS");
+    auto binaries_path = path / "binaries";
+    if (!std::filesystem::exists(binaries_path))
+    {
+        return;
+    }
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
     {
-        cert.printSubsectionSummary(false);
         return;
     }
 
@@ -62,51 +65,60 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
     if (model_identifiers.empty())
     {
-        cert.printSubsectionSummary(true);
         return;
     }
 
+    bool header_printed = false;
+    auto ensure_header = [&]()
+    {
+        if (!header_printed)
+        {
+            cert.printSubsectionHeader("FMU BINARY EXPORTS");
+            header_printed = true;
+        }
+    };
+
     const std::vector<std::string> expected_functions = getExpectedFunctions();
 
-    auto binaries_path = path / "binaries";
-    if (std::filesystem::exists(binaries_path))
+    for (const auto& platform_entry : std::filesystem::directory_iterator(binaries_path))
     {
-        for (const auto& platform_entry : std::filesystem::directory_iterator(binaries_path))
+        if (!platform_entry.is_directory())
+            continue;
+
+        const std::string platform = platform_entry.path().filename().string();
+
+        for (const auto& model_id : model_identifiers)
         {
-            if (!platform_entry.is_directory())
-                continue;
-
-            const std::string platform = platform_entry.path().filename().string();
-
-            for (const auto& model_id : model_identifiers)
+            const std::vector<std::string> extensions = {".dll", ".so", ".dylib"};
+            for (const auto& ext : extensions)
             {
-                const std::vector<std::string> extensions = {".dll", ".so", ".dylib"};
-                for (const auto& ext : extensions)
+                auto binary_file = platform_entry.path() / (model_id + ext);
+                if (std::filesystem::exists(binary_file))
                 {
-                    auto binary_file = platform_entry.path() / (model_id + ext);
-                    if (std::filesystem::exists(binary_file))
+                    ensure_header();
+                    TestResult test{
+                        std::format("Exported Functions: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
+                    const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
+
+                    for (const auto& func : expected_functions)
                     {
-                        TestResult test{
-                            std::format("Exported Functions: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
-                        const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
-
-                        for (const auto& func : expected_functions)
+                        if (!actual_exports.contains(func))
                         {
-                            if (!actual_exports.contains(func))
-                            {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back("Mandatory function '" + func + "' is not exported.");
-                            }
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Mandatory function '" + func + "' is not exported.");
                         }
-
-                        cert.printTestResult(test);
                     }
+
+                    cert.printTestResult(test);
                 }
             }
         }
     }
 
-    cert.printSubsectionSummary(true);
+    if (header_printed)
+    {
+        cert.printSubsectionSummary(true);
+    }
 }
 
 std::optional<std::string> BinaryChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
