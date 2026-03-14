@@ -26,11 +26,18 @@
 #include <windows.h> // IWYU pragma: keep
 #endif
 
+#if defined(__linux__) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
+#include <unistd.h>
+#endif
+
 #ifdef __linux__
 #include <linux/limits.h>
 #include <string>
 #include <sys/types.h>
-#include <unistd.h>
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
 #endif
 
 void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
@@ -443,11 +450,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     }
 #elif defined(__EMSCRIPTEN__)
     // Under Emscripten, schemas are preloaded at /standard in the virtual filesystem.
-    // We check for /standard to decide if we should use absolute or relative paths.
-    if (std::filesystem::exists("/standard"))
-        bin_dir = "/";
-    else
-        bin_dir = ".";
+    bin_dir = "/";
 #endif
 
     if (bin_dir.empty())
@@ -483,25 +486,45 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     std::vector<std::filesystem::path> candidates;
     if (!bin_dir.empty())
         candidates.push_back(bin_dir / relative_schema_path);
-    candidates.push_back(std::filesystem::current_path() / relative_schema_path);
+
+    const auto cwd = std::filesystem::current_path();
+    candidates.push_back(cwd / relative_schema_path);
+
 #ifdef __EMSCRIPTEN__
     candidates.push_back(std::filesystem::path("/") / relative_schema_path);
-    candidates.push_back(relative_schema_path);
 #endif
 
     for (const auto& candidate : candidates)
     {
         if (std::filesystem::exists(candidate))
             return candidate;
+
+        // Robustness: try access() in case std::filesystem::exists is flaky in WASM
+#if defined(__EMSCRIPTEN__) || defined(__linux__) || defined(__APPLE__)
+        if (access(candidate.string().c_str(), F_OK) == 0)
+            return candidate;
+#endif
     }
 
 #ifdef __EMSCRIPTEN__
     std::cerr << "[ERROR] Schema not found: " << schema_filename << "\n";
     std::cerr << "  Standard Name: " << getStandardName() << ", Version: " << version << "\n";
-    std::cerr << "  Current CWD: " << std::filesystem::current_path().string() << "\n";
+    std::cerr << "  Current CWD: " << cwd.string() << "\n";
     std::cerr << "  Attempted paths:\n";
     for (const auto& candidate : candidates)
         std::cerr << "    - " << candidate.string() << "\n";
+
+    // Debug: List /standard directory if it exists
+    if (std::filesystem::exists("/standard"))
+    {
+        std::cerr << "  Contents of /standard:\n";
+        for (const auto& entry : std::filesystem::recursive_directory_iterator("/standard"))
+            std::cerr << "    " << entry.path().string() << "\n";
+    }
+    else
+    {
+        std::cerr << "  /standard directory does NOT exist in VFS.\n";
+    }
 #endif
 
     return std::filesystem::path();
