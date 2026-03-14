@@ -3,11 +3,11 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <cstdio>
 #include <ctime>
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
