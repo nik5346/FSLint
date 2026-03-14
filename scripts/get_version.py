@@ -22,6 +22,7 @@ def get_git_commit_count_since_version_change():
         return int(result.stdout.strip())
 
     except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+        # Fallback if git is not available or it's not a git repo
         return 0
 
 def get_version():
@@ -29,7 +30,7 @@ def get_version():
     version_file = root / "VERSION"
 
     if not version_file.exists():
-        base_version = "0.0"
+        base_version = "0.1" # Changed default to 0.1
     else:
         with open(version_file, "r") as f:
             base_version = f.read().strip()

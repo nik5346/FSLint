@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -41,6 +43,8 @@ jobs:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -95,6 +99,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -197,6 +203,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Emscripten
         uses: mymindstorm/setup-emsdk@v14
@@ -227,6 +235,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download WASM Artifacts
         uses: actions/download-artifact@v4
@@ -238,6 +248,9 @@ jobs:
         run: |
           cp images/icon.svg web/public/
           cp images/banner.svg web/public/
+
+      - name: Sync Version
+        run: python3 -c "import sys; sys.path.append('scripts'); import build_web; build_web.sync_version()"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
