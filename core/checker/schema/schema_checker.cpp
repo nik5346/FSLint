@@ -432,9 +432,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         {
             const size_t second_dot = version.find('.', first_dot + 1);
             if (second_dot != std::string::npos)
-            {
                 version = version.substr(0, second_dot);
-            }
         }
     }
 
@@ -453,10 +451,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 #ifdef __EMSCRIPTEN__
         schema_path = std::filesystem::path("standard") / getStandardName() / version / "schema" / schema_filename;
         if (!std::filesystem::exists(schema_path))
-        {
-            schema_path =
-                std::filesystem::path("/standard") / getStandardName() / version / "schema" / schema_filename;
-        }
+            schema_path = std::filesystem::path("/standard") / getStandardName() / version / "schema" / schema_filename;
 #endif
     }
 
