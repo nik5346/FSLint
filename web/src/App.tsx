@@ -13,6 +13,7 @@ declare global {
     createFSLintModule: (config: {
       print: (text: string) => void;
       printErr: (text: string) => void;
+      locateFile?: (path: string, prefix: string) => string;
     }) => Promise<FSLintModule>;
   }
 }
@@ -53,6 +54,11 @@ function App() {
         const mod = await window.createFSLintModule({
           print: (text: string) => setOutput((prev) => prev + text + '\n'),
           printErr: (text: string) => setOutput((prev) => prev + 'Error: ' + text + '\n'),
+          locateFile: (path: string, prefix: string) => {
+            console.log(`Locating file: ${path} (prefix: ${prefix})`);
+            if (path.endsWith('.wasm')) return prefix + 'FSLint-cli-wasm.wasm';
+            return prefix + path;
+          },
         });
         setModule(mod);
         setIsReady(true);

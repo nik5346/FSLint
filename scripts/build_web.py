@@ -200,7 +200,7 @@ def clean():
                       onexc=on_err if sys.version_info >= (3, 12) else None,
                       onerror=None if sys.version_info >= (3, 12) else on_err)
 
-    for name in ("FSLint-cli-wasm.js", "FSLint-cli.wasm", "FSLint-cli.data"):
+    for name in ("FSLint-cli-wasm.js", "FSLint-cli-wasm.wasm"):
         f = WEB_PUBLIC / name
         if f.exists():
             f.unlink()
@@ -240,39 +240,33 @@ def copy_artifacts():
     print("\n--- copy artifacts ---")
     WEB_PUBLIC.mkdir(parents=True, exist_ok=True)
 
-    for src, dst in [
-        (BUILD_DIR / "FSLint-cli.js",   WEB_PUBLIC / "FSLint-cli-wasm.js"),
-        (BUILD_DIR / "FSLint-cli.wasm", WEB_PUBLIC / "FSLint-cli.wasm"),
-    ]:
+    # Dictionary of original names to target names
+    artifacts = {
+        "FSLint-cli.js":   "FSLint-cli-wasm.js",
+        "FSLint-cli.wasm": "FSLint-cli-wasm.wasm",
+    }
+
+    for src_name, dst_name in artifacts.items():
+        src = BUILD_DIR / src_name
         if not src.exists():
             print(f"[ERROR] expected output not found: {src}")
             sys.exit(1)
-        shutil.copy(src, dst)
-        print(f"  {src.name} -> {dst}")
 
-    optional = BUILD_DIR / "FSLint-cli.data"
-    if optional.exists():
-        shutil.copy(optional, WEB_PUBLIC / optional.name)
-        print(f"  {optional.name} -> {WEB_PUBLIC / optional.name}")
-    
+        if src.exists():
+            dst = WEB_PUBLIC / dst_name
+            shutil.copy(src, dst)
+            print(f"  {src.name} -> {dst}")
+
     # Copy WASM and JS files to public folder
     web_public_root = WEB_DIR / "public"
     web_public_root.mkdir(parents=True, exist_ok=True)
     
-    for src, dst_name in [
-        (BUILD_DIR / "FSLint-cli.js",   "FSLint-cli-wasm.js"),
-        (BUILD_DIR / "FSLint-cli.wasm", "FSLint-cli.wasm"),
-    ]:
+    for src_name, dst_name in artifacts.items():
+        src = BUILD_DIR / src_name
         if src.exists():
             dst = web_public_root / dst_name
             shutil.copy(src, dst)
             print(f"  {src.name} -> {dst}")
-    
-    # Copy optional data file to public folder
-    optional_data = BUILD_DIR / "FSLint-cli.data"
-    if optional_data.exists():
-        shutil.copy(optional_data, web_public_root / optional_data.name)
-        print(f"  {optional_data.name} -> {web_public_root / optional_data.name}")
     
     # Copy index.html to public folder
     index_src = WEB_DIR / "index.html"

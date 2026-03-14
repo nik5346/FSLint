@@ -388,25 +388,7 @@ endif()
 # ============================================================================
 # Copy fmi and ssp files from source to build directory
 # ============================================================================
-file(GLOB_RECURSE FMI_FILES "${CMAKE_SOURCE_DIR}/standard/fmi/*")
-foreach(FMI_FILES ${FMI_FILES})
-    file(RELATIVE_PATH REL_PATH "${CMAKE_SOURCE_DIR}/standard/fmi/" ${FMI_FILES})
-    get_filename_component(REL_DIR ${REL_PATH} DIRECTORY)
-
-    # Copy to build FMI_FILES
-    file(COPY ${FMI_FILES}
-         DESTINATION "${CMAKE_BINARY_DIR}/standard/fmi/${REL_DIR}")
-endforeach()
-
-file(GLOB_RECURSE SSP_FILES "${CMAKE_SOURCE_DIR}/standard/ssp/*")
-foreach(SSP_FILES ${SSP_FILES})
-    file(RELATIVE_PATH REL_PATH "${CMAKE_SOURCE_DIR}/standard/ssp/" ${SSP_FILES})
-    get_filename_component(REL_DIR ${REL_PATH} DIRECTORY)
-
-    # Copy to build SSP_FILES
-    file(COPY ${SSP_FILES}
-         DESTINATION "${CMAKE_BINARY_DIR}/standard/ssp/${REL_DIR}")
-endforeach()
+file(COPY "${CMAKE_SOURCE_DIR}/standard" DESTINATION "${CMAKE_BINARY_DIR}")
 
 # ============================================================================
 # Core library
@@ -483,7 +465,7 @@ if(EMSCRIPTEN)
         "-sEXPORT_NAME=createFSLintModule"
         "-sINVOKE_RUN=0"
         "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain']"
-        "--preload-file ${CMAKE_BINARY_DIR}/standard@/standard"
+        "--embed-file" "${CMAKE_SOURCE_DIR}/standard@/standard"
     )
     
     # Copy the standard directory to web/public so it can be served by the web server
