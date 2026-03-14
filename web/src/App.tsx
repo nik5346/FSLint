@@ -197,58 +197,75 @@ function App() {
     try {
       module.FS.mkdir(workDir);
 
-      // Determine if we are validating a directory structure or flat files
-      const hasPaths = files.some(
-        (f) => f.webkitRelativePath && f.webkitRelativePath.replace(/\\/g, '/').includes('/'),
+      // Normalize paths and determine if we have a directory structure
+      const normalizedFiles = files.map((f) => {
+        const relPath = (f.webkitRelativePath || f.name).replace(/\\/g, '/');
+        return { file: f, relPath };
+      });
+
+      const hasPaths = normalizedFiles.some((f) => f.relPath.includes('/'));
+
+      // Find actual FMU/SSP root by looking for modelDescription.xml or SystemStructure.ssd
+      let discoveredRootRel = '';
+      if (hasPaths) {
+        for (const f of normalizedFiles) {
+          if (
+            f.relPath.endsWith('/modelDescription.xml') ||
+            f.relPath.endsWith('/SystemStructure.ssd')
+          ) {
+            discoveredRootRel = f.relPath.substring(0, f.relPath.lastIndexOf('/'));
+            break;
+          }
+          if (f.relPath === 'modelDescription.xml' || f.relPath === 'SystemStructure.ssd') {
+            discoveredRootRel = '.';
+            break;
+          }
+        }
+        // Fallback: use the first component of the first path if not discovered
+        if (discoveredRootRel === '') {
+          discoveredRootRel = normalizedFiles[0].relPath.split('/')[0];
+        }
+      }
+
+      const isDirectory = hasPaths || files.length > 1;
+      let targetPath = '';
+      if (isDirectory) {
+        targetPath =
+          discoveredRootRel === '.' || discoveredRootRel === ''
+            ? workDir
+            : `${workDir}/${discoveredRootRel}`;
+      } else {
+        targetPath = `${workDir}/${normalizedFiles[0].relPath}`;
+      }
+
+      console.log(
+        `Processing ${files.length} files. isDirectory: ${isDirectory}, targetPath: ${targetPath}, workDir: ${workDir}, discoveredRootRel: ${discoveredRootRel}`,
       );
 
-      console.log(`Processing ${files.length} files. hasPaths: ${hasPaths}, workDir: ${workDir}`);
+      for (const { file, relPath } of normalizedFiles) {
+        const fullPath = `${workDir}/${relPath}`;
 
-      let targetPath = '';
-
-      if (hasPaths) {
-        // Folder selection or folder drop
-        const firstPath = files[0].webkitRelativePath.replace(/\\/g, '/');
-        const rootName = firstPath.split('/')[0];
-        targetPath = `${workDir}/${rootName}`;
-
-        for (const file of files) {
-          const path = file.webkitRelativePath.replace(/\\/g, '/');
-          const fullPath = `${workDir}/${path}`;
-
-          // Ensure parent directories exist
-          const parts = fullPath.split('/');
-          let current = '';
-          for (let i = 0; i < parts.length - 1; i++) {
-            if (!parts[i] && i === 0) continue;
-            current += (current === '' ? (fullPath.startsWith('/') ? '/' : '') : '/') + parts[i];
+        // Ensure parent directories exist
+        const lastSlashIndex = fullPath.lastIndexOf('/');
+        if (lastSlashIndex > 0) {
+          const dirPath = fullPath.substring(0, lastSlashIndex);
+          const parts = dirPath.split('/').filter(Boolean);
+          let current = '/';
+          for (const part of parts) {
+            current += part;
             try {
               module.FS.mkdir(current);
             } catch (err) {
               const e = err as { errno?: number };
               if (e.errno !== 17) throw err;
             }
+            current += '/';
           }
+        }
 
-          const data = new Uint8Array(await file.arrayBuffer());
-          module.FS.writeFile(fullPath, data);
-        }
-      } else if (files.length > 1) {
-        // Multiple flat files dropped (no folder entry)
-        const syntheticRoot = 'model_files';
-        targetPath = `${workDir}/${syntheticRoot}`;
-        module.FS.mkdir(targetPath);
-        for (const file of files) {
-          const fullPath = `${targetPath}/${file.name}`;
-          const data = new Uint8Array(await file.arrayBuffer());
-          module.FS.writeFile(fullPath, data);
-        }
-      } else {
-        // Single file
-        const file = files[0];
-        targetPath = `${workDir}/${file.name}`;
-        const data = new Uint8Array(await file.arrayBuffer());
-        module.FS.writeFile(targetPath, data);
+        const arrayBuffer = await file.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        module.FS.writeFile(fullPath, data);
       }
 
       console.log(`Calling main with: ${targetPath}`);
