@@ -20,15 +20,11 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 {
     auto binaries_path = path / "binaries";
     if (!std::filesystem::exists(binaries_path))
-    {
         return;
-    }
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
-    {
         return;
-    }
 
     xmlDocPtr doc = readXmlFile(model_desc_path);
     if (!doc)
@@ -64,9 +60,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     xmlFreeDoc(doc);
 
     if (model_identifiers.empty())
-    {
         return;
-    }
 
     bool header_printed = false;
     auto ensure_header = [&]()
@@ -116,9 +110,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     }
 
     if (header_printed)
-    {
         cert.printSubsectionSummary(true);
-    }
 }
 
 std::optional<std::string> BinaryChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)

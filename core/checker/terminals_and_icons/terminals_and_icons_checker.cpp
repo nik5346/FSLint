@@ -20,9 +20,7 @@ void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, C
 {
     auto terminals_path = path / "terminalsAndIcons" / "terminalsAndIcons.xml";
     if (!std::filesystem::exists(terminals_path))
-    {
         return;
-    }
 
     cert.printSubsectionHeader("TERMINALS AND ICONS VALIDATION");
 
