@@ -1,7 +1,11 @@
 #pragma once
 
+#include <libxml/tree.h> // IWYU pragma: keep
+
 #include <filesystem>
-#include <libxml/parser.h>
+
+struct _xmlDoc;
+typedef struct _xmlDoc* xmlDocPtr;
 
 /**
  * Robustly reads an XML file into a libxml2 document.

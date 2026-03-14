@@ -1,5 +1,13 @@
 #include "xml_utils.h"
+
+#include <libxml/parser.h>
+#include <libxml/tree.h> // IWYU pragma: keep
+
+#include <cstddef>
+#include <filesystem>
 #include <fstream>
+#include <ios>
+#include <string>
 #include <vector>
 
 xmlDocPtr readXmlFile(const std::filesystem::path& path)
