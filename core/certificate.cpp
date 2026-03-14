@@ -66,7 +66,8 @@ bool shouldEnableColor()
 }
 } // namespace
 
-Certificate::Certificate() : _use_color(shouldEnableColor())
+Certificate::Certificate()
+    : _use_color(shouldEnableColor())
 {
 }
 
