@@ -137,7 +137,7 @@ function App() {
         }}
       >
         <img
-          src="/banner.svg"
+          src="banner.svg"
           alt="FSLint Banner"
           style={{
             height: '80px',
