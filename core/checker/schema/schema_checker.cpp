@@ -465,6 +465,18 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
             version = getStandardVersion();
     }
 
+    // Normalize version string to major.minor if it doesn't contain a slash (e.g. "2.0.1" -> "2.0")
+    if (version.find('/') == std::string::npos)
+    {
+        const size_t first_dot = version.find('.');
+        if (first_dot != std::string::npos)
+        {
+            const size_t second_dot = version.find('.', first_dot + 1);
+            if (second_dot != std::string::npos)
+                version = version.substr(0, second_dot);
+        }
+    }
+
     std::filesystem::path schema_path = bin_dir / "standard" / getStandardName() / version / "schema" / schema_filename;
 
     if (!std::filesystem::exists(schema_path))
@@ -476,9 +488,11 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 
     if (!std::filesystem::exists(schema_path))
     {
-        // For Emscripten, also try without leading slash as a fallback
+        // For Emscripten, also try without leading slash and in /standard explicitly
 #ifdef __EMSCRIPTEN__
         schema_path = std::filesystem::path("standard") / getStandardName() / version / "schema" / schema_filename;
+        if (!std::filesystem::exists(schema_path))
+            schema_path = std::filesystem::path("/standard") / getStandardName() / version / "schema" / schema_filename;
 #endif
     }
 
