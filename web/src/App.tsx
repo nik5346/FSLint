@@ -13,6 +13,7 @@ declare global {
     createFSLintModule: (config: {
       print: (text: string) => void;
       printErr: (text: string) => void;
+      locateFile?: (path: string, prefix: string) => string;
     }) => Promise<FSLintModule>;
   }
 }
