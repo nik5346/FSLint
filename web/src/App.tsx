@@ -76,6 +76,7 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const outputEndRef = useRef<HTMLPreElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const theme = useMemo(
     () => ({
@@ -128,6 +129,14 @@ function App() {
       outputEndRef.current.scrollTop = outputEndRef.current.scrollHeight;
     }
   }, [output]);
+
+  useEffect(() => {
+    if (folderInputRef.current) {
+      folderInputRef.current.setAttribute('webkitdirectory', '');
+      folderInputRef.current.setAttribute('directory', '');
+      folderInputRef.current.setAttribute('mozdirectory', '');
+    }
+  }, []);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -182,69 +191,75 @@ function App() {
     setIsProcessing(true);
     setOutput('');
 
+    const timestamp = Date.now();
+    const workDir = `/val_${timestamp}`;
+
     try {
-      // Determine if it's a single file or a directory
-      // When multiple files are selected via webkitdirectory, they all have webkitRelativePath
-      // Normalize paths to use forward slashes for Windows compatibility
-      const firstPath = (files[0].webkitRelativePath || files[0].name).replace(/\\/g, '/');
-      const rootName = firstPath.split('/')[0];
+      module.FS.mkdir(workDir);
 
-      // A directory is detected if there are multiple files OR if the first file has a path separator
-      const isDirectory =
-        files.length > 1 ||
-        (files[0].webkitRelativePath &&
-          files[0].webkitRelativePath.replace(/\\/g, '/').includes('/'));
-
-      console.log(
-        `Processing ${files.length} files. isDirectory: ${isDirectory}, rootName: ${rootName}`,
+      // Determine if we are validating a directory structure or flat files
+      const hasPaths = files.some(
+        (f) => f.webkitRelativePath && f.webkitRelativePath.replace(/\\/g, '/').includes('/'),
       );
 
-      if (!isDirectory) {
-        // Single file case
-        const file = files[0];
-        const arrayBuffer = await file.arrayBuffer();
-        const data = new Uint8Array(arrayBuffer);
-        module.FS.writeFile(file.name, data);
-        module.callMain([file.name]);
-        module.FS.unlink(file.name);
-      } else {
-        // Directory case
-        for (const file of files) {
-          const rawPath = file.webkitRelativePath || file.name;
-          const path = rawPath.replace(/\\/g, '/');
-          const parts = path.split('/');
-          let currentPath = '';
+      console.log(`Processing ${files.length} files. hasPaths: ${hasPaths}, workDir: ${workDir}`);
 
+      let targetPath = '';
+
+      if (hasPaths) {
+        // Folder selection or folder drop
+        const firstPath = files[0].webkitRelativePath.replace(/\\/g, '/');
+        const rootName = firstPath.split('/')[0];
+        targetPath = `${workDir}/${rootName}`;
+
+        for (const file of files) {
+          const path = file.webkitRelativePath.replace(/\\/g, '/');
+          const fullPath = `${workDir}/${path}`;
+
+          // Ensure parent directories exist
+          const parts = fullPath.split('/');
+          let current = '';
           for (let i = 0; i < parts.length - 1; i++) {
-            currentPath += (currentPath ? '/' : '') + parts[i];
+            if (!parts[i] && i === 0) continue;
+            current += (current === '' ? (fullPath.startsWith('/') ? '/' : '') : '/') + parts[i];
             try {
-              module.FS.mkdir(currentPath);
+              module.FS.mkdir(current);
             } catch (err) {
-              const e = err as { name?: string; errno?: number };
-              if (e.name !== 'ErrnoError' || e.errno !== 17) {
-                // 17 is EEXIST
-                throw err;
-              }
+              const e = err as { errno?: number };
+              if (e.errno !== 17) throw err;
             }
           }
 
-          const arrayBuffer = await file.arrayBuffer();
-          const data = new Uint8Array(arrayBuffer);
-          module.FS.writeFile(path, data);
+          const data = new Uint8Array(await file.arrayBuffer());
+          module.FS.writeFile(fullPath, data);
         }
-
-        // Use absolute path for the directory to be safe
-        module.callMain(['/' + rootName]);
-        recursiveUnlink(rootName);
+      } else if (files.length > 1) {
+        // Multiple flat files dropped (no folder entry)
+        const syntheticRoot = 'model_files';
+        targetPath = `${workDir}/${syntheticRoot}`;
+        module.FS.mkdir(targetPath);
+        for (const file of files) {
+          const fullPath = `${targetPath}/${file.name}`;
+          const data = new Uint8Array(await file.arrayBuffer());
+          module.FS.writeFile(fullPath, data);
+        }
+      } else {
+        // Single file
+        const file = files[0];
+        targetPath = `${workDir}/${file.name}`;
+        const data = new Uint8Array(await file.arrayBuffer());
+        module.FS.writeFile(targetPath, data);
       }
+
+      console.log(`Calling main with: ${targetPath}`);
+      module.callMain([targetPath]);
     } catch (err) {
       let errorMessage: string;
       if (err instanceof Error) {
-        errorMessage = err.message;
+        errorMessage = `${err.name}: ${err.message}`;
+        if (err.stack) errorMessage += `\nStack: ${err.stack}`;
       } else if (typeof err === 'object' && err !== null) {
-        // Capture all enumerable properties
-        const obj = err as Record<string, unknown>;
-        const details = Object.entries(obj)
+        const details = Object.entries(err)
           .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
           .join(', ');
         errorMessage = details || JSON.stringify(err);
@@ -253,6 +268,11 @@ function App() {
       }
       setOutput((prev) => prev + 'Error during validation: ' + errorMessage + '\n');
     } finally {
+      try {
+        recursiveUnlink(workDir);
+      } catch (e) {
+        console.error('Cleanup failed:', e);
+      }
       setIsProcessing(false);
     }
   };
@@ -325,8 +345,8 @@ function App() {
           />
           <input
             id="folderInput"
+            ref={folderInputRef}
             type="file"
-            {...{ webkitdirectory: '', directory: '' }}
             style={{ display: 'none' }}
             onChange={handleFileChange}
             disabled={!isReady || isProcessing}
