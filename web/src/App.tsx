@@ -15,12 +15,6 @@ interface FSLintModule {
 }
 
 declare global {
-  namespace React {
-    interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
-      webkitdirectory?: string;
-    }
-  }
-
   interface Window {
     createFSLintModule: (config: {
       print: (text: string) => void;
@@ -144,7 +138,7 @@ function App() {
     event.target.value = '';
   };
 
-  const onDrop = async (event: React.DragEvent<HTMLButtonElement>) => {
+  const onDrop = async (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
     const items = event.dataTransfer.items;
     if (items && items.length > 0) {
@@ -234,7 +228,8 @@ function App() {
         recursiveUnlink(rootName);
       }
     } catch (err) {
-      setOutput((prev) => prev + 'Error during validation: ' + err + '\n');
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setOutput((prev) => prev + 'Error during validation: ' + errorMessage + '\n');
     } finally {
       setIsProcessing(false);
     }
@@ -282,7 +277,7 @@ function App() {
             filter: isDark ? 'none' : 'invert(1)',
           }}
         />
-        <button
+        <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
           onKeyDown={(e) => {
@@ -290,6 +285,9 @@ function App() {
               document.getElementById('fileInput')?.click();
             }
           }}
+          tabIndex={isReady && !isProcessing ? 0 : -1}
+          role="button"
+          aria-disabled={!isReady || isProcessing}
           style={{
             border: `2px dashed ${theme.border}`,
             borderRadius: '8px',
@@ -304,7 +302,6 @@ function App() {
             transition: 'background-color 0.2s, border-color 0.2s',
           }}
           onClick={() => !isProcessing && document.getElementById('fileInput')?.click()}
-          disabled={!isReady || isProcessing}
         >
           <input
             id="fileInput"
@@ -316,7 +313,7 @@ function App() {
           <input
             id="folderInput"
             type="file"
-            webkitdirectory=""
+            {...{ webkitdirectory: '' }}
             style={{ display: 'none' }}
             onChange={handleFileChange}
             disabled={!isReady || isProcessing}
@@ -374,7 +371,7 @@ function App() {
               </div>
             </div>
           )}
-        </button>
+        </div>
 
         {/* Top-right controls — stretch to full header height, stacked vertically */}
         <div
