@@ -76,7 +76,6 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const outputEndRef = useRef<HTMLPreElement>(null);
-  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const theme = useMemo(
     () => ({
@@ -129,21 +128,6 @@ function App() {
       outputEndRef.current.scrollTop = outputEndRef.current.scrollHeight;
     }
   }, [output]);
-
-  useEffect(() => {
-    if (folderInputRef.current) {
-      // Set attributes via both setAttribute and property assignment
-      folderInputRef.current.setAttribute('webkitdirectory', '');
-      folderInputRef.current.setAttribute('directory', '');
-      // Use cast to unknown then to specific interface to avoid any
-      const folderInput = folderInputRef.current as unknown as {
-        webkitdirectory: boolean;
-        directory: boolean;
-      };
-      folderInput.webkitdirectory = true;
-      folderInput.directory = true;
-    }
-  }, []);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -201,14 +185,19 @@ function App() {
     try {
       // Determine if it's a single file or a directory
       // When multiple files are selected via webkitdirectory, they all have webkitRelativePath
-      const firstPath = files[0].webkitRelativePath || files[0].name;
+      // Normalize paths to use forward slashes for Windows compatibility
+      const firstPath = (files[0].webkitRelativePath || files[0].name).replace(/\\/g, '/');
       const rootName = firstPath.split('/')[0];
 
       // A directory is detected if there are multiple files OR if the first file has a path separator
-      // Note: we also consider it a directory if there's only one file but it has a webkitRelativePath with a slash.
       const isDirectory =
         files.length > 1 ||
-        (files[0].webkitRelativePath && files[0].webkitRelativePath.includes('/'));
+        (files[0].webkitRelativePath &&
+          files[0].webkitRelativePath.replace(/\\/g, '/').includes('/'));
+
+      console.log(
+        `Processing ${files.length} files. isDirectory: ${isDirectory}, rootName: ${rootName}`,
+      );
 
       if (!isDirectory) {
         // Single file case
@@ -221,7 +210,8 @@ function App() {
       } else {
         // Directory case
         for (const file of files) {
-          const path = file.webkitRelativePath || file.name;
+          const rawPath = file.webkitRelativePath || file.name;
+          const path = rawPath.replace(/\\/g, '/');
           const parts = path.split('/');
           let currentPath = '';
 
@@ -243,7 +233,8 @@ function App() {
           module.FS.writeFile(path, data);
         }
 
-        module.callMain([rootName]);
+        // Use absolute path for the directory to be safe
+        module.callMain(['/' + rootName]);
         recursiveUnlink(rootName);
       }
     } catch (err) {
@@ -311,20 +302,12 @@ function App() {
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
-          onKeyDown={(e) => {
-            if ((e.key === 'Enter' || e.key === ' ') && !isProcessing) {
-              document.getElementById('fileInput')?.click();
-            }
-          }}
-          tabIndex={isReady && !isProcessing ? 0 : -1}
-          role="button"
-          aria-disabled={!isReady || isProcessing}
           style={{
             border: `2px dashed ${theme.border}`,
             borderRadius: '8px',
             padding: '20px',
             textAlign: 'center',
-            cursor: isReady && !isProcessing ? 'pointer' : 'wait',
+            cursor: isReady && !isProcessing ? 'default' : 'wait',
             opacity: isReady && !isProcessing ? 1 : 0.6,
             background: theme.surface,
             color: theme.text,
@@ -332,7 +315,6 @@ function App() {
             flex: 1,
             transition: 'background-color 0.2s, border-color 0.2s',
           }}
-          onClick={() => !isProcessing && document.getElementById('fileInput')?.click()}
         >
           <input
             id="fileInput"
@@ -343,8 +325,8 @@ function App() {
           />
           <input
             id="folderInput"
-            ref={folderInputRef}
             type="file"
+            {...{ webkitdirectory: '', directory: '' }}
             style={{ display: 'none' }}
             onChange={handleFileChange}
             disabled={!isReady || isProcessing}
@@ -362,43 +344,25 @@ function App() {
                   justifyContent: 'center',
                 }}
               >
-                <button
-                  type="button"
+                <label
+                  htmlFor="fileInput"
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
                     textDecoration: 'underline',
                     cursor: 'pointer',
-                    color: 'inherit',
-                    font: 'inherit',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    document.getElementById('fileInput')?.click();
                   }}
                 >
                   Select File
-                </button>
+                </label>
                 <span>or</span>
-                <button
-                  type="button"
+                <label
+                  htmlFor="folderInput"
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
                     textDecoration: 'underline',
                     cursor: 'pointer',
-                    color: 'inherit',
-                    font: 'inherit',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    document.getElementById('folderInput')?.click();
                   }}
                 >
                   Select Folder
-                </button>
+                </label>
               </div>
             </div>
           )}
