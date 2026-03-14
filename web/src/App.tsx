@@ -76,6 +76,7 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const outputEndRef = useRef<HTMLPreElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const theme = useMemo(
     () => ({
@@ -128,6 +129,13 @@ function App() {
       outputEndRef.current.scrollTop = outputEndRef.current.scrollHeight;
     }
   }, [output]);
+
+  useEffect(() => {
+    if (folderInputRef.current) {
+      folderInputRef.current.setAttribute('webkitdirectory', '');
+      folderInputRef.current.setAttribute('directory', '');
+    }
+  }, []);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -228,7 +236,18 @@ function App() {
         recursiveUnlink(rootName);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
+      let errorMessage: string;
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        try {
+          errorMessage = JSON.stringify(err);
+        } catch {
+          errorMessage = String(err);
+        }
+      } else {
+        errorMessage = String(err);
+      }
       setOutput((prev) => prev + 'Error during validation: ' + errorMessage + '\n');
     } finally {
       setIsProcessing(false);
@@ -312,8 +331,8 @@ function App() {
           />
           <input
             id="folderInput"
+            ref={folderInputRef}
             type="file"
-            {...{ webkitdirectory: '' }}
             style={{ display: 'none' }}
             onChange={handleFileChange}
             disabled={!isReady || isProcessing}
