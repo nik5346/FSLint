@@ -1,6 +1,7 @@
 #include "schema_checker.h"
 
 #include "certificate.h"
+#include "xml_utils.h"
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -91,6 +92,46 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
     }
 
     cert.printSubsectionSummary(is_valid);
+}
+
+std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::filesystem::path& xml_path,
+                                                                    const std::string& root_element,
+                                                                    const std::string& version_attribute)
+{
+    xmlDocPtr doc = readXmlFile(xml_path);
+    if (!doc)
+        return std::nullopt;
+
+    xmlNodePtr root = xmlDocGetRootElement(doc);
+    if (!root)
+    {
+        xmlFreeDoc(doc);
+        return std::nullopt;
+    }
+
+    // Check if root element name matches
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    if (xmlStrcmp(root->name, reinterpret_cast<const xmlChar*>(root_element.c_str())) != 0)
+    {
+        xmlFreeDoc(doc);
+        return std::nullopt;
+    }
+
+    // Extract version attribute
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    xmlChar* version = xmlGetProp(root, reinterpret_cast<const xmlChar*>(version_attribute.c_str()));
+    if (!version)
+    {
+        xmlFreeDoc(doc);
+        return std::nullopt;
+    }
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    std::string version_str(reinterpret_cast<char*>(version));
+    xmlFree(version);
+    xmlFreeDoc(doc);
+
+    return version_str;
 }
 
 bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_path, const std::string& validation_name,
@@ -447,49 +488,9 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     return schema_path;
 }
 
-std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::filesystem::path& xml_path,
-                                                                    const std::string& root_element,
-                                                                    const std::string& version_attribute)
-{
-    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
-    if (!doc)
-        return std::nullopt;
-
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    if (!root)
-    {
-        xmlFreeDoc(doc);
-        return std::nullopt;
-    }
-
-    // Check if root element name matches
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    if (xmlStrcmp(root->name, reinterpret_cast<const xmlChar*>(root_element.c_str())) != 0)
-    {
-        xmlFreeDoc(doc);
-        return std::nullopt;
-    }
-
-    // Extract version attribute
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    xmlChar* version = xmlGetProp(root, reinterpret_cast<const xmlChar*>(version_attribute.c_str()));
-    if (!version)
-    {
-        xmlFreeDoc(doc);
-        return std::nullopt;
-    }
-
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    std::string version_str(reinterpret_cast<char*>(version));
-    xmlFree(version);
-    xmlFreeDoc(doc);
-
-    return version_str;
-}
-
 bool SchemaCheckerBase::hasElement(const std::filesystem::path& xml_path, const std::string& element_name)
 {
-    xmlDocPtr doc = xmlReadFile(xml_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = readXmlFile(xml_path);
     if (!doc)
         return false;
 

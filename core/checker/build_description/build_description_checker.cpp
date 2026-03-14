@@ -1,6 +1,7 @@
 #include "build_description_checker.h"
 
 #include "certificate.h"
+#include "xml_utils.h"
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -24,7 +25,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
 
     cert.printSubsectionHeader("BUILD DESCRIPTION VALIDATION");
 
-    xmlDocPtr doc = xmlReadFile(build_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = readXmlFile(build_desc_path);
     if (!doc)
     {
         const TestResult test{
@@ -255,7 +256,7 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
     if (!std::filesystem::exists(md_path))
         return ids;
 
-    xmlDocPtr doc = xmlReadFile(md_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = readXmlFile(md_path);
     if (!doc)
         return ids;
 

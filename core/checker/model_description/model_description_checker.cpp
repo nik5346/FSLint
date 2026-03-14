@@ -2,6 +2,7 @@
 
 #include "certificate.h"
 #include "structured_name_parser.h"
+#include "xml_utils.h"
 
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
@@ -41,7 +42,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         return;
     }
 
-    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = readXmlFile(model_desc_path);
     if (!doc)
     {
         const TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}};

@@ -1,6 +1,7 @@
 #include "fmi1_directory_checker.h"
 
 #include "certificate.h"
+#include "xml_utils.h"
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -26,7 +27,7 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
         return;
     }
 
-    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = readXmlFile(model_desc_path);
     if (!doc)
     {
         const TestResult test{

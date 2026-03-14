@@ -23,11 +23,12 @@ class ModelChecker
     // Version management
     bool isVersionDeprecated(const std::string& version) const;
 
-  private:
+  public:
     // Helper functions for FMU manipulation
     bool extract(const std::filesystem::path& fmu_path, const std::filesystem::path& extract_dir) const;
     bool package(const std::filesystem::path& extract_dir, const std::filesystem::path& fmu_path) const;
 
+  private:
     // Utility functions
     std::string calculateSHA256(const std::filesystem::path& path) const;
 };

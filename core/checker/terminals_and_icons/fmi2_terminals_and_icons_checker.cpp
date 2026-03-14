@@ -3,6 +3,7 @@
 #include "terminals_and_icons_checker.h"
 
 #include "certificate.h"
+#include "xml_utils.h"
 
 #include <libxml/parser.h>
 #include <libxml/xmlstring.h>
@@ -35,7 +36,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
         return variables;
     }
 
-    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = readXmlFile(model_desc_path);
     if (!doc)
     {
         cert.printTestResult({"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}});

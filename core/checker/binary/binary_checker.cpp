@@ -2,6 +2,7 @@
 
 #include "binary_parser.h"
 #include "certificate.h"
+#include "xml_utils.h"
 
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
@@ -26,7 +27,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
         return;
     }
 
-    xmlDocPtr doc = xmlReadFile(model_desc_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = readXmlFile(model_desc_path);
     if (!doc)
     {
         cert.printSubsectionSummary(false);

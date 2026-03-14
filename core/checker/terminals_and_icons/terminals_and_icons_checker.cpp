@@ -1,6 +1,7 @@
 #include "terminals_and_icons_checker.h"
 
 #include "certificate.h"
+#include "xml_utils.h"
 
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
@@ -63,7 +64,7 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
         return true;
     }
 
-    xmlDocPtr doc = xmlReadFile(terminals_path.string().c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    xmlDocPtr doc = readXmlFile(terminals_path);
     if (!doc)
     {
         const TestResult test{
