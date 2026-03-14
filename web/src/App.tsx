@@ -284,7 +284,8 @@ function App() {
       console.log('Reconstructed VFS structure:');
       listVFS(workDir);
 
-      const target = discoveredRootRel || '.';
+      const target =
+        discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
       console.log(`Executing main with target: "${target}"`);
 
       module.callMain([target]);
