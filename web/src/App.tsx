@@ -4,11 +4,21 @@ interface FSLintModule {
   FS: {
     writeFile: (path: string, data: Uint8Array) => void;
     unlink: (path: string) => void;
+    mkdir: (path: string) => void;
+    rmdir: (path: string) => void;
+    readdir: (path: string) => string[];
+    stat: (path: string) => { mode: number };
+    isFile: (mode: number) => boolean;
+    isDir: (mode: number) => boolean;
   };
   callMain: (args: string[]) => void;
 }
 
 declare global {
+  interface File {
+    webkitRelativePath: string;
+  }
+
   interface Window {
     createFSLintModule: (config: {
       print: (text: string) => void;
@@ -16,6 +26,50 @@ declare global {
       locateFile?: (path: string, prefix: string) => string;
     }) => Promise<FSLintModule>;
   }
+}
+
+async function getFilesFromEntry(entry: FileSystemEntry): Promise<File[]> {
+  if (entry.isFile) {
+    return new Promise((resolve, reject) => {
+      (entry as FileSystemFileEntry).file(
+        (file) => {
+          // We need to preserve the full path for directory processing.
+          // FileSystemFileEntry doesn't provide webkitRelativePath, but we can use fullPath.
+          // However, fullPath starts with '/', so we remove it.
+          const path = entry.fullPath.startsWith('/')
+            ? entry.fullPath.substring(1)
+            : entry.fullPath;
+          Object.defineProperty(file, 'webkitRelativePath', {
+            value: path,
+          });
+          resolve([file]);
+        },
+        (err) => reject(err),
+      );
+    });
+  } else if (entry.isDirectory) {
+    const dirReader = (entry as FileSystemDirectoryEntry).createReader();
+    const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+      const allEntries: FileSystemEntry[] = [];
+      const readEntries = () => {
+        dirReader.readEntries(
+          (results) => {
+            if (results.length === 0) {
+              resolve(allEntries);
+            } else {
+              allEntries.push(...results);
+              readEntries();
+            }
+          },
+          (err) => reject(err),
+        );
+      };
+      readEntries();
+    });
+    const files = await Promise.all(entries.map((e) => getFilesFromEntry(e)));
+    return files.flat();
+  }
+  return [];
 }
 
 function App() {
@@ -80,33 +134,103 @@ function App() {
   }, [output]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      await processFile(file);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      await processItems(Array.from(files));
     }
+    // Reset input value to allow selecting the same file/folder again
+    event.target.value = '';
   };
 
   const onDrop = async (event: React.DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    const file = event.dataTransfer.files?.[0];
-    if (file) {
-      await processFile(file);
+    const items = event.dataTransfer.items;
+    if (items && items.length > 0) {
+      const files: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry();
+        if (entry) {
+          const entryFiles = await getFilesFromEntry(entry);
+          files.push(...entryFiles);
+        }
+      }
+      if (files.length > 0) {
+        await processItems(files);
+      }
     }
   };
 
-  const processFile = async (file: File) => {
-    if (!module || isProcessing) return;
+  const recursiveUnlink = (path: string) => {
+    if (!module) return;
+    try {
+      const stat = module.FS.stat(path);
+      if (module.FS.isDir(stat.mode)) {
+        const entries = module.FS.readdir(path);
+        for (const entry of entries) {
+          if (entry !== '.' && entry !== '..') {
+            recursiveUnlink(`${path}/${entry}`);
+          }
+        }
+        module.FS.rmdir(path);
+      } else {
+        module.FS.unlink(path);
+      }
+    } catch (err) {
+      console.error(`Error unlinking ${path}:`, err);
+    }
+  };
+
+  const processItems = async (files: File[]) => {
+    if (!module || isProcessing || files.length === 0) return;
 
     setIsProcessing(true);
     setOutput('');
 
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const data = new Uint8Array(arrayBuffer);
+      // Determine if it's a single file or a directory
+      // When multiple files are selected via webkitdirectory, they all have webkitRelativePath
+      const firstPath = files[0].webkitRelativePath || files[0].name;
+      const rootName = firstPath.split('/')[0];
+      const isDirectory =
+        files.length > 1 ||
+        (files[0].webkitRelativePath && files[0].webkitRelativePath.includes('/'));
 
-      module.FS.writeFile(file.name, data);
-      module.callMain([file.name]);
-      module.FS.unlink(file.name);
+      if (!isDirectory) {
+        // Single file case
+        const file = files[0];
+        const arrayBuffer = await file.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        module.FS.writeFile(file.name, data);
+        module.callMain([file.name]);
+        module.FS.unlink(file.name);
+      } else {
+        // Directory case
+        for (const file of files) {
+          const path = file.webkitRelativePath || file.name;
+          const parts = path.split('/');
+          let currentPath = '';
+
+          for (let i = 0; i < parts.length - 1; i++) {
+            currentPath += (currentPath ? '/' : '') + parts[i];
+            try {
+              module.FS.mkdir(currentPath);
+            } catch (err) {
+              const e = err as { name?: string; errno?: number };
+              if (e.name !== 'ErrnoError' || e.errno !== 17) {
+                // 17 is EEXIST
+                throw err;
+              }
+            }
+          }
+
+          const arrayBuffer = await file.arrayBuffer();
+          const data = new Uint8Array(arrayBuffer);
+          module.FS.writeFile(path, data);
+        }
+
+        module.callMain([rootName]);
+        recursiveUnlink(rootName);
+      }
     } catch (err) {
       setOutput((prev) => prev + 'Error during validation: ' + err + '\n');
     } finally {
@@ -187,10 +311,66 @@ function App() {
             onChange={handleFileChange}
             disabled={!isReady || isProcessing}
           />
+          <input
+            id="folderInput"
+            type="file"
+            webkitdirectory=""
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+            disabled={!isReady || isProcessing}
+          />
           {isProcessing ? (
             <p style={{ margin: 0 }}>Processing...</p>
           ) : (
-            <p style={{ margin: 0 }}>Drag & drop an FMU/SSP file here, or click to select</p>
+            <div>
+              <p style={{ margin: 0 }}>Drag & drop an FMU/SSP file or folder here</p>
+              <div
+                style={{
+                  marginTop: '10px',
+                  display: 'flex',
+                  gap: '10px',
+                  justifyContent: 'center',
+                }}
+              >
+                <button
+                  type="button"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    color: 'inherit',
+                    font: 'inherit',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    document.getElementById('fileInput')?.click();
+                  }}
+                >
+                  Select File
+                </button>
+                <span>or</span>
+                <button
+                  type="button"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    color: 'inherit',
+                    font: 'inherit',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    document.getElementById('folderInput')?.click();
+                  }}
+                >
+                  Select Folder
+                </button>
+              </div>
+            </div>
           )}
         </button>
 
