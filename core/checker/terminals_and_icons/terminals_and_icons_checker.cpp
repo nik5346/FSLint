@@ -18,6 +18,10 @@
 
 void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
 {
+    auto terminals_path = path / "terminalsAndIcons" / "terminalsAndIcons.xml";
+    if (!std::filesystem::exists(terminals_path))
+        return;
+
     cert.printSubsectionHeader("TERMINALS AND ICONS VALIDATION");
 
     std::string fmiModelDescriptionVersion;
@@ -55,14 +59,6 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
                                                           Certificate& cert)
 {
     auto terminals_path = path / "terminalsAndIcons" / "terminalsAndIcons.xml";
-
-    if (!std::filesystem::exists(terminals_path))
-    {
-        const TestResult test{
-            "Terminals and Icons File", TestStatus::PASS, {"terminalsAndIcons.xml not present (optional)."}};
-        cert.printTestResult(test);
-        return true;
-    }
 
     xmlDocPtr doc = readXmlFile(terminals_path);
     if (!doc)
