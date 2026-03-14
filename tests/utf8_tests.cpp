@@ -1,5 +1,5 @@
-#include "model_checker.h"
 #include "certificate.h"
+#include "model_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
@@ -27,12 +27,11 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
         Certificate cert = checker.validate(test_data_root, true);
 
         INFO("Checking results for " << test_data_root);
-        for (const auto& res : cert.getResults()) {
-            if (res.status == TestStatus::FAIL) {
-                for (const auto& msg : res.messages) {
+        for (const auto& res : cert.getResults())
+        {
+            if (res.status == TestStatus::FAIL)
+                for (const auto& msg : res.messages)
                     UNSCOPED_INFO("FAIL: " << res.test_name << ": " << msg);
-                }
-            }
         }
 
         CHECK_FALSE(has_fail(cert));
@@ -41,7 +40,8 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
     SECTION("Validate ZIP model with UTF-8")
     {
         fs::path zip_path = fs::temp_directory_path() / "test_🚀.fmu";
-        if (fs::exists(zip_path)) fs::remove(zip_path);
+        if (fs::exists(zip_path))
+            fs::remove(zip_path);
 
         ModelChecker checker;
         // This will create the ZIP from the static test data
@@ -59,7 +59,8 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
     {
         // Create a temporary directory to avoid polluting tests/data
         fs::path temp_dir = fs::temp_directory_path() / "utf8_nested_test_🚀";
-        if (fs::exists(temp_dir)) fs::remove_all(temp_dir);
+        if (fs::exists(temp_dir))
+            fs::remove_all(temp_dir);
         fs::create_directories(temp_dir);
 
         // Copy static data to temp dir
@@ -78,8 +79,10 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
 
         // Check if nested model was found
         bool found = false;
-        for (const auto& nested : cert.getNestedModels()) {
-            if (nested.name == nested_name) {
+        for (const auto& nested : cert.getNestedModels())
+        {
+            if (nested.name == nested_name)
+            {
                 found = true;
                 break;
             }

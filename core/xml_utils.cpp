@@ -15,6 +15,7 @@ xmlDocPtr readXmlFile(const std::filesystem::path& path)
     if (!file.read(buffer.data(), size))
         return nullptr;
 
-    return xmlReadMemory(buffer.data(), static_cast<int>(size), path.string().c_str(), nullptr,
+    const std::string path_str = path.string();
+    return xmlReadMemory(buffer.data(), static_cast<int>(size), path_str.c_str(), nullptr,
                          XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
 }

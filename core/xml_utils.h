@@ -1,7 +1,7 @@
 #pragma once
 
-#include <libxml/parser.h>
 #include <filesystem>
+#include <libxml/parser.h>
 
 /**
  * Robustly reads an XML file into a libxml2 document.

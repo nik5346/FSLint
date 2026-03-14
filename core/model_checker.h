@@ -29,7 +29,6 @@ class ModelChecker
     bool package(const std::filesystem::path& extract_dir, const std::filesystem::path& fmu_path) const;
 
   private:
-
     // Utility functions
     std::string calculateSHA256(const std::filesystem::path& path) const;
 };

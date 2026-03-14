@@ -1,8 +1,8 @@
 #include "model_description_checker.h"
 
 #include "certificate.h"
-#include "xml_utils.h"
 #include "structured_name_parser.h"
+#include "xml_utils.h"
 
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>

@@ -488,7 +488,6 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     return schema_path;
 }
 
-
 bool SchemaCheckerBase::hasElement(const std::filesystem::path& xml_path, const std::string& element_name)
 {
     xmlDocPtr doc = readXmlFile(xml_path);
