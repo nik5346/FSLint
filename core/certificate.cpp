@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
