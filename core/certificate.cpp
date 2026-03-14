@@ -22,6 +22,7 @@
 #define ISATTY _isatty
 #define FILENO _fileno
 #else
+#include <cstdio>
 #include <unistd.h>
 #define ISATTY isatty
 #define FILENO fileno
