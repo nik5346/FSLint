@@ -6,13 +6,13 @@
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
+#include <exception>
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
