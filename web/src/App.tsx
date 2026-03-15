@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface Theme {
   bg: string;
@@ -32,9 +30,7 @@ interface FSLintModule {
     cwd: () => string;
     readFile: (path: string, opts?: { encoding?: string; flags?: string }) => Uint8Array | string;
   };
-  _is_binary: (path: number) => number;
-  _get_file_tree_json: (path: number) => number;
-  _run_validation: (path: number) => void;
+  _run_validation: (path: number) => number;
   stackAlloc: (size: number) => number;
   stackSave: () => number;
   stackRestore: (stack: number) => void;
@@ -48,6 +44,18 @@ interface FileNode {
   kind: 'file' | 'directory';
   isBinary: boolean;
   children?: FileNode[];
+}
+
+interface ValidationResult {
+  report: string;
+  overallStatus: number;
+  totalFailed: number;
+  results: {
+    name: string;
+    status: number;
+    messages: string[];
+  }[];
+  fileTree: FileNode;
 }
 
 declare global {
@@ -222,17 +230,31 @@ const FileTreeItem = ({
 const FilePreview = ({
   selectedFile,
   module,
+  fileTree,
   theme,
-  isDark,
 }: {
   selectedFile: string | null;
   module: FSLintModule | null;
+  fileTree: FileNode | null;
   theme: Theme;
-  isDark: boolean;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<'render' | 'code'>('render');
+
+  const findNode = useCallback((root: FileNode, path: string): FileNode | null => {
+    const search = (node: FileNode): FileNode | null => {
+      if (node.path === path) return node;
+      if (node.children) {
+        for (const child of node.children) {
+          const found = search(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return search(root);
+  }, []);
 
   useEffect(() => {
     let url: string | null = null;
@@ -270,11 +292,8 @@ const FilePreview = ({
   const canToggle = isSvg || isHtml;
 
   const data = module.FS.readFile(selectedFile) as Uint8Array;
-  const stack = module.stackSave();
-  const ptr = module.stackAlloc(selectedFile.length * 4 + 1);
-  module.stringToUTF8(selectedFile, ptr, selectedFile.length * 4 + 1);
-  const isBinaryResult = module._is_binary(ptr);
-  module.stackRestore(stack);
+  const node = fileTree ? findNode(fileTree, selectedFile) : null;
+  const isBinaryResult = node?.isBinary ?? false;
 
   if (isBinaryResult) {
     return (
@@ -308,6 +327,7 @@ const FilePreview = ({
   }
 
   const content = new TextDecoder().decode(data);
+  const lines = content.split('\n');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content).then(() => {
@@ -785,23 +805,6 @@ function App() {
     }
   };
 
-  const getFileTree = (path: string): FileNode | null => {
-    if (!module) return null;
-    const stack = module.stackSave();
-    const ptr = module.stackAlloc(path.length * 4 + 1);
-    module.stringToUTF8(path, ptr, path.length * 4 + 1);
-    const jsonPtr = module._get_file_tree_json(ptr);
-    const jsonStr = module.UTF8ToString(jsonPtr);
-    module.stackRestore(stack);
-
-    try {
-      return JSON.parse(jsonStr) as FileNode;
-    } catch (e) {
-      console.error('Failed to parse file tree JSON:', e);
-      return null;
-    }
-  };
-
   const processItems = async (files: File[]) => {
     if (!module || isProcessing || files.length === 0) return;
 
@@ -865,36 +868,24 @@ function App() {
       console.log('Reconstructed VFS structure:');
       listVFS(workDir);
 
-      const isSingleArchive =
-        normalizedFiles.length === 1 &&
-        (normalizedFiles[0].relPath.toLowerCase().endsWith('.fmu') ||
-          normalizedFiles[0].relPath.toLowerCase().endsWith('.ssp'));
-
       const target =
         discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
       console.log(`Executing validation with target: "${target}"`);
 
       const targetPtr = module.stackAlloc(target.length * 4 + 1);
       module.stringToUTF8(target, targetPtr, target.length * 4 + 1);
-      module._run_validation(targetPtr);
+      const jsonPtr = module._run_validation(targetPtr);
+      const jsonStr = module.UTF8ToString(jsonPtr);
 
-      // After execution, build the tree
-      let rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
-      if (isSingleArchive) {
-        // Find extracted directory (it starts with model_validation_ or model_cert_add_)
-        try {
-          const entries = module.FS.readdir(workDir);
-          const unpackedDir = entries.find(
-            (e) => e.startsWith('model_validation_') || e.startsWith('model_cert_add_'),
-          );
-          if (unpackedDir) {
-            rootPath = `${workDir}/${unpackedDir}`;
-          }
-        } catch (e) {
-          console.error('Failed to find unpacked directory:', e);
-        }
+      try {
+        const result = JSON.parse(jsonStr) as ValidationResult;
+        setOutput(result.report);
+        setFileTree(result.fileTree);
+      } catch (e) {
+        console.error('Failed to parse validation result JSON:', e);
+        setOutput((prev) => prev + 'Error: Failed to parse validation result\n');
       }
-      setFileTree(getFileTree(rootPath));
+
       setActiveTab('certificate');
     } catch (err) {
       let errorMessage: string;
@@ -1002,7 +993,7 @@ function App() {
           height: 48px;
           display: flex;
           align-items: center;
-          justify-content: center;
+          justifyContent: center;
           border: none;
           background: transparent;
           color: inherit;
@@ -1079,7 +1070,7 @@ function App() {
           onClick={() => setActiveTab('explorer')}
           disabled={!fileTree}
           style={{ opacity: fileTree ? 1 : 0.3, cursor: fileTree ? 'pointer' : 'default' }}
-          title="File Tree"
+          title="File Explorer"
         >
           <svg
             width="24"
@@ -1091,12 +1082,10 @@ function App() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <rect x="9" y="3" width="6" height="6" rx="1"></rect>
-            <rect x="3" y="15" width="6" height="6" rx="1"></rect>
-            <rect x="15" y="15" width="6" height="6" rx="1"></rect>
-            <path d="M12 9v6"></path>
-            <path d="M12 15H6"></path>
-            <path d="M12 15h6"></path>
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+            <path d="M7 21h10"></path>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
           </svg>
         </button>
       </aside>
@@ -1150,7 +1139,6 @@ function App() {
             <input
               id="fileInput"
               type="file"
-              multiple
               style={{ display: 'none' }}
               onChange={handleFileChange}
               disabled={!isReady || isProcessing}
@@ -1387,8 +1375,8 @@ function App() {
                 key={selectedFile}
                 selectedFile={selectedFile}
                 module={module}
+                fileTree={fileTree}
                 theme={theme}
-                isDark={isDark}
               />
             </div>
           </div>
