@@ -77,7 +77,7 @@ bool isBinary(const std::filesystem::path& path)
 static void getFileTreeRecursive(const std::filesystem::path& path, rapidjson::Value& node,
                                  rapidjson::Document::AllocatorType& allocator)
 {
-    std::string name = path.filename().string();
+    const std::string name = path.filename().string();
     const bool is_dir = std::filesystem::is_directory(path);
     bool binary = false;
 
