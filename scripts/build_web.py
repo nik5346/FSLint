@@ -295,6 +295,16 @@ def copy_artifacts():
     else:
         print(f"[WARNING] banner not found: {banner_src}")
 
+    # Copy LICENSE to public folder
+    license_src = ROOT / "LICENSE"
+    license_dst = web_public_root / "LICENSE"
+    if license_src.exists():
+        shutil.copy(license_src, license_dst)
+        print(f"  {license_src.name} -> {license_dst}")
+    else:
+        print(f"[WARNING] LICENSE not found: {license_src}")
+
+
 
 
 def build_web():
