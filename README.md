@@ -72,6 +72,7 @@ FSLint can manage validation certificates embedded within the models:
 - `-r, --remove`: Remove the certificate from the FMU/SSP.
 - `-d, --display`: Display the certificate information from the FMU/SSP.
 - `-c, --verify`: Verify the embedded certificate in the FMU/SSP (checks hash integrity and tool version support).
+- `-t, --tree`: Display the internal file structure of the FMU/SSP.
 
 Example output:
 ```text

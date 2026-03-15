@@ -281,6 +281,51 @@ void Certificate::printNestedModelsTree()
     printTree(*this, _nested_models, "", true);
 }
 
+static void printFileTreeRecursive(Certificate& cert, const std::filesystem::path& path, const std::string& prefix)
+{
+    std::vector<std::filesystem::directory_entry> entries;
+    for (const auto& entry : std::filesystem::directory_iterator(path))
+        entries.push_back(entry);
+
+    std::sort(entries.begin(), entries.end(),
+              [](const auto& a, const auto& b)
+              {
+                  if (a.is_directory() != b.is_directory())
+                      return a.is_directory();
+                  return a.path().filename().string() < b.path().filename().string();
+              });
+
+    for (size_t i = 0; i < entries.size(); ++i)
+    {
+        const bool is_last = (i == entries.size() - 1);
+        const auto& entry = entries[i];
+        const std::string name = entry.path().filename().string();
+        const std::string marker = is_last ? "└── " : "├── ";
+
+        cert.log("  " + prefix + marker + name);
+
+        if (entry.is_directory())
+        {
+            const std::string next_prefix = prefix + (is_last ? "    " : "│   ");
+            printFileTreeRecursive(cert, entry.path(), next_prefix);
+        }
+    }
+}
+
+void Certificate::printFileTree(const std::filesystem::path& root, const std::string& label)
+{
+    printSubsectionHeader("FILE TREE: " + label);
+    log("  .");
+    try
+    {
+        printFileTreeRecursive(*this, root, "");
+    }
+    catch (const std::exception& e)
+    {
+        log("  Error printing tree: " + std::string(e.what()));
+    }
+}
+
 void Certificate::printFooter()
 {
     log("");

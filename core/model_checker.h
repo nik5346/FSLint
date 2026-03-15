@@ -10,7 +10,7 @@ class ModelChecker
 {
   public:
     // Main validation method
-    Certificate validate(const std::filesystem::path& path, bool quiet = false) const;
+    Certificate validate(const std::filesystem::path& path, bool quiet = false, bool show_tree = false) const;
 
   public:
     // Certificate management

@@ -76,6 +76,8 @@ class Certificate
     void printSubsectionSummary(bool subsection_valid);
     void printFooter();
 
+    void printFileTree(const std::filesystem::path& root, const std::string& label);
+
     void addNestedModelResult(const NestedModelResult& result);
     void printNestedModelsTree();
 

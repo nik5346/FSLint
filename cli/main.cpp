@@ -18,6 +18,7 @@ void printUsage(const std::string& program_name)
     std::cout << "  -r, --remove            Remove certificate from FMU/SSP\n";
     std::cout << "  -d, --display           Display certificate information from FMU/SSP\n";
     std::cout << "  -c, --verify            Verify the embedded certificate in FMU/SSP\n";
+    std::cout << "  -t, --tree              Show internal file tree of FMU/SSP\n";
     std::cout << "  -h, --help              Show this help message\n";
     std::cout << "  -v, --version           Show version information\n";
     std::cout << "\n";
@@ -48,6 +49,7 @@ int main(int argc, char** argv)
         bool remove_cert = false;
         bool display_cert = false;
         bool verify_cert = false;
+        bool show_tree = false;
 
         // Parse arguments
         for (size_t i = 1; i < args.size(); ++i)
@@ -82,6 +84,8 @@ int main(int argc, char** argv)
                 display_cert = true;
             else if (arg == "-c" || arg == "--verify")
                 verify_cert = true;
+            else if (arg == "-t" || arg == "--tree")
+                show_tree = true;
             else if (arg[0] != '-')
             {
                 if (fmu_path.empty())
@@ -141,7 +145,7 @@ int main(int argc, char** argv)
             return validator.updateCertificate(fmu_path) ? 0 : 1;
 
         // Default: validate FMU (without saving certificate)
-        validator.validate(fmu_path);
+        validator.validate(fmu_path, false, show_tree);
 
         return 0;
     }

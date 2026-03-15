@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet) const
+Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree) const
 {
     Certificate cert;
     cert.setQuiet(quiet);
@@ -112,7 +112,10 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     for (auto& checker : checkers)
         checker->validate(extract_dir, cert);
 
-    // Cleanup temporary directory
+    if (show_tree)
+        cert.printFileTree(extract_dir, model_info.original_path.filename().string());
+
+        // Cleanup temporary directory
 #ifndef __EMSCRIPTEN__
     if (is_temporary && std::filesystem::exists(extract_dir))
         std::filesystem::remove_all(extract_dir);
