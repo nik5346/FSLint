@@ -17,6 +17,7 @@ interface FSLintModule {
 }
 
 declare global {
+  const __APP_VERSION__: string;
   interface Window {
     createFSLintModule: (config: {
       print: (text: string) => void;
@@ -665,10 +666,17 @@ function App() {
           textAlign: 'center',
           flexShrink: 0,
           transition: 'color 0.2s',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '10px',
         }}
       >
-        FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your
-        browser.
+        <span>FSLint v{__APP_VERSION__}</span>
+        <span>•</span>
+        <span>
+          FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your
+          browser.
+        </span>
       </footer>
     </div>
   );
