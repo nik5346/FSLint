@@ -1,4 +1,20 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+interface Theme {
+  bg: string;
+  surface: string;
+  border: string;
+  text: string;
+  muted: string;
+  termBg: string;
+  termText: string;
+  termBtnHover: string;
+  iconHover: string;
+  buttonBorder: string;
+  buttonHoverBg: string;
+}
 
 interface FSLintModule {
   FS: {
@@ -12,8 +28,16 @@ interface FSLintModule {
     isDir: (mode: number) => boolean;
     chdir: (path: string) => void;
     cwd: () => string;
+    readFile: (path: string, opts?: { encoding?: string; flags?: string }) => Uint8Array | string;
   };
   callMain: (args: string[]) => void;
+}
+
+interface FileNode {
+  name: string;
+  path: string;
+  kind: 'file' | 'directory';
+  children?: FileNode[];
 }
 
 declare global {
@@ -66,6 +90,176 @@ async function getFilesFromHandle(
   return files;
 }
 
+const FileTreeItem = ({
+  node,
+  selectedFile,
+  setSelectedFile,
+  theme,
+  level = 0,
+}: {
+  node: FileNode;
+  selectedFile: string | null;
+  setSelectedFile: (path: string) => void;
+  theme: Theme;
+  level?: number;
+}) => {
+  const isSelected = selectedFile === node.path;
+  const isDir = node.kind === 'directory';
+
+  return (
+    <div style={{ marginLeft: level * 12 }}>
+      <div
+        role="button"
+        tabIndex={isDir ? -1 : 0}
+        onClick={() => !isDir && setSelectedFile(node.path)}
+        onKeyDown={(e) => {
+          if (!isDir && (e.key === 'Enter' || e.key === ' ')) {
+            setSelectedFile(node.path);
+          }
+        }}
+        style={{
+          padding: '4px 8px',
+          cursor: isDir ? 'default' : 'pointer',
+          borderRadius: '4px',
+          backgroundColor: isSelected ? theme.buttonHoverBg : 'transparent',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '0.9em',
+          whiteSpace: 'nowrap',
+        }}
+        onMouseEnter={(e) => !isSelected && (e.currentTarget.style.backgroundColor = theme.iconHover)}
+        onMouseLeave={(e) => !isSelected && (e.currentTarget.style.backgroundColor = 'transparent')}
+      >
+        {isDir ? (
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        ) : (
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+            <polyline points="13 2 13 9 20 9"></polyline>
+          </svg>
+        )}
+        {node.name}
+      </div>
+      {isDir &&
+        node.children?.map((child) => (
+          <FileTreeItem
+            key={child.path}
+            node={child}
+            selectedFile={selectedFile}
+            setSelectedFile={setSelectedFile}
+            theme={theme}
+            level={level + 1}
+          />
+        ))}
+    </div>
+  );
+};
+
+const FilePreview = ({
+  selectedFile,
+  module,
+  theme,
+}: {
+  selectedFile: string | null;
+  module: FSLintModule | null;
+  theme: Theme;
+}) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let url: string | null = null;
+
+    if (selectedFile && module) {
+      const ext = selectedFile.split('.').pop()?.toLowerCase();
+      const isImage = ext === 'png' || ext === 'svg' || ext === 'jpg' || ext === 'jpeg';
+
+      if (isImage) {
+        try {
+          const data = module.FS.readFile(selectedFile) as Uint8Array;
+          const type = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const blob = new Blob([data as any], { type });
+          url = URL.createObjectURL(blob);
+        } catch (e) {
+          console.error('Failed to create object URL:', e);
+        }
+      }
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setImageUrl(url);
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+
+  }, [selectedFile, module]);
+
+  if (!selectedFile || !module) return null;
+
+  const ext = selectedFile.split('.').pop()?.toLowerCase();
+  const isImage = ext === 'png' || ext === 'svg' || ext === 'jpg' || ext === 'jpeg';
+
+  if (isImage) {
+    return imageUrl ? (
+      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
+        <img
+          src={imageUrl}
+          alt={selectedFile}
+          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+        />
+      </div>
+    ) : (
+      <div style={{ padding: '20px', color: '#ff5555' }}>Failed to load image</div>
+    );
+  }
+
+  let content: string;
+  try {
+    content = module.FS.readFile(selectedFile, { encoding: 'utf8' }) as string;
+  } catch (e) {
+    return (
+      <div style={{ padding: '20px', color: '#ff5555' }}>Failed to load file: {String(e)}</div>
+    );
+  }
+
+  return (
+    <pre
+      style={{
+        margin: 0,
+        padding: '15px',
+        fontFamily: 'monospace',
+        fontSize: '0.9em',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-all',
+        color: theme.text,
+      }}
+    >
+      {content}
+    </pre>
+  );
+};
+
 async function getFilesFromEntry(entry: FileSystemEntry): Promise<File[]> {
   if (entry.isFile) {
     return new Promise((resolve, reject) => {
@@ -114,6 +308,12 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isDark, setIsDark] = useState(true);
+  const [activeTab, setActiveTab] = useState<'certificate' | 'rules' | 'explorer'>('certificate');
+  const [currentWorkDir, setCurrentWorkDir] = useState<string | null>(null);
+  const [fileTree, setFileTree] = useState<FileNode | null>(null);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [rulesText, setRulesText] = useState<string>('');
+
   const outputEndRef = useRef<HTMLPreElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
@@ -174,6 +374,13 @@ function App() {
       folderInputRef.current.setAttribute('webkitdirectory', '');
       folderInputRef.current.setAttribute('directory', '');
     }
+  }, []);
+
+  useEffect(() => {
+    fetch('rules.md')
+      .then((res) => res.text())
+      .then((text) => setRulesText(text))
+      .catch((err) => console.error('Failed to load rules.md:', err));
   }, []);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -290,15 +497,51 @@ function App() {
     }
   };
 
+  const getFileTree = (path: string): FileNode | null => {
+    if (!module) return null;
+    try {
+      const stat = module.FS.stat(path);
+      const name = path.split('/').pop() || '/';
+      const node: FileNode = {
+        name,
+        path,
+        kind: module.FS.isDir(stat.mode) ? 'directory' : 'file',
+      };
+
+      if (node.kind === 'directory') {
+        const entries = module.FS.readdir(path);
+        node.children = entries
+          .filter((e) => e !== '.' && e !== '..')
+          .map((e) => getFileTree(path === '/' ? `/${e}` : `${path}/${e}`))
+          .filter((n): n is FileNode => n !== null)
+          .sort((a, b) => {
+            if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+            return a.name.localeCompare(b.name);
+          });
+      }
+      return node;
+    } catch {
+      return null;
+    }
+  };
+
   const processItems = async (files: File[]) => {
     if (!module || isProcessing || files.length === 0) return;
 
     setIsProcessing(true);
     setOutput('');
+    setFileTree(null);
+    setSelectedFile(null);
+
+    // Clean up previous run
+    if (currentWorkDir) {
+      recursiveUnlink(currentWorkDir);
+    }
 
     const timestamp = Date.now();
     const workDir = `/val_${timestamp}`;
     const oldCwd = module.FS.cwd();
+    setCurrentWorkDir(workDir);
 
     try {
       mkdirP(workDir);
@@ -350,6 +593,11 @@ function App() {
       console.log(`Executing main with target: "${target}"`);
 
       module.callMain([target]);
+
+      // After execution, build the tree
+      const rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
+      setFileTree(getFileTree(rootPath));
+      setActiveTab('certificate');
     } catch (err) {
       let errorMessage: string;
       if (err instanceof Error) {
@@ -365,7 +613,7 @@ function App() {
     } finally {
       try {
         module.FS.chdir(oldCwd);
-        recursiveUnlink(workDir);
+        // We no longer unlink workDir here so it remains available for the explorer
       } catch (e) {
         console.error('Cleanup failed:', e);
       }
@@ -405,16 +653,15 @@ function App() {
     });
   };
 
+
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
         display: 'flex',
-        flexDirection: 'column',
-        padding: '20px',
+        flexDirection: 'row',
         boxSizing: 'border-box',
-        gap: '20px',
         overflow: 'hidden',
         backgroundColor: theme.bg,
         color: theme.text,
@@ -453,276 +700,463 @@ function App() {
         .copy-btn:focus-visible {
           outline: none;
         }
+        .tab-btn {
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justifyContent: center;
+          border: none;
+          background: transparent;
+          color: inherit;
+          cursor: pointer;
+          border-radius: 8px;
+          transition: background-color 0.2s;
+        }
+        .tab-btn:hover {
+          background-color: var(--btn-hover-bg);
+        }
+        .tab-btn.active {
+          background-color: var(--btn-hover-bg);
+          color: #007bff;
+        }
       `}</style>
-      <header
+
+      {/* Sidebar */}
+      <aside
         style={{
+          width: '64px',
           display: 'flex',
-          alignItems: 'stretch',
-          gap: '20px',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '20px 0',
+          gap: '12px',
+          borderRight: `1px solid ${theme.border}`,
+          backgroundColor: theme.surface,
           flexShrink: 0,
         }}
       >
-        <img
-          src="banner.svg"
-          alt="FSLint Banner"
-          style={{
-            height: '80px',
-            width: 'auto',
-            flexShrink: 0,
-            pointerEvents: 'none',
-            filter: isDark ? 'none' : 'invert(1)',
-          }}
-        />
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={onDrop}
-          style={{
-            border: `2px dashed ${theme.border}`,
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center',
-            cursor: isReady && !isProcessing ? 'default' : 'wait',
-            opacity: isReady && !isProcessing ? 1 : 0.6,
-            background: theme.surface,
-            color: theme.text,
-            font: 'inherit',
-            flex: 1,
-            transition: 'background-color 0.2s, border-color 0.2s',
-          }}
+        <button
+          className={`tab-btn ${activeTab === 'certificate' ? 'active' : ''}`}
+          onClick={() => setActiveTab('certificate')}
+          title="Validation Certificate"
         >
-          <input
-            id="fileInput"
-            type="file"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-            disabled={!isReady || isProcessing}
-          />
-          <input
-            id="folderInput"
-            ref={folderInputRef}
-            type="file"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-            disabled={!isReady || isProcessing}
-          />
-          {isProcessing ? (
-            <p style={{ margin: 0 }}>Processing...</p>
-          ) : (
-            <div>
-              <p style={{ margin: 0 }}>Drag & drop an FMU/SSP file or folder here</p>
-              <div
-                style={{
-                  marginTop: '10px',
-                  display: 'flex',
-                  gap: '10px',
-                  justifyContent: 'center',
-                }}
-              >
-                <label
-                  htmlFor="fileInput"
-                  style={{
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Select File
-                </label>
-                <span>or</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleFolderSelect}
-                  onKeyDown={(e) =>
-                    (e.key === 'Enter' || e.key === ' ') &&
-                    handleFolderSelect(e as unknown as React.MouseEvent)
-                  }
-                  style={{
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Select Folder
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            flexShrink: 0,
-            alignSelf: 'stretch',
-          }}
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'rules' ? 'active' : ''}`}
+          onClick={() => setActiveTab('rules')}
+          title="Validation Rules"
         >
-          <a
-            href="https://github.com/nik5346/FSLint"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="View on GitHub"
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '34px',
-              borderRadius: '6px',
-              border: `1px solid ${theme.buttonBorder}`,
-              backgroundColor: 'transparent',
-              color: theme.text,
-              textDecoration: 'none',
-              cursor: 'pointer',
-              transition: 'background-color 0.15s, border-color 0.15s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.buttonHoverBg)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-            </svg>
-          </a>
-
-          <button
-            onClick={() => setIsDark((d) => !d)}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="icon-btn"
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '34px',
-              borderRadius: '6px',
-              border: `1px solid ${theme.buttonBorder}`,
-              color: theme.text,
-              cursor: 'pointer',
-              transition: 'background-color 0.15s, border-color 0.15s',
-              flexShrink: 0,
-            }}
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'explorer' ? 'active' : ''}`}
+          onClick={() => setActiveTab('explorer')}
+          disabled={!fileTree}
+          style={{ opacity: fileTree ? 1 : 0.3, cursor: fileTree ? 'pointer' : 'default' }}
+          title="File Explorer"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            {isDark ? (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
-            ) : (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            )}
-          </button>
-        </div>
-      </header>
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+            <path d="M7 21h10"></path>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </button>
+      </aside>
 
-      <div
+      <main
         style={{
-          position: 'relative',
           flex: 1,
-          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
+          padding: '20px',
+          gap: '20px',
+          minWidth: 0,
         }}
       >
-        <button
-          onClick={handleCopy}
-          disabled={!output}
-          title={copied ? 'Copied!' : 'Copy to clipboard'}
-          className="copy-btn"
+        <header
           style={{
-            position: 'absolute',
-            top: '6px',
-            right: '6px',
-            zIndex: 1,
-            padding: '5px',
-            color: theme.termText,
-            border: 'none',
-            borderRadius: '6px',
-            cursor: output ? 'pointer' : 'default',
-            opacity: output ? 0.6 : 0.2,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background-color 0.15s, opacity 0.15s',
+            alignItems: 'stretch',
+            gap: '20px',
+            flexShrink: 0,
           }}
         >
-          {copied ? (
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <img
+            src="banner.svg"
+            alt="FSLint Banner"
+            style={{
+              height: '80px',
+              width: 'auto',
+              flexShrink: 0,
+              pointerEvents: 'none',
+              filter: isDark ? 'none' : 'invert(1)',
+            }}
+          />
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={onDrop}
+            style={{
+              border: `2px dashed ${theme.border}`,
+              borderRadius: '8px',
+              padding: '20px',
+              textAlign: 'center',
+              cursor: isReady && !isProcessing ? 'default' : 'wait',
+              opacity: isReady && !isProcessing ? 1 : 0.6,
+              background: theme.surface,
+              color: theme.text,
+              font: 'inherit',
+              flex: 1,
+              transition: 'background-color 0.2s, border-color 0.2s',
+            }}
+          >
+            <input
+              id="fileInput"
+              type="file"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+              disabled={!isReady || isProcessing}
+            />
+            <input
+              id="folderInput"
+              ref={folderInputRef}
+              type="file"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+              disabled={!isReady || isProcessing}
+            />
+            {isProcessing ? (
+              <p style={{ margin: 0 }}>Processing...</p>
+            ) : (
+              <div>
+                <p style={{ margin: 0 }}>Drag & drop an FMU/SSP file or folder here</p>
+                <div
+                  style={{
+                    marginTop: '10px',
+                    display: 'flex',
+                    gap: '10px',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <label
+                    htmlFor="fileInput"
+                    style={{
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Select File
+                  </label>
+                  <span>or</span>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={handleFolderSelect}
+                    onKeyDown={(e) =>
+                      (e.key === 'Enter' || e.key === ' ') &&
+                      handleFolderSelect(e as unknown as React.MouseEvent)
+                    }
+                    style={{
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Select Folder
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              flexShrink: 0,
+              alignSelf: 'stretch',
+              justifyContent: 'center',
+            }}
+          >
+            <a
+              href="https://github.com/nik5346/FSLint"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View on GitHub"
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '34px',
+                borderRadius: '6px',
+                border: `1px solid ${theme.buttonBorder}`,
+                backgroundColor: 'transparent',
+                color: theme.text,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.15s, border-color 0.15s',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.buttonHoverBg)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          ) : (
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+              </svg>
+            </a>
+
+            <button
+              onClick={() => setIsDark((d) => !d)}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="icon-btn"
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '34px',
+                borderRadius: '6px',
+                border: `1px solid ${theme.buttonBorder}`,
+                color: theme.text,
+                cursor: 'pointer',
+                transition: 'background-color 0.15s, border-color 0.15s',
+                flexShrink: 0,
+              }}
             >
-              <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-            </svg>
-          )}
-        </button>
-        <pre
-          ref={outputEndRef}
-          style={{
-            flex: 1,
-            minHeight: 0,
-            backgroundColor: theme.termBg,
-            color: theme.termText,
-            padding: '15px',
-            borderRadius: '4px',
-            overflowY: 'auto',
-            margin: 0,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-            fontFamily: 'monospace',
-            fontVariantNumeric: 'tabular-nums',
-            textRendering: 'optimizeSpeed',
-          }}
-        >
-          {parseAnsi(output)}
-        </pre>
-      </div>
+              {isDark ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              ) : (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </header>
+
+        {activeTab === 'rules' && (
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              padding: '0 20px',
+              backgroundColor: theme.surface,
+              borderRadius: '4px',
+              border: `1px solid ${theme.border}`,
+            }}
+          >
+            <style>{`
+            .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+            .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
+            .markdown-body th { background-color: ${theme.bg}; }
+            .markdown-body code { background-color: ${theme.bg}; padding: 2px 4px; border-radius: 4px; }
+            .markdown-body pre { background-color: ${theme.bg}; padding: 16px; border-radius: 4px; overflow: auto; }
+            .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
+          `}</style>
+            <div className="markdown-body">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{rulesText}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'explorer' && fileTree && (
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              gap: '1px',
+              backgroundColor: theme.border,
+              borderRadius: '4px',
+              border: `1px solid ${theme.border}`,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: '300px',
+                backgroundColor: theme.surface,
+                overflowY: 'auto',
+                padding: '10px',
+              }}
+            >
+              <FileTreeItem
+                node={fileTree}
+                selectedFile={selectedFile}
+                setSelectedFile={setSelectedFile}
+                theme={theme}
+              />
+            </div>
+            <div
+              style={{
+                flex: 1,
+                backgroundColor: theme.surface,
+                overflowY: 'auto',
+              }}
+            >
+              <FilePreview selectedFile={selectedFile} module={module} theme={theme} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'certificate' && (
+          <div
+            style={{
+              position: 'relative',
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <button
+              onClick={handleCopy}
+              disabled={!output}
+              title={copied ? 'Copied!' : 'Copy to clipboard'}
+              className="copy-btn"
+              style={{
+                position: 'absolute',
+                top: '6px',
+                right: '6px',
+                zIndex: 1,
+                padding: '5px',
+                color: theme.termText,
+                border: 'none',
+                borderRadius: '6px',
+                cursor: output ? 'pointer' : 'default',
+                opacity: output ? 0.6 : 0.2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background-color 0.15s, opacity 0.15s',
+              }}
+            >
+              {copied ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                </svg>
+              )}
+            </button>
+            <pre
+              ref={outputEndRef}
+              style={{
+                flex: 1,
+                minHeight: 0,
+                backgroundColor: theme.termBg,
+                color: theme.termText,
+                padding: '15px',
+                borderRadius: '4px',
+                overflowY: 'auto',
+                margin: 0,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+                fontFamily: 'monospace',
+                fontVariantNumeric: 'tabular-nums',
+                textRendering: 'optimizeSpeed',
+              }}
+            >
+              {parseAnsi(output)}
+            </pre>
+          </div>
+        )}
+      </main>
 
       <footer
         style={{
