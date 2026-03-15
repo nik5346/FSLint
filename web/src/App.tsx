@@ -188,15 +188,19 @@ function App() {
         const handle = await window.showDirectoryPicker();
         const files = await getFilesFromHandle(handle);
         if (files.length > 0) {
-          await processItems(files);
+          await processItems(files, 'Using modern folder picker');
         }
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
           console.error('showDirectoryPicker failed, falling back to input:', err);
+          setOutput((prev) => prev + `[System] Modern folder picker failed: ${err}\n`);
           folderInputRef.current?.click();
         }
       }
     } else {
+      setOutput(
+        (prev) => prev + '[System] Modern folder picker not supported, using legacy input\n',
+      );
       folderInputRef.current?.click();
     }
   };
@@ -287,11 +291,11 @@ function App() {
     }
   };
 
-  const processItems = async (files: File[]) => {
+  const processItems = async (files: File[], systemMessage?: string) => {
     if (!module || isProcessing || files.length === 0) return;
 
     setIsProcessing(true);
-    setOutput('');
+    setOutput(systemMessage ? `[System] ${systemMessage}\n` : '');
 
     const timestamp = Date.now();
     const workDir = `/val_${timestamp}`;
