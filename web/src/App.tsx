@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -101,21 +101,22 @@ async function getFilesFromHandle(
   return files;
 }
 
-const FileTreeItem = ({
+const FileTreeItem = memo(function FileTreeItem({
   node,
+  isSelected,
   selectedFile,
   setSelectedFile,
   theme,
   level = 0,
 }: {
   node: FileNode;
+  isSelected: boolean;
   selectedFile: string | null;
   setSelectedFile: (path: string) => void;
   theme: Theme;
   level?: number;
-}) => {
+}) {
   const [isOpen, setIsOpen] = useState(true);
-  const isSelected = selectedFile === node.path;
   const isDir = node.kind === 'directory';
 
   return (
@@ -144,9 +145,7 @@ const FileTreeItem = ({
           fontSize: '0.9em',
           whiteSpace: 'nowrap',
         }}
-        onMouseEnter={(e) =>
-          !isSelected && (e.currentTarget.style.backgroundColor = theme.iconHover)
-        }
+        onMouseEnter={(e) => !isSelected && (e.currentTarget.style.backgroundColor = theme.iconHover)}
         onMouseLeave={(e) => !isSelected && (e.currentTarget.style.backgroundColor = 'transparent')}
       >
         {isDir ? (
@@ -209,6 +208,7 @@ const FileTreeItem = ({
           <FileTreeItem
             key={child.path}
             node={child}
+            isSelected={child.path === selectedFile}
             selectedFile={selectedFile}
             setSelectedFile={setSelectedFile}
             theme={theme}
@@ -217,15 +217,17 @@ const FileTreeItem = ({
         ))}
     </div>
   );
-};
+});
 
 const FilePreview = ({
   selectedFile,
+  node,
   module,
   theme,
   isDark,
 }: {
   selectedFile: string | null;
+  node: FileNode | null | undefined;
   module: FSLintModule | null;
   theme: Theme;
   isDark: boolean;
@@ -261,20 +263,29 @@ const FilePreview = ({
     };
   }, [selectedFile, module]);
 
-  if (!selectedFile || !module) return null;
-
-  const ext = selectedFile.split('.').pop()?.toLowerCase();
+  const ext = selectedFile?.split('.').pop()?.toLowerCase();
   const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
   const isSvg = ext === 'svg';
   const isHtml = ext === 'html' || ext === 'htm';
   const canToggle = isSvg || isHtml;
 
-  const data = module.FS.readFile(selectedFile) as Uint8Array;
-  const stack = module.stackSave();
-  const ptr = module.stackAlloc(selectedFile.length * 4 + 1);
-  module.stringToUTF8(selectedFile, ptr, selectedFile.length * 4 + 1);
-  const isBinaryResult = module._is_binary(ptr);
-  module.stackRestore(stack);
+  const isBinaryResult = node?.isBinary ?? false;
+
+  const data = useMemo(() => {
+    if (!selectedFile || !module) return null;
+    if (isBinaryResult) return null;
+    try {
+      return module.FS.readFile(selectedFile) as Uint8Array;
+    } catch (e) {
+      console.error('Failed to read file:', e);
+      return null;
+    }
+  }, [selectedFile, module, isBinaryResult]);
+
+  const content = useMemo(() => {
+    if (!data) return '';
+    return new TextDecoder().decode(data);
+  }, [data]);
 
   if (isBinaryResult) {
     return (
@@ -307,7 +318,7 @@ const FilePreview = ({
     );
   }
 
-  const content = new TextDecoder().decode(data);
+  if (!selectedFile || !module) return null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content).then(() => {
@@ -507,7 +518,7 @@ const FilePreview = ({
             minWidth: '40px',
             paddingRight: '10px',
             textAlign: 'right',
-            color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+            color: isDark ? '#858585' : '#999999',
             userSelect: 'none',
           }}
           customStyle={{
@@ -576,6 +587,15 @@ function App() {
   const [activeTab, setActiveTab] = useState<'certificate' | 'rules' | 'explorer'>('certificate');
   const [currentWorkDir, setCurrentWorkDir] = useState<string | null>(null);
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
+  const fileMap = useMemo(() => {
+    const map = new Map<string, FileNode>();
+    const traverse = (node: FileNode) => {
+      map.set(node.path, node);
+      node.children?.forEach(traverse);
+    };
+    if (fileTree) traverse(fileTree);
+    return map;
+  }, [fileTree]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [rulesText, setRulesText] = useState<string>('');
   const [explorerWidth, setExplorerWidth] = useState(300);
@@ -1356,6 +1376,7 @@ function App() {
             >
               <FileTreeItem
                 node={fileTree}
+                isSelected={selectedFile === fileTree.path}
                 selectedFile={selectedFile}
                 setSelectedFile={setSelectedFile}
                 theme={theme}
@@ -1386,6 +1407,7 @@ function App() {
               <FilePreview
                 key={selectedFile}
                 selectedFile={selectedFile}
+                node={selectedFile ? fileMap.get(selectedFile) : null}
                 module={module}
                 theme={theme}
                 isDark={isDark}
