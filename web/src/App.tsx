@@ -232,6 +232,7 @@ const FilePreview = ({
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<'render' | 'code'>('render');
 
   useEffect(() => {
     let url: string | null = null;
@@ -263,21 +264,10 @@ const FilePreview = ({
   if (!selectedFile || !module) return null;
 
   const ext = selectedFile.split('.').pop()?.toLowerCase();
-  const isImage = ext === 'png' || ext === 'svg' || ext === 'jpg' || ext === 'jpeg';
-
-  if (isImage) {
-    return imageUrl ? (
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
-        <img
-          src={imageUrl}
-          alt={selectedFile}
-          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-        />
-      </div>
-    ) : (
-      <div style={{ padding: '20px', color: '#ff5555' }}>Failed to load image</div>
-    );
-  }
+  const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
+  const isSvg = ext === 'svg';
+  const isHtml = ext === 'html' || ext === 'htm';
+  const canToggle = isSvg || isHtml;
 
   const data = module.FS.readFile(selectedFile) as Uint8Array;
   const stack = module.stackSave();
@@ -326,92 +316,211 @@ const FilePreview = ({
     });
   };
 
-  const getLanguage = (filename: string) => {
+  const getLanguage = (filename: string, text: string) => {
     const ext = filename.split('.').pop()?.toLowerCase();
     if (ext === 'xml' || ext === 'xsd' || ext === 'ssd' || ext === 'svg') return 'xml';
+    if (ext === 'html' || ext === 'htm') return 'xml';
     if (ext === 'cpp' || ext === 'hpp' || ext === 'c' || ext === 'h') return 'cpp';
     if (ext === 'json') return 'json';
     if (ext === 'sh' || ext === 'bash') return 'bash';
     if (ext === 'md') return 'markdown';
+
+    // Content based fallback
+    const start = text.trim().substring(0, 100).toLowerCase();
+    if (
+      start.startsWith('<?xml') ||
+      start.includes('<modeldescription') ||
+      start.includes('<systemstructure')
+    )
+      return 'xml';
+    if (start.startsWith('<!doctype html') || start.includes('<html')) return 'xml';
+
     return 'text';
   };
+
+  if (isStaticImage) {
+    return imageUrl ? (
+      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
+        <img
+          src={imageUrl}
+          alt={selectedFile}
+          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+        />
+      </div>
+    ) : (
+      <div style={{ padding: '20px', color: '#ff5555' }}>Failed to load image</div>
+    );
+  }
 
   return (
     <div
       style={{ position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '100%' }}
     >
-      <button
-        onClick={handleCopy}
-        title={copied ? 'Copied!' : 'Copy to clipboard'}
-        className="copy-btn"
+      <div
         style={{
           position: 'absolute',
           top: '6px',
-          right: '22px', // Stay inside scrollbar if any
-          zIndex: 1,
-          padding: '5px',
-          color: theme.text,
-          border: 'none',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          opacity: 0.6,
+          right: '12px',
+          zIndex: 10,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'background-color 0.15s, opacity 0.15s',
+          gap: '4px',
         }}
       >
-        {copied ? (
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {canToggle && (
+          <button
+            onClick={() => setViewMode(viewMode === 'render' ? 'code' : 'render')}
+            title={viewMode === 'render' ? 'Show Code' : 'Show Preview'}
+            className="copy-btn"
+            style={{
+              padding: '5px',
+              color: theme.text,
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              opacity: 0.6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background-color 0.15s, opacity 0.15s',
+            }}
           >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : (
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-          </svg>
+            {viewMode === 'render' ? (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+            ) : (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            )}
+          </button>
         )}
-      </button>
+        <button
+          onClick={handleCopy}
+          title={copied ? 'Copied!' : 'Copy to clipboard'}
+          className="copy-btn"
+          style={{
+            padding: '5px',
+            color: theme.text,
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            opacity: 0.6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background-color 0.15s, opacity 0.15s',
+          }}
+        >
+          {copied ? (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            </svg>
+          )}
+        </button>
+      </div>
 
-      <SyntaxHighlighter
-        language={getLanguage(selectedFile)}
-        style={isDark ? vscDarkPlus : prism}
-        showLineNumbers={true}
-        lineNumberStyle={{
-          minWidth: '40px',
-          paddingRight: '10px',
-          textAlign: 'right',
-          color: theme.muted,
-          userSelect: 'none',
-        }}
-        customStyle={{
-          margin: 0,
-          padding: '15px',
-          fontSize: '0.9em',
-          backgroundColor: 'transparent',
-          flex: 1,
-        }}
-      >
-        {content}
-      </SyntaxHighlighter>
+      {viewMode === 'render' && canToggle ? (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px',
+            backgroundColor: isHtml ? '#fff' : 'transparent',
+            minHeight: '200px',
+          }}
+        >
+          {isSvg ? (
+            imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={selectedFile}
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              <div style={{ color: '#ff5555' }}>Failed to load SVG</div>
+            )
+          ) : (
+            <iframe
+              srcDoc={content}
+              title="Preview"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                backgroundColor: '#fff',
+              }}
+            />
+          )}
+        </div>
+      ) : (
+        <SyntaxHighlighter
+          language={getLanguage(selectedFile, content)}
+          style={isDark ? vscDarkPlus : prism}
+          showLineNumbers={true}
+          lineNumberStyle={{
+            minWidth: '40px',
+            paddingRight: '10px',
+            textAlign: 'right',
+            color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+            userSelect: 'none',
+          }}
+          customStyle={{
+            margin: 0,
+            padding: '15px',
+            fontSize: '0.9em',
+            backgroundColor: 'transparent',
+            flex: 1,
+          }}
+        >
+          {content}
+        </SyntaxHighlighter>
+      )}
     </div>
   );
 };
@@ -1275,6 +1384,7 @@ function App() {
               }}
             >
               <FilePreview
+                key={selectedFile}
                 selectedFile={selectedFile}
                 module={module}
                 theme={theme}
@@ -1306,7 +1416,7 @@ function App() {
               style={{
                 position: 'absolute',
                 top: '6px',
-                right: '6px',
+                right: '12px',
                 zIndex: 1,
                 padding: '5px',
                 color: theme.text,
