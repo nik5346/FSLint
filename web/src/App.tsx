@@ -128,7 +128,9 @@ const FileTreeItem = ({
           fontSize: '0.9em',
           whiteSpace: 'nowrap',
         }}
-        onMouseEnter={(e) => !isSelected && (e.currentTarget.style.backgroundColor = theme.iconHover)}
+        onMouseEnter={(e) =>
+          !isSelected && (e.currentTarget.style.backgroundColor = theme.iconHover)
+        }
         onMouseLeave={(e) => !isSelected && (e.currentTarget.style.backgroundColor = 'transparent')}
       >
         {isDir ? (
@@ -212,7 +214,6 @@ const FilePreview = ({
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-
   }, [selectedFile, module]);
 
   if (!selectedFile || !module) return null;
@@ -652,7 +653,6 @@ function App() {
       );
     });
   };
-
 
   return (
     <div
