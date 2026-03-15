@@ -65,7 +65,7 @@ int main(int argc, char** argv)
             else if (arg == "-v" || arg == "--version")
             {
                 std::cout << "FSLint " << PROJECT_VERSION << "\n";
-                std::cout << "Copyright (c) 2026 FSLint Contributors\n";
+                std::cout << "Copyright (c) 2025 FSLint Contributors\n";
                 return 0;
             }
             else if (arg == "-s" || arg == "--save")
