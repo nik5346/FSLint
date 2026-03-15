@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface Theme {
   bg: string;
@@ -221,10 +223,12 @@ const FilePreview = ({
   selectedFile,
   module,
   theme,
+  isDark,
 }: {
   selectedFile: string | null;
   module: FSLintModule | null;
   theme: Theme;
+  isDark: boolean;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -314,7 +318,6 @@ const FilePreview = ({
   }
 
   const content = new TextDecoder().decode(data);
-  const lines = content.split('\n');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content).then(() => {
@@ -323,8 +326,20 @@ const FilePreview = ({
     });
   };
 
+  const getLanguage = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (ext === 'xml' || ext === 'xsd' || ext === 'ssd' || ext === 'svg') return 'xml';
+    if (ext === 'cpp' || ext === 'hpp' || ext === 'c' || ext === 'h') return 'cpp';
+    if (ext === 'json') return 'json';
+    if (ext === 'sh' || ext === 'bash') return 'bash';
+    if (ext === 'md') return 'markdown';
+    return 'text';
+  };
+
   return (
-    <div style={{ position: 'relative', display: 'flex', minHeight: '100%' }}>
+    <div
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '100%' }}
+    >
       <button
         onClick={handleCopy}
         title={copied ? 'Copied!' : 'Copy to clipboard'}
@@ -376,37 +391,27 @@ const FilePreview = ({
         )}
       </button>
 
-      <div
-        style={{
-          padding: '15px 10px',
+      <SyntaxHighlighter
+        language={getLanguage(selectedFile)}
+        style={isDark ? vscDarkPlus : prism}
+        showLineNumbers={true}
+        lineNumberStyle={{
+          minWidth: '40px',
+          paddingRight: '10px',
           textAlign: 'right',
           color: theme.muted,
-          backgroundColor: theme.bg,
           userSelect: 'none',
-          fontSize: '0.9em',
-          fontFamily: 'monospace',
-          borderRight: `1px solid ${theme.border}`,
-          minWidth: '40px',
         }}
-      >
-        {lines.map((_, i) => (
-          <div key={i}>{i + 1}</div>
-        ))}
-      </div>
-      <pre
-        style={{
+        customStyle={{
           margin: 0,
           padding: '15px',
-          fontFamily: 'monospace',
           fontSize: '0.9em',
-          whiteSpace: 'pre',
-          overflowX: 'auto',
-          color: theme.text,
+          backgroundColor: 'transparent',
           flex: 1,
         }}
       >
         {content}
-      </pre>
+      </SyntaxHighlighter>
     </div>
   );
 };
@@ -888,7 +893,7 @@ function App() {
           height: 48px;
           display: flex;
           align-items: center;
-          justifyContent: center;
+          justify-content: center;
           border: none;
           background: transparent;
           color: inherit;
@@ -965,7 +970,7 @@ function App() {
           onClick={() => setActiveTab('explorer')}
           disabled={!fileTree}
           style={{ opacity: fileTree ? 1 : 0.3, cursor: fileTree ? 'pointer' : 'default' }}
-          title="File Explorer"
+          title="File Tree"
         >
           <svg
             width="24"
@@ -977,10 +982,12 @@ function App() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="2" y1="10" x2="22" y2="10"></line>
-            <path d="M7 21h10"></path>
-            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <rect x="9" y="3" width="6" height="6" rx="1"></rect>
+            <rect x="3" y="15" width="6" height="6" rx="1"></rect>
+            <rect x="15" y="15" width="6" height="6" rx="1"></rect>
+            <path d="M12 9v6"></path>
+            <path d="M12 15H6"></path>
+            <path d="M12 15h6"></path>
           </svg>
         </button>
       </aside>
@@ -1034,6 +1041,7 @@ function App() {
             <input
               id="fileInput"
               type="file"
+              multiple
               style={{ display: 'none' }}
               onChange={handleFileChange}
               disabled={!isReady || isProcessing}
@@ -1266,7 +1274,12 @@ function App() {
                 minWidth: 0,
               }}
             >
-              <FilePreview selectedFile={selectedFile} module={module} theme={theme} />
+              <FilePreview
+                selectedFile={selectedFile}
+                module={module}
+                theme={theme}
+                isDark={isDark}
+              />
             </div>
           </div>
         )}
