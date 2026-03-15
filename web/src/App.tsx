@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface Theme {
   bg: string;
@@ -30,7 +32,9 @@ interface FSLintModule {
     cwd: () => string;
     readFile: (path: string, opts?: { encoding?: string; flags?: string }) => Uint8Array | string;
   };
-  _run_validation: (path: number) => number;
+  _is_binary: (path: number) => number;
+  _get_file_tree_json: (path: number) => number;
+  _run_validation: (path: number) => void;
   stackAlloc: (size: number) => number;
   stackSave: () => number;
   stackRestore: (stack: number) => void;
@@ -44,18 +48,6 @@ interface FileNode {
   kind: 'file' | 'directory';
   isBinary: boolean;
   children?: FileNode[];
-}
-
-interface ValidationResult {
-  report: string;
-  overallStatus: number;
-  totalFailed: number;
-  results: {
-    name: string;
-    status: number;
-    messages: string[];
-  }[];
-  fileTree: FileNode;
 }
 
 declare global {
@@ -230,30 +222,17 @@ const FileTreeItem = ({
 const FilePreview = ({
   selectedFile,
   module,
-  fileTree,
   theme,
+  isDark,
 }: {
   selectedFile: string | null;
   module: FSLintModule | null;
-  fileTree: FileNode | null;
   theme: Theme;
+  isDark: boolean;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  const findNode = useCallback((root: FileNode, path: string): FileNode | null => {
-    const search = (node: FileNode): FileNode | null => {
-      if (node.path === path) return node;
-      if (node.children) {
-        for (const child of node.children) {
-          const found = search(child);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-    return search(root);
-  }, []);
+  const [viewMode, setViewMode] = useState<'render' | 'code'>('render');
 
   useEffect(() => {
     let url: string | null = null;
@@ -285,25 +264,17 @@ const FilePreview = ({
   if (!selectedFile || !module) return null;
 
   const ext = selectedFile.split('.').pop()?.toLowerCase();
-  const isImage = ext === 'png' || ext === 'svg' || ext === 'jpg' || ext === 'jpeg';
-
-  if (isImage) {
-    return imageUrl ? (
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
-        <img
-          src={imageUrl}
-          alt={selectedFile}
-          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-        />
-      </div>
-    ) : (
-      <div style={{ padding: '20px', color: '#ff5555' }}>Failed to load image</div>
-    );
-  }
+  const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
+  const isSvg = ext === 'svg';
+  const isHtml = ext === 'html' || ext === 'htm';
+  const canToggle = isSvg || isHtml;
 
   const data = module.FS.readFile(selectedFile) as Uint8Array;
-  const node = fileTree ? findNode(fileTree, selectedFile) : null;
-  const isBinaryResult = node?.isBinary ?? false;
+  const stack = module.stackSave();
+  const ptr = module.stackAlloc(selectedFile.length * 4 + 1);
+  module.stringToUTF8(selectedFile, ptr, selectedFile.length * 4 + 1);
+  const isBinaryResult = module._is_binary(ptr);
+  module.stackRestore(stack);
 
   if (isBinaryResult) {
     return (
@@ -337,7 +308,6 @@ const FilePreview = ({
   }
 
   const content = new TextDecoder().decode(data);
-  const lines = content.split('\n');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content).then(() => {
@@ -346,90 +316,211 @@ const FilePreview = ({
     });
   };
 
+  const getLanguage = (filename: string, text: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (ext === 'xml' || ext === 'xsd' || ext === 'ssd' || ext === 'svg') return 'xml';
+    if (ext === 'html' || ext === 'htm') return 'xml';
+    if (ext === 'cpp' || ext === 'hpp' || ext === 'c' || ext === 'h') return 'cpp';
+    if (ext === 'json') return 'json';
+    if (ext === 'sh' || ext === 'bash') return 'bash';
+    if (ext === 'md') return 'markdown';
+
+    // Content based fallback
+    const start = text.trim().substring(0, 100).toLowerCase();
+    if (
+      start.startsWith('<?xml') ||
+      start.includes('<modeldescription') ||
+      start.includes('<systemstructure')
+    )
+      return 'xml';
+    if (start.startsWith('<!doctype html') || start.includes('<html')) return 'xml';
+
+    return 'text';
+  };
+
+  if (isStaticImage) {
+    return imageUrl ? (
+      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
+        <img
+          src={imageUrl}
+          alt={selectedFile}
+          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+        />
+      </div>
+    ) : (
+      <div style={{ padding: '20px', color: '#ff5555' }}>Failed to load image</div>
+    );
+  }
+
   return (
-    <div style={{ position: 'relative', display: 'flex', minHeight: '100%' }}>
-      <button
-        onClick={handleCopy}
-        title={copied ? 'Copied!' : 'Copy to clipboard'}
-        className="copy-btn"
+    <div
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '100%' }}
+    >
+      <div
         style={{
           position: 'absolute',
           top: '6px',
-          right: '22px', // Stay inside scrollbar if any
-          zIndex: 1,
-          padding: '5px',
-          color: theme.text,
-          border: 'none',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          opacity: 0.6,
+          right: '12px',
+          zIndex: 10,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'background-color 0.15s, opacity 0.15s',
+          gap: '4px',
         }}
       >
-        {copied ? (
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {canToggle && (
+          <button
+            onClick={() => setViewMode(viewMode === 'render' ? 'code' : 'render')}
+            title={viewMode === 'render' ? 'Show Code' : 'Show Preview'}
+            className="copy-btn"
+            style={{
+              padding: '5px',
+              color: theme.text,
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              opacity: 0.6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background-color 0.15s, opacity 0.15s',
+            }}
           >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : (
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-          </svg>
+            {viewMode === 'render' ? (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+            ) : (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            )}
+          </button>
         )}
-      </button>
-
-      <div
-        style={{
-          padding: '15px 10px',
-          textAlign: 'right',
-          color: theme.muted,
-          backgroundColor: theme.bg,
-          userSelect: 'none',
-          fontSize: '0.9em',
-          fontFamily: 'monospace',
-          borderRight: `1px solid ${theme.border}`,
-          minWidth: '40px',
-        }}
-      >
-        {lines.map((_, i) => (
-          <div key={i}>{i + 1}</div>
-        ))}
+        <button
+          onClick={handleCopy}
+          title={copied ? 'Copied!' : 'Copy to clipboard'}
+          className="copy-btn"
+          style={{
+            padding: '5px',
+            color: theme.text,
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            opacity: 0.6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background-color 0.15s, opacity 0.15s',
+          }}
+        >
+          {copied ? (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            </svg>
+          )}
+        </button>
       </div>
-      <pre
-        style={{
-          margin: 0,
-          padding: '15px',
-          fontFamily: 'monospace',
-          fontSize: '0.9em',
-          whiteSpace: 'pre',
-          overflowX: 'auto',
-          color: theme.text,
-          flex: 1,
-        }}
-      >
-        {content}
-      </pre>
+
+      {viewMode === 'render' && canToggle ? (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px',
+            backgroundColor: isHtml ? '#fff' : 'transparent',
+            minHeight: '200px',
+          }}
+        >
+          {isSvg ? (
+            imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={selectedFile}
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              <div style={{ color: '#ff5555' }}>Failed to load SVG</div>
+            )
+          ) : (
+            <iframe
+              srcDoc={content}
+              title="Preview"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                backgroundColor: '#fff',
+              }}
+            />
+          )}
+        </div>
+      ) : (
+        <SyntaxHighlighter
+          language={getLanguage(selectedFile, content)}
+          style={isDark ? vscDarkPlus : prism}
+          showLineNumbers={true}
+          lineNumberStyle={{
+            minWidth: '40px',
+            paddingRight: '10px',
+            textAlign: 'right',
+            color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+            userSelect: 'none',
+          }}
+          customStyle={{
+            margin: 0,
+            padding: '15px',
+            fontSize: '0.9em',
+            backgroundColor: 'transparent',
+            flex: 1,
+          }}
+        >
+          {content}
+        </SyntaxHighlighter>
+      )}
     </div>
   );
 };
@@ -694,6 +785,23 @@ function App() {
     }
   };
 
+  const getFileTree = (path: string): FileNode | null => {
+    if (!module) return null;
+    const stack = module.stackSave();
+    const ptr = module.stackAlloc(path.length * 4 + 1);
+    module.stringToUTF8(path, ptr, path.length * 4 + 1);
+    const jsonPtr = module._get_file_tree_json(ptr);
+    const jsonStr = module.UTF8ToString(jsonPtr);
+    module.stackRestore(stack);
+
+    try {
+      return JSON.parse(jsonStr) as FileNode;
+    } catch (e) {
+      console.error('Failed to parse file tree JSON:', e);
+      return null;
+    }
+  };
+
   const processItems = async (files: File[]) => {
     if (!module || isProcessing || files.length === 0) return;
 
@@ -757,24 +865,36 @@ function App() {
       console.log('Reconstructed VFS structure:');
       listVFS(workDir);
 
+      const isSingleArchive =
+        normalizedFiles.length === 1 &&
+        (normalizedFiles[0].relPath.toLowerCase().endsWith('.fmu') ||
+          normalizedFiles[0].relPath.toLowerCase().endsWith('.ssp'));
+
       const target =
         discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
       console.log(`Executing validation with target: "${target}"`);
 
       const targetPtr = module.stackAlloc(target.length * 4 + 1);
       module.stringToUTF8(target, targetPtr, target.length * 4 + 1);
-      const jsonPtr = module._run_validation(targetPtr);
-      const jsonStr = module.UTF8ToString(jsonPtr);
+      module._run_validation(targetPtr);
 
-      try {
-        const result = JSON.parse(jsonStr) as ValidationResult;
-        setOutput(result.report);
-        setFileTree(result.fileTree);
-      } catch (e) {
-        console.error('Failed to parse validation result JSON:', e);
-        setOutput((prev) => prev + 'Error: Failed to parse validation result\n');
+      // After execution, build the tree
+      let rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
+      if (isSingleArchive) {
+        // Find extracted directory (it starts with model_validation_ or model_cert_add_)
+        try {
+          const entries = module.FS.readdir(workDir);
+          const unpackedDir = entries.find(
+            (e) => e.startsWith('model_validation_') || e.startsWith('model_cert_add_'),
+          );
+          if (unpackedDir) {
+            rootPath = `${workDir}/${unpackedDir}`;
+          }
+        } catch (e) {
+          console.error('Failed to find unpacked directory:', e);
+        }
       }
-
+      setFileTree(getFileTree(rootPath));
       setActiveTab('certificate');
     } catch (err) {
       let errorMessage: string;
@@ -882,7 +1002,7 @@ function App() {
           height: 48px;
           display: flex;
           align-items: center;
-          justifyContent: center;
+          justify-content: center;
           border: none;
           background: transparent;
           color: inherit;
@@ -959,7 +1079,7 @@ function App() {
           onClick={() => setActiveTab('explorer')}
           disabled={!fileTree}
           style={{ opacity: fileTree ? 1 : 0.3, cursor: fileTree ? 'pointer' : 'default' }}
-          title="File Explorer"
+          title="File Tree"
         >
           <svg
             width="24"
@@ -971,10 +1091,12 @@ function App() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="2" y1="10" x2="22" y2="10"></line>
-            <path d="M7 21h10"></path>
-            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <rect x="9" y="3" width="6" height="6" rx="1"></rect>
+            <rect x="3" y="15" width="6" height="6" rx="1"></rect>
+            <rect x="15" y="15" width="6" height="6" rx="1"></rect>
+            <path d="M12 9v6"></path>
+            <path d="M12 15H6"></path>
+            <path d="M12 15h6"></path>
           </svg>
         </button>
       </aside>
@@ -1028,6 +1150,7 @@ function App() {
             <input
               id="fileInput"
               type="file"
+              multiple
               style={{ display: 'none' }}
               onChange={handleFileChange}
               disabled={!isReady || isProcessing}
@@ -1261,10 +1384,11 @@ function App() {
               }}
             >
               <FilePreview
+                key={selectedFile}
                 selectedFile={selectedFile}
                 module={module}
-                fileTree={fileTree}
                 theme={theme}
+                isDark={isDark}
               />
             </div>
           </div>
@@ -1292,7 +1416,7 @@ function App() {
               style={{
                 position: 'absolute',
                 top: '6px',
-                right: '6px',
+                right: '12px',
                 zIndex: 1,
                 padding: '5px',
                 color: theme.text,

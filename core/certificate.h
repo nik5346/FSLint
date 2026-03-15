@@ -1,7 +1,6 @@
 #pragma once
 
 #include "checker.h"
-#include "file_utils.h"
 
 #include <cstddef>
 #include <filesystem>
@@ -40,7 +39,6 @@ class Certificate
     std::string _report_buffer;
     std::vector<TestResult> _results;
     std::vector<NestedModelResult> _nested_models;
-    file_utils::FileNode _file_tree;
 
     // Subsection tracking
     size_t _current_subsection_passed = 0;
@@ -78,14 +76,6 @@ class Certificate
     void printSubsectionSummary(bool subsection_valid);
     void printFooter();
 
-    void setFileTree(const file_utils::FileNode& tree)
-    {
-        _file_tree = tree;
-    }
-    const file_utils::FileNode& getFileTree() const
-    {
-        return _file_tree;
-    }
     void printFileTree(const std::filesystem::path& root, const std::string& label);
 
     void addNestedModelResult(const NestedModelResult& result);
@@ -107,6 +97,4 @@ class Certificate
     {
         return _nested_models;
     }
-
-    std::string toJson() const;
 };
