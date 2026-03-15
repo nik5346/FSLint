@@ -45,10 +45,13 @@ declare global {
   }
 }
 
-async function getFilesFromHandle(handle: FileSystemDirectoryHandle, path = ''): Promise<File[]> {
+async function getFilesFromHandle(
+  handle: FileSystemDirectoryHandle,
+  path = handle.name,
+): Promise<File[]> {
   const files: File[] = [];
   for await (const entry of handle.values()) {
-    const entryPath = path ? `${path}/${entry.name}` : entry.name;
+    const entryPath = `${path}/${entry.name}`;
     if (entry.kind === 'file') {
       const file = await (entry as FileSystemFileHandle).getFile();
       Object.defineProperty(file, 'webkitRelativePath', {
@@ -188,18 +191,26 @@ function App() {
         const handle = await window.showDirectoryPicker();
         const files = await getFilesFromHandle(handle);
         if (files.length > 0) {
-          await processItems(files, 'Using modern folder picker');
+          await processItems(files, `Selected directory: ${handle.name} (using modern picker)`);
         }
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
           console.error('showDirectoryPicker failed, falling back to input:', err);
-          setOutput((prev) => prev + `[System] Modern folder picker failed: ${err}\n`);
+          setOutput(
+            (prev) =>
+              prev +
+              `[System] Modern folder picker failed (${(err as Error).name}). Falling back to legacy input...\n`,
+          );
           folderInputRef.current?.click();
         }
       }
     } else {
+      const isSecure = window.isSecureContext;
+      const reason = !isSecure
+        ? 'insecure context (requires HTTPS/localhost)'
+        : 'browser not supported';
       setOutput(
-        (prev) => prev + '[System] Modern folder picker not supported, using legacy input\n',
+        (prev) => prev + `[System] Modern folder picker unavailable (${reason}). Falling back...\n`,
       );
       folderInputRef.current?.click();
     }
