@@ -43,9 +43,11 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
     info.root_path = extract_dir;
     info.standard = ModelStandard::UNKNOWN;
 
+    const std::string ext = extract_dir.extension().string();
+
     // Check for FMI
     const auto model_desc_path = extract_dir / "modelDescription.xml";
-    if (std::filesystem::exists(model_desc_path))
+    if (std::filesystem::exists(model_desc_path) || ext == ".fmu")
     {
         // Try to extract FMI version
         auto version = SchemaCheckerBase::extractVersionFromXml(model_desc_path, "fmiModelDescription", "fmiVersion");
@@ -70,7 +72,7 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
 
     // Check for SSP
     const auto system_structure_path = extract_dir / "SystemStructure.ssd";
-    if (std::filesystem::exists(system_structure_path))
+    if (std::filesystem::exists(system_structure_path) || ext == ".ssp")
     {
         auto version =
             SchemaCheckerBase::extractVersionFromXml(system_structure_path, "SystemStructureDescription", "version");
