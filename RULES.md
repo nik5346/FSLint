@@ -15,6 +15,14 @@ Each rule check in FSLint results in one of the following statuses:
 These rules apply to the ZIP archive itself for both FMU and SSP files.
 
 - **File Extension**: Files **must** have the `.fmu` or `.ssp` extension respectively.
+
+## Model Detection (FMU and SSP)
+
+- **Model Identification**: The tool **must** be able to identify the model type.
+  - An **FMU** is identified by the presence of `modelDescription.xml` in the root directory.
+  - An **SSP** is identified by the presence of `SystemStructure.ssd` in the root directory.
+  - If neither file is found, validation **must** fail.
+
 - **Disk Spanning**: Split or spanned ZIP archives **must not** be used.
 - **Compression Methods**: Only `store` (0) and `deflate` (8) compression methods **must** be used.
 - **Version Needed**: The maximum version needed to extract **must** be `2.0` (for compatibility).
