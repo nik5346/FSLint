@@ -74,16 +74,29 @@ bool isBinary(const std::filesystem::path& path)
     return !isValidUtf8(buffer);
 }
 
-FileNode getFileTree(const std::filesystem::path& path)
+static void getFileTreeRecursive(const std::filesystem::path& path, rapidjson::Value& node,
+                                 rapidjson::Document::AllocatorType& allocator)
 {
-    FileNode node;
-    node.name = path.filename().string();
-    node.path = path.string();
-    node.is_directory = std::filesystem::is_directory(path);
-    node.is_binary = false;
+    std::string name = path.filename().string();
+    const bool is_dir = std::filesystem::is_directory(path);
+    bool binary = false;
 
-    if (node.is_directory)
+    if (!is_dir)
     {
+        binary = isBinary(path);
+        if (binary)
+            name += " (binary)";
+    }
+
+    node.SetObject();
+    node.AddMember("name", rapidjson::Value(name.c_str(), allocator).Move(), allocator);
+    node.AddMember("path", rapidjson::Value(path.string().c_str(), allocator).Move(), allocator);
+    node.AddMember("kind", rapidjson::Value(is_dir ? "directory" : "file", allocator).Move(), allocator);
+    node.AddMember("isBinary", binary, allocator);
+
+    if (is_dir)
+    {
+        rapidjson::Value children(rapidjson::kArrayType);
         std::vector<std::filesystem::path> entries;
         for (const auto& entry : std::filesystem::directory_iterator(path))
             entries.push_back(entry.path());
@@ -99,38 +112,12 @@ FileNode getFileTree(const std::filesystem::path& path)
                   });
 
         for (const auto& entry : entries)
-            node.children.push_back(getFileTree(entry));
-    }
-    else
-    {
-        node.is_binary = isBinary(path);
-    }
-
-    return node;
-}
-
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-void fileNodeToJson(const FileNode& node, void* value_ptr, void* allocator_ptr)
-{
-    auto& value = *static_cast<rapidjson::Value*>(value_ptr);
-    auto& allocator = *static_cast<rapidjson::Document::AllocatorType*>(allocator_ptr);
-
-    value.SetObject();
-    value.AddMember("name", rapidjson::Value(node.name.c_str(), allocator).Move(), allocator);
-    value.AddMember("path", rapidjson::Value(node.path.c_str(), allocator).Move(), allocator);
-    value.AddMember("kind", rapidjson::Value(node.is_directory ? "directory" : "file", allocator).Move(), allocator);
-    value.AddMember("isBinary", node.is_binary, allocator);
-
-    if (node.is_directory)
-    {
-        rapidjson::Value children(rapidjson::kArrayType);
-        for (const auto& child : node.children)
         {
-            rapidjson::Value child_value;
-            fileNodeToJson(child, &child_value, &allocator);
-            children.PushBack(child_value, allocator);
+            rapidjson::Value child;
+            getFileTreeRecursive(entry, child, allocator);
+            children.PushBack(child, allocator);
         }
-        value.AddMember("children", children, allocator);
+        node.AddMember("children", children, allocator);
     }
 }
 
@@ -139,11 +126,9 @@ std::string getFileTreeJson(const std::filesystem::path& root)
     if (!std::filesystem::exists(root))
         return "{}";
 
-    const FileNode root_node = getFileTree(root);
-
     rapidjson::Document doc;
     doc.SetObject();
-    fileNodeToJson(root_node, &doc, &doc.GetAllocator());
+    getFileTreeRecursive(root, doc, doc.GetAllocator());
 
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
