@@ -304,6 +304,24 @@ def copy_artifacts():
     else:
         print(f"[WARNING] LICENSE not found: {license_src}")
 
+    # Copy LICENSE-fmi.txt to public folder
+    license_fmi_src = ROOT / "LICENSE-fmi.txt"
+    license_fmi_dst = web_public_root / "LICENSE-fmi.txt"
+    if license_fmi_src.exists():
+        shutil.copy(license_fmi_src, license_fmi_dst)
+        print(f"  {license_fmi_src.name} -> {license_fmi_dst}")
+    else:
+        print(f"[WARNING] LICENSE-fmi.txt not found: {license_fmi_src}")
+
+    # Copy LICENSE-ssp.txt to public folder
+    license_ssp_src = ROOT / "LICENSE-ssp.txt"
+    license_ssp_dst = web_public_root / "LICENSE-ssp.txt"
+    if license_ssp_src.exists():
+        shutil.copy(license_ssp_src, license_ssp_dst)
+        print(f"  {license_ssp_src.name} -> {license_ssp_dst}")
+    else:
+        print(f"[WARNING] LICENSE-ssp.txt not found: {license_ssp_src}")
+
 
 
 def build_web():
