@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import * as fflate from 'fflate';
 
 interface Theme {
   bg: string;
@@ -589,6 +590,37 @@ function App() {
       console.log('Reconstructed VFS structure:');
       listVFS(workDir);
 
+      const isSingleArchive =
+        normalizedFiles.length === 1 &&
+        (normalizedFiles[0].relPath.toLowerCase().endsWith('.fmu') ||
+          normalizedFiles[0].relPath.toLowerCase().endsWith('.ssp'));
+
+      if (isSingleArchive) {
+        const archiveFile = normalizedFiles[0];
+        const contentDir = `${workDir}/content`;
+        mkdirP(contentDir);
+
+        const data = new Uint8Array(await archiveFile.file.arrayBuffer());
+        try {
+          const unzipped = fflate.unzipSync(data);
+          for (const [path, fileData] of Object.entries(unzipped)) {
+            if (path.endsWith('/')) {
+              mkdirP(`${contentDir}/${path.slice(0, -1)}`);
+            } else {
+              const lastSlash = path.lastIndexOf('/');
+              if (lastSlash !== -1) {
+                mkdirP(`${contentDir}/${path.substring(0, lastSlash)}`);
+              }
+              module.FS.writeFile(`${contentDir}/${path}`, fileData);
+            }
+          }
+          console.log('Unzipped archive to content directory:');
+          listVFS(contentDir);
+        } catch (err) {
+          console.error('Failed to unzip archive:', err);
+        }
+      }
+
       const target =
         discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
       console.log(`Executing main with target: "${target}"`);
@@ -596,7 +628,10 @@ function App() {
       module.callMain([target]);
 
       // After execution, build the tree
-      const rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
+      let rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
+      if (isSingleArchive) {
+        rootPath = `${workDir}/content`;
+      }
       setFileTree(getFileTree(rootPath));
       setActiveTab('certificate');
     } catch (err) {
@@ -1167,9 +1202,12 @@ function App() {
             display: 'flex',
             justifyContent: 'center',
             gap: '10px',
+            flexWrap: 'wrap',
           }}
         >
           <span>FSLint v{__APP_VERSION__}</span>
+          <span>•</span>
+          <span>Copyright © {new Date().getFullYear()} FSLint Contributors</span>
           <span>•</span>
           <span>
             FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your

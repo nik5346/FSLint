@@ -238,10 +238,11 @@ jobs:
           name: FSLint-wasm-core
           path: web/public/
 
-      - name: Copy Icon and Banner
+      - name: Copy Assets
         run: |
           cp images/icon.svg web/public/
           cp images/banner.svg web/public/
+          cp RULES.md web/public/rules.md
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
