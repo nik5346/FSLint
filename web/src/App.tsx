@@ -145,7 +145,9 @@ const FileTreeItem = memo(function FileTreeItem({
           fontSize: '0.9em',
           whiteSpace: 'nowrap',
         }}
-        onMouseEnter={(e) => !isSelected && (e.currentTarget.style.backgroundColor = theme.iconHover)}
+        onMouseEnter={(e) =>
+          !isSelected && (e.currentTarget.style.backgroundColor = theme.iconHover)
+        }
         onMouseLeave={(e) => !isSelected && (e.currentTarget.style.backgroundColor = 'transparent')}
       >
         {isDir ? (

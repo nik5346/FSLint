@@ -82,9 +82,7 @@ static void getFileTreeRecursive(const std::filesystem::path& path, rapidjson::V
     bool binary = false;
 
     if (!is_dir)
-    {
         binary = isBinary(path);
-    }
 
     node.SetObject();
     node.AddMember("name", rapidjson::Value(name.c_str(), allocator).Move(), allocator);
