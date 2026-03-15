@@ -42,6 +42,7 @@ interface FileNode {
 
 declare global {
   const __APP_VERSION__: string;
+  const __BUILD_YEAR__: string;
   interface Window {
     createFSLintModule: (config: {
       print: (text: string) => void;
@@ -589,6 +590,11 @@ function App() {
       console.log('Reconstructed VFS structure:');
       listVFS(workDir);
 
+      const isSingleArchive =
+        normalizedFiles.length === 1 &&
+        (normalizedFiles[0].relPath.toLowerCase().endsWith('.fmu') ||
+          normalizedFiles[0].relPath.toLowerCase().endsWith('.ssp'));
+
       const target =
         discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
       console.log(`Executing main with target: "${target}"`);
@@ -596,7 +602,21 @@ function App() {
       module.callMain([target]);
 
       // After execution, build the tree
-      const rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
+      let rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
+      if (isSingleArchive) {
+        // Find extracted directory (it starts with model_validation_ or model_cert_add_)
+        try {
+          const entries = module.FS.readdir(workDir);
+          const unpackedDir = entries.find(
+            (e) => e.startsWith('model_validation_') || e.startsWith('model_cert_add_'),
+          );
+          if (unpackedDir) {
+            rootPath = `${workDir}/${unpackedDir}`;
+          }
+        } catch (e) {
+          console.error('Failed to find unpacked directory:', e);
+        }
+      }
       setFileTree(getFileTree(rootPath));
       setActiveTab('certificate');
     } catch (err) {
@@ -1167,9 +1187,12 @@ function App() {
             display: 'flex',
             justifyContent: 'center',
             gap: '10px',
+            flexWrap: 'wrap',
           }}
         >
           <span>FSLint v{__APP_VERSION__}</span>
+          <span>•</span>
+          <span>Copyright © {__BUILD_YEAR__} FSLint Contributors</span>
           <span>•</span>
           <span>
             FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your

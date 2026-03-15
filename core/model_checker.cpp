@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet) const
+Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree) const
 {
     Certificate cert;
     cert.setQuiet(quiet);
@@ -57,7 +57,12 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         // Step 2: Extract to temporary directory
         auto now = std::chrono::high_resolution_clock::now();
         auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-        extract_dir = std::filesystem::temp_directory_path() / ("model_validation_" + std::to_string(nanos));
+        const std::string dir_name = "model_validation_" + std::to_string(nanos);
+#ifdef __EMSCRIPTEN__
+        extract_dir = std::filesystem::current_path() / dir_name;
+#else
+        extract_dir = std::filesystem::temp_directory_path() / dir_name;
+#endif
         is_temporary = true;
 
         Zipper zipper;
@@ -107,9 +112,14 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     for (auto& checker : checkers)
         checker->validate(extract_dir, cert);
 
-    // Cleanup temporary directory
+    if (show_tree)
+        cert.printFileTree(extract_dir, model_info.original_path.filename().string());
+
+        // Cleanup temporary directory
+#ifndef __EMSCRIPTEN__
     if (is_temporary && std::filesystem::exists(extract_dir))
         std::filesystem::remove_all(extract_dir);
+#endif
 
     if (!quiet)
     {
@@ -145,7 +155,12 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
         archive_checker.validate(path, cert);
 
         // Step 2: Extract to temporary directory
-        extract_dir = std::filesystem::temp_directory_path() / ("model_cert_add_" + std::to_string(std::time(nullptr)));
+        const std::string dir_name = "model_cert_add_" + std::to_string(std::time(nullptr));
+#ifdef __EMSCRIPTEN__
+        extract_dir = std::filesystem::current_path() / dir_name;
+#else
+        extract_dir = std::filesystem::temp_directory_path() / dir_name;
+#endif
         is_temporary = true;
 
         Zipper zipper;
@@ -230,8 +245,10 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 
     // Cleanup
     std::filesystem::remove(backup_path);
+#ifndef __EMSCRIPTEN__
     if (std::filesystem::exists(extract_dir))
         std::filesystem::remove_all(extract_dir);
+#endif
 
     std::cout << "\nCertificate added successfully to model\n";
     return true;

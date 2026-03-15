@@ -27,6 +27,7 @@ export default defineConfig({
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(getVersion()),
+    __BUILD_YEAR__: JSON.stringify(new Date().getFullYear().toString()),
   },
   server: {
     headers: {
