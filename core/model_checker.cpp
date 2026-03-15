@@ -55,12 +55,13 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         }
 
         // Step 2: Extract to temporary directory
-#ifdef __EMSCRIPTEN__
-        extract_dir = path.string() + "_unpacked";
-#else
         auto now = std::chrono::high_resolution_clock::now();
         auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-        extract_dir = std::filesystem::temp_directory_path() / ("model_validation_" + std::to_string(nanos));
+        const std::string dir_name = "model_validation_" + std::to_string(nanos);
+#ifdef __EMSCRIPTEN__
+        extract_dir = std::filesystem::current_path() / dir_name;
+#else
+        extract_dir = std::filesystem::temp_directory_path() / dir_name;
 #endif
         is_temporary = true;
 
@@ -151,10 +152,11 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
         archive_checker.validate(path, cert);
 
         // Step 2: Extract to temporary directory
+        const std::string dir_name = "model_cert_add_" + std::to_string(std::time(nullptr));
 #ifdef __EMSCRIPTEN__
-        extract_dir = path.string() + "_unpacked";
+        extract_dir = std::filesystem::current_path() / dir_name;
 #else
-        extract_dir = std::filesystem::temp_directory_path() / ("model_cert_add_" + std::to_string(std::time(nullptr)));
+        extract_dir = std::filesystem::temp_directory_path() / dir_name;
 #endif
         is_temporary = true;
 

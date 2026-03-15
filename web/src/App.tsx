@@ -603,7 +603,18 @@ function App() {
       // After execution, build the tree
       let rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
       if (isSingleArchive) {
-        rootPath = `${workDir}/${normalizedFiles[0].relPath}_unpacked`;
+        // Find extracted directory (it starts with model_validation_ or model_cert_add_)
+        try {
+          const entries = module.FS.readdir(workDir);
+          const unpackedDir = entries.find(
+            (e) => e.startsWith('model_validation_') || e.startsWith('model_cert_add_'),
+          );
+          if (unpackedDir) {
+            rootPath = `${workDir}/${unpackedDir}`;
+          }
+        } catch (e) {
+          console.error('Failed to find unpacked directory:', e);
+        }
       }
       setFileTree(getFileTree(rootPath));
       setActiveTab('certificate');
