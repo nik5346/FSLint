@@ -101,6 +101,67 @@ async function getFilesFromHandle(
   return files;
 }
 
+const extractHeaders = (text: string) => {
+  const lines = text.split('\n');
+  const headers: { level: number; text: string; line: number }[] = [];
+  lines.forEach((line, index) => {
+    const match = line.match(/^(#{1,6})\s+(.+)$/);
+    if (match) {
+      headers.push({
+        level: match[1].length,
+        text: match[2].trim(),
+        line: index + 1,
+      });
+    }
+  });
+  return headers;
+};
+
+const RulesOutline = ({
+  headers,
+  theme,
+}: {
+  headers: { level: number; text: string; line: number }[];
+  theme: Theme;
+}) => {
+  return (
+    <div style={{ fontSize: '0.9em' }}>
+      {headers.map((header, i) => (
+        <div
+          key={i}
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            const el = document.getElementById(`line-${header.line}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              const el = document.getElementById(`line-${header.line}`);
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+          style={{
+            padding: '4px 8px',
+            cursor: 'pointer',
+            borderRadius: '4px',
+            marginLeft: (header.level - 1) * 12,
+            color: header.level === 1 ? theme.text : theme.muted,
+            fontWeight: header.level === 1 ? 'bold' : 'normal',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.iconHover)}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+        >
+          {header.text}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const FileTreeItem = memo(function FileTreeItem({
   node,
   isSelected,
@@ -275,21 +336,21 @@ const FilePreview = ({
 
   const data = useMemo(() => {
     if (!selectedFile || !module) return null;
-    if (isBinaryResult) return null;
+    if (isBinaryResult && !isStaticImage) return null;
     try {
       return module.FS.readFile(selectedFile) as Uint8Array;
     } catch (e) {
       console.error('Failed to read file:', e);
       return null;
     }
-  }, [selectedFile, module, isBinaryResult]);
+  }, [selectedFile, module, isBinaryResult, isStaticImage]);
 
   const content = useMemo(() => {
-    if (!data) return '';
+    if (!data || (isBinaryResult && isStaticImage)) return '';
     return new TextDecoder().decode(data);
-  }, [data]);
+  }, [data, isBinaryResult, isStaticImage]);
 
-  if (isBinaryResult) {
+  if (isBinaryResult && !isStaticImage && !isSvg) {
     return (
       <div
         style={{
@@ -482,7 +543,6 @@ const FilePreview = ({
             flex: 1,
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center',
             padding: '20px',
             backgroundColor: isHtml ? '#fff' : 'transparent',
             minHeight: '200px',
@@ -505,6 +565,7 @@ const FilePreview = ({
               style={{
                 width: '100%',
                 height: '100%',
+                flex: 1,
                 border: 'none',
                 backgroundColor: '#fff',
               }}
@@ -601,7 +662,9 @@ function App() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [rulesText, setRulesText] = useState<string>('');
   const [explorerWidth, setExplorerWidth] = useState(300);
+  const [rulesWidth, setRulesWidth] = useState(250);
   const [isResizing, setIsResizing] = useState(false);
+  const [isResizingRules, setIsResizingRules] = useState(false);
 
   const outputEndRef = useRef<HTMLPreElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -626,7 +689,21 @@ function App() {
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
     document.body.style.color = theme.text;
-  }, [theme.bg, theme.text]);
+
+    // Inject global styles to fix SyntaxHighlighter line numbers
+    const styleId = 'fslint-global-styles';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `
+      .react-syntax-highlighter-line-number {
+        color: ${isDark ? '#858585' : '#999999'} !important;
+      }
+    `;
+  }, [theme.bg, theme.text, isDark]);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -674,16 +751,25 @@ function App() {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      // 64 is sidebar width, 20 is main padding
-      const newWidth = e.clientX - 64 - 20;
-      if (newWidth > 150 && newWidth < 800) {
-        setExplorerWidth(newWidth);
+      if (isResizing) {
+        // 64 is sidebar width, 20 is main padding
+        const newWidth = e.clientX - 64 - 20;
+        if (newWidth > 150 && newWidth < 800) {
+          setExplorerWidth(newWidth);
+        }
+      } else if (isResizingRules) {
+        const newWidth = e.clientX - 64 - 20;
+        if (newWidth > 150 && newWidth < 600) {
+          setRulesWidth(newWidth);
+        }
       }
     };
-    const handleMouseUp = () => setIsResizing(false);
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setIsResizingRules(false);
+    };
 
-    if (isResizing) {
+    if (isResizing || isResizingRules) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     }
@@ -691,7 +777,7 @@ function App() {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isResizing]);
+  }, [isResizing, isResizingRules]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -1334,23 +1420,91 @@ function App() {
             style={{
               flex: 1,
               minHeight: 0,
-              overflowY: 'auto',
-              padding: '0 20px',
-              backgroundColor: theme.surface,
+              display: 'flex',
+              backgroundColor: theme.border,
               borderRadius: '4px',
               border: `1px solid ${theme.border}`,
+              overflow: 'hidden',
             }}
           >
-            <style>{`
-            .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-            .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
-            .markdown-body th { background-color: ${theme.bg}; }
-            .markdown-body code { background-color: ${theme.bg}; padding: 2px 4px; border-radius: 4px; }
-            .markdown-body pre { background-color: ${theme.bg}; padding: 16px; border-radius: 4px; overflow: auto; }
-            .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
-          `}</style>
-            <div className="markdown-body">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{rulesText}</ReactMarkdown>
+            <div
+              style={{
+                width: rulesWidth,
+                backgroundColor: theme.surface,
+                overflowY: 'auto',
+                padding: '10px',
+                flexShrink: 0,
+              }}
+            >
+              <RulesOutline headers={extractHeaders(rulesText)} theme={theme} />
+            </div>
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizingRules(true);
+              }}
+              style={{
+                width: '4px',
+                cursor: 'col-resize',
+                backgroundColor: isResizingRules ? '#007bff' : theme.border,
+                transition: 'background-color 0.2s',
+                zIndex: 10,
+              }}
+            />
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                padding: '0 20px',
+                backgroundColor: theme.surface,
+              }}
+            >
+              <style>{`
+                .markdown-body { font-size: 0.9em; }
+                .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+                .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
+                .markdown-body th { background-color: ${theme.bg}; }
+                .markdown-body code { background-color: ${theme.bg}; padding: 2px 4px; border-radius: 4px; }
+                .markdown-body pre { background-color: ${theme.bg}; padding: 16px; border-radius: 4px; overflow: auto; }
+                .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
+              `}</style>
+              <div className="markdown-body">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    /* eslint-disable @typescript-eslint/no-explicit-any */
+                    h1: ({ children, ...props }: any) => {
+                      const line = (props as any).node?.position?.start.line;
+                      return <h1 id={line ? `line-${line}` : undefined}>{children}</h1>;
+                    },
+                    h2: ({ children, ...props }: any) => {
+                      const line = (props as any).node?.position?.start.line;
+                      return <h2 id={line ? `line-${line}` : undefined}>{children}</h2>;
+                    },
+                    h3: ({ children, ...props }: any) => {
+                      const line = (props as any).node?.position?.start.line;
+                      return <h3 id={line ? `line-${line}` : undefined}>{children}</h3>;
+                    },
+                    h4: ({ children, ...props }: any) => {
+                      const line = (props as any).node?.position?.start.line;
+                      return <h4 id={line ? `line-${line}` : undefined}>{children}</h4>;
+                    },
+                    h5: ({ children, ...props }: any) => {
+                      const line = (props as any).node?.position?.start.line;
+                      return <h5 id={line ? `line-${line}` : undefined}>{children}</h5>;
+                    },
+                    h6: ({ children, ...props }: any) => {
+                      const line = (props as any).node?.position?.start.line;
+                      return <h6 id={line ? `line-${line}` : undefined}>{children}</h6>;
+                    },
+                    /* eslint-enable @typescript-eslint/no-explicit-any */
+                  }}
+                >
+                  {rulesText}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         )}
