@@ -1,6 +1,11 @@
 #include "certificate.h"
 #include "file_utils.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -284,47 +289,36 @@ void Certificate::printNestedModelsTree()
     printTree(*this, _nested_models, "", true);
 }
 
-static void printFileTreeRecursive(Certificate& cert, const std::filesystem::path& path, const std::string& prefix)
+static void printFileTreeRecursive(Certificate& cert, const file_utils::FileNode& node, const std::string& prefix)
 {
-    std::vector<std::filesystem::directory_entry> entries;
-    for (const auto& entry : std::filesystem::directory_iterator(path))
-        entries.push_back(entry);
-
-    std::sort(entries.begin(), entries.end(),
-              [](const auto& a, const auto& b)
-              {
-                  if (a.is_directory() != b.is_directory())
-                      return a.is_directory();
-                  return a.path().filename().string() < b.path().filename().string();
-              });
-
-    for (size_t i = 0; i < entries.size(); ++i)
+    for (size_t i = 0; i < node.children.size(); ++i)
     {
-        const bool is_last = (i == entries.size() - 1);
-        const auto& entry = entries[i];
-        std::string name = entry.path().filename().string();
-        if (entry.is_regular_file() && file_utils::isBinary(entry.path()))
+        const bool is_last = (i == node.children.size() - 1);
+        const auto& child = node.children[i];
+        std::string name = child.name;
+        if (!child.is_directory && child.is_binary)
             name += " (binary)";
 
         const std::string marker = is_last ? "└── " : "├── ";
 
         cert.log(std::format("  {}{}{}", prefix, marker, name));
 
-        if (entry.is_directory())
+        if (child.is_directory)
         {
             const std::string next_prefix = prefix + (is_last ? "    " : "│   ");
-            printFileTreeRecursive(cert, entry.path(), next_prefix);
+            printFileTreeRecursive(cert, child, next_prefix);
         }
     }
 }
 
 void Certificate::printFileTree(const std::filesystem::path& root, const std::string& label)
 {
+    (void)root;
     printSubsectionHeader("FILE TREE: " + label);
     log("  .");
     try
     {
-        printFileTreeRecursive(*this, root, "");
+        printFileTreeRecursive(*this, _file_tree, "");
     }
     catch (const std::exception& e)
     {
@@ -356,4 +350,74 @@ bool Certificate::saveToFile(const std::filesystem::path& path) const
         return false;
     file << stripAnsi(_report_buffer);
     return true;
+}
+
+static void nestedModelToJson(const NestedModelResult& model, rapidjson::Value& value,
+                              rapidjson::Document::AllocatorType& allocator)
+{
+    value.SetObject();
+    value.AddMember("name", rapidjson::Value(model.name.c_str(), allocator).Move(), allocator);
+    value.AddMember("status", static_cast<uint8_t>(model.status), allocator);
+
+    if (!model.nested_models.empty())
+    {
+        rapidjson::Value nested(rapidjson::kArrayType);
+        for (const auto& nm : model.nested_models)
+        {
+            rapidjson::Value nm_value;
+            nestedModelToJson(nm, nm_value, allocator);
+            nested.PushBack(nm_value, allocator);
+        }
+        value.AddMember("nestedModels", nested, allocator);
+    }
+}
+
+std::string Certificate::toJson() const
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    auto& allocator = doc.GetAllocator();
+
+    // Basic Info
+    doc.AddMember("report", rapidjson::Value(_report_buffer.c_str(), allocator).Move(), allocator);
+    doc.AddMember("overallStatus", static_cast<uint8_t>(getOverallStatus()), allocator);
+    doc.AddMember("totalFailed", static_cast<uint64_t>(_total_failed), allocator);
+
+    // Results
+    rapidjson::Value results(rapidjson::kArrayType);
+    for (const auto& result : _results)
+    {
+        rapidjson::Value res_obj(rapidjson::kObjectType);
+        res_obj.AddMember("name", rapidjson::Value(result.test_name.c_str(), allocator).Move(), allocator);
+        res_obj.AddMember("status", static_cast<uint8_t>(result.status), allocator);
+
+        rapidjson::Value msgs(rapidjson::kArrayType);
+        for (const auto& msg : result.messages)
+            msgs.PushBack(rapidjson::Value(msg.c_str(), allocator).Move(), allocator);
+        res_obj.AddMember("messages", msgs, allocator);
+
+        results.PushBack(res_obj, allocator);
+    }
+    doc.AddMember("results", results, allocator);
+
+    // Nested Models
+    rapidjson::Value nested(rapidjson::kArrayType);
+    for (const auto& model : _nested_models)
+    {
+        rapidjson::Value nm_value;
+        nestedModelToJson(model, nm_value, allocator);
+        nested.PushBack(nm_value, allocator);
+    }
+    doc.AddMember("nestedModels", nested, allocator);
+
+    // File Tree
+    rapidjson::Value tree;
+    file_utils::fileNodeToJson(_file_tree, &tree, &allocator);
+    doc.AddMember("fileTree", tree, allocator);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    doc.Accept(writer);
+
+    return buffer.GetString();
 }

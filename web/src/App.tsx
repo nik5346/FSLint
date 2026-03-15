@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -30,9 +30,7 @@ interface FSLintModule {
     cwd: () => string;
     readFile: (path: string, opts?: { encoding?: string; flags?: string }) => Uint8Array | string;
   };
-  _is_binary: (path: number) => number;
-  _get_file_tree_json: (path: number) => number;
-  _run_validation: (path: number) => void;
+  _run_validation: (path: number) => number;
   stackAlloc: (size: number) => number;
   stackSave: () => number;
   stackRestore: (stack: number) => void;
@@ -46,6 +44,18 @@ interface FileNode {
   kind: 'file' | 'directory';
   isBinary: boolean;
   children?: FileNode[];
+}
+
+interface ValidationResult {
+  report: string;
+  overallStatus: number;
+  totalFailed: number;
+  results: {
+    name: string;
+    status: number;
+    messages: string[];
+  }[];
+  fileTree: FileNode;
 }
 
 declare global {
@@ -220,14 +230,30 @@ const FileTreeItem = ({
 const FilePreview = ({
   selectedFile,
   module,
+  fileTree,
   theme,
 }: {
   selectedFile: string | null;
   module: FSLintModule | null;
+  fileTree: FileNode | null;
   theme: Theme;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const findNode = useCallback((root: FileNode, path: string): FileNode | null => {
+    const search = (node: FileNode): FileNode | null => {
+      if (node.path === path) return node;
+      if (node.children) {
+        for (const child of node.children) {
+          const found = search(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return search(root);
+  }, []);
 
   useEffect(() => {
     let url: string | null = null;
@@ -276,11 +302,8 @@ const FilePreview = ({
   }
 
   const data = module.FS.readFile(selectedFile) as Uint8Array;
-  const stack = module.stackSave();
-  const ptr = module.stackAlloc(selectedFile.length * 4 + 1);
-  module.stringToUTF8(selectedFile, ptr, selectedFile.length * 4 + 1);
-  const isBinaryResult = module._is_binary(ptr);
-  module.stackRestore(stack);
+  const node = fileTree ? findNode(fileTree, selectedFile) : null;
+  const isBinaryResult = node?.isBinary ?? false;
 
   if (isBinaryResult) {
     return (
@@ -671,23 +694,6 @@ function App() {
     }
   };
 
-  const getFileTree = (path: string): FileNode | null => {
-    if (!module) return null;
-    const stack = module.stackSave();
-    const ptr = module.stackAlloc(path.length * 4 + 1);
-    module.stringToUTF8(path, ptr, path.length * 4 + 1);
-    const jsonPtr = module._get_file_tree_json(ptr);
-    const jsonStr = module.UTF8ToString(jsonPtr);
-    module.stackRestore(stack);
-
-    try {
-      return JSON.parse(jsonStr) as FileNode;
-    } catch (e) {
-      console.error('Failed to parse file tree JSON:', e);
-      return null;
-    }
-  };
-
   const processItems = async (files: File[]) => {
     if (!module || isProcessing || files.length === 0) return;
 
@@ -751,36 +757,24 @@ function App() {
       console.log('Reconstructed VFS structure:');
       listVFS(workDir);
 
-      const isSingleArchive =
-        normalizedFiles.length === 1 &&
-        (normalizedFiles[0].relPath.toLowerCase().endsWith('.fmu') ||
-          normalizedFiles[0].relPath.toLowerCase().endsWith('.ssp'));
-
       const target =
         discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
       console.log(`Executing validation with target: "${target}"`);
 
       const targetPtr = module.stackAlloc(target.length * 4 + 1);
       module.stringToUTF8(target, targetPtr, target.length * 4 + 1);
-      module._run_validation(targetPtr);
+      const jsonPtr = module._run_validation(targetPtr);
+      const jsonStr = module.UTF8ToString(jsonPtr);
 
-      // After execution, build the tree
-      let rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
-      if (isSingleArchive) {
-        // Find extracted directory (it starts with model_validation_ or model_cert_add_)
-        try {
-          const entries = module.FS.readdir(workDir);
-          const unpackedDir = entries.find(
-            (e) => e.startsWith('model_validation_') || e.startsWith('model_cert_add_'),
-          );
-          if (unpackedDir) {
-            rootPath = `${workDir}/${unpackedDir}`;
-          }
-        } catch (e) {
-          console.error('Failed to find unpacked directory:', e);
-        }
+      try {
+        const result = JSON.parse(jsonStr) as ValidationResult;
+        setOutput(result.report);
+        setFileTree(result.fileTree);
+      } catch (e) {
+        console.error('Failed to parse validation result JSON:', e);
+        setOutput((prev) => prev + 'Error: Failed to parse validation result\n');
       }
-      setFileTree(getFileTree(rootPath));
+
       setActiveTab('certificate');
     } catch (err) {
       let errorMessage: string;
@@ -1266,7 +1260,12 @@ function App() {
                 minWidth: 0,
               }}
             >
-              <FilePreview selectedFile={selectedFile} module={module} theme={theme} />
+              <FilePreview
+                selectedFile={selectedFile}
+                module={module}
+                fileTree={fileTree}
+                theme={theme}
+              />
             </div>
           </div>
         )}
