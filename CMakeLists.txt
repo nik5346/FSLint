@@ -372,6 +372,12 @@ FetchContent_Declare(
 )
 
 FetchContent_Declare(
+    rapidjson
+    GIT_REPOSITORY https://github.com/Tencent/rapidjson.git
+    GIT_TAG        v1.1.0
+)
+
+FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
   GIT_TAG        v3.4.0
@@ -384,6 +390,11 @@ set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 FetchContent_GetProperties(picosha2)
 if(NOT picosha2_POPULATED)
     FetchContent_Populate(picosha2)
+endif()
+
+FetchContent_GetProperties(rapidjson)
+if(NOT rapidjson_POPULATED)
+    FetchContent_Populate(rapidjson)
 endif()
 
 FetchContent_GetProperties(Catch2)
@@ -429,6 +440,7 @@ target_include_directories(FSLint-core SYSTEM PRIVATE
     ${ZLIB_INCLUDE_DIRS}
     ${MINIZIP_DIR}
     ${picosha2_SOURCE_DIR}
+    ${rapidjson_SOURCE_DIR}/include
 )
 
 target_include_directories(FSLint-core SYSTEM PRIVATE
