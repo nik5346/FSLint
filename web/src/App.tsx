@@ -1156,27 +1156,27 @@ function App() {
             </pre>
           </div>
         )}
-      </main>
 
-      <footer
-        style={{
-          fontSize: '0.8em',
-          color: theme.muted,
-          textAlign: 'center',
-          flexShrink: 0,
-          transition: 'color 0.2s',
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '10px',
-        }}
-      >
-        <span>FSLint v{__APP_VERSION__}</span>
-        <span>•</span>
-        <span>
-          FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your
-          browser.
-        </span>
-      </footer>
+        <footer
+          style={{
+            fontSize: '0.8em',
+            color: theme.muted,
+            textAlign: 'center',
+            flexShrink: 0,
+            transition: 'color 0.2s',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '10px',
+          }}
+        >
+          <span>FSLint v{__APP_VERSION__}</span>
+          <span>•</span>
+          <span>
+            FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your
+            browser.
+          </span>
+        </footer>
+      </main>
     </div>
   );
 }
