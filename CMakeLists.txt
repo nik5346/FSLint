@@ -372,6 +372,12 @@ FetchContent_Declare(
 )
 
 FetchContent_Declare(
+    rapidjson
+    GIT_REPOSITORY https://github.com/Tencent/rapidjson.git
+    GIT_TAG        master # Recent master to fix WASM and ARM64
+)
+
+FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
   GIT_TAG        v3.4.0
@@ -384,6 +390,11 @@ set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 FetchContent_GetProperties(picosha2)
 if(NOT picosha2_POPULATED)
     FetchContent_Populate(picosha2)
+endif()
+
+FetchContent_GetProperties(rapidjson)
+if(NOT rapidjson_POPULATED)
+    FetchContent_Populate(rapidjson)
 endif()
 
 FetchContent_GetProperties(Catch2)
@@ -429,6 +440,7 @@ target_include_directories(FSLint-core SYSTEM PRIVATE
     ${ZLIB_INCLUDE_DIRS}
     ${MINIZIP_DIR}
     ${picosha2_SOURCE_DIR}
+    ${rapidjson_SOURCE_DIR}/include
 )
 
 target_include_directories(FSLint-core SYSTEM PRIVATE
@@ -440,7 +452,12 @@ target_compile_definitions(FSLint-core PRIVATE
     PROJECT_VERSION_MAJOR=${CMAKE_PROJECT_VERSION_MAJOR}
     PROJECT_VERSION_MINOR=${CMAKE_PROJECT_VERSION_MINOR}
     PROJECT_VERSION_PATCH=${CMAKE_PROJECT_VERSION_PATCH}
+    RAPIDJSON_HAS_STDSTRING=1
 )
+
+if(MSVC AND (CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" OR CMAKE_GENERATOR_PLATFORM MATCHES "ARM64"))
+    target_compile_definitions(FSLint-core PRIVATE RAPIDJSON_ENDIAN=0) # 0 for Little Endian
+endif()
 
 target_link_libraries(FSLint-core
     PUBLIC
@@ -459,11 +476,16 @@ endif()
 # ============================================================================
 # CLI executable
 # ============================================================================
-add_executable(FSLint-cli
-    cli/main.cpp
-)
+if(NOT EMSCRIPTEN)
+    add_executable(FSLint-cli
+        cli/main.cpp
+    )
+endif()
 
 if(EMSCRIPTEN)
+    add_executable(FSLint-cli
+        wasm/wasm_interface.cpp
+    )
     target_link_options(FSLint-cli PRIVATE
         "-sWASM=1"
         "-sALLOW_MEMORY_GROWTH=1"
@@ -471,7 +493,8 @@ if(EMSCRIPTEN)
         "-sMODULARIZE=1"
         "-sEXPORT_NAME=createFSLintModule"
         "-sINVOKE_RUN=0"
-        "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain']"
+        "-sEXPORTED_RUNTIME_METHODS=['FS', 'stackAlloc', 'stackSave', 'stackRestore', 'stringToUTF8', 'UTF8ToString']"
+        "-sEXPORTED_FUNCTIONS=['_is_binary', '_get_file_tree_json', '_run_validation']"
         "--embed-file" "${CMAKE_SOURCE_DIR}/standard@/standard"
     )
     
