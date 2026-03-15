@@ -38,17 +38,22 @@
 #include <utility>
 #include <vector>
 
-ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
+ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir,
+                                      const std::filesystem::path& original_path)
 {
     ModelInfo info;
     info.root_path = extract_dir;
     info.standard = ModelStandard::UNKNOWN;
 
-    const std::string ext = extract_dir.extension().string();
+    std::string original_ext;
+    if (!original_path.empty() && std::filesystem::is_regular_file(original_path))
+        original_ext = original_path.extension().string();
 
     // Check for FMI
     const auto model_desc_path = extract_dir / "modelDescription.xml";
-    if (std::filesystem::exists(model_desc_path) || ext == ".fmu")
+    const bool is_fmi = std::filesystem::exists(model_desc_path) || original_ext == ".fmu";
+
+    if (is_fmi)
     {
         // Try to extract FMI version
         auto version = SchemaCheckerBase::extractVersionFromXml(model_desc_path, "fmiModelDescription", "fmiVersion");
@@ -73,7 +78,9 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir)
 
     // Check for SSP
     const auto system_structure_path = extract_dir / "SystemStructure.ssd";
-    if (std::filesystem::exists(system_structure_path) || ext == ".ssp")
+    const bool is_ssp = std::filesystem::exists(system_structure_path) || original_ext == ".ssp";
+
+    if (is_ssp)
     {
         auto version =
             SchemaCheckerBase::extractVersionFromXml(system_structure_path, "SystemStructureDescription", "version");

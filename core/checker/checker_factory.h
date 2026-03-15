@@ -11,7 +11,8 @@ class CheckerFactory
 {
   public:
     // Detect model type and version from extracted directory
-    static ModelInfo detectModel(const std::filesystem::path& extract_dir);
+    static ModelInfo detectModel(const std::filesystem::path& extract_dir,
+                                 const std::filesystem::path& original_path = "");
 
     // Create appropriate checkers for the detected model type
     static std::vector<std::unique_ptr<Checker>> createCheckers(const ModelInfo& info);

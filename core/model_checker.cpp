@@ -80,7 +80,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     }
 
     // Step 3: Detect model type and create appropriate checkers
-    ModelInfo model_info = CheckerFactory::detectModel(extract_dir);
+    ModelInfo model_info = CheckerFactory::detectModel(extract_dir, path);
     model_info.original_path = path;
 
     if (model_info.standard == ModelStandard::UNKNOWN)
@@ -167,7 +167,7 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     }
 
     // Step 3: Detect and validate
-    ModelInfo model_info = CheckerFactory::detectModel(extract_dir);
+    ModelInfo model_info = CheckerFactory::detectModel(extract_dir, path);
     model_info.original_path = path;
 
     if (model_info.standard == ModelStandard::UNKNOWN)

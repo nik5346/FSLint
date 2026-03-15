@@ -29,6 +29,19 @@ TEST_CASE("Detect unknown model type as failure with .fmu extension", "[detectio
     CHECK(has_error_with_text(cert, "modelDescription.xml"));
 }
 
+TEST_CASE("Detect unknown model type as failure with .zip extension", "[detection]")
+{
+    ModelChecker checker;
+    fs::path dummy_dir = "tests/data/directory/fail/not_a_model.zip";
+
+    Certificate cert = checker.validate(dummy_dir, true);
+
+    // It should fail with detection error because .zip is not specific
+    // and no mandatory files are present.
+    CHECK(has_fail(cert));
+    CHECK(has_error_with_text(cert, "Could not detect model standard"));
+}
+
 TEST_CASE("Detect unknown model type as failure in addCertificate", "[detection]")
 {
     ModelChecker checker;

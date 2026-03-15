@@ -19,9 +19,9 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
 ## Model Detection (FMU and SSP)
 
 - **Model Identification**: The tool **must** be able to identify the model type.
-  - An **FMU** is identified by the presence of `modelDescription.xml` in the root directory.
-  - An **SSP** is identified by the presence of `SystemStructure.ssd` in the root directory.
-  - If neither file is found, validation **must** fail.
+  - When providing an archive file (e.g., `.fmu`, `.ssp`, `.zip`), the model type **must** be identifiable by the file extension (`.fmu` or `.ssp`).
+  - If the extension is generic (e.g., `.zip`) or when providing an unzipped directory, the model type **must** be identifiable by the presence of `modelDescription.xml` (for FMU) or `SystemStructure.ssd` (for SSP) in the root directory.
+  - If the model type cannot be identified or the mandatory files are missing after identification, validation **must** fail.
 
 - **Disk Spanning**: Split or spanned ZIP archives **must not** be used.
 - **Compression Methods**: Only `store` (0) and `deflate` (8) compression methods **must** be used.
