@@ -1,4 +1,5 @@
 #include "certificate.h"
+#include "file_utils.h"
 
 #include <algorithm>
 #include <array>
@@ -301,7 +302,10 @@ static void printFileTreeRecursive(Certificate& cert, const std::filesystem::pat
     {
         const bool is_last = (i == entries.size() - 1);
         const auto& entry = entries[i];
-        const std::string name = entry.path().filename().string();
+        std::string name = entry.path().filename().string();
+        if (entry.is_regular_file() && file_utils::isBinary(entry.path()))
+            name += " (binary)";
+
         const std::string marker = is_last ? "└── " : "├── ";
 
         cert.log(std::format("  {}{}{}", prefix, marker, name));

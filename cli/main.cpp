@@ -1,4 +1,9 @@
 #include "model_checker.h"
+#include "file_utils.h"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 #include <cstddef>
 #include <exception>
@@ -29,6 +34,16 @@ void printUsage(const std::string& program_name)
     std::cout << "  " << program_name << " -r model.fmu/ssp   # Remove certificate\n";
     std::cout << "  " << program_name << " -u model.fmu/ssp   # Re-validate and update certificate\n";
 }
+
+#ifdef __EMSCRIPTEN__
+extern "C"
+{
+    EMSCRIPTEN_KEEPALIVE bool is_binary(const char* path)
+    {
+        return file_utils::isBinary(path);
+    }
+}
+#endif
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv)

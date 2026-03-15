@@ -471,7 +471,8 @@ if(EMSCRIPTEN)
         "-sMODULARIZE=1"
         "-sEXPORT_NAME=createFSLintModule"
         "-sINVOKE_RUN=0"
-        "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain']"
+        "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain', 'stackAlloc', 'stackSave', 'stackRestore', 'stringToUTF8']"
+        "-sEXPORTED_FUNCTIONS=['_main', '_is_binary']"
         "--embed-file" "${CMAKE_SOURCE_DIR}/standard@/standard"
     )
     

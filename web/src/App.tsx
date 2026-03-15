@@ -31,6 +31,11 @@ interface FSLintModule {
     readFile: (path: string, opts?: { encoding?: string; flags?: string }) => Uint8Array | string;
   };
   callMain: (args: string[]) => void;
+  _is_binary: (path: number) => number;
+  stackAlloc: (size: number) => number;
+  stackSave: () => number;
+  stackRestore: (stack: number) => void;
+  stringToUTF8: (str: string, outPtr: number, maxBytes: number) => void;
 }
 
 interface FileNode {
@@ -104,6 +109,7 @@ const FileTreeItem = ({
   theme: Theme;
   level?: number;
 }) => {
+  const [isOpen, setIsOpen] = useState(true);
   const isSelected = selectedFile === node.path;
   const isDir = node.kind === 'directory';
 
@@ -111,16 +117,20 @@ const FileTreeItem = ({
     <div style={{ marginLeft: level * 12 }}>
       <div
         role="button"
-        tabIndex={isDir ? -1 : 0}
-        onClick={() => !isDir && setSelectedFile(node.path)}
+        tabIndex={0}
+        onClick={() => (isDir ? setIsOpen(!isOpen) : setSelectedFile(node.path))}
         onKeyDown={(e) => {
-          if (!isDir && (e.key === 'Enter' || e.key === ' ')) {
-            setSelectedFile(node.path);
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (isDir) {
+              setIsOpen(!isOpen);
+            } else {
+              setSelectedFile(node.path);
+            }
           }
         }}
         style={{
           padding: '4px 8px',
-          cursor: isDir ? 'default' : 'pointer',
+          cursor: 'pointer',
           borderRadius: '4px',
           backgroundColor: isSelected ? theme.buttonHoverBg : 'transparent',
           display: 'flex',
@@ -135,36 +145,61 @@ const FileTreeItem = ({
         onMouseLeave={(e) => !isSelected && (e.currentTarget.style.backgroundColor = 'transparent')}
       >
         {isDir ? (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-          </svg>
+          <>
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                transform: isOpen ? 'rotate(90deg)' : 'none',
+                transition: 'transform 0.1s',
+                flexShrink: 0,
+              }}
+            >
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ flexShrink: 0 }}
+            >
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </>
         ) : (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-            <polyline points="13 2 13 9 20 9"></polyline>
-          </svg>
+          <>
+            <div style={{ width: 10, flexShrink: 0 }} />
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ flexShrink: 0 }}
+            >
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+              <polyline points="13 2 13 9 20 9"></polyline>
+            </svg>
+          </>
         )}
-        {node.name}
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.name}</span>
       </div>
       {isDir &&
+        isOpen &&
         node.children?.map((child) => (
           <FileTreeItem
             key={child.path}
@@ -189,6 +224,7 @@ const FilePreview = ({
   theme: Theme;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let url: string | null = null;
@@ -236,29 +272,135 @@ const FilePreview = ({
     );
   }
 
-  let content: string;
-  try {
-    content = module.FS.readFile(selectedFile, { encoding: 'utf8' }) as string;
-  } catch (e) {
+  const data = module.FS.readFile(selectedFile) as Uint8Array;
+  const isBinary = isBinaryCore(selectedFile);
+
+  if (isBinary) {
     return (
-      <div style={{ padding: '20px', color: '#ff5555' }}>Failed to load file: {String(e)}</div>
+      <div
+        style={{
+          padding: '40px',
+          textAlign: 'center',
+          color: theme.muted,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '12px',
+        }}
+      >
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+          <polyline points="13 2 13 9 20 9"></polyline>
+        </svg>
+        <span>Binary file cannot be displayed</span>
+      </div>
     );
   }
 
+  const content = new TextDecoder().decode(data);
+  const lines = content.split('\n');
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
-    <pre
-      style={{
-        margin: 0,
-        padding: '15px',
-        fontFamily: 'monospace',
-        fontSize: '0.9em',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-all',
-        color: theme.text,
-      }}
-    >
-      {content}
-    </pre>
+    <div style={{ position: 'relative', display: 'flex', minHeight: '100%' }}>
+      <button
+        onClick={handleCopy}
+        title={copied ? 'Copied!' : 'Copy to clipboard'}
+        className="copy-btn"
+        style={{
+          position: 'absolute',
+          top: '6px',
+          right: '22px', // Stay inside scrollbar if any
+          zIndex: 1,
+          padding: '5px',
+          color: theme.text,
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          opacity: 0.6,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'background-color 0.15s, opacity 0.15s',
+        }}
+      >
+        {copied ? (
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        ) : (
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          </svg>
+        )}
+      </button>
+
+      <div
+        style={{
+          padding: '15px 10px',
+          textAlign: 'right',
+          color: theme.muted,
+          backgroundColor: theme.bg,
+          userSelect: 'none',
+          fontSize: '0.9em',
+          fontFamily: 'monospace',
+          borderRight: `1px solid ${theme.border}`,
+          minWidth: '40px',
+        }}
+      >
+        {lines.map((_, i) => (
+          <div key={i}>{i + 1}</div>
+        ))}
+      </div>
+      <pre
+        style={{
+          margin: 0,
+          padding: '15px',
+          fontFamily: 'monospace',
+          fontSize: '0.9em',
+          whiteSpace: 'pre',
+          overflowX: 'auto',
+          color: theme.text,
+          flex: 1,
+        }}
+      >
+        {content}
+      </pre>
+    </div>
   );
 };
 
@@ -315,6 +457,8 @@ function App() {
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [rulesText, setRulesText] = useState<string>('');
+  const [explorerWidth, setExplorerWidth] = useState(300);
+  const [isResizing, setIsResizing] = useState(false);
 
   const outputEndRef = useRef<HTMLPreElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -384,6 +528,27 @@ function App() {
       .then((text) => setRulesText(text))
       .catch((err) => console.error('Failed to load rules.md:', err));
   }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      // 64 is sidebar width, 20 is main padding
+      const newWidth = e.clientX - 64 - 20;
+      if (newWidth > 150 && newWidth < 800) {
+        setExplorerWidth(newWidth);
+      }
+    };
+    const handleMouseUp = () => setIsResizing(false);
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -499,15 +664,26 @@ function App() {
     }
   };
 
+  const isBinaryCore = (path: string): boolean => {
+    if (!module) return false;
+    const stack = module.stackSave();
+    const ptr = module.stackAlloc(path.length * 4 + 1);
+    module.stringToUTF8(path, ptr, path.length * 4 + 1);
+    const result = module._is_binary(ptr);
+    module.stackRestore(stack);
+    return !!result;
+  };
+
   const getFileTree = (path: string): FileNode | null => {
     if (!module) return null;
     try {
       const stat = module.FS.stat(path);
       const name = path.split('/').pop() || '/';
+      const kind = module.FS.isDir(stat.mode) ? 'directory' : 'file';
       const node: FileNode = {
-        name,
+        name: name + (kind === 'file' && isBinaryCore(path) ? ' (binary)' : ''),
         path,
-        kind: module.FS.isDir(stat.mode) ? 'directory' : 'file',
+        kind,
       };
 
       if (node.kind === 'directory') {
@@ -1059,7 +1235,6 @@ function App() {
               flex: 1,
               minHeight: 0,
               display: 'flex',
-              gap: '1px',
               backgroundColor: theme.border,
               borderRadius: '4px',
               border: `1px solid ${theme.border}`,
@@ -1068,10 +1243,11 @@ function App() {
           >
             <div
               style={{
-                width: '300px',
+                width: explorerWidth,
                 backgroundColor: theme.surface,
                 overflowY: 'auto',
                 padding: '10px',
+                flexShrink: 0,
               }}
             >
               <FileTreeItem
@@ -1081,11 +1257,26 @@ function App() {
                 theme={theme}
               />
             </div>
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizing(true);
+              }}
+              style={{
+                width: '4px',
+                cursor: 'col-resize',
+                backgroundColor: isResizing ? '#007bff' : theme.border,
+                transition: 'background-color 0.2s',
+                zIndex: 10,
+              }}
+            />
             <div
               style={{
                 flex: 1,
                 backgroundColor: theme.surface,
                 overflowY: 'auto',
+                minWidth: 0,
               }}
             >
               <FilePreview selectedFile={selectedFile} module={module} theme={theme} />
