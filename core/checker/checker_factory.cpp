@@ -38,6 +38,7 @@
 #include <utility>
 #include <vector>
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir,
                                       const std::filesystem::path& original_path)
 {
