@@ -239,9 +239,6 @@ jobs:
           cp images/icon.svg web/public/
           cp images/banner.svg web/public/
 
-      - name: Sync Version
-        run: python3 scripts/get_version.py --sync
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:

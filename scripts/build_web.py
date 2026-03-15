@@ -10,7 +10,6 @@ Usage:
 """
 
 import argparse
-import json
 import os
 import shutil
 import subprocess
@@ -300,8 +299,6 @@ def copy_artifacts():
 
 def build_web():
     print("\n--- build web app ---")
-    # Run version synchronization using get_version.py
-    run(sys.executable, ROOT / "scripts" / "get_version.py", "--sync")
     npm = "npm.cmd" if os.name == "nt" else "npm"
     run(npm, "install", cwd=WEB_DIR)
     run(npm, "run", "build", cwd=WEB_DIR)
