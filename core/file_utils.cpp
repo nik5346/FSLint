@@ -5,11 +5,10 @@
 #include <rapidjson/writer.h>
 
 #include <algorithm>
-#include <array>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
-#include <iomanip>
-#include <sstream>
+#include <ios>
 #include <string>
 #include <vector>
 
@@ -104,8 +103,8 @@ static void getFileTreeRecursive(const std::filesystem::path& path, rapidjson::V
         std::sort(entries.begin(), entries.end(),
                   [](const auto& a, const auto& b)
                   {
-                      bool a_is_dir = std::filesystem::is_directory(a);
-                      bool b_is_dir = std::filesystem::is_directory(b);
+                      const bool a_is_dir = std::filesystem::is_directory(a);
+                      const bool b_is_dir = std::filesystem::is_directory(b);
                       if (a_is_dir != b_is_dir)
                           return a_is_dir;
                       return a.filename().string() < b.filename().string();

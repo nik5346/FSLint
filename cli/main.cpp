@@ -1,7 +1,7 @@
-#include "file_utils.h"
 #include "model_checker.h"
 
 #ifdef __EMSCRIPTEN__
+#include "file_utils.h"
 #include <emscripten.h>
 #endif
 
