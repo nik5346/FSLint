@@ -109,6 +109,7 @@ FileNode getFileTree(const std::filesystem::path& path)
     return node;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void fileNodeToJson(const FileNode& node, void* value_ptr, void* allocator_ptr)
 {
     auto& value = *static_cast<rapidjson::Value*>(value_ptr);

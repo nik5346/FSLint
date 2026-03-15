@@ -1,6 +1,7 @@
 #include "model_checker.h"
 
 #include "archive_checker.h"
+#include "file_utils.h"
 #include "certificate.h"
 #include "checker_factory.h"
 #include "model_info.h"
