@@ -5,7 +5,7 @@ import argparse
 from pathlib import Path
 
 # The fallback version if no git tags are found
-DEFAULT_VERSION = "0.1.0"
+DEFAULT_VERSION = "0.0.1"
 
 def get_git_version():
     try:

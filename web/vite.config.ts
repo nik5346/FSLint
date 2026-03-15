@@ -10,7 +10,7 @@ const getVersion = () => {
     return execSync(`python3 "${scriptPath}"`).toString().trim()
   } catch (e) {
     console.error('Failed to get version:', e)
-    return '0.1.0'
+    return '0.0.1'
   }
 }
 
