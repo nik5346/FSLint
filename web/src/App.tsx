@@ -30,7 +30,6 @@ interface FSLintModule {
     cwd: () => string;
     readFile: (path: string, opts?: { encoding?: string; flags?: string }) => Uint8Array | string;
   };
-  callMain: (args: string[]) => void;
   _is_binary: (path: number) => number;
   _get_file_tree_json: (path: number) => number;
   _run_validation: (path: number) => void;
