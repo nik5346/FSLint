@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -101,80 +101,22 @@ async function getFilesFromHandle(
   return files;
 }
 
-const slugify = (text: string) =>
-  text
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]/g, '');
-
-const RulesOutlineItem = ({
-  id,
-  text,
-  level,
-  theme,
-  containerRef,
-}: {
-  id: string;
-  text: string;
-  level: number;
-  theme: Theme;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-}) => {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => {
-        const element = document.getElementById(id);
-        if (element && containerRef.current) {
-          const top = element.offsetTop;
-          containerRef.current.scrollTo({ top, behavior: 'smooth' });
-        }
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          const element = document.getElementById(id);
-          if (element && containerRef.current) {
-            const top = element.offsetTop;
-            containerRef.current.scrollTo({ top, behavior: 'smooth' });
-          }
-        }
-      }}
-      style={{
-        padding: '4px 8px',
-        cursor: 'pointer',
-        borderRadius: '4px',
-        fontSize: '0.9em',
-        marginLeft: (level - 1) * 12,
-        color: theme.text,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        transition: 'background-color 0.15s',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.iconHover)}
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-    >
-      {text}
-    </div>
-  );
-};
-
-const FileTreeItem = ({
+const FileTreeItem = memo(function FileTreeItem({
   node,
+  isSelected,
   selectedFile,
   setSelectedFile,
   theme,
   level = 0,
 }: {
   node: FileNode;
+  isSelected: boolean;
   selectedFile: string | null;
   setSelectedFile: (path: string) => void;
   theme: Theme;
   level?: number;
-}) => {
+}) {
   const [isOpen, setIsOpen] = useState(true);
-  const isSelected = selectedFile === node.path;
   const isDir = node.kind === 'directory';
 
   return (
@@ -268,6 +210,7 @@ const FileTreeItem = ({
           <FileTreeItem
             key={child.path}
             node={child}
+            isSelected={child.path === selectedFile}
             selectedFile={selectedFile}
             setSelectedFile={setSelectedFile}
             theme={theme}
@@ -276,15 +219,17 @@ const FileTreeItem = ({
         ))}
     </div>
   );
-};
+});
 
 const FilePreview = ({
   selectedFile,
+  node,
   module,
   theme,
   isDark,
 }: {
   selectedFile: string | null;
+  node: FileNode | null | undefined;
   module: FSLintModule | null;
   theme: Theme;
   isDark: boolean;
@@ -320,20 +265,29 @@ const FilePreview = ({
     };
   }, [selectedFile, module]);
 
-  if (!selectedFile || !module) return null;
-
-  const ext = selectedFile.split('.').pop()?.toLowerCase();
+  const ext = selectedFile?.split('.').pop()?.toLowerCase();
   const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
   const isSvg = ext === 'svg';
   const isHtml = ext === 'html' || ext === 'htm';
   const canToggle = isSvg || isHtml;
 
-  const data = module.FS.readFile(selectedFile) as Uint8Array;
-  const stack = module.stackSave();
-  const ptr = module.stackAlloc(selectedFile.length * 4 + 1);
-  module.stringToUTF8(selectedFile, ptr, selectedFile.length * 4 + 1);
-  const isBinaryResult = module._is_binary(ptr);
-  module.stackRestore(stack);
+  const isBinaryResult = node?.isBinary ?? false;
+
+  const data = useMemo(() => {
+    if (!selectedFile || !module) return null;
+    if (isBinaryResult) return null;
+    try {
+      return module.FS.readFile(selectedFile) as Uint8Array;
+    } catch (e) {
+      console.error('Failed to read file:', e);
+      return null;
+    }
+  }, [selectedFile, module, isBinaryResult]);
+
+  const content = useMemo(() => {
+    if (!data) return '';
+    return new TextDecoder().decode(data);
+  }, [data]);
 
   if (isBinaryResult) {
     return (
@@ -366,7 +320,7 @@ const FilePreview = ({
     );
   }
 
-  const content = new TextDecoder().decode(data);
+  if (!selectedFile || !module) return null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content).then(() => {
@@ -566,7 +520,7 @@ const FilePreview = ({
             minWidth: '40px',
             paddingRight: '10px',
             textAlign: 'right',
-            color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+            color: isDark ? '#858585' : '#999999',
             userSelect: 'none',
           }}
           customStyle={{
@@ -635,6 +589,15 @@ function App() {
   const [activeTab, setActiveTab] = useState<'certificate' | 'rules' | 'explorer'>('certificate');
   const [currentWorkDir, setCurrentWorkDir] = useState<string | null>(null);
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
+  const fileMap = useMemo(() => {
+    const map = new Map<string, FileNode>();
+    const traverse = (node: FileNode) => {
+      map.set(node.path, node);
+      node.children?.forEach(traverse);
+    };
+    if (fileTree) traverse(fileTree);
+    return map;
+  }, [fileTree]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [rulesText, setRulesText] = useState<string>('');
   const [explorerWidth, setExplorerWidth] = useState(300);
@@ -642,41 +605,6 @@ function App() {
 
   const outputEndRef = useRef<HTMLPreElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
-  const rulesContainerRef = useRef<HTMLDivElement>(null);
-
-  const rulesOutline = useMemo(() => {
-    const counts: Record<string, number> = {};
-    const lines = rulesText.split('\n');
-    let inCodeBlock = false;
-    const outline = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.startsWith('```')) {
-        inCodeBlock = !inCodeBlock;
-        continue;
-      }
-      if (inCodeBlock) continue;
-
-      const match = line.match(/^(#+)\s+(.*)$/);
-      if (match) {
-        const level = match[1].length;
-        if (level > 3) continue;
-        const text = match[2].trim();
-        const baseId = slugify(text);
-        const count = (counts[baseId] || 0) + 1;
-        counts[baseId] = count;
-        const id = count > 1 ? `${baseId}-${count - 1}` : baseId;
-        outline.push({
-          id,
-          text,
-          level,
-          line: i + 1, // 1-indexed to match remark
-        });
-      }
-    }
-    return outline;
-  }, [rulesText]);
 
   const theme = useMemo(
     () => ({
@@ -1406,91 +1334,23 @@ function App() {
             style={{
               flex: 1,
               minHeight: 0,
-              display: 'flex',
-              backgroundColor: theme.border,
+              overflowY: 'auto',
+              padding: '0 20px',
+              backgroundColor: theme.surface,
               borderRadius: '4px',
               border: `1px solid ${theme.border}`,
-              overflow: 'hidden',
             }}
           >
-            <div
-              style={{
-                width: explorerWidth,
-                backgroundColor: theme.surface,
-                overflowY: 'auto',
-                padding: '10px',
-                flexShrink: 0,
-              }}
-            >
-              {rulesOutline.map((item, idx) => (
-                <RulesOutlineItem
-                  key={idx}
-                  id={item.id}
-                  text={item.text}
-                  level={item.level}
-                  theme={theme}
-                  containerRef={rulesContainerRef}
-                />
-              ))}
-            </div>
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-            <div
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setIsResizing(true);
-              }}
-              style={{
-                width: '4px',
-                cursor: 'col-resize',
-                backgroundColor: isResizing ? '#007bff' : theme.border,
-                transition: 'background-color 0.2s',
-                zIndex: 10,
-              }}
-            />
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                padding: '0 20px',
-                backgroundColor: theme.surface,
-                scrollBehavior: 'smooth',
-              }}
-              ref={rulesContainerRef}
-            >
-              <style>{`
-                .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-                .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
-                .markdown-body th { background-color: ${theme.bg}; }
-                .markdown-body code { background-color: ${theme.bg}; padding: 2px 4px; border-radius: 4px; }
-                .markdown-body pre { background-color: ${theme.bg}; padding: 16px; border-radius: 4px; overflow: auto; }
-                .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
-                .markdown-body { font-size: 0.9em; }
-              `}</style>
-              <div className="markdown-body">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    h1: ({ children, node }) => {
-                      const line = node?.position?.start.line;
-                      const item = rulesOutline.find((i) => i.line === line && i.level === 1);
-                      return <h1 id={item?.id || slugify(String(children))}>{children}</h1>;
-                    },
-                    h2: ({ children, node }) => {
-                      const line = node?.position?.start.line;
-                      const item = rulesOutline.find((i) => i.line === line && i.level === 2);
-                      return <h2 id={item?.id || slugify(String(children))}>{children}</h2>;
-                    },
-                    h3: ({ children, node }) => {
-                      const line = node?.position?.start.line;
-                      const item = rulesOutline.find((i) => i.line === line && i.level === 3);
-                      return <h3 id={item?.id || slugify(String(children))}>{children}</h3>;
-                    },
-                  }}
-                >
-                  {rulesText}
-                </ReactMarkdown>
-              </div>
+            <style>{`
+            .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+            .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
+            .markdown-body th { background-color: ${theme.bg}; }
+            .markdown-body code { background-color: ${theme.bg}; padding: 2px 4px; border-radius: 4px; }
+            .markdown-body pre { background-color: ${theme.bg}; padding: 16px; border-radius: 4px; overflow: auto; }
+            .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
+          `}</style>
+            <div className="markdown-body">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{rulesText}</ReactMarkdown>
             </div>
           </div>
         )}
@@ -1518,6 +1378,7 @@ function App() {
             >
               <FileTreeItem
                 node={fileTree}
+                isSelected={selectedFile === fileTree.path}
                 selectedFile={selectedFile}
                 setSelectedFile={setSelectedFile}
                 theme={theme}
@@ -1548,6 +1409,7 @@ function App() {
               <FilePreview
                 key={selectedFile}
                 selectedFile={selectedFile}
+                node={selectedFile ? fileMap.get(selectedFile) : null}
                 module={module}
                 theme={theme}
                 isDark={isDark}
