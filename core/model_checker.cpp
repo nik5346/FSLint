@@ -86,7 +86,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     if (model_info.standard == ModelStandard::UNKNOWN)
     {
         cert.printSubsectionHeader("MODEL DETECTION");
-        cert.printTestResult({"Model Type Detection", TestStatus::FAIL,
+        cert.printTestResult({"Model Type Detection",
+                              TestStatus::FAIL,
                               {"Could not detect model standard. Missing 'modelDescription.xml' (for FMI) or "
                                "'SystemStructure.ssd' (for SSP)."}});
         cert.printSubsectionSummary(false);
@@ -172,7 +173,8 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     if (model_info.standard == ModelStandard::UNKNOWN)
     {
         cert.printSubsectionHeader("MODEL DETECTION");
-        cert.printTestResult({"Model Type Detection", TestStatus::FAIL,
+        cert.printTestResult({"Model Type Detection",
+                              TestStatus::FAIL,
                               {"Could not detect model standard. Missing 'modelDescription.xml' (for FMI) or "
                                "'SystemStructure.ssd' (for SSP)."}});
         cert.printSubsectionSummary(false);
