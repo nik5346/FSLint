@@ -1,5 +1,6 @@
 #include "model_checker.h"
 
+#include <chrono>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
@@ -64,8 +65,13 @@ int main(int argc, char** argv)
             }
             else if (arg == "-v" || arg == "--version")
             {
+                const auto now = std::chrono::system_clock::now();
+                const auto now_time_t = std::chrono::system_clock::to_time_t(now);
+                const std::tm* now_tm = std::gmtime(&now_time_t);
+                const int current_year = now_tm->tm_year + 1900;
+
                 std::cout << "FSLint " << PROJECT_VERSION << "\n";
-                std::cout << "Copyright (c) 2025 FSLint Contributors\n";
+                std::cout << "Copyright (c) " << current_year << " FSLint Contributors\n";
                 return 0;
             }
             else if (arg == "-s" || arg == "--save")
