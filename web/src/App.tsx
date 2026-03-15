@@ -24,7 +24,46 @@ declare global {
       printErr: (text: string) => void;
       locateFile?: (path: string, prefix: string) => string;
     }) => Promise<FSLintModule>;
+    showDirectoryPicker?: (options?: {
+      mode?: 'read' | 'readwrite';
+    }) => Promise<FileSystemDirectoryHandle>;
   }
+
+  interface FileSystemHandle {
+    readonly kind: 'file' | 'directory';
+    readonly name: string;
+  }
+
+  interface FileSystemFileHandle extends FileSystemHandle {
+    readonly kind: 'file';
+    getFile(): Promise<File>;
+  }
+
+  interface FileSystemDirectoryHandle extends FileSystemHandle {
+    readonly kind: 'directory';
+    values(): AsyncIterableIterator<FileSystemHandle>;
+  }
+}
+
+async function getFilesFromHandle(
+  handle: FileSystemDirectoryHandle,
+  path = handle.name,
+): Promise<File[]> {
+  const files: File[] = [];
+  for await (const entry of handle.values()) {
+    const entryPath = `${path}/${entry.name}`;
+    if (entry.kind === 'file') {
+      const file = await (entry as FileSystemFileHandle).getFile();
+      Object.defineProperty(file, 'webkitRelativePath', {
+        value: entryPath,
+      });
+      files.push(file);
+    } else if (entry.kind === 'directory') {
+      const subFiles = await getFilesFromHandle(entry as FileSystemDirectoryHandle, entryPath);
+      files.push(...subFiles);
+    }
+  }
+  return files;
 }
 
 async function getFilesFromEntry(entry: FileSystemEntry): Promise<File[]> {
@@ -143,6 +182,26 @@ function App() {
       await processItems(Array.from(files));
     }
     event.target.value = '';
+  };
+
+  const handleFolderSelect = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (window.showDirectoryPicker) {
+      try {
+        const handle = await window.showDirectoryPicker();
+        const files = await getFilesFromHandle(handle);
+        if (files.length > 0) {
+          await processItems(files);
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error('showDirectoryPicker failed, falling back to input:', err);
+          folderInputRef.current?.click();
+        }
+      }
+    } else {
+      folderInputRef.current?.click();
+    }
   };
 
   const onDrop = async (event: React.DragEvent<HTMLElement>) => {
@@ -469,15 +528,21 @@ function App() {
                   Select File
                 </label>
                 <span>or</span>
-                <label
-                  htmlFor="folderInput"
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleFolderSelect}
+                  onKeyDown={(e) =>
+                    (e.key === 'Enter' || e.key === ' ') &&
+                    handleFolderSelect(e as unknown as React.MouseEvent)
+                  }
                   style={{
                     textDecoration: 'underline',
                     cursor: 'pointer',
                   }}
                 >
                   Select Folder
-                </label>
+                </span>
               </div>
             </div>
           )}
