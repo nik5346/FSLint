@@ -32,16 +32,19 @@ interface FSLintModule {
   };
   callMain: (args: string[]) => void;
   _is_binary: (path: number) => number;
+  _get_file_tree_json: (path: number) => number;
   stackAlloc: (size: number) => number;
   stackSave: () => number;
   stackRestore: (stack: number) => void;
   stringToUTF8: (str: string, outPtr: number, maxBytes: number) => void;
+  UTF8ToString: (ptr: number) => string;
 }
 
 interface FileNode {
   name: string;
   path: string;
   kind: 'file' | 'directory';
+  isBinary: boolean;
   children?: FileNode[];
 }
 
@@ -273,9 +276,13 @@ const FilePreview = ({
   }
 
   const data = module.FS.readFile(selectedFile) as Uint8Array;
-  const isBinary = isBinaryCore(selectedFile);
+  const stack = module.stackSave();
+  const ptr = module.stackAlloc(selectedFile.length * 4 + 1);
+  module.stringToUTF8(selectedFile, ptr, selectedFile.length * 4 + 1);
+  const isBinaryResult = module._is_binary(ptr);
+  module.stackRestore(stack);
 
-  if (isBinary) {
+  if (isBinaryResult) {
     return (
       <div
         style={{
@@ -664,41 +671,19 @@ function App() {
     }
   };
 
-  const isBinaryCore = (path: string): boolean => {
-    if (!module) return false;
+  const getFileTree = (path: string): FileNode | null => {
+    if (!module) return null;
     const stack = module.stackSave();
     const ptr = module.stackAlloc(path.length * 4 + 1);
     module.stringToUTF8(path, ptr, path.length * 4 + 1);
-    const result = module._is_binary(ptr);
+    const jsonPtr = module._get_file_tree_json(ptr);
+    const jsonStr = module.UTF8ToString(jsonPtr);
     module.stackRestore(stack);
-    return !!result;
-  };
 
-  const getFileTree = (path: string): FileNode | null => {
-    if (!module) return null;
     try {
-      const stat = module.FS.stat(path);
-      const name = path.split('/').pop() || '/';
-      const kind = module.FS.isDir(stat.mode) ? 'directory' : 'file';
-      const node: FileNode = {
-        name: name + (kind === 'file' && isBinaryCore(path) ? ' (binary)' : ''),
-        path,
-        kind,
-      };
-
-      if (node.kind === 'directory') {
-        const entries = module.FS.readdir(path);
-        node.children = entries
-          .filter((e) => e !== '.' && e !== '..')
-          .map((e) => getFileTree(path === '/' ? `/${e}` : `${path}/${e}`))
-          .filter((n): n is FileNode => n !== null)
-          .sort((a, b) => {
-            if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
-            return a.name.localeCompare(b.name);
-          });
-      }
-      return node;
-    } catch {
+      return JSON.parse(jsonStr) as FileNode;
+    } catch (e) {
+      console.error('Failed to parse file tree JSON:', e);
       return null;
     }
   };
@@ -1292,6 +1277,10 @@ function App() {
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
+              backgroundColor: theme.surface,
+              borderRadius: '4px',
+              border: `1px solid ${theme.border}`,
+              overflow: 'hidden',
             }}
           >
             <button
@@ -1305,7 +1294,7 @@ function App() {
                 right: '6px',
                 zIndex: 1,
                 padding: '5px',
-                color: theme.termText,
+                color: theme.text,
                 border: 'none',
                 borderRadius: '6px',
                 cursor: output ? 'pointer' : 'default',
@@ -1350,10 +1339,9 @@ function App() {
               style={{
                 flex: 1,
                 minHeight: 0,
-                backgroundColor: theme.termBg,
-                color: theme.termText,
+                backgroundColor: 'transparent',
+                color: theme.text,
                 padding: '15px',
-                borderRadius: '4px',
                 overflowY: 'auto',
                 margin: 0,
                 whiteSpace: 'pre-wrap',
