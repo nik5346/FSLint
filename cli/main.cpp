@@ -1,5 +1,5 @@
-#include "model_checker.h"
 #include "file_utils.h"
+#include "model_checker.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
