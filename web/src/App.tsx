@@ -45,10 +45,7 @@ declare global {
   }
 }
 
-async function getFilesFromHandle(
-  handle: FileSystemDirectoryHandle,
-  path = '',
-): Promise<File[]> {
+async function getFilesFromHandle(handle: FileSystemDirectoryHandle, path = ''): Promise<File[]> {
   const files: File[] = [];
   for await (const entry of handle.values()) {
     const entryPath = path ? `${path}/${entry.name}` : entry.name;
