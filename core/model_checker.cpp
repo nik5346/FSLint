@@ -80,16 +80,24 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     }
 
     // Step 3: Detect model type and create appropriate checkers
-    ModelInfo model_info = CheckerFactory::detectModel(extract_dir);
+    ModelInfo model_info = CheckerFactory::detectModel(extract_dir, path);
     model_info.original_path = path;
 
     if (model_info.standard == ModelStandard::UNKNOWN)
     {
-        if (is_temporary && std::filesystem::exists(extract_dir))
-            std::filesystem::remove_all(extract_dir);
+        cert.printSubsectionHeader("MODEL DETECTION");
+        cert.printTestResult({"Model Type Detection",
+                              TestStatus::FAIL,
+                              {"Could not detect model standard. Missing 'modelDescription.xml' (for FMI) or "
+                               "'SystemStructure.ssd' (for SSP)."}});
+        cert.printSubsectionSummary(false);
 
         if (!quiet)
             cert.printFooter();
+
+        if (is_temporary && std::filesystem::exists(extract_dir))
+            std::filesystem::remove_all(extract_dir);
+
         return cert;
     }
 
@@ -159,11 +167,18 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     }
 
     // Step 3: Detect and validate
-    ModelInfo model_info = CheckerFactory::detectModel(extract_dir);
+    ModelInfo model_info = CheckerFactory::detectModel(extract_dir, path);
     model_info.original_path = path;
 
     if (model_info.standard == ModelStandard::UNKNOWN)
     {
+        cert.printSubsectionHeader("MODEL DETECTION");
+        cert.printTestResult({"Model Type Detection",
+                              TestStatus::FAIL,
+                              {"Could not detect model standard. Missing 'modelDescription.xml' (for FMI) or "
+                               "'SystemStructure.ssd' (for SSP)."}});
+        cert.printSubsectionSummary(false);
+
         std::cerr << "Error: Could not detect model standard\n";
         cert.printFooter();
         if (is_temporary && std::filesystem::exists(extract_dir))

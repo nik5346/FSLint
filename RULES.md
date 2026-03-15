@@ -10,6 +10,13 @@ Each rule check in FSLint results in one of the following statuses:
 - **FAIL**: The rule **must** be satisfied. Violation indicates non-compliance with the FMI or SSP specification that would prevent the model from working correctly in most tools.
 - **WARN**: The rule **should** be satisfied. Violation indicates deviation from recommended best practices, use of deprecated features, or unusual values that might indicate an error.
 
+## Model Detection (FMU and SSP)
+
+- **Model Identification**: The tool **must** be able to identify the model type.
+  - An **archive file** (regular file) **must** have the `.fmu` or `.ssp` extension for identification.
+  - A **directory** is identified by the presence of `modelDescription.xml` (for FMU) or `SystemStructure.ssd` (for SSP) in its root.
+  - If the model type cannot be identified or the mandatory identification files are missing, validation **must** fail.
+
 ## Archive Validation (FMU and SSP)
 
 These rules apply to the ZIP archive itself for both FMU and SSP files.

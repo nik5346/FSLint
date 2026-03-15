@@ -499,6 +499,7 @@ add_executable(FSLint-tests
     tests/recursive_checker_tests.cpp
     tests/schema_checker_tests.cpp
     tests/utf8_tests.cpp
+    tests/detection_tests.cpp
 )
 
 target_link_libraries(FSLint-tests PRIVATE
