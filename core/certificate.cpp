@@ -1,5 +1,6 @@
 #include "certificate.h"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
@@ -11,6 +12,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -302,7 +304,7 @@ static void printFileTreeRecursive(Certificate& cert, const std::filesystem::pat
         const std::string name = entry.path().filename().string();
         const std::string marker = is_last ? "└── " : "├── ";
 
-        cert.log("  " + prefix + marker + name);
+        cert.log(std::format("  {}{}{}", prefix, marker, name));
 
         if (entry.is_directory())
         {
