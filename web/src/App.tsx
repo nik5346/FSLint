@@ -33,6 +33,7 @@ interface FSLintModule {
   callMain: (args: string[]) => void;
   _is_binary: (path: number) => number;
   _get_file_tree_json: (path: number) => number;
+  _run_validation: (path: number) => void;
   stackAlloc: (size: number) => number;
   stackSave: () => number;
   stackRestore: (stack: number) => void;
@@ -758,9 +759,11 @@ function App() {
 
       const target =
         discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
-      console.log(`Executing main with target: "${target}"`);
+      console.log(`Executing validation with target: "${target}"`);
 
-      module.callMain([target]);
+      const targetPtr = module.stackAlloc(target.length * 4 + 1);
+      module.stringToUTF8(target, targetPtr, target.length * 4 + 1);
+      module._run_validation(targetPtr);
 
       // After execution, build the tree
       let rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;

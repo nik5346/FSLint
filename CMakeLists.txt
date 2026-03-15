@@ -471,11 +471,17 @@ endif()
 # ============================================================================
 # CLI executable
 # ============================================================================
-add_executable(FSLint-cli
-    cli/main.cpp
-)
+if(NOT EMSCRIPTEN)
+    add_executable(FSLint-cli
+        cli/main.cpp
+    )
+endif()
 
 if(EMSCRIPTEN)
+    add_executable(FSLint-cli
+        cli/main.cpp
+        wasm/wasm_interface.cpp
+    )
     target_link_options(FSLint-cli PRIVATE
         "-sWASM=1"
         "-sALLOW_MEMORY_GROWTH=1"
@@ -484,7 +490,7 @@ if(EMSCRIPTEN)
         "-sEXPORT_NAME=createFSLintModule"
         "-sINVOKE_RUN=0"
         "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain', 'stackAlloc', 'stackSave', 'stackRestore', 'stringToUTF8', 'UTF8ToString']"
-        "-sEXPORTED_FUNCTIONS=['_main', '_is_binary', '_get_file_tree_json']"
+        "-sEXPORTED_FUNCTIONS=['_main', '_is_binary', '_get_file_tree_json', '_run_validation']"
         "--embed-file" "${CMAKE_SOURCE_DIR}/standard@/standard"
     )
     

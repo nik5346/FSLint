@@ -1,10 +1,5 @@
 #include "model_checker.h"
 
-#ifdef __EMSCRIPTEN__
-#include "file_utils.h"
-#include <emscripten.h>
-#endif
-
 #include <cstddef>
 #include <exception>
 #include <filesystem>
@@ -34,23 +29,6 @@ void printUsage(const std::string& program_name)
     std::cout << "  " << program_name << " -r model.fmu/ssp   # Remove certificate\n";
     std::cout << "  " << program_name << " -u model.fmu/ssp   # Re-validate and update certificate\n";
 }
-
-#ifdef __EMSCRIPTEN__
-extern "C"
-{
-    EMSCRIPTEN_KEEPALIVE bool is_binary(const char* path)
-    {
-        return file_utils::isBinary(path);
-    }
-
-    EMSCRIPTEN_KEEPALIVE const char* get_file_tree_json(const char* path)
-    {
-        static std::string result;
-        result = file_utils::getFileTreeJson(path);
-        return result.c_str();
-    }
-}
-#endif
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv)
