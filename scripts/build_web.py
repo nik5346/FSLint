@@ -295,6 +295,15 @@ def copy_artifacts():
     else:
         print(f"[WARNING] banner not found: {banner_src}")
 
+    # Copy rules to public folder
+    rules_src = ROOT / "RULES.md"
+    rules_dst = web_public_root / "rules.md"
+    if rules_src.exists():
+        shutil.copy(rules_src, rules_dst)
+        print(f"  {rules_src.name} -> {rules_dst}")
+    else:
+        print(f"[WARNING] rules not found: {rules_src}")
+
     # Copy LICENSE to public folder
     license_src = ROOT / "LICENSE"
     license_dst = web_public_root / "LICENSE"
@@ -303,8 +312,6 @@ def copy_artifacts():
         print(f"  {license_src.name} -> {license_dst}")
     else:
         print(f"[WARNING] LICENSE not found: {license_src}")
-
-
 
 
 def build_web():
