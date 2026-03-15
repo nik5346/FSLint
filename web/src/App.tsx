@@ -42,6 +42,7 @@ interface FileNode {
 
 declare global {
   const __APP_VERSION__: string;
+  const __BUILD_YEAR__: string;
   interface Window {
     createFSLintModule: (config: {
       print: (text: string) => void;
@@ -1191,7 +1192,7 @@ function App() {
         >
           <span>FSLint v{__APP_VERSION__}</span>
           <span>•</span>
-          <span>Copyright © {new Date().getFullYear()} FSLint Contributors</span>
+          <span>Copyright © {__BUILD_YEAR__} FSLint Contributors</span>
           <span>•</span>
           <span>
             FSLint Core runs in WebAssembly using Emscripten. All processing is done locally in your
