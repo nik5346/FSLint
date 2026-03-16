@@ -402,7 +402,8 @@ const FilePreview = ({
         else if (subExt === 'css') type = 'text/css';
         else if (subExt === 'js') type = 'application/javascript';
 
-        const blob = new Blob([fileData], { type });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const blob = new Blob([fileData as any], { type });
         const url = URL.createObjectURL(blob);
         htmlBlobUrls.current.push(url);
         // Replace all occurrences of this exact match
