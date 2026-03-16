@@ -15,42 +15,6 @@
 
 namespace file_utils
 {
-static bool isValidUtf8(const std::vector<unsigned char>& data)
-{
-    size_t i = 0;
-    while (i < data.size())
-    {
-        if (data[i] <= 0x7F)
-        {
-            i += 1;
-        }
-        else if ((data[i] & 0xE0) == 0xC0)
-        {
-            if (i + 1 >= data.size() || (data[i + 1] & 0xC0) != 0x80)
-                return false;
-            i += 2;
-        }
-        else if ((data[i] & 0xF0) == 0xE0)
-        {
-            if (i + 2 >= data.size() || (data[i + 1] & 0xC0) != 0x80 || (data[i + 2] & 0xC0) != 0x80)
-                return false;
-            i += 3;
-        }
-        else if ((data[i] & 0xF8) == 0xF0)
-        {
-            if (i + 3 >= data.size() || (data[i + 1] & 0xC0) != 0x80 || (data[i + 2] & 0xC0) != 0x80 ||
-                (data[i + 3] & 0xC0) != 0x80)
-                return false;
-            i += 4;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 bool isBinary(const std::filesystem::path& path)
 {
     std::ifstream file(path, std::ios::binary);
@@ -67,11 +31,7 @@ bool isBinary(const std::filesystem::path& path)
         return false;
 
     // Check for null bytes
-    if (std::any_of(buffer.begin(), buffer.end(), [](unsigned char c) { return c == '\0'; }))
-        return true;
-
-    // Check for UTF-8 validity
-    return !isValidUtf8(buffer);
+    return std::any_of(buffer.begin(), buffer.end(), [](unsigned char c) { return c == '\0'; });
 }
 
 static void getFileTreeRecursive(const std::filesystem::path& path, rapidjson::Value& node,

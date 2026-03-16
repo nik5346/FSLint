@@ -9,14 +9,37 @@ import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
 import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
 import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup';
 import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
+import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import css from 'react-syntax-highlighter/dist/esm/languages/prism/css';
+import log from 'react-syntax-highlighter/dist/esm/languages/prism/log';
 
 SyntaxHighlighter.registerLanguage('cpp', cpp);
+SyntaxHighlighter.registerLanguage('c++', cpp);
+SyntaxHighlighter.registerLanguage('c', cpp);
 SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('md', markdown);
 SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('sh', bash);
 SyntaxHighlighter.registerLanguage('markup', markup);
 SyntaxHighlighter.registerLanguage('xml', markup);
+SyntaxHighlighter.registerLanguage('xsd', markup);
+SyntaxHighlighter.registerLanguage('ssd', markup);
+SyntaxHighlighter.registerLanguage('html', markup);
+SyntaxHighlighter.registerLanguage('htm', markup);
+SyntaxHighlighter.registerLanguage('svg', markup);
 SyntaxHighlighter.registerLanguage('python', python);
+SyntaxHighlighter.registerLanguage('py', python);
+SyntaxHighlighter.registerLanguage('yaml', yaml);
+SyntaxHighlighter.registerLanguage('yml', yaml);
+SyntaxHighlighter.registerLanguage('javascript', javascript);
+SyntaxHighlighter.registerLanguage('js', javascript);
+SyntaxHighlighter.registerLanguage('typescript', typescript);
+SyntaxHighlighter.registerLanguage('ts', typescript);
+SyntaxHighlighter.registerLanguage('css', css);
+SyntaxHighlighter.registerLanguage('log', log);
 
 interface Theme {
   bg: string;
@@ -133,21 +156,31 @@ const RainbowCsvHighlighter = ({
     <div
       style={{
         margin: 0,
-        padding: '15px',
+        padding: '15px 0',
         fontSize: '0.9em',
         fontFamily: 'monospace',
         lineHeight: '1.5em',
         flex: 1,
+        overflow: 'auto',
       }}
     >
       {lines.map((line, lineIdx) => {
         // Simple CSV split, doesn't handle escaped commas but good for "rainbow" effect
         const cells = line.split(',');
         return (
-          <div key={lineIdx} style={{ display: 'flex', width: 'fit-content', minWidth: '100%' }}>
+          <div
+            key={lineIdx}
+            style={{
+              display: 'flex',
+              width: 'fit-content',
+              minWidth: '100%',
+              paddingRight: '15px',
+            }}
+          >
             <div
               style={{
                 minWidth: '40px',
+                paddingLeft: '15px',
                 paddingRight: '10px',
                 textAlign: 'right',
                 color: isDark ? '#858585' : '#999999',
@@ -626,6 +659,11 @@ const FilePreview = ({
     if (ext === 'md' || ext === 'markdown') return 'markdown';
     if (ext === 'csv') return 'csv';
     if (ext === 'py') return 'python';
+    if (ext === 'yaml' || ext === 'yml') return 'yaml';
+    if (ext === 'js' || ext === 'javascript') return 'javascript';
+    if (ext === 'ts' || ext === 'typescript') return 'typescript';
+    if (ext === 'css') return 'css';
+    if (ext === 'log') return 'log';
 
     // Content based fallback
     const start = text.trim().substring(0, 100).toLowerCase();
@@ -786,7 +824,14 @@ const FilePreview = ({
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: viewMode === 'render' && canToggle ? 'auto' : 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {viewMode === 'render' && canToggle ? (
           <div
             style={{
@@ -836,6 +881,7 @@ const FilePreview = ({
                 showLineNumbers={true}
                 lineNumberStyle={{
                   minWidth: '40px',
+                  paddingLeft: '15px',
                   paddingRight: '10px',
                   textAlign: 'right',
                   color: isDark ? '#858585' : '#999999',
@@ -847,15 +893,21 @@ const FilePreview = ({
                 }}
                 customStyle={{
                   margin: 0,
-                  padding: '15px',
+                  padding: '15px 0',
                   fontSize: '0.9em',
                   backgroundColor: 'transparent',
                   flex: 1,
                   lineHeight: '1.5em',
+                  overflow: 'auto',
                 }}
                 wrapLines={true}
                 lineProps={{
-                  style: { display: 'flex', width: 'fit-content', minWidth: '100%' },
+                  style: {
+                    display: 'flex',
+                    width: 'fit-content',
+                    minWidth: '100%',
+                    paddingRight: '15px',
+                  },
                 }}
               >
                 {content}
