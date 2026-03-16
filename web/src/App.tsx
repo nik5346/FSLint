@@ -670,9 +670,7 @@ const FilePreview = ({
               />
             )
           ) : (
-            <div style={{ color: '#ff5555' }}>
-              Failed to load {isStaticImage ? 'image' : 'PDF'}
-            </div>
+            <div style={{ color: '#ff5555' }}>Failed to load {isStaticImage ? 'image' : 'PDF'}</div>
           )}
         </div>
       </div>
