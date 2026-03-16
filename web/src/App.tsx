@@ -117,6 +117,80 @@ const extractHeaders = (text: string) => {
   return headers;
 };
 
+const MarkdownContent = ({
+  content,
+  theme,
+  isDark,
+}: {
+  content: string;
+  theme: Theme;
+  isDark: boolean;
+}) => {
+  return (
+    <div className="markdown-body">
+      <style>{`
+        .markdown-body { font-size: 0.9em; }
+        .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
+        .markdown-body th { background-color: ${theme.bg}; }
+        .markdown-body code { background-color: ${theme.bg}; padding: 2px 4px; border-radius: 4px; }
+        .markdown-body pre { background-color: transparent !important; padding: 0 !important; margin: 1em 0 !important; border-radius: 4px; overflow: hidden; }
+        .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
+      `}</style>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          /* eslint-disable @typescript-eslint/no-explicit-any */
+          h1: ({ children, ...props }: any) => {
+            const line = (props as any).node?.position?.start.line;
+            return <h1 id={line ? `line-${line}` : undefined}>{children}</h1>;
+          },
+          h2: ({ children, ...props }: any) => {
+            const line = (props as any).node?.position?.start.line;
+            return <h2 id={line ? `line-${line}` : undefined}>{children}</h2>;
+          },
+          h3: ({ children, ...props }: any) => {
+            const line = (props as any).node?.position?.start.line;
+            return <h3 id={line ? `line-${line}` : undefined}>{children}</h3>;
+          },
+          h4: ({ children, ...props }: any) => {
+            const line = (props as any).node?.position?.start.line;
+            return <h4 id={line ? `line-${line}` : undefined}>{children}</h4>;
+          },
+          h5: ({ children, ...props }: any) => {
+            const line = (props as any).node?.position?.start.line;
+            return <h5 id={line ? `line-${line}` : undefined}>{children}</h5>;
+          },
+          h6: ({ children, ...props }: any) => {
+            const line = (props as any).node?.position?.start.line;
+            return <h6 id={line ? `line-${line}` : undefined}>{children}</h6>;
+          },
+          code({ inline, className, children, ...props }: any) {
+            const match = /language-(\w+)/.exec(className || '');
+            return !inline && match ? (
+              <SyntaxHighlighter
+                style={isDark ? vscDarkPlus : prism}
+                language={match[1]}
+                PreTag="div"
+                {...props}
+              >
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          /* eslint-enable @typescript-eslint/no-explicit-any */
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+};
+
 const RulesOutline = ({
   headers,
   theme,
@@ -181,7 +255,7 @@ const FileTreeItem = memo(function FileTreeItem({
   const isDir = node.kind === 'directory';
 
   return (
-    <div style={{ marginLeft: level * 12 }}>
+    <>
       <div
         role="button"
         tabIndex={0}
@@ -197,6 +271,7 @@ const FileTreeItem = memo(function FileTreeItem({
         }}
         style={{
           padding: '4px 8px',
+          paddingLeft: level * 12 + 8,
           cursor: 'pointer',
           borderRadius: '4px',
           backgroundColor: isSelected ? theme.buttonHoverBg : 'transparent',
@@ -278,7 +353,7 @@ const FileTreeItem = memo(function FileTreeItem({
             level={level + 1}
           />
         ))}
-    </div>
+    </>
   );
 });
 
@@ -332,7 +407,8 @@ const FilePreview = ({
   const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
   const isSvg = ext === 'svg';
   const isHtml = ext === 'html' || ext === 'htm';
-  const canToggle = isSvg || isHtml;
+  const isMarkdown = ext === 'md';
+  const canToggle = isSvg || isHtml || isMarkdown;
 
   const isBinaryResult = node?.isBinary ?? false;
 
@@ -468,6 +544,7 @@ const FilePreview = ({
     if (ext === 'json') return 'json';
     if (ext === 'sh' || ext === 'bash') return 'bash';
     if (ext === 'md') return 'markdown';
+    if (ext === 'csv') return 'csv';
 
     // Content based fallback
     const start = text.trim().substring(0, 100).toLowerCase();
@@ -487,63 +564,6 @@ const FilePreview = ({
       <div
         style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            top: '6px',
-            right: '12px',
-            zIndex: 10,
-            display: 'flex',
-            gap: '4px',
-          }}
-        >
-          <button
-            onClick={handleCopy}
-            title={copied ? 'Copied!' : 'Copy to clipboard'}
-            className="copy-btn"
-            style={{
-              padding: '5px',
-              color: theme.text,
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              opacity: 0.6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background-color 0.15s, opacity 0.15s',
-            }}
-          >
-            {copied ? (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            ) : (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-              </svg>
-            )}
-          </button>
-        </div>
         <div
           style={{
             flex: 1,
@@ -683,7 +703,7 @@ const FilePreview = ({
             style={{
               flex: 1,
               display: 'flex',
-              justifyContent: 'center',
+              justifyContent: isMarkdown ? 'flex-start' : 'center',
               padding: '20px',
               backgroundColor: isHtml ? '#fff' : 'transparent',
               minHeight: '200px',
@@ -699,6 +719,8 @@ const FilePreview = ({
               ) : (
                 <div style={{ color: '#ff5555' }}>Failed to load SVG</div>
               )
+            ) : isMarkdown ? (
+              <MarkdownContent content={content} theme={theme} isDark={isDark} />
             ) : (
               <iframe
                 srcDoc={htmlContent || content}
@@ -730,6 +752,10 @@ const FilePreview = ({
               fontSize: '0.9em',
               backgroundColor: 'transparent',
               flex: 1,
+              backgroundImage: `radial-gradient(${isDark ? '#ffffff15' : '#00000010'} 1px, transparent 1px)`,
+              backgroundSize: '1ch 1.5em',
+              backgroundPosition: '0.5ch 0.75em',
+              lineHeight: '1.5em',
             }}
           >
             {content}
@@ -1602,50 +1628,7 @@ function App() {
                 backgroundColor: theme.surface,
               }}
             >
-              <style>{`
-                .markdown-body { font-size: 0.9em; }
-                .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-                .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
-                .markdown-body th { background-color: ${theme.bg}; }
-                .markdown-body code { background-color: ${theme.bg}; padding: 2px 4px; border-radius: 4px; }
-                .markdown-body pre { background-color: ${theme.bg}; padding: 16px; border-radius: 4px; overflow: auto; }
-                .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
-              `}</style>
-              <div className="markdown-body">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    /* eslint-disable @typescript-eslint/no-explicit-any */
-                    h1: ({ children, ...props }: any) => {
-                      const line = (props as any).node?.position?.start.line;
-                      return <h1 id={line ? `line-${line}` : undefined}>{children}</h1>;
-                    },
-                    h2: ({ children, ...props }: any) => {
-                      const line = (props as any).node?.position?.start.line;
-                      return <h2 id={line ? `line-${line}` : undefined}>{children}</h2>;
-                    },
-                    h3: ({ children, ...props }: any) => {
-                      const line = (props as any).node?.position?.start.line;
-                      return <h3 id={line ? `line-${line}` : undefined}>{children}</h3>;
-                    },
-                    h4: ({ children, ...props }: any) => {
-                      const line = (props as any).node?.position?.start.line;
-                      return <h4 id={line ? `line-${line}` : undefined}>{children}</h4>;
-                    },
-                    h5: ({ children, ...props }: any) => {
-                      const line = (props as any).node?.position?.start.line;
-                      return <h5 id={line ? `line-${line}` : undefined}>{children}</h5>;
-                    },
-                    h6: ({ children, ...props }: any) => {
-                      const line = (props as any).node?.position?.start.line;
-                      return <h6 id={line ? `line-${line}` : undefined}>{children}</h6>;
-                    },
-                    /* eslint-enable @typescript-eslint/no-explicit-any */
-                  }}
-                >
-                  {rulesText}
-                </ReactMarkdown>
-              </div>
+              <MarkdownContent content={rulesText} theme={theme} isDark={isDark} />
             </div>
           </div>
         )}
