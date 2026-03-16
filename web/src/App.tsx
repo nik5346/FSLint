@@ -1,8 +1,22 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import cpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
+import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup';
+import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
+
+SyntaxHighlighter.registerLanguage('cpp', cpp);
+SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('json', json);
+SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('markup', markup);
+SyntaxHighlighter.registerLanguage('xml', markup);
+SyntaxHighlighter.registerLanguage('python', python);
 
 interface Theme {
   bg: string;
@@ -100,6 +114,66 @@ async function getFilesFromHandle(
   }
   return files;
 }
+
+const RainbowCsvHighlighter = ({
+  content,
+  isDark,
+  theme,
+}: {
+  content: string;
+  isDark: boolean;
+  theme: Theme;
+}) => {
+  const lines = content.split('\n');
+  const colors = isDark
+    ? ['#ff5555', '#50fa7b', '#f1fa8c', '#bd93f9', '#ff79c6', '#8be9fd', '#ffb86c']
+    : ['#e45649', '#50a14f', '#c18401', '#4078f2', '#a626a4', '#0184bc', '#986801'];
+
+  return (
+    <div
+      style={{
+        margin: 0,
+        padding: '15px',
+        fontSize: '0.9em',
+        fontFamily: 'monospace',
+        lineHeight: '1.5em',
+        flex: 1,
+      }}
+    >
+      {lines.map((line, lineIdx) => {
+        // Simple CSV split, doesn't handle escaped commas but good for "rainbow" effect
+        const cells = line.split(',');
+        return (
+          <div key={lineIdx} style={{ display: 'flex', width: 'fit-content', minWidth: '100%' }}>
+            <div
+              style={{
+                minWidth: '40px',
+                paddingRight: '10px',
+                textAlign: 'right',
+                color: isDark ? '#858585' : '#999999',
+                userSelect: 'none',
+                position: 'sticky',
+                left: 0,
+                backgroundColor: theme.surface,
+                zIndex: 1,
+              }}
+            >
+              {lineIdx + 1}
+            </div>
+            <div style={{ paddingLeft: '10px', whiteSpace: 'pre' }}>
+              {cells.map((cell, cellIdx) => (
+                <span key={cellIdx}>
+                  <span style={{ color: colors[cellIdx % colors.length] }}>{cell}</span>
+                  {cellIdx < cells.length - 1 && <span style={{ color: theme.muted }}>,</span>}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const extractHeaders = (text: string) => {
   const lines = text.split('\n');
@@ -382,11 +456,16 @@ const FilePreview = ({
     if (selectedFile && module) {
       const ext = selectedFile.split('.').pop()?.toLowerCase();
       const isImage = ext === 'png' || ext === 'svg' || ext === 'jpg' || ext === 'jpeg';
+      const isPdf = ext === 'pdf';
 
-      if (isImage) {
+      if (isImage || isPdf) {
         try {
           const data = module.FS.readFile(selectedFile) as Uint8Array;
-          const type = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
+          let type = '';
+          if (ext === 'svg') type = 'image/svg+xml';
+          else if (isPdf) type = 'application/pdf';
+          else type = `image/${ext}`;
+
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const blob = new Blob([data as any], { type });
           url = URL.createObjectURL(blob);
@@ -406,6 +485,7 @@ const FilePreview = ({
   const ext = selectedFile?.split('.').pop()?.toLowerCase();
   const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
   const isSvg = ext === 'svg';
+  const isPdf = ext === 'pdf';
   const isHtml = ext === 'html' || ext === 'htm';
   const isMarkdown = ext === 'md';
   const canToggle = isSvg || isHtml || isMarkdown;
@@ -414,19 +494,19 @@ const FilePreview = ({
 
   const data = useMemo(() => {
     if (!selectedFile || !module) return null;
-    if (isBinaryResult && !isStaticImage) return null;
+    if (isBinaryResult && !isStaticImage && !isPdf) return null;
     try {
       return module.FS.readFile(selectedFile) as Uint8Array;
     } catch (e) {
       console.error('Failed to read file:', e);
       return null;
     }
-  }, [selectedFile, module, isBinaryResult, isStaticImage]);
+  }, [selectedFile, module, isBinaryResult, isStaticImage, isPdf]);
 
   const content = useMemo(() => {
-    if (!data || (isBinaryResult && isStaticImage)) return '';
+    if (!data || (isBinaryResult && (isStaticImage || isPdf))) return '';
     return new TextDecoder().decode(data);
-  }, [data, isBinaryResult, isStaticImage]);
+  }, [data, isBinaryResult, isStaticImage, isPdf]);
 
   useEffect(() => {
     // Cleanup old blob URLs
@@ -496,7 +576,7 @@ const FilePreview = ({
     };
   }, [selectedFile, content, isHtml, module, viewMode]);
 
-  if (isBinaryResult && !isStaticImage && !isSvg) {
+  if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
     return (
       <div
         style={{
@@ -538,13 +618,14 @@ const FilePreview = ({
 
   const getLanguage = (filename: string, text: string) => {
     const ext = filename.split('.').pop()?.toLowerCase();
-    if (ext === 'xml' || ext === 'xsd' || ext === 'ssd' || ext === 'svg') return 'xml';
-    if (ext === 'html' || ext === 'htm') return 'xml';
+    if (ext === 'xml' || ext === 'xsd' || ext === 'ssd' || ext === 'svg') return 'markup';
+    if (ext === 'html' || ext === 'htm') return 'markup';
     if (ext === 'cpp' || ext === 'hpp' || ext === 'c' || ext === 'h') return 'cpp';
     if (ext === 'json') return 'json';
     if (ext === 'sh' || ext === 'bash') return 'bash';
-    if (ext === 'md') return 'markdown';
+    if (ext === 'md' || ext === 'markdown') return 'markdown';
     if (ext === 'csv') return 'csv';
+    if (ext === 'py') return 'python';
 
     // Content based fallback
     const start = text.trim().substring(0, 100).toLowerCase();
@@ -553,13 +634,13 @@ const FilePreview = ({
       start.includes('<modeldescription') ||
       start.includes('<systemstructure')
     )
-      return 'xml';
-    if (start.startsWith('<!doctype html') || start.includes('<html')) return 'xml';
+      return 'markup';
+    if (start.startsWith('<!doctype html') || start.includes('<html')) return 'markup';
 
     return 'text';
   };
 
-  if (isStaticImage) {
+  if (isStaticImage || isPdf) {
     return (
       <div
         style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}
@@ -568,20 +649,30 @@ const FilePreview = ({
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '20px',
+            padding: isStaticImage ? '20px' : '0',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
           }}
         >
           {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={selectedFile}
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
+            isStaticImage ? (
+              <img
+                src={imageUrl}
+                alt={selectedFile}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              <iframe
+                src={imageUrl}
+                title="PDF Preview"
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            )
           ) : (
-            <div style={{ color: '#ff5555' }}>Failed to load image</div>
+            <div style={{ color: '#ff5555' }}>
+              Failed to load {isStaticImage ? 'image' : 'PDF'}
+            </div>
           )}
         </div>
       </div>
@@ -735,31 +826,44 @@ const FilePreview = ({
             )}
           </div>
         ) : (
-          <SyntaxHighlighter
-            language={getLanguage(selectedFile, content)}
-            style={isDark ? vscDarkPlus : prism}
-            showLineNumbers={true}
-            lineNumberStyle={{
-              minWidth: '40px',
-              paddingRight: '10px',
-              textAlign: 'right',
-              color: isDark ? '#858585' : '#999999',
-              userSelect: 'none',
-            }}
-            customStyle={{
-              margin: 0,
-              padding: '15px',
-              fontSize: '0.9em',
-              backgroundColor: 'transparent',
-              flex: 1,
-              backgroundImage: `radial-gradient(${isDark ? '#ffffff15' : '#00000010'} 1px, transparent 1px)`,
-              backgroundSize: '1ch 1.5em',
-              backgroundPosition: '0.5ch 0.75em',
-              lineHeight: '1.5em',
-            }}
-          >
-            {content}
-          </SyntaxHighlighter>
+          (() => {
+            const language = getLanguage(selectedFile, content);
+            if (language === 'csv') {
+              return <RainbowCsvHighlighter content={content} isDark={isDark} theme={theme} />;
+            }
+            return (
+              <SyntaxHighlighter
+                language={language}
+                style={isDark ? vscDarkPlus : prism}
+                showLineNumbers={true}
+                lineNumberStyle={{
+                  minWidth: '40px',
+                  paddingRight: '10px',
+                  textAlign: 'right',
+                  color: isDark ? '#858585' : '#999999',
+                  userSelect: 'none',
+                  position: 'sticky',
+                  left: 0,
+                  backgroundColor: theme.surface,
+                  zIndex: 1,
+                }}
+                customStyle={{
+                  margin: 0,
+                  padding: '15px',
+                  fontSize: '0.9em',
+                  backgroundColor: 'transparent',
+                  flex: 1,
+                  lineHeight: '1.5em',
+                }}
+                wrapLines={true}
+                lineProps={{
+                  style: { display: 'flex', width: 'fit-content', minWidth: '100%' },
+                }}
+              >
+                {content}
+              </SyntaxHighlighter>
+            );
+          })()
         )}
       </div>
     </div>
