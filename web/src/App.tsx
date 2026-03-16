@@ -296,8 +296,10 @@ const FilePreview = ({
   isDark: boolean;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [htmlContent, setHtmlContent] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<'render' | 'code'>('render');
+  const htmlBlobUrls = useRef<string[]>([]);
 
   useEffect(() => {
     let url: string | null = null;
@@ -349,6 +351,74 @@ const FilePreview = ({
     if (!data || (isBinaryResult && isStaticImage)) return '';
     return new TextDecoder().decode(data);
   }, [data, isBinaryResult, isStaticImage]);
+
+  useEffect(() => {
+    // Cleanup old blob URLs
+    htmlBlobUrls.current.forEach(URL.revokeObjectURL);
+    htmlBlobUrls.current = [];
+
+    if (!selectedFile || !module || !isHtml || viewMode !== 'render') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHtmlContent('');
+      return;
+    }
+
+    const dir = selectedFile.substring(0, selectedFile.lastIndexOf('/'));
+    let processed = content;
+
+    const resolve = (base: string, rel: string) => {
+      const stack = base.split('/').filter(Boolean);
+      const parts = rel.split('/').filter(Boolean);
+      for (const part of parts) {
+        if (part === '.') continue;
+        if (part === '..') stack.pop();
+        else stack.push(part);
+      }
+      return (selectedFile?.startsWith('/') ? '/' : '') + stack.join('/');
+    };
+
+    // Find all src and href attributes
+    const matches = Array.from(processed.matchAll(/(src|href)=["']([^"']+)["']/g));
+    for (const match of matches) {
+      const [full, attr, relPath] = match;
+      if (
+        relPath.startsWith('http') ||
+        relPath.startsWith('data:') ||
+        relPath.startsWith('#') ||
+        relPath.startsWith('mailto:') ||
+        relPath.startsWith('javascript:')
+      ) {
+        continue;
+      }
+
+      const resolvedPath = resolve(dir, relPath);
+      try {
+        const fileData = module.FS.readFile(resolvedPath) as Uint8Array;
+        const subExt = resolvedPath.split('.').pop()?.toLowerCase();
+        let type = 'application/octet-stream';
+        if (subExt === 'svg') type = 'image/svg+xml';
+        else if (subExt === 'png') type = 'image/png';
+        else if (subExt === 'jpg' || subExt === 'jpeg') type = 'image/jpeg';
+        else if (subExt === 'css') type = 'text/css';
+        else if (subExt === 'js') type = 'application/javascript';
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const blob = new Blob([fileData as any], { type });
+        const url = URL.createObjectURL(blob);
+        htmlBlobUrls.current.push(url);
+        // Replace all occurrences of this exact match
+        processed = processed.split(full).join(`${attr}="${url}"`);
+      } catch {
+        // Skip if file doesn't exist
+      }
+    }
+    setHtmlContent(processed);
+
+    return () => {
+      htmlBlobUrls.current.forEach(URL.revokeObjectURL);
+      htmlBlobUrls.current = [];
+    };
+  }, [selectedFile, content, isHtml, module, viewMode]);
 
   if (isBinaryResult && !isStaticImage && !isSvg) {
     return (
@@ -413,23 +483,93 @@ const FilePreview = ({
   };
 
   if (isStaticImage) {
-    return imageUrl ? (
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
-        <img
-          src={imageUrl}
-          alt={selectedFile}
-          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-        />
+    return (
+      <div
+        style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: '6px',
+            right: '12px',
+            zIndex: 10,
+            display: 'flex',
+            gap: '4px',
+          }}
+        >
+          <button
+            onClick={handleCopy}
+            title={copied ? 'Copied!' : 'Copy to clipboard'}
+            className="copy-btn"
+            style={{
+              padding: '5px',
+              color: theme.text,
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              opacity: 0.6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background-color 0.15s, opacity 0.15s',
+            }}
+          >
+            {copied ? (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              </svg>
+            )}
+          </button>
+        </div>
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '20px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={selectedFile}
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          ) : (
+            <div style={{ color: '#ff5555' }}>Failed to load image</div>
+          )}
+        </div>
       </div>
-    ) : (
-      <div style={{ padding: '20px', color: '#ff5555' }}>Failed to load image</div>
     );
   }
 
   return (
-    <div
-      style={{ position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '100%' }}
-    >
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div
         style={{
           position: 'absolute',
@@ -537,64 +677,65 @@ const FilePreview = ({
         </button>
       </div>
 
-      {viewMode === 'render' && canToggle ? (
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '20px',
-            backgroundColor: isHtml ? '#fff' : 'transparent',
-            minHeight: '200px',
-          }}
-        >
-          {isSvg ? (
-            imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={selectedFile}
-                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-              />
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {viewMode === 'render' && canToggle ? (
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '20px',
+              backgroundColor: isHtml ? '#fff' : 'transparent',
+              minHeight: '200px',
+            }}
+          >
+            {isSvg ? (
+              imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={selectedFile}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              ) : (
+                <div style={{ color: '#ff5555' }}>Failed to load SVG</div>
+              )
             ) : (
-              <div style={{ color: '#ff5555' }}>Failed to load SVG</div>
-            )
-          ) : (
-            <iframe
-              srcDoc={content}
-              title="Preview"
-              style={{
-                width: '100%',
-                height: '100%',
-                flex: 1,
-                border: 'none',
-                backgroundColor: '#fff',
-              }}
-            />
-          )}
-        </div>
-      ) : (
-        <SyntaxHighlighter
-          language={getLanguage(selectedFile, content)}
-          style={isDark ? vscDarkPlus : prism}
-          showLineNumbers={true}
-          lineNumberStyle={{
-            minWidth: '40px',
-            paddingRight: '10px',
-            textAlign: 'right',
-            color: isDark ? '#858585' : '#999999',
-            userSelect: 'none',
-          }}
-          customStyle={{
-            margin: 0,
-            padding: '15px',
-            fontSize: '0.9em',
-            backgroundColor: 'transparent',
-            flex: 1,
-          }}
-        >
-          {content}
-        </SyntaxHighlighter>
-      )}
+              <iframe
+                srcDoc={htmlContent || content}
+                title="Preview"
+                style={{
+                  width: '100%',
+                  flex: 1,
+                  border: 'none',
+                  backgroundColor: '#fff',
+                }}
+              />
+            )}
+          </div>
+        ) : (
+          <SyntaxHighlighter
+            language={getLanguage(selectedFile, content)}
+            style={isDark ? vscDarkPlus : prism}
+            showLineNumbers={true}
+            lineNumberStyle={{
+              minWidth: '40px',
+              paddingRight: '10px',
+              textAlign: 'right',
+              color: isDark ? '#858585' : '#999999',
+              userSelect: 'none',
+            }}
+            customStyle={{
+              margin: 0,
+              padding: '15px',
+              fontSize: '0.9em',
+              backgroundColor: 'transparent',
+              flex: 1,
+            }}
+          >
+            {content}
+          </SyntaxHighlighter>
+        )}
+      </div>
     </div>
   );
 };
@@ -1530,13 +1671,27 @@ function App() {
                 flexShrink: 0,
               }}
             >
-              <FileTreeItem
-                node={fileTree}
-                isSelected={selectedFile === fileTree.path}
-                selectedFile={selectedFile}
-                setSelectedFile={setSelectedFile}
-                theme={theme}
-              />
+              {fileTree.name.startsWith('model_validation_') ||
+              fileTree.name.startsWith('model_cert_add_') ? (
+                fileTree.children?.map((child) => (
+                  <FileTreeItem
+                    key={child.path}
+                    node={child}
+                    isSelected={child.path === selectedFile}
+                    selectedFile={selectedFile}
+                    setSelectedFile={setSelectedFile}
+                    theme={theme}
+                  />
+                ))
+              ) : (
+                <FileTreeItem
+                  node={fileTree}
+                  isSelected={selectedFile === fileTree.path}
+                  selectedFile={selectedFile}
+                  setSelectedFile={setSelectedFile}
+                  theme={theme}
+                />
+              )}
             </div>
             {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
             <div
@@ -1556,7 +1711,6 @@ function App() {
               style={{
                 flex: 1,
                 backgroundColor: theme.surface,
-                overflowY: 'auto',
                 minWidth: 0,
               }}
             >
