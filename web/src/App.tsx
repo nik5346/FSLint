@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import clike from 'react-syntax-highlighter/dist/esm/languages/prism/clike';
 import cpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
 import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
 import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
@@ -15,6 +16,8 @@ import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typesc
 import css from 'react-syntax-highlighter/dist/esm/languages/prism/css';
 import log from 'react-syntax-highlighter/dist/esm/languages/prism/log';
 
+SyntaxHighlighter.registerLanguage('markup', markup);
+SyntaxHighlighter.registerLanguage('clike', clike);
 SyntaxHighlighter.registerLanguage('cpp', cpp);
 SyntaxHighlighter.registerLanguage('c++', cpp);
 SyntaxHighlighter.registerLanguage('c', cpp);
@@ -23,7 +26,6 @@ SyntaxHighlighter.registerLanguage('md', markdown);
 SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('bash', bash);
 SyntaxHighlighter.registerLanguage('sh', bash);
-SyntaxHighlighter.registerLanguage('markup', markup);
 SyntaxHighlighter.registerLanguage('xml', markup);
 SyntaxHighlighter.registerLanguage('xsd', markup);
 SyntaxHighlighter.registerLanguage('ssd', markup);
@@ -891,6 +893,7 @@ const FilePreview = ({
                   backgroundColor: theme.surface,
                   zIndex: 1,
                 }}
+                codeTagProps={{ style: { display: 'block', minWidth: '100%' } }}
                 customStyle={{
                   margin: 0,
                   padding: '15px 0',
@@ -1022,9 +1025,12 @@ function App() {
     styleEl.textContent = `
       .react-syntax-highlighter-line-number {
         color: ${isDark ? '#858585' : '#999999'} !important;
+        position: sticky !important;
+        left: 0 !important;
+        background-color: ${theme.surface} !important;
       }
     `;
-  }, [theme.bg, theme.text, isDark]);
+  }, [theme.bg, theme.text, theme.surface, isDark]);
 
   useEffect(() => {
     const script = document.createElement('script');
