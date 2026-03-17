@@ -23,25 +23,26 @@ export const whitespaceRenderer = () => {
       if (!node) return node;
       if (node.type === 'text' && typeof node.value === 'string') {
         const parts = node.value.split(/(\s+)/);
-        if (parts.length === 1) return node;
+        if (parts.length === 1 && !/^\s+$/.test(parts[0])) return node;
 
         return {
           type: 'element',
           tagName: 'span',
           properties: { className: [] },
-          children: parts.map((part: string) => {
+          children: parts.flatMap((part: string) => {
             if (/^\s+$/.test(part)) {
-              return {
+              return part.split('').map((char) => ({
                 type: 'element',
                 tagName: 'span',
                 properties: {
                   className: ['whitespace-marker'],
-                  'data-marker': part.replace(/ /g, '·').replace(/\t/g, '»'),
+                  'data-marker': char === '\t' ? '→' : '·',
+                  'data-marker-type': char === '\t' ? 'tab' : 'space',
                 },
-                children: [{ type: 'text', value: part }],
-              };
+                children: [{ type: 'text', value: char }],
+              }));
             }
-            return { type: 'text', value: part };
+            return [{ type: 'text', value: part }];
           }),
         };
       }

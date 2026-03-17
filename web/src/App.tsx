@@ -113,18 +113,31 @@ function App() {
       }
       .whitespace-marker {
         position: relative;
-        display: inline;
+        display: inline-block;
+        width: 1ch;
+        text-align: center;
       }
       .whitespace-marker::before {
         content: attr(data-marker);
         position: absolute;
-        left: 0;
-        top: 0;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         color: ${isDark ? '#fff' : '#000'};
-        opacity: ${isDark ? '0.3' : '0.2'};
+        opacity: ${isDark ? '0.2' : '0.15'};
+        font-size: 0.8em;
         pointer-events: none;
         user-select: none;
         white-space: pre;
+      }
+      .whitespace-marker[data-marker-type="tab"] {
+        width: auto;
+        min-width: 1ch;
+      }
+      .whitespace-marker[data-marker-type="tab"]::before {
+        opacity: ${isDark ? '0.1' : '0.08'};
+        justify-content: flex-start;
       }
       .react-syntax-highlighter-line-number {
         color: ${isDark ? '#858585' : '#999999'} !important;

@@ -64,19 +64,20 @@ export const RainbowCsvHighlighter = ({
                 }}
               >
                 {cells.map((cell, cellIdx) => {
-                  const renderedCell = cell.split(/(\s+)/).map((part, i) => {
+                  const renderedCell = cell.split(/(\s+)/).flatMap((part, i) => {
                     if (part.match(/^\s+$/)) {
-                      return (
+                      return part.split('').map((char, j) => (
                         <span
-                          key={i}
+                          key={`${i}-${j}`}
                           className="whitespace-marker"
-                          data-marker={part.replace(/ /g, '·').replace(/\t/g, '»')}
+                          data-marker={char === '\t' ? '→' : '·'}
+                          data-marker-type={char === '\t' ? 'tab' : 'space'}
                         >
-                          {part}
+                          {char}
                         </span>
-                      );
+                      ));
                     }
-                    return <span key={i}>{part}</span>;
+                    return [<span key={i}>{part}</span>];
                   });
 
                   return (
