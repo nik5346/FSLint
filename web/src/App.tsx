@@ -104,6 +104,10 @@ function App() {
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = `
+      code[class*="language-"],
+      pre[class*="language-"] {
+        text-shadow: none !important;
+      }
       .react-syntax-highlighter-line-number {
         color: ${isDark ? '#858585' : '#999999'} !important;
         position: sticky !important;
@@ -115,8 +119,8 @@ function App() {
       .whitespace-indicator {
         background-image: radial-gradient(
           circle,
-          ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'} 0.5px,
-          transparent 0.5px
+          ${isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.25)'} 0.8px,
+          transparent 0.8px
         );
         background-size: 1ch 1.5em;
         background-position: 0.5ch 0.75em;
