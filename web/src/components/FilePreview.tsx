@@ -20,7 +20,8 @@ export const whitespaceRenderer = (isDark: boolean) => {
   return ({ rows, stylesheet, useInlineStyles }: any): any => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformNode = (node: any): any => {
-      if (node.type === 'text' && node.value) {
+      if (!node) return node;
+      if (node.type === 'text' && typeof node.value === 'string') {
         return {
           type: 'element',
           tagName: 'span',
