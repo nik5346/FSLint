@@ -69,9 +69,14 @@ export const RainbowCsvHighlighter = ({
                       return (
                         <span
                           key={i}
-                          style={{ color: theme.muted, opacity: 0.4, userSelect: 'none' }}
+                          style={{
+                            color: isDark ? '#fff' : '#000',
+                            opacity: isDark ? 0.3 : 0.2,
+                            userSelect: 'none',
+                            pointerEvents: 'none',
+                          }}
                         >
-                          {part.replace(/ /g, '·').replace(/\t/g, '→\t')}
+                          {part.replace(/ /g, '·').replace(/\t/g, '»\t')}
                         </span>
                       );
                     }

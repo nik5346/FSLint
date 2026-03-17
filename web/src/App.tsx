@@ -104,7 +104,7 @@ function App() {
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = `
-      code, pre, [class*="language-"], [class*="language-"] *, .markdown-body *, ::selection {
+      *, *::selection, *::before, *::after, [class*="token"], .token {
         text-shadow: none !important;
       }
       .react-syntax-highlighter-line-number {

@@ -1,45 +1,44 @@
-import { useState, useEffect, useRef, useMemo, ReactNode } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FileNode, Theme, FSLintModule } from '../types';
 import { createElement } from 'react-syntax-highlighter';
 
-interface RendererNode {
-  type: 'element' | 'text';
-  tagName?: string;
-  properties?: { className?: string[]; [key: string]: unknown };
-  children?: RendererNode[];
-  value?: string;
-}
+// Utility to strip textShadow from Prism styles to fix "ghosting"
+export const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
+  const newStyle: { [key: string]: React.CSSProperties } = {};
+  for (const key in style) {
+    if (Object.prototype.hasOwnProperty.call(style, key)) {
+      newStyle[key] = { ...style[key], textShadow: 'none' };
+    }
+  }
+  return newStyle;
+};
 
-interface RendererProps {
-  rows: RendererNode[];
-  stylesheet: { [key: string]: React.CSSProperties };
-  useInlineStyles: boolean;
-}
-
-export const whitespaceRenderer = (theme: Theme) => {
-  return ({ rows, stylesheet, useInlineStyles }: RendererProps): ReactNode => {
-    const transformNode = (node: RendererNode): RendererNode => {
+export const whitespaceRenderer = (isDark: boolean) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ({ rows, stylesheet, useInlineStyles }: any): any => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transformNode = (node: any): any => {
       if (node.type === 'text' && node.value) {
         return {
           type: 'element',
           tagName: 'span',
           properties: { className: [] },
-          children: node.value.split(/(\s+)/).map((part) => {
+          children: node.value.split(/(\s+)/).map((part: string) => {
             if (/^\s+$/.test(part)) {
               return {
                 type: 'element',
                 tagName: 'span',
                 properties: {
                   style: {
-                    color: theme.muted,
-                    opacity: 0.6,
+                    color: isDark ? '#fff' : '#000',
+                    opacity: isDark ? 0.3 : 0.2,
                     userSelect: 'none',
                     pointerEvents: 'none',
                   },
                 },
-                children: [{ type: 'text', value: part.replace(/ /g, '·').replace(/\t/g, '→\t') }],
+                children: [{ type: 'text', value: part.replace(/ /g, '·').replace(/\t/g, '»\t') }],
               };
             }
             return { type: 'text', value: part };
@@ -52,7 +51,8 @@ export const whitespaceRenderer = (theme: Theme) => {
       return node;
     };
 
-    return rows.map((node, i) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return rows.map((node: any, i: number) =>
       createElement({
         node: transformNode(node),
         stylesheet,
@@ -211,7 +211,9 @@ export const FilePreview = ({
     };
   }, [selectedFile, content, isHtml, module, viewMode]);
 
-  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(theme), [theme]);
+  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(isDark), [isDark]);
+
+  const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
 
   if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
     return (
@@ -481,7 +483,7 @@ export const FilePreview = ({
             return (
               <SyntaxHighlighter
                 language={language}
-                style={isDark ? vscDarkPlus : prism}
+                style={syntaxStyle}
                 showLineNumbers={true}
                 lineNumberStyle={{
                   minWidth: '40px',
