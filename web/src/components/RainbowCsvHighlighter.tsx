@@ -67,7 +67,10 @@ export const RainbowCsvHighlighter = ({
                   const renderedCell = cell.split(/(\s+)/).map((part, i) => {
                     if (part.match(/^\s+$/)) {
                       return (
-                        <span key={i} style={{ color: theme.muted, opacity: 0.4, userSelect: 'none' }}>
+                        <span
+                          key={i}
+                          style={{ color: theme.muted, opacity: 0.4, userSelect: 'none' }}
+                        >
                           {part.replace(/ /g, '·').replace(/\t/g, '→\t')}
                         </span>
                       );
