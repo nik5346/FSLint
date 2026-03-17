@@ -1,7 +1,68 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, ReactNode } from 'react';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FileNode, Theme, FSLintModule } from '../types';
+import { createElement } from 'react-syntax-highlighter';
+
+interface RendererNode {
+  type: 'element' | 'text';
+  tagName?: string;
+  properties?: { className?: string[]; [key: string]: unknown };
+  children?: RendererNode[];
+  value?: string;
+}
+
+interface RendererProps {
+  rows: RendererNode[];
+  stylesheet: { [key: string]: React.CSSProperties };
+  useInlineStyles: boolean;
+}
+
+export const whitespaceRenderer = (theme: Theme) => {
+  return ({ rows, stylesheet, useInlineStyles }: RendererProps): ReactNode => {
+    const transformNode = (node: RendererNode): RendererNode => {
+      if (node.type === 'text' && node.value) {
+        return {
+          type: 'element',
+          tagName: 'span',
+          properties: { className: [] },
+          children: node.value.split(/(\s+)/).map((part) => {
+            if (/^\s+$/.test(part)) {
+              return {
+                type: 'element',
+                tagName: 'span',
+                properties: {
+                  style: {
+                    color: theme.muted,
+                    opacity: 0.6,
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  },
+                },
+                children: [{ type: 'text', value: part.replace(/ /g, '·').replace(/\t/g, '→\t') }],
+              };
+            }
+            return { type: 'text', value: part };
+          }),
+        };
+      }
+      if (node.children) {
+        return { ...node, children: node.children.map(transformNode) };
+      }
+      return node;
+    };
+
+    return rows.map((node, i) =>
+      createElement({
+        node: transformNode(node),
+        stylesheet,
+        useInlineStyles,
+        key: `code-segment-${i}`,
+      }),
+    );
+  };
+};
+
 import { RainbowCsvHighlighter } from './RainbowCsvHighlighter';
 import { MarkdownContent } from './MarkdownContent';
 
@@ -149,6 +210,8 @@ export const FilePreview = ({
       htmlBlobUrls.current = [];
     };
   }, [selectedFile, content, isHtml, module, viewMode]);
+
+  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(theme), [theme]);
 
   if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
     return (
@@ -442,7 +505,7 @@ export const FilePreview = ({
                   lineHeight: '1.5em',
                   overflow: 'auto',
                 }}
-                className="whitespace-indicator"
+                renderer={memoizedWhitespaceRenderer}
                 wrapLines={true}
                 lineProps={{
                   style: {

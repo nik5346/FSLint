@@ -25,7 +25,6 @@ export const RainbowCsvHighlighter = ({
         flex: 1,
         overflow: 'auto',
       }}
-      className="whitespace-indicator"
     >
       <div style={{ display: 'inline-block', minWidth: '100%' }}>
         {lines.map((line, lineIdx) => {
@@ -64,12 +63,25 @@ export const RainbowCsvHighlighter = ({
                   minWidth: 'fit-content',
                 }}
               >
-                {cells.map((cell, cellIdx) => (
-                  <span key={cellIdx}>
-                    <span style={{ color: colors[cellIdx % colors.length] }}>{cell}</span>
-                    {cellIdx < cells.length - 1 && <span style={{ color: theme.muted }}>,</span>}
-                  </span>
-                ))}
+                {cells.map((cell, cellIdx) => {
+                  const renderedCell = cell.split(/(\s+)/).map((part, i) => {
+                    if (part.match(/^\s+$/)) {
+                      return (
+                        <span key={i} style={{ color: theme.muted, opacity: 0.4, userSelect: 'none' }}>
+                          {part.replace(/ /g, '·').replace(/\t/g, '→\t')}
+                        </span>
+                      );
+                    }
+                    return <span key={i}>{part}</span>;
+                  });
+
+                  return (
+                    <span key={cellIdx}>
+                      <span style={{ color: colors[cellIdx % colors.length] }}>{renderedCell}</span>
+                      {cellIdx < cells.length - 1 && <span style={{ color: theme.muted }}>,</span>}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           );

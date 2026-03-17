@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Theme } from '../types';
+import { whitespaceRenderer } from './FilePreview';
 
 export const MarkdownContent = ({
   content,
@@ -13,6 +15,8 @@ export const MarkdownContent = ({
   theme: Theme;
   isDark: boolean;
 }) => {
+  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(theme), [theme]);
+
   return (
     <div className="markdown-body">
       <style>{`
@@ -59,6 +63,7 @@ export const MarkdownContent = ({
                 style={isDark ? vscDarkPlus : prism}
                 language={match[1]}
                 PreTag="div"
+                renderer={memoizedWhitespaceRenderer}
                 {...props}
               >
                 {String(children).replace(/\n$/, '')}

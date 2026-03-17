@@ -104,8 +104,7 @@ function App() {
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = `
-      code[class*="language-"],
-      pre[class*="language-"] {
+      code, pre, [class*="language-"], [class*="language-"] *, .markdown-body *, ::selection {
         text-shadow: none !important;
       }
       .react-syntax-highlighter-line-number {
@@ -115,16 +114,6 @@ function App() {
         background-color: ${theme.surface} !important;
         z-index: 2 !important;
         display: inline-block !important;
-      }
-      .whitespace-indicator {
-        background-image: radial-gradient(
-          circle,
-          ${isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.25)'} 0.8px,
-          transparent 0.8px
-        );
-        background-size: 1ch 1.5em;
-        background-position: 0.5ch 0.75em;
-        background-repeat: repeat;
       }
     `;
   }, [theme.bg, theme.text, theme.surface, isDark]);
