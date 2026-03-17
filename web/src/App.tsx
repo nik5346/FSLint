@@ -109,6 +109,22 @@ function App() {
       }
       ::selection {
         text-shadow: none !important;
+        background-color: ${isDark ? 'rgba(0, 123, 255, 0.4)' : 'rgba(0, 123, 255, 0.25)'} !important;
+      }
+      .whitespace-marker {
+        position: relative;
+        display: inline;
+      }
+      .whitespace-marker::before {
+        content: attr(data-marker);
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: ${isDark ? '#fff' : '#000'};
+        opacity: ${isDark ? '0.3' : '0.2'};
+        pointer-events: none;
+        user-select: none;
+        white-space: pre;
       }
       .react-syntax-highlighter-line-number {
         color: ${isDark ? '#858585' : '#999999'} !important;

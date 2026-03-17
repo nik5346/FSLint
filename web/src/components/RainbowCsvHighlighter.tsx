@@ -69,25 +69,9 @@ export const RainbowCsvHighlighter = ({
                       return (
                         <span
                           key={i}
-                          style={{
-                            position: 'relative',
-                            display: 'inline',
-                          }}
+                          className="whitespace-marker"
+                          data-marker={part.replace(/ /g, '·').replace(/\t/g, '»')}
                         >
-                          <span
-                            style={{
-                              position: 'absolute',
-                              left: 0,
-                              top: 0,
-                              color: isDark ? '#fff' : '#000',
-                              opacity: isDark ? 0.3 : 0.2,
-                              userSelect: 'none',
-                              pointerEvents: 'none',
-                              whiteSpace: 'pre',
-                            }}
-                          >
-                            {part.replace(/ /g, '·').replace(/\t/g, '»')}
-                          </span>
                           {part}
                         </span>
                       );

@@ -15,52 +15,30 @@ export const stripTextShadow = (style: { [key: string]: React.CSSProperties }) =
   return newStyle;
 };
 
-export const whitespaceRenderer = (isDark: boolean) => {
+export const whitespaceRenderer = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return ({ rows, stylesheet, useInlineStyles }: any): any => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformNode = (node: any): any => {
       if (!node) return node;
       if (node.type === 'text' && typeof node.value === 'string') {
+        const parts = node.value.split(/(\s+)/);
+        if (parts.length === 1) return node;
+
         return {
           type: 'element',
           tagName: 'span',
           properties: { className: [] },
-          children: node.value.split(/(\s+)/).map((part: string) => {
+          children: parts.map((part: string) => {
             if (/^\s+$/.test(part)) {
               return {
                 type: 'element',
                 tagName: 'span',
                 properties: {
-                  className: [],
-                  style: {
-                    position: 'relative',
-                    display: 'inline',
-                  },
+                  className: ['whitespace-marker'],
+                  'data-marker': part.replace(/ /g, '·').replace(/\t/g, '»'),
                 },
-                children: [
-                  {
-                    type: 'element',
-                    tagName: 'span',
-                    properties: {
-                      className: [],
-                      style: {
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        color: isDark ? '#fff' : '#000',
-                        opacity: isDark ? 0.3 : 0.2,
-                        userSelect: 'none',
-                        pointerEvents: 'none',
-                        whiteSpace: 'pre',
-                      },
-                    },
-                    children: [
-                      { type: 'text', value: part.replace(/ /g, '·').replace(/\t/g, '»') },
-                    ],
-                  },
-                  { type: 'text', value: part },
-                ],
+                children: [{ type: 'text', value: part }],
               };
             }
             return { type: 'text', value: part };
@@ -233,7 +211,7 @@ export const FilePreview = ({
     };
   }, [selectedFile, content, isHtml, module, viewMode]);
 
-  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(isDark), [isDark]);
+  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(), []);
 
   const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
 

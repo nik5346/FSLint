@@ -15,7 +15,7 @@ export const MarkdownContent = ({
   theme: Theme;
   isDark: boolean;
 }) => {
-  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(isDark), [isDark]);
+  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(), []);
 
   const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
 
