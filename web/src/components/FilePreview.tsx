@@ -32,14 +32,35 @@ export const whitespaceRenderer = (isDark: boolean) => {
                 type: 'element',
                 tagName: 'span',
                 properties: {
+                  className: [],
                   style: {
-                    color: isDark ? '#fff' : '#000',
-                    opacity: isDark ? 0.3 : 0.2,
-                    userSelect: 'none',
-                    pointerEvents: 'none',
+                    position: 'relative',
+                    display: 'inline',
                   },
                 },
-                children: [{ type: 'text', value: part.replace(/ /g, '·').replace(/\t/g, '»\t') }],
+                children: [
+                  {
+                    type: 'element',
+                    tagName: 'span',
+                    properties: {
+                      className: [],
+                      style: {
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        color: isDark ? '#fff' : '#000',
+                        opacity: isDark ? 0.3 : 0.2,
+                        userSelect: 'none',
+                        pointerEvents: 'none',
+                        whiteSpace: 'pre',
+                      },
+                    },
+                    children: [
+                      { type: 'text', value: part.replace(/ /g, '·').replace(/\t/g, '»') },
+                    ],
+                  },
+                  { type: 'text', value: part },
+                ],
               };
             }
             return { type: 'text', value: part };
