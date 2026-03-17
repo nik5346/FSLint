@@ -17,19 +17,19 @@ import css from 'react-syntax-highlighter/dist/esm/languages/prism/css';
 import log from 'react-syntax-highlighter/dist/esm/languages/prism/log';
 
 SyntaxHighlighter.registerLanguage('markup', markup);
+SyntaxHighlighter.registerLanguage('xml', markup);
+SyntaxHighlighter.registerLanguage('html', markup);
 SyntaxHighlighter.registerLanguage('clike', clike);
+SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('md', markdown);
 SyntaxHighlighter.registerLanguage('cpp', cpp);
 SyntaxHighlighter.registerLanguage('c++', cpp);
 SyntaxHighlighter.registerLanguage('c', cpp);
-SyntaxHighlighter.registerLanguage('markdown', markdown);
-SyntaxHighlighter.registerLanguage('md', markdown);
 SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('bash', bash);
 SyntaxHighlighter.registerLanguage('sh', bash);
-SyntaxHighlighter.registerLanguage('xml', markup);
 SyntaxHighlighter.registerLanguage('xsd', markup);
 SyntaxHighlighter.registerLanguage('ssd', markup);
-SyntaxHighlighter.registerLanguage('html', markup);
 SyntaxHighlighter.registerLanguage('htm', markup);
 SyntaxHighlighter.registerLanguage('svg', markup);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -166,46 +166,54 @@ const RainbowCsvHighlighter = ({
         overflow: 'auto',
       }}
     >
-      {lines.map((line, lineIdx) => {
-        // Simple CSV split, doesn't handle escaped commas but good for "rainbow" effect
-        const cells = line.split(',');
-        return (
-          <div
-            key={lineIdx}
-            style={{
-              display: 'flex',
-              width: 'fit-content',
-              minWidth: '100%',
-              paddingRight: '15px',
-            }}
-          >
+      <div style={{ display: 'inline-block', minWidth: '100%' }}>
+        {lines.map((line, lineIdx) => {
+          // Simple CSV split, doesn't handle escaped commas but good for "rainbow" effect
+          const cells = line.split(',');
+          return (
             <div
+              key={lineIdx}
               style={{
-                minWidth: '40px',
-                paddingLeft: '15px',
-                paddingRight: '10px',
-                textAlign: 'right',
-                color: isDark ? '#858585' : '#999999',
-                userSelect: 'none',
-                position: 'sticky',
-                left: 0,
-                backgroundColor: theme.surface,
-                zIndex: 1,
+                display: 'flex',
+                minWidth: '100%',
+                paddingRight: '15px',
               }}
             >
-              {lineIdx + 1}
+              <div
+                style={{
+                  minWidth: '40px',
+                  paddingLeft: '15px',
+                  paddingRight: '10px',
+                  textAlign: 'right',
+                  color: isDark ? '#858585' : '#999999',
+                  userSelect: 'none',
+                  position: 'sticky',
+                  left: 0,
+                  backgroundColor: theme.surface,
+                  zIndex: 1,
+                }}
+              >
+                {lineIdx + 1}
+              </div>
+              <div
+                style={{
+                  paddingLeft: '10px',
+                  whiteSpace: 'pre',
+                  flex: 1,
+                  minWidth: 'fit-content',
+                }}
+              >
+                {cells.map((cell, cellIdx) => (
+                  <span key={cellIdx}>
+                    <span style={{ color: colors[cellIdx % colors.length] }}>{cell}</span>
+                    {cellIdx < cells.length - 1 && <span style={{ color: theme.muted }}>,</span>}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div style={{ paddingLeft: '10px', whiteSpace: 'pre' }}>
-              {cells.map((cell, cellIdx) => (
-                <span key={cellIdx}>
-                  <span style={{ color: colors[cellIdx % colors.length] }}>{cell}</span>
-                  {cellIdx < cells.length - 1 && <span style={{ color: theme.muted }}>,</span>}
-                </span>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -893,7 +901,7 @@ const FilePreview = ({
                   backgroundColor: theme.surface,
                   zIndex: 1,
                 }}
-                codeTagProps={{ style: { display: 'block', minWidth: '100%' } }}
+                codeTagProps={{ style: { display: 'inline-block', minWidth: '100%' } }}
                 customStyle={{
                   margin: 0,
                   padding: '15px 0',
@@ -907,7 +915,6 @@ const FilePreview = ({
                 lineProps={{
                   style: {
                     display: 'flex',
-                    width: 'fit-content',
                     minWidth: '100%',
                     paddingRight: '15px',
                   },
@@ -1028,6 +1035,8 @@ function App() {
         position: sticky !important;
         left: 0 !important;
         background-color: ${theme.surface} !important;
+        z-index: 2 !important;
+        display: inline-block !important;
       }
     `;
   }, [theme.bg, theme.text, theme.surface, isDark]);
