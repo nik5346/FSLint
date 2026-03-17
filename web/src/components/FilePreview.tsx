@@ -22,15 +22,15 @@ export const whitespaceRenderer = () => {
     const transformNode = (node: any): any => {
       if (!node) return node;
       if (node.type === 'text' && typeof node.value === 'string') {
-        const parts = node.value.split(/(\s+)/);
-        if (parts.length === 1 && !/^\s+$/.test(parts[0])) return node;
+        const parts = node.value.split(/([ \t]+)/);
+        if (parts.length === 1 && !/^[ \t]+$/.test(parts[0])) return node;
 
         return {
           type: 'element',
           tagName: 'span',
           properties: { className: [] },
           children: parts.flatMap((part: string) => {
-            if (/^\s+$/.test(part)) {
+            if (/^[ \t]+$/.test(part)) {
               return part.split('').map((char) => ({
                 type: 'element',
                 tagName: 'span',

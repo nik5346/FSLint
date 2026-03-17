@@ -64,8 +64,8 @@ export const RainbowCsvHighlighter = ({
                 }}
               >
                 {cells.map((cell, cellIdx) => {
-                  const renderedCell = cell.split(/(\s+)/).flatMap((part, i) => {
-                    if (part.match(/^\s+$/)) {
+                  const renderedCell = cell.split(/([ \t]+)/).flatMap((part, i) => {
+                    if (/^[ \t]+$/.test(part)) {
                       return part.split('').map((char, j) => (
                         <span
                           key={`${i}-${j}`}

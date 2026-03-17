@@ -113,17 +113,13 @@ function App() {
       }
       .whitespace-marker {
         position: relative;
-        display: inline-block;
-        width: 1ch;
-        text-align: center;
       }
       .whitespace-marker::before {
         content: attr(data-marker);
         position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
         color: ${isDark ? '#fff' : '#000'};
         opacity: ${isDark ? '0.2' : '0.15'};
         font-size: 0.8em;
@@ -131,13 +127,8 @@ function App() {
         user-select: none;
         white-space: pre;
       }
-      .whitespace-marker[data-marker-type="tab"] {
-        width: auto;
-        min-width: 1ch;
-      }
       .whitespace-marker[data-marker-type="tab"]::before {
         opacity: ${isDark ? '0.1' : '0.08'};
-        justify-content: flex-start;
       }
       .react-syntax-highlighter-line-number {
         color: ${isDark ? '#858585' : '#999999'} !important;
