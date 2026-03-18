@@ -75,7 +75,8 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
       const iconPath = findPath(result.file_tree, 'model.png');
       if (iconPath) {
         const data = module.FS.readFile(iconPath) as Uint8Array;
-        const blob = new Blob([data], { type: 'image/png' });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const blob = new Blob([data as any], { type: 'image/png' });
         url = URL.createObjectURL(blob);
         setIconUrl(url);
       }
