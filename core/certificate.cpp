@@ -522,9 +522,7 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
                 label = root_path.filename().string();
 
             if (!label.empty())
-            {
                 tree["name"].SetString(label.c_str(), static_cast<rapidjson::SizeType>(label.length()), allocator);
-            }
         }
 
         doc.AddMember("file_tree", tree, allocator);
