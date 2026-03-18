@@ -89,7 +89,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     };
   }, [summary.hasIcon, module, result.file_tree]);
 
-  const infoItems = [
+  const infoItems: { label: string; value: string; mono?: boolean }[] = [
     { label: 'Model Name', value: summary.modelName },
     {
       label: summary.standard === 'SSP' ? 'SSP Version' : 'FMI Version',
