@@ -134,9 +134,9 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     const bool has_binaries = !summary.platforms.empty();
 
     if (has_sources && has_binaries)
-        summary.fmuType = "Mixed";
+        summary.fmuType = "Binary, Source code";
     else if (has_sources)
-        summary.fmuType = "Source Code";
+        summary.fmuType = "Source code";
     else if (has_binaries)
         summary.fmuType = "Binary";
     else

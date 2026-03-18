@@ -406,8 +406,8 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
     doc.SetObject();
     auto& allocator = doc.GetAllocator();
 
-    // 1. Report
-    doc.AddMember("report", rapidjson::Value(stripAnsi(_report_buffer).c_str(), allocator).Move(), allocator);
+    // 1. Report (Keep ANSI codes for frontend highlighting)
+    doc.AddMember("report", rapidjson::Value(_report_buffer.c_str(), allocator).Move(), allocator);
 
     // 2. Summary
     rapidjson::Value summary(rapidjson::kObjectType);
@@ -490,6 +490,20 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
     {
         rapidjson::Value tree;
         file_utils::fileNodeToJson(actual_root, &tree, &allocator);
+
+        // Rename the root node to the model name (if available) or filename
+        if (tree.IsObject() && tree.HasMember("name"))
+        {
+            std::string label = _summary.modelName;
+            if (label.empty() && !root_path.empty())
+                label = root_path.filename().string();
+
+            if (!label.empty())
+            {
+                tree["name"].SetString(label.c_str(), static_cast<rapidjson::SizeType>(label.length()), allocator);
+            }
+        }
+
         doc.AddMember("file_tree", tree, allocator);
     }
 
