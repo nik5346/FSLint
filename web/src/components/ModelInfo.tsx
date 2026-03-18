@@ -93,7 +93,6 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     { label: 'Model Name', value: summary.modelName },
     { label: 'FMI Version', value: summary.fmiVersion },
     { label: 'Model Version', value: summary.modelVersion },
-    { label: 'FMU Type', value: summary.fmuType },
     { label: 'GUID / Token', value: summary.guid, mono: true },
     { label: 'Author', value: summary.author },
     { label: 'Copyright', value: summary.copyright },
@@ -208,6 +207,22 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         </Section>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <Section title="FMU Type" theme={theme}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: '6px',
+                  backgroundColor: theme.buttonHoverBg,
+                  fontSize: '0.9em',
+                  border: `1px solid ${theme.border}`,
+                }}
+              >
+                {summary.fmuType}
+              </span>
+            </div>
+          </Section>
+
           <Section title="Implemented Interfaces" theme={theme}>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {summary.interfaces.map((intf) => (
