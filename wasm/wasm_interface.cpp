@@ -6,11 +6,6 @@
 
 extern "C"
 {
-    EMSCRIPTEN_KEEPALIVE bool is_binary(const char* path)
-    {
-        return file_utils::isBinary(path);
-    }
-
     EMSCRIPTEN_KEEPALIVE const char* run_validation(const char* path)
     {
         const ModelChecker validator;

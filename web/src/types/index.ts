@@ -26,7 +26,6 @@ export interface FSLintModule {
     cwd: () => string;
     readFile: (path: string, opts?: { encoding?: string; flags?: string }) => Uint8Array | string;
   };
-  _is_binary: (path: number) => number;
   _run_validation: (path: number) => number;
   stackAlloc: (size: number) => number;
   stackSave: () => number;
