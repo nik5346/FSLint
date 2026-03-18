@@ -59,20 +59,20 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
 
     let url: string | null = null;
     try {
-      // Find the model.png in the file tree to get its absolute path
+      // Find the model icon in the file tree to get its absolute path
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const findPath = (node: any, name: string): string | null => {
-        if (node.name === name && node.kind === 'file') return node.path;
+      const findPath = (node: any, names: string[]): string | null => {
+        if (names.includes(node.name) && node.kind === 'file') return node.path;
         if (node.children) {
           for (const child of node.children) {
-            const path = findPath(child, name);
+            const path = findPath(child, names);
             if (path) return path;
           }
         }
         return null;
       };
 
-      const iconPath = findPath(result.file_tree, 'model.png');
+      const iconPath = findPath(result.file_tree, ['model.png', 'SystemStructure.png']);
       if (iconPath) {
         const data = module.FS.readFile(iconPath) as Uint8Array;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,9 +91,16 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
 
   const infoItems = [
     { label: 'Model Name', value: summary.modelName },
-    { label: 'FMI Version', value: summary.fmiVersion },
+    {
+      label: summary.standard === 'SSP' ? 'SSP Version' : 'FMI Version',
+      value: summary.fmiVersion,
+    },
     { label: 'Model Version', value: summary.modelVersion },
-    { label: 'GUID / Token', value: summary.guid, mono: true },
+    {
+      label: summary.standard === 'SSP' ? 'File Name' : 'GUID / Token',
+      value: summary.guid,
+      mono: summary.standard !== 'SSP',
+    },
     { label: 'Author', value: summary.author },
     { label: 'Copyright', value: summary.copyright },
     { label: 'License', value: summary.license },
@@ -166,9 +173,6 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
                     ? 'VALID WITH WARNINGS'
                     : 'INVALID'}
               </span>
-              <span style={{ color: theme.muted, fontSize: '0.9em' }}>
-                {results.length} checks performed
-              </span>
             </div>
           </div>
 
@@ -189,7 +193,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {infoItems.map((item) => (
               <div key={item.label} style={{ display: 'flex', fontSize: '0.95em' }}>
-                <span style={{ width: '140px', color: theme.muted, flexShrink: 0 }}>
+                <span style={{ width: '180px', color: theme.muted, flexShrink: 0 }}>
                   {item.label}:
                 </span>
                 <span
@@ -207,7 +211,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         </Section>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <Section title="FMU Type" theme={theme}>
+          <Section title={summary.standard === 'SSP' ? 'Model Type' : 'FMU Type'} theme={theme}>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <span
                 style={{

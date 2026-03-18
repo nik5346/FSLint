@@ -44,6 +44,7 @@ export interface FileNode {
 }
 
 export interface ModelSummary {
+  standard: string;
   modelName: string;
   fmiVersion: string;
   modelVersion: string;

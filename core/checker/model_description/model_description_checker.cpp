@@ -104,6 +104,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     // Populate ModelSummary
     ModelSummary summary;
+    summary.standard = "FMI";
     summary.modelName = metadata.modelName.value_or("");
     summary.fmiVersion = metadata.fmiVersion.value_or("");
     summary.modelVersion = metadata.modelVersion.value_or("");

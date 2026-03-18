@@ -30,6 +30,7 @@ struct NestedModelResult
 
 struct ModelSummary
 {
+    std::string standard; // "FMI" or "SSP"
     std::string modelName;
     std::string fmiVersion;
     std::string modelVersion;

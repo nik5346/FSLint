@@ -417,6 +417,7 @@ include_directories(core/checker/build_description)
 include_directories(core/checker/terminals_and_icons)
 include_directories(core/checker/binary)
 include_directories(core/checker/resources)
+include_directories(core/checker/ssp)
 add_library(FSLint-core STATIC ${CORE_SOURCES})
 
 file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "core/*")

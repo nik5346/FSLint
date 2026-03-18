@@ -411,6 +411,7 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
 
     // 2. Summary
     rapidjson::Value summary(rapidjson::kObjectType);
+    summary.AddMember("standard", rapidjson::Value(_summary.standard.c_str(), allocator).Move(), allocator);
     summary.AddMember("modelName", rapidjson::Value(_summary.modelName.c_str(), allocator).Move(), allocator);
     summary.AddMember("fmiVersion", rapidjson::Value(_summary.fmiVersion.c_str(), allocator).Move(), allocator);
     summary.AddMember("modelVersion", rapidjson::Value(_summary.modelVersion.c_str(), allocator).Move(), allocator);
@@ -483,9 +484,9 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
 
     // 5. File Tree (Optional)
     const std::filesystem::path& actual_root =
-        (!root_path.empty() && std::filesystem::exists(root_path)) ? root_path : _extraction_path;
+        (!root_path.empty() && std::filesystem::is_directory(root_path)) ? root_path : _extraction_path;
 
-    if (!actual_root.empty() && std::filesystem::exists(actual_root))
+    if (!actual_root.empty() && std::filesystem::exists(actual_root) && std::filesystem::is_directory(actual_root))
     {
         rapidjson::Value tree;
         file_utils::fileNodeToJson(actual_root, &tree, &allocator);

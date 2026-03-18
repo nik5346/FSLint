@@ -31,6 +31,7 @@
 #include "fmi3_directory_checker.h"
 
 #include "resources_checker.h"
+#include "ssp_description_checker.h"
 
 #include <filesystem>
 #include <memory>
@@ -114,6 +115,9 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
 
     if (auto checker = createModelDescriptionChecker(info))
         checkers.push_back(std::move(checker));
+
+    if (info.standard == ModelStandard::SSP1 || info.standard == ModelStandard::SSP2)
+        checkers.push_back(std::make_unique<SspDescriptionChecker>());
 
     if (auto checker = createTerminalsAndIconsChecker(info))
         checkers.push_back(std::move(checker));
