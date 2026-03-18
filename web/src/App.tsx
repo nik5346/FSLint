@@ -104,6 +104,32 @@ function App() {
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = `
+      [class*="token"], .token, pre, code {
+        text-shadow: none !important;
+      }
+      ::selection {
+        text-shadow: none !important;
+        background-color: ${isDark ? 'rgba(0, 123, 255, 0.4)' : 'rgba(0, 123, 255, 0.25)'} !important;
+      }
+      .whitespace-marker {
+        position: relative;
+      }
+      .whitespace-marker::before {
+        content: attr(data-marker);
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        color: ${isDark ? '#fff' : '#000'};
+        opacity: ${isDark ? '0.2' : '0.15'};
+        font-size: 0.8em;
+        pointer-events: none;
+        user-select: none;
+        white-space: pre;
+      }
+      .whitespace-marker[data-marker-type="tab"]::before {
+        opacity: ${isDark ? '0.1' : '0.08'};
+      }
       .react-syntax-highlighter-line-number {
         color: ${isDark ? '#858585' : '#999999'} !important;
         position: sticky !important;
@@ -111,16 +137,6 @@ function App() {
         background-color: ${theme.surface} !important;
         z-index: 2 !important;
         display: inline-block !important;
-      }
-      .whitespace-indicator {
-        background-image: radial-gradient(
-          circle,
-          ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'} 0.5px,
-          transparent 0.5px
-        );
-        background-size: 1ch 1.5em;
-        background-position: 0.5ch 0.75em;
-        background-repeat: repeat;
       }
     `;
   }, [theme.bg, theme.text, theme.surface, isDark]);

@@ -25,7 +25,6 @@ export const RainbowCsvHighlighter = ({
         flex: 1,
         overflow: 'auto',
       }}
-      className="whitespace-indicator"
     >
       <div style={{ display: 'inline-block', minWidth: '100%' }}>
         {lines.map((line, lineIdx) => {
@@ -64,12 +63,30 @@ export const RainbowCsvHighlighter = ({
                   minWidth: 'fit-content',
                 }}
               >
-                {cells.map((cell, cellIdx) => (
-                  <span key={cellIdx}>
-                    <span style={{ color: colors[cellIdx % colors.length] }}>{cell}</span>
-                    {cellIdx < cells.length - 1 && <span style={{ color: theme.muted }}>,</span>}
-                  </span>
-                ))}
+                {cells.map((cell, cellIdx) => {
+                  const renderedCell = cell.split(/([ \t]+)/).flatMap((part, i) => {
+                    if (/^[ \t]+$/.test(part)) {
+                      return part.split('').map((char, j) => (
+                        <span
+                          key={`${i}-${j}`}
+                          className="whitespace-marker"
+                          data-marker={char === '\t' ? '→' : '·'}
+                          data-marker-type={char === '\t' ? 'tab' : 'space'}
+                        >
+                          {char}
+                        </span>
+                      ));
+                    }
+                    return [<span key={i}>{part}</span>];
+                  });
+
+                  return (
+                    <span key={cellIdx}>
+                      <span style={{ color: colors[cellIdx % colors.length] }}>{renderedCell}</span>
+                      {cellIdx < cells.length - 1 && <span style={{ color: theme.muted }}>,</span>}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           );

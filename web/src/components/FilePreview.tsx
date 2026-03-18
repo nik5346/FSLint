@@ -2,6 +2,68 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FileNode, Theme, FSLintModule } from '../types';
+import { createElement } from 'react-syntax-highlighter';
+
+// Utility to strip textShadow from Prism styles to fix "ghosting"
+export const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
+  const newStyle: { [key: string]: React.CSSProperties } = {};
+  for (const key in style) {
+    if (Object.prototype.hasOwnProperty.call(style, key)) {
+      newStyle[key] = { ...style[key], textShadow: 'none' };
+    }
+  }
+  return newStyle;
+};
+
+export const whitespaceRenderer = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ({ rows, stylesheet, useInlineStyles }: any): any => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transformNode = (node: any): any => {
+      if (!node) return node;
+      if (node.type === 'text' && typeof node.value === 'string') {
+        const parts = node.value.split(/([ \t]+)/);
+        if (parts.length === 1 && !/^[ \t]+$/.test(parts[0])) return node;
+
+        return {
+          type: 'element',
+          tagName: 'span',
+          properties: { className: [] },
+          children: parts.flatMap((part: string) => {
+            if (/^[ \t]+$/.test(part)) {
+              return part.split('').map((char) => ({
+                type: 'element',
+                tagName: 'span',
+                properties: {
+                  className: ['whitespace-marker'],
+                  'data-marker': char === '\t' ? '→' : '·',
+                  'data-marker-type': char === '\t' ? 'tab' : 'space',
+                },
+                children: [{ type: 'text', value: char }],
+              }));
+            }
+            return [{ type: 'text', value: part }];
+          }),
+        };
+      }
+      if (node.children) {
+        return { ...node, children: node.children.map(transformNode) };
+      }
+      return node;
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return rows.map((node: any, i: number) =>
+      createElement({
+        node: transformNode(node),
+        stylesheet,
+        useInlineStyles,
+        key: `code-segment-${i}`,
+      }),
+    );
+  };
+};
+
 import { RainbowCsvHighlighter } from './RainbowCsvHighlighter';
 import { MarkdownContent } from './MarkdownContent';
 
@@ -149,6 +211,10 @@ export const FilePreview = ({
       htmlBlobUrls.current = [];
     };
   }, [selectedFile, content, isHtml, module, viewMode]);
+
+  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(), []);
+
+  const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
 
   if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
     return (
@@ -418,7 +484,7 @@ export const FilePreview = ({
             return (
               <SyntaxHighlighter
                 language={language}
-                style={isDark ? vscDarkPlus : prism}
+                style={syntaxStyle}
                 showLineNumbers={true}
                 lineNumberStyle={{
                   minWidth: '40px',
@@ -442,7 +508,7 @@ export const FilePreview = ({
                   lineHeight: '1.5em',
                   overflow: 'auto',
                 }}
-                className="whitespace-indicator"
+                renderer={memoizedWhitespaceRenderer}
                 wrapLines={true}
                 lineProps={{
                   style: {
