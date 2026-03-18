@@ -102,6 +102,7 @@ struct ModelMetadata
     std::optional<std::string> author;
     std::optional<std::string> copyright;
     std::optional<std::string> license;
+    std::optional<std::string> description;
     std::optional<std::string> generationTool;
     std::optional<std::string> generationDateAndTime;
     std::string variableNamingConvention = "flat";

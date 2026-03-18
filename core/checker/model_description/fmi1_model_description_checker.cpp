@@ -282,6 +282,7 @@ ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
     metadata.guid = getXmlAttribute(root, "guid");
     metadata.modelVersion = getXmlAttribute(root, "version");
     metadata.author = getXmlAttribute(root, "author");
+    metadata.description = getXmlAttribute(root, "description");
     metadata.generationTool = getXmlAttribute(root, "generationTool");
     metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
     metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");

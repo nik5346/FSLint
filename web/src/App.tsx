@@ -3,6 +3,7 @@ import { useFSLint } from './hooks/useFSLint';
 import { FileNode } from './types';
 import { FileTreeItem } from './components/FileTreeItem';
 import { FilePreview } from './components/FilePreview';
+import { ModelInfo } from './components/ModelInfo';
 import { RulesOutline } from './components/RulesOutline';
 import { MarkdownContent } from './components/MarkdownContent';
 import { extractHeaders, getFilesFromHandle, getFilesFromEntry } from './utils/file';
@@ -49,12 +50,20 @@ SyntaxHighlighter.registerLanguage('css', css);
 SyntaxHighlighter.registerLanguage('log', log);
 
 function App() {
-  const { module, output, isReady, isProcessing, fileTree, setFileTree, processItems } =
-    useFSLint();
+  const {
+    module,
+    output,
+    isReady,
+    isProcessing,
+    fileTree,
+    setFileTree,
+    validationResult,
+    processItems,
+  } = useFSLint();
 
   const [copied, setCopied] = useState(false);
   const [isDark, setIsDark] = useState(true);
-  const [activeTab, setActiveTab] = useState<'certificate' | 'rules' | 'explorer'>('certificate');
+  const [activeTab, setActiveTab] = useState<'info' | 'certificate' | 'rules' | 'explorer'>('info');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [rulesText, setRulesText] = useState<string>('');
   const [explorerWidth, setExplorerWidth] = useState(300);
@@ -193,7 +202,7 @@ function App() {
   useEffect(() => {
     if (fileTree) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab('certificate');
+      setActiveTab('info');
     }
   }, [fileTree]);
 
@@ -362,6 +371,31 @@ function App() {
           flexShrink: 0,
         }}
       >
+        <button
+          className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`}
+          onClick={() => setActiveTab('info')}
+          disabled={!validationResult}
+          style={{
+            opacity: validationResult ? 1 : 0.3,
+            cursor: validationResult ? 'pointer' : 'default',
+          }}
+          title="Model Information"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </button>
         <button
           className={`tab-btn ${activeTab === 'certificate' ? 'active' : ''}`}
           onClick={() => setActiveTab('certificate')}
@@ -684,6 +718,26 @@ function App() {
             >
               <MarkdownContent content={rulesText} theme={theme} isDark={isDark} />
             </div>
+          </div>
+        )}
+
+        {activeTab === 'info' && validationResult && (
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              backgroundColor: theme.surface,
+              borderRadius: '4px',
+              border: `1px solid ${theme.border}`,
+              overflow: 'hidden',
+            }}
+          >
+            <ModelInfo
+              result={validationResult}
+              theme={theme}
+              isDark={isDark}
+              module={module}
+            />
           </div>
         )}
 

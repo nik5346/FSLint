@@ -28,6 +28,25 @@ struct NestedModelResult
     std::vector<NestedModelResult> nested_models;
 };
 
+struct ModelSummary
+{
+    std::string modelName;
+    std::string fmiVersion;
+    std::string modelVersion;
+    std::string guid;
+    std::string generationTool;
+    std::string generationDateAndTime;
+    std::string author;
+    std::string copyright;
+    std::string license;
+    std::string description;
+    std::vector<std::string> platforms;
+    std::vector<std::string> interfaces;
+    std::vector<std::string> layeredStandards;
+    bool hasIcon = false;
+    std::string fmuType; // "Binary", "Source Code", or "Mixed"
+};
+
 class Certificate
 {
   public:
@@ -39,6 +58,7 @@ class Certificate
     std::string _report_buffer;
     std::vector<TestResult> _results;
     std::vector<NestedModelResult> _nested_models;
+    ModelSummary _summary;
 
     // Subsection tracking
     size_t _current_subsection_passed = 0;
@@ -97,4 +117,15 @@ class Certificate
     {
         return _nested_models;
     }
+
+    void setSummary(const ModelSummary& summary)
+    {
+        _summary = summary;
+    }
+    const ModelSummary& getSummary() const
+    {
+        return _summary;
+    }
+
+    std::string toJson(const std::filesystem::path& root_path = "") const;
 };
