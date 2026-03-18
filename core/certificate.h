@@ -128,4 +128,12 @@ class Certificate
     }
 
     std::string toJson(const std::filesystem::path& root_path = "") const;
+
+    void setExtractionPath(const std::filesystem::path& path)
+    {
+        _extraction_path = path;
+    }
+
+  private:
+    std::filesystem::path _extraction_path;
 };

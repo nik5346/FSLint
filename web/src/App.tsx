@@ -732,12 +732,7 @@ function App() {
               overflow: 'hidden',
             }}
           >
-            <ModelInfo
-              result={validationResult}
-              theme={theme}
-              isDark={isDark}
-              module={module}
-            />
+            <ModelInfo result={validationResult} theme={theme} isDark={isDark} module={module} />
           </div>
         )}
 

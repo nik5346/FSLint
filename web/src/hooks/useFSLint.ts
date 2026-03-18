@@ -87,7 +87,6 @@ export const useFSLint = () => {
     [module],
   );
 
-
   const listVFS = useCallback(
     (path: string, indent = '') => {
       if (!module) return;
@@ -169,10 +168,12 @@ export const useFSLint = () => {
         const target =
           discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
 
+        const stack = module.stackSave();
         const targetPtr = module.stackAlloc(target.length * 4 + 1);
         module.stringToUTF8(target, targetPtr, target.length * 4 + 1);
         const resultPtr = module._run_validation(targetPtr);
         const resultJson = module.UTF8ToString(resultPtr);
+        module.stackRestore(stack);
 
         try {
           const result = JSON.parse(resultJson) as ValidationResult;

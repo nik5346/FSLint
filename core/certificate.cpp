@@ -383,6 +383,9 @@ static void serializeNestedResults(const std::vector<NestedModelResult>& results
         case TestStatus::WARNING:
             status = "WARNING";
             break;
+        default:
+            status = "UNKNOWN";
+            break;
         }
         obj.AddMember("status", rapidjson::Value(status.c_str(), allocator).Move(), allocator);
 
@@ -413,8 +416,8 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
     summary.AddMember("modelVersion", rapidjson::Value(_summary.modelVersion.c_str(), allocator).Move(), allocator);
     summary.AddMember("guid", rapidjson::Value(_summary.guid.c_str(), allocator).Move(), allocator);
     summary.AddMember("generationTool", rapidjson::Value(_summary.generationTool.c_str(), allocator).Move(), allocator);
-    summary.AddMember("generationDateAndTime", rapidjson::Value(_summary.generationDateAndTime.c_str(), allocator).Move(),
-                      allocator);
+    summary.AddMember("generationDateAndTime",
+                      rapidjson::Value(_summary.generationDateAndTime.c_str(), allocator).Move(), allocator);
     summary.AddMember("author", rapidjson::Value(_summary.author.c_str(), allocator).Move(), allocator);
     summary.AddMember("copyright", rapidjson::Value(_summary.copyright.c_str(), allocator).Move(), allocator);
     summary.AddMember("license", rapidjson::Value(_summary.license.c_str(), allocator).Move(), allocator);
@@ -458,6 +461,9 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
         case TestStatus::WARNING:
             status = "WARNING";
             break;
+        default:
+            status = "UNKNOWN";
+            break;
         }
         obj.AddMember("status", rapidjson::Value(status.c_str(), allocator).Move(), allocator);
 
@@ -476,10 +482,13 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
     doc.AddMember("nested_models", nested_models, allocator);
 
     // 5. File Tree (Optional)
-    if (!root_path.empty() && std::filesystem::exists(root_path))
+    const std::filesystem::path& actual_root =
+        (!root_path.empty() && std::filesystem::exists(root_path)) ? root_path : _extraction_path;
+
+    if (!actual_root.empty() && std::filesystem::exists(actual_root))
     {
         rapidjson::Value tree;
-        file_utils::fileNodeToJson(root_path, &tree, &allocator);
+        file_utils::fileNodeToJson(actual_root, &tree, &allocator);
         doc.AddMember("file_tree", tree, allocator);
     }
 

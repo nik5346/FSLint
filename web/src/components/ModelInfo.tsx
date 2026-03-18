@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ValidationResult, Theme, FSLintModule } from '../types';
 
 interface ModelInfoProps {
@@ -48,8 +48,16 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
   const statusColor =
     overallStatus === 'FAIL' ? '#ff5555' : overallStatus === 'WARNING' ? '#ffb86c' : '#50fa7b';
 
-  const iconUrl = useMemo(() => {
-    if (!summary.hasIcon || !module || !result.file_tree) return null;
+  const [iconUrl, setIconUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!summary.hasIcon || !module || !result.file_tree) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIconUrl(null);
+      return;
+    }
+
+    let url: string | null = null;
     try {
       // Find the model.png in the file tree to get its absolute path
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,15 +73,19 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
       };
 
       const iconPath = findPath(result.file_tree, 'model.png');
-      if (!iconPath) return null;
-
-      const data = module.FS.readFile(iconPath) as Uint8Array;
-      const blob = new Blob([data], { type: 'image/png' });
-      return URL.createObjectURL(blob);
+      if (iconPath) {
+        const data = module.FS.readFile(iconPath) as Uint8Array;
+        const blob = new Blob([data], { type: 'image/png' });
+        url = URL.createObjectURL(blob);
+        setIconUrl(url);
+      }
     } catch (e) {
       console.error('Failed to load FMU icon:', e);
-      return null;
     }
+
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
   }, [summary.hasIcon, module, result.file_tree]);
 
   const infoItems = [

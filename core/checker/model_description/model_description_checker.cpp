@@ -125,12 +125,8 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     if (std::filesystem::exists(binaries_path))
     {
         for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
-        {
             if (entry.is_directory())
-            {
                 summary.platforms.push_back(entry.path().filename().string());
-            }
-        }
     }
 
     const bool has_sources = std::filesystem::exists(path / "sources");
@@ -157,9 +153,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
                 annotations_xpath->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto name = getXmlAttribute(node, "name");
             if (name && name->find("org.fmi-standard.layered-standard") != std::string::npos)
-            {
                 summary.layeredStandards.push_back(*name);
-            }
         }
         xmlXPathFreeObject(annotations_xpath);
     }

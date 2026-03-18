@@ -73,6 +73,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
             return cert;
         }
 
+        cert.setExtractionPath(extract_dir);
+
         if (!zipper.extractAll(extract_dir))
         {
             zipper.close();
