@@ -59,7 +59,7 @@ export interface ModelSummary {
   interfaces: string[];
   layeredStandards: string[];
   hasIcon: boolean;
-  fmuType: string;
+  fmuTypes: string[];
 }
 
 export interface TestResult {

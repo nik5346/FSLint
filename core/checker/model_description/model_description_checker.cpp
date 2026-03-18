@@ -133,14 +133,13 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     const bool has_sources = std::filesystem::exists(path / "sources");
     const bool has_binaries = !summary.platforms.empty();
 
-    if (has_sources && has_binaries)
-        summary.fmuType = "Binary, Source code";
-    else if (has_sources)
-        summary.fmuType = "Source code";
-    else if (has_binaries)
-        summary.fmuType = "Binary";
-    else
-        summary.fmuType = "Unknown";
+    if (has_sources)
+        summary.fmuTypes.push_back("Source code");
+    if (has_binaries)
+        summary.fmuTypes.push_back("Binary");
+
+    if (summary.fmuTypes.empty())
+        summary.fmuTypes.push_back("Unknown");
 
     summary.hasIcon = std::filesystem::exists(path / "model.png");
 

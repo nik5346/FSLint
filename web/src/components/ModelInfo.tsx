@@ -180,8 +180,8 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '32px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+          gap: '48px',
         }}
       >
         <Section title="Base Information" theme={theme}>
@@ -210,17 +210,20 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
             <>
               <Section title="FMU Type" theme={theme}>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <span
-                    style={{
-                      padding: '4px 12px',
-                      borderRadius: '6px',
-                      backgroundColor: theme.buttonHoverBg,
-                      fontSize: '0.9em',
-                      border: `1px solid ${theme.border}`,
-                    }}
-                  >
-                    {summary.fmuType}
-                  </span>
+                  {summary.fmuTypes.map((t) => (
+                    <span
+                      key={t}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: '6px',
+                        backgroundColor: theme.buttonHoverBg,
+                        fontSize: '0.9em',
+                        border: `1px solid ${theme.border}`,
+                      }}
+                    >
+                      {t}
+                    </span>
+                  ))}
                 </div>
               </Section>
 

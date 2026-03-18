@@ -52,7 +52,7 @@ void SspDescriptionChecker::validate(const std::filesystem::path& path, Certific
     summary.description = getXmlAttribute(root, "description").value_or("");
     summary.generationTool = getXmlAttribute(root, "generationTool").value_or("");
     summary.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime").value_or("");
-    summary.fmuType = "";
+    summary.fmuTypes.clear();
 
     // Check for icon
     summary.hasIcon = std::filesystem::exists(path / "SystemStructure.png");

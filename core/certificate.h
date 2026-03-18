@@ -45,7 +45,7 @@ struct ModelSummary
     std::vector<std::string> interfaces;
     std::vector<std::string> layeredStandards;
     bool hasIcon = false;
-    std::string fmuType; // "Binary", "Source code", or "Binary, Source code"
+    std::vector<std::string> fmuTypes; // "Binary" and/or "Source code"
 };
 
 class Certificate

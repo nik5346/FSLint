@@ -424,7 +424,11 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
     summary.AddMember("license", rapidjson::Value(_summary.license.c_str(), allocator).Move(), allocator);
     summary.AddMember("description", rapidjson::Value(_summary.description.c_str(), allocator).Move(), allocator);
     summary.AddMember("hasIcon", _summary.hasIcon, allocator);
-    summary.AddMember("fmuType", rapidjson::Value(_summary.fmuType.c_str(), allocator).Move(), allocator);
+
+    rapidjson::Value fmuTypes(rapidjson::kArrayType);
+    for (const auto& t : _summary.fmuTypes)
+        fmuTypes.PushBack(rapidjson::Value(t.c_str(), allocator).Move(), allocator);
+    summary.AddMember("fmuTypes", fmuTypes, allocator);
 
     rapidjson::Value platforms(rapidjson::kArrayType);
     for (const auto& p : _summary.platforms)
