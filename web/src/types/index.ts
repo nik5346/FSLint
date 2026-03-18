@@ -76,6 +76,7 @@ export interface NestedModelResult {
 
 export interface ValidationResult {
   report: string;
+  overallStatus: 'PASS' | 'FAIL' | 'WARNING';
   summary: ModelSummary;
   results: TestResult[];
   nested_models: NestedModelResult[];

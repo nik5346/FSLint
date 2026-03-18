@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ValidationResult, Theme, FSLintModule } from '../types';
 
 interface ModelInfoProps {
@@ -35,15 +35,7 @@ const Section = ({
 );
 
 export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => {
-  const { summary, results } = result;
-
-  const overallStatus = useMemo(() => {
-    const hasFail = results.some((r) => r.status === 'FAIL');
-    if (hasFail) return 'FAIL';
-    const hasWarn = results.some((r) => r.status === 'WARNING');
-    if (hasWarn) return 'WARNING';
-    return 'PASS';
-  }, [results]);
+  const { summary, overallStatus } = result;
 
   const statusColor =
     overallStatus === 'FAIL' ? '#ff5555' : overallStatus === 'WARNING' ? '#ffb86c' : '#50fa7b';
@@ -180,7 +172,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(550px, 1fr))',
           gap: '48px',
         }}
       >

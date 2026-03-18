@@ -409,6 +409,25 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
     // 1. Report (Keep ANSI codes for frontend highlighting)
     doc.AddMember("report", rapidjson::Value(_report_buffer.c_str(), allocator).Move(), allocator);
 
+    // Overall Status
+    std::string overall_status;
+    switch (getOverallStatus())
+    {
+    case TestStatus::PASS:
+        overall_status = "PASS";
+        break;
+    case TestStatus::FAIL:
+        overall_status = "FAIL";
+        break;
+    case TestStatus::WARNING:
+        overall_status = "WARNING";
+        break;
+    default:
+        overall_status = "UNKNOWN";
+        break;
+    }
+    doc.AddMember("overallStatus", rapidjson::Value(overall_status.c_str(), allocator).Move(), allocator);
+
     // 2. Summary
     rapidjson::Value summary(rapidjson::kObjectType);
     summary.AddMember("standard", rapidjson::Value(_summary.standard.c_str(), allocator).Move(), allocator);
