@@ -57,8 +57,8 @@ void SspDescriptionChecker::validate(const std::filesystem::path& path, Certific
     summary.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime").value_or("");
     summary.fmuTypes.clear();
 
-    // Check for icon
-    summary.hasIcon = std::filesystem::exists(path / "SystemStructure.png");
+    // SSP has no top-level icon
+    summary.hasIcon = false;
 
     cert.setSummary(summary);
 

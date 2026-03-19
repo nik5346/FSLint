@@ -141,7 +141,13 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     if (summary.fmuTypes.empty())
         summary.fmuTypes.push_back("Unknown");
 
-    summary.hasIcon = std::filesystem::exists(path / "model.png");
+    summary.hasIcon = std::filesystem::exists(path / "model.png") || std::filesystem::exists(path / "model.svg");
+
+    if (summary.fmiVersion.starts_with("3.0"))
+    {
+        summary.hasIcon = summary.hasIcon || std::filesystem::exists(path / "terminalsAndIcons/icon.png") ||
+                          std::filesystem::exists(path / "terminalsAndIcons/icon.svg");
+    }
 
     // Detect layered standards (simple heuristic based on annotations)
     xmlXPathObjectPtr annotations_xpath = getXPathNodes(doc, "//VendorAnnotations/Tool");
