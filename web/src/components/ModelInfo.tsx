@@ -64,14 +64,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         return null;
       };
 
-      const iconPath = findPath(result.file_tree, [
-        'model.svg',
-        'SystemStructure.svg',
-        'icon.svg',
-        'model.png',
-        'SystemStructure.png',
-        'icon.png',
-      ]);
+      const iconPath = findPath(result.file_tree, ['model.svg', 'icon.svg', 'model.png', 'icon.png']);
       if (iconPath) {
         const data = module.FS.readFile(iconPath) as Uint8Array;
         const type = iconPath.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
