@@ -58,7 +58,8 @@ void SspDescriptionChecker::validate(const std::filesystem::path& path, Certific
     summary.fmuTypes.clear();
 
     // Check for icon
-    summary.hasIcon = std::filesystem::exists(path / "SystemStructure.png");
+    summary.hasIcon =
+        std::filesystem::exists(path / "SystemStructure.png") || std::filesystem::exists(path / "SystemStructure.svg");
 
     cert.setSummary(summary);
 
