@@ -12,6 +12,7 @@
 #include <fstream>
 #include <ios>
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace file_utils

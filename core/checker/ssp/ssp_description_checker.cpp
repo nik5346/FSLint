@@ -3,7 +3,7 @@
 #include "certificate.h"
 #include "xml_utils.h"
 
-#include <libxml/xpath.h>
+#include <libxml/tree.h>
 
 #include <filesystem>
 #include <optional>
