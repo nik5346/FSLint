@@ -3,7 +3,9 @@
 #include "certificate.h"
 #include "xml_utils.h"
 
+#include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <libxml/xmlstring.h>
 
 #include <filesystem>
 #include <optional>
