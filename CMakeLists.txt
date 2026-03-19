@@ -417,6 +417,7 @@ include_directories(core/checker/build_description)
 include_directories(core/checker/terminals_and_icons)
 include_directories(core/checker/binary)
 include_directories(core/checker/resources)
+include_directories(core/checker/ssp)
 add_library(FSLint-core STATIC ${CORE_SOURCES})
 
 file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "core/*")
@@ -494,7 +495,7 @@ if(EMSCRIPTEN)
         "-sEXPORT_NAME=createFSLintModule"
         "-sINVOKE_RUN=0"
         "-sEXPORTED_RUNTIME_METHODS=['FS', 'stackAlloc', 'stackSave', 'stackRestore', 'stringToUTF8', 'UTF8ToString']"
-        "-sEXPORTED_FUNCTIONS=['_is_binary', '_get_file_tree_json', '_run_validation']"
+        "-sEXPORTED_FUNCTIONS=['_run_validation']"
         "--embed-file" "${CMAKE_SOURCE_DIR}/standard@/standard"
     )
     

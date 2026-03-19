@@ -1,6 +1,11 @@
 #include "certificate.h"
 #include "file_utils.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -356,4 +361,176 @@ bool Certificate::saveToFile(const std::filesystem::path& path) const
         return false;
     file << stripAnsi(_report_buffer);
     return true;
+}
+
+static void serializeNestedResults(const std::vector<NestedModelResult>& results, rapidjson::Value& array,
+                                   rapidjson::Document::AllocatorType& allocator)
+{
+    for (const auto& res : results)
+    {
+        rapidjson::Value obj(rapidjson::kObjectType);
+        obj.AddMember("name", rapidjson::Value(res.name.c_str(), allocator).Move(), allocator);
+
+        std::string status;
+        switch (res.status)
+        {
+        case TestStatus::PASS:
+            status = "PASS";
+            break;
+        case TestStatus::FAIL:
+            status = "FAIL";
+            break;
+        case TestStatus::WARNING:
+            status = "WARNING";
+            break;
+        default:
+            status = "UNKNOWN";
+            break;
+        }
+        obj.AddMember("status", rapidjson::Value(status.c_str(), allocator).Move(), allocator);
+
+        if (!res.nested_models.empty())
+        {
+            rapidjson::Value nested_array(rapidjson::kArrayType);
+            serializeNestedResults(res.nested_models, nested_array, allocator);
+            obj.AddMember("nested_models", nested_array, allocator);
+        }
+
+        array.PushBack(obj, allocator);
+    }
+}
+
+std::string Certificate::toJson(const std::filesystem::path& root_path) const
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    auto& allocator = doc.GetAllocator();
+
+    // 1. Report (Keep ANSI codes for frontend highlighting)
+    doc.AddMember("report", rapidjson::Value(_report_buffer.c_str(), allocator).Move(), allocator);
+
+    // Overall Status
+    std::string overall_status;
+    switch (getOverallStatus())
+    {
+    case TestStatus::PASS:
+        overall_status = "PASS";
+        break;
+    case TestStatus::FAIL:
+        overall_status = "FAIL";
+        break;
+    case TestStatus::WARNING:
+        overall_status = "WARNING";
+        break;
+    default:
+        overall_status = "UNKNOWN";
+        break;
+    }
+    doc.AddMember("overallStatus", rapidjson::Value(overall_status.c_str(), allocator).Move(), allocator);
+
+    // 2. Summary
+    rapidjson::Value summary(rapidjson::kObjectType);
+    summary.AddMember("standard", rapidjson::Value(_summary.standard.c_str(), allocator).Move(), allocator);
+    summary.AddMember("modelName", rapidjson::Value(_summary.modelName.c_str(), allocator).Move(), allocator);
+    summary.AddMember("fmiVersion", rapidjson::Value(_summary.fmiVersion.c_str(), allocator).Move(), allocator);
+    summary.AddMember("modelVersion", rapidjson::Value(_summary.modelVersion.c_str(), allocator).Move(), allocator);
+    summary.AddMember("guid", rapidjson::Value(_summary.guid.c_str(), allocator).Move(), allocator);
+    summary.AddMember("generationTool", rapidjson::Value(_summary.generationTool.c_str(), allocator).Move(), allocator);
+    summary.AddMember("generationDateAndTime",
+                      rapidjson::Value(_summary.generationDateAndTime.c_str(), allocator).Move(), allocator);
+    summary.AddMember("author", rapidjson::Value(_summary.author.c_str(), allocator).Move(), allocator);
+    summary.AddMember("copyright", rapidjson::Value(_summary.copyright.c_str(), allocator).Move(), allocator);
+    summary.AddMember("license", rapidjson::Value(_summary.license.c_str(), allocator).Move(), allocator);
+    summary.AddMember("description", rapidjson::Value(_summary.description.c_str(), allocator).Move(), allocator);
+    summary.AddMember("hasIcon", _summary.hasIcon, allocator);
+
+    rapidjson::Value fmuTypes(rapidjson::kArrayType);
+    for (const auto& t : _summary.fmuTypes)
+        fmuTypes.PushBack(rapidjson::Value(t.c_str(), allocator).Move(), allocator);
+    summary.AddMember("fmuTypes", fmuTypes, allocator);
+
+    rapidjson::Value platforms(rapidjson::kArrayType);
+    for (const auto& p : _summary.platforms)
+        platforms.PushBack(rapidjson::Value(p.c_str(), allocator).Move(), allocator);
+    summary.AddMember("platforms", platforms, allocator);
+
+    rapidjson::Value interfaces(rapidjson::kArrayType);
+    for (const auto& i : _summary.interfaces)
+        interfaces.PushBack(rapidjson::Value(i.c_str(), allocator).Move(), allocator);
+    summary.AddMember("interfaces", interfaces, allocator);
+
+    rapidjson::Value layeredStandards(rapidjson::kArrayType);
+    for (const auto& s : _summary.layeredStandards)
+        layeredStandards.PushBack(rapidjson::Value(s.c_str(), allocator).Move(), allocator);
+    summary.AddMember("layeredStandards", layeredStandards, allocator);
+
+    doc.AddMember("summary", summary, allocator);
+
+    // 3. Test Results
+    rapidjson::Value results(rapidjson::kArrayType);
+    for (const auto& res : _results)
+    {
+        rapidjson::Value obj(rapidjson::kObjectType);
+        obj.AddMember("test_name", rapidjson::Value(res.test_name.c_str(), allocator).Move(), allocator);
+
+        std::string status;
+        switch (res.status)
+        {
+        case TestStatus::PASS:
+            status = "PASS";
+            break;
+        case TestStatus::FAIL:
+            status = "FAIL";
+            break;
+        case TestStatus::WARNING:
+            status = "WARNING";
+            break;
+        default:
+            status = "UNKNOWN";
+            break;
+        }
+        obj.AddMember("status", rapidjson::Value(status.c_str(), allocator).Move(), allocator);
+
+        rapidjson::Value messages(rapidjson::kArrayType);
+        for (const auto& msg : res.messages)
+            messages.PushBack(rapidjson::Value(msg.c_str(), allocator).Move(), allocator);
+        obj.AddMember("messages", messages, allocator);
+
+        results.PushBack(obj, allocator);
+    }
+    doc.AddMember("results", results, allocator);
+
+    // 4. Nested Models
+    rapidjson::Value nested_models(rapidjson::kArrayType);
+    serializeNestedResults(_nested_models, nested_models, allocator);
+    doc.AddMember("nested_models", nested_models, allocator);
+
+    // 5. File Tree (Optional)
+    const std::filesystem::path& actual_root =
+        (!root_path.empty() && std::filesystem::is_directory(root_path)) ? root_path : _extraction_path;
+
+    if (!actual_root.empty() && std::filesystem::exists(actual_root) && std::filesystem::is_directory(actual_root))
+    {
+        rapidjson::Value tree;
+        file_utils::fileNodeToJson(actual_root, &tree, &allocator);
+
+        // Rename the root node to the model name (if available) or filename
+        if (tree.IsObject() && tree.HasMember("name"))
+        {
+            std::string label = _summary.modelName;
+            if (label.empty() && !root_path.empty())
+                label = root_path.filename().string();
+
+            if (!label.empty())
+                tree["name"].SetString(label.c_str(), static_cast<rapidjson::SizeType>(label.length()), allocator);
+        }
+
+        doc.AddMember("file_tree", tree, allocator);
+    }
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    doc.Accept(writer);
+
+    return buffer.GetString();
 }

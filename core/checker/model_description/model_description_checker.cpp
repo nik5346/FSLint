@@ -102,6 +102,64 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Perform version-specific validation
     performVersionSpecificChecks(doc, variables, type_definitions, units, cert);
 
+    // Populate ModelSummary
+    ModelSummary summary;
+    summary.standard = "FMI";
+    summary.modelName = metadata.modelName.value_or("");
+    summary.fmiVersion = metadata.fmiVersion.value_or("");
+    summary.modelVersion = metadata.modelVersion.value_or("");
+    summary.guid = metadata.guid.value_or("");
+    summary.author = metadata.author.value_or("");
+    summary.copyright = metadata.copyright.value_or("");
+    summary.license = metadata.license.value_or("");
+    summary.description = metadata.description.value_or("");
+    summary.generationTool = metadata.generationTool.value_or("");
+    summary.generationDateAndTime = metadata.generationDateAndTime.value_or("");
+
+    for (const auto& [interface, id] : model_identifiers)
+    {
+        (void)id;
+        summary.interfaces.push_back(interface);
+    }
+
+    const auto binaries_path = path / "binaries";
+    if (std::filesystem::exists(binaries_path))
+    {
+        for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
+            if (entry.is_directory())
+                summary.platforms.push_back(entry.path().filename().string());
+    }
+
+    const bool has_sources = std::filesystem::exists(path / "sources");
+    const bool has_binaries = !summary.platforms.empty();
+
+    if (has_sources)
+        summary.fmuTypes.push_back("Source code");
+    if (has_binaries)
+        summary.fmuTypes.push_back("Binary");
+
+    if (summary.fmuTypes.empty())
+        summary.fmuTypes.push_back("Unknown");
+
+    summary.hasIcon = std::filesystem::exists(path / "model.png");
+
+    // Detect layered standards (simple heuristic based on annotations)
+    xmlXPathObjectPtr annotations_xpath = getXPathNodes(doc, "//VendorAnnotations/Tool");
+    if (annotations_xpath && annotations_xpath->nodesetval)
+    {
+        for (int32_t i = 0; i < annotations_xpath->nodesetval->nodeNr; ++i)
+        {
+            xmlNodePtr node =
+                annotations_xpath->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            auto name = getXmlAttribute(node, "name");
+            if (name && name->find("org.fmi-standard.layered-standard") != std::string::npos)
+                summary.layeredStandards.push_back(*name);
+        }
+        xmlXPathFreeObject(annotations_xpath);
+    }
+
+    cert.setSummary(summary);
+
     xmlFreeDoc(doc);
     xmlCleanupParser();
 

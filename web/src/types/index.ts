@@ -26,9 +26,7 @@ export interface FSLintModule {
     cwd: () => string;
     readFile: (path: string, opts?: { encoding?: string; flags?: string }) => Uint8Array | string;
   };
-  _is_binary: (path: number) => number;
-  _get_file_tree_json: (path: number) => number;
-  _run_validation: (path: number) => void;
+  _run_validation: (path: number) => number;
   stackAlloc: (size: number) => number;
   stackSave: () => number;
   stackRestore: (stack: number) => void;
@@ -43,6 +41,46 @@ export interface FileNode {
   isBinary: boolean;
   size?: number;
   children?: FileNode[];
+}
+
+export interface ModelSummary {
+  standard: string;
+  modelName: string;
+  fmiVersion: string;
+  modelVersion: string;
+  guid: string;
+  generationTool: string;
+  generationDateAndTime: string;
+  author: string;
+  copyright: string;
+  license: string;
+  description: string;
+  platforms: string[];
+  interfaces: string[];
+  layeredStandards: string[];
+  hasIcon: boolean;
+  fmuTypes: string[];
+}
+
+export interface TestResult {
+  test_name: string;
+  status: 'PASS' | 'FAIL' | 'WARNING';
+  messages: string[];
+}
+
+export interface NestedModelResult {
+  name: string;
+  status: 'PASS' | 'FAIL' | 'WARNING';
+  nested_models?: NestedModelResult[];
+}
+
+export interface ValidationResult {
+  report: string;
+  overallStatus: 'PASS' | 'FAIL' | 'WARNING';
+  summary: ModelSummary;
+  results: TestResult[];
+  nested_models: NestedModelResult[];
+  file_tree?: FileNode;
 }
 
 declare global {

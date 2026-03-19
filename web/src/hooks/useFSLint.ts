@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FSLintModule, FileNode } from '../types';
+import { FSLintModule, FileNode, ValidationResult } from '../types';
 
 export const useFSLint = () => {
   const [module, setModule] = useState<FSLintModule | null>(null);
@@ -8,6 +8,7 @@ export const useFSLint = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentWorkDir, setCurrentWorkDir] = useState<string | null>(null);
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -86,26 +87,6 @@ export const useFSLint = () => {
     [module],
   );
 
-  const getFileTree = useCallback(
-    (path: string): FileNode | null => {
-      if (!module) return null;
-      const stack = module.stackSave();
-      const ptr = module.stackAlloc(path.length * 4 + 1);
-      module.stringToUTF8(path, ptr, path.length * 4 + 1);
-      const jsonPtr = module._get_file_tree_json(ptr);
-      const jsonStr = module.UTF8ToString(jsonPtr);
-      module.stackRestore(stack);
-
-      try {
-        return JSON.parse(jsonStr) as FileNode;
-      } catch (e) {
-        console.error('Failed to parse file tree JSON:', e);
-        return null;
-      }
-    },
-    [module],
-  );
-
   const listVFS = useCallback(
     (path: string, indent = '') => {
       if (!module) return;
@@ -136,6 +117,7 @@ export const useFSLint = () => {
       setIsProcessing(true);
       setOutput('');
       setFileTree(null);
+      setValidationResult(null);
 
       if (currentWorkDir) {
         recursiveUnlink(currentWorkDir);
@@ -183,33 +165,27 @@ export const useFSLint = () => {
           module.FS.writeFile(`${workDir}/${relPath}`, data);
         }
 
-        const isSingleArchive =
-          normalizedFiles.length === 1 &&
-          (normalizedFiles[0].relPath.toLowerCase().endsWith('.fmu') ||
-            normalizedFiles[0].relPath.toLowerCase().endsWith('.ssp'));
-
         const target =
           discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
 
+        const stack = module.stackSave();
         const targetPtr = module.stackAlloc(target.length * 4 + 1);
         module.stringToUTF8(target, targetPtr, target.length * 4 + 1);
-        module._run_validation(targetPtr);
+        const resultPtr = module._run_validation(targetPtr);
+        const resultJson = module.UTF8ToString(resultPtr);
+        module.stackRestore(stack);
 
-        let rootPath = discoveredRootRel ? `${workDir}/${discoveredRootRel}` : workDir;
-        if (isSingleArchive) {
-          try {
-            const entries = module.FS.readdir(workDir);
-            const unpackedDir = entries.find(
-              (e) => e.startsWith('model_validation_') || e.startsWith('model_cert_add_'),
-            );
-            if (unpackedDir) {
-              rootPath = `${workDir}/${unpackedDir}`;
-            }
-          } catch (e) {
-            console.error('Failed to find unpacked directory:', e);
+        try {
+          const result = JSON.parse(resultJson) as ValidationResult;
+          setValidationResult(result);
+          setOutput(result.report);
+          if (result.file_tree) {
+            setFileTree(result.file_tree);
           }
+        } catch (e) {
+          console.error('Failed to parse validation result JSON:', e);
+          setOutput((prev) => prev + 'Error: Failed to parse validation result JSON\n');
         }
-        setFileTree(getFileTree(rootPath));
       } catch (err) {
         let errorMessage: string;
         if (err instanceof Error) {
@@ -231,7 +207,7 @@ export const useFSLint = () => {
         setIsProcessing(false);
       }
     },
-    [module, isProcessing, currentWorkDir, recursiveUnlink, mkdirP, getFileTree],
+    [module, isProcessing, currentWorkDir, recursiveUnlink, mkdirP],
   );
 
   return {
@@ -242,6 +218,7 @@ export const useFSLint = () => {
     isProcessing,
     fileTree,
     setFileTree,
+    validationResult,
     processItems,
   };
 };

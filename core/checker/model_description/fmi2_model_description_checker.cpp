@@ -1635,6 +1635,7 @@ ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
     metadata.author = getXmlAttribute(root, "author");
     metadata.copyright = getXmlAttribute(root, "copyright");
     metadata.license = getXmlAttribute(root, "license");
+    metadata.description = getXmlAttribute(root, "description");
     metadata.generationTool = getXmlAttribute(root, "generationTool");
     metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
     metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");

@@ -40,6 +40,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     if (std::filesystem::is_directory(path))
     {
         extract_dir = path;
+        cert.setExtractionPath(extract_dir);
     }
     else
     {
@@ -72,6 +73,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
                 cert.printFooter();
             return cert;
         }
+
+        cert.setExtractionPath(extract_dir);
 
         if (!zipper.extractAll(extract_dir))
         {
