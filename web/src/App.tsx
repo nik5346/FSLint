@@ -130,14 +130,14 @@ function App() {
         top: 50%;
         transform: translateY(-50%);
         color: ${isDark ? '#fff' : '#000'};
-        opacity: ${isDark ? '0.2' : '0.15'};
+        opacity: 0.3;
         font-size: 0.8em;
         pointer-events: none;
         user-select: none;
         white-space: pre;
       }
       .whitespace-marker[data-marker-type="tab"]::before {
-        opacity: ${isDark ? '0.1' : '0.08'};
+        opacity: 0.3;
       }
       .react-syntax-highlighter-line-number {
         color: ${isDark ? '#858585' : '#999999'} !important;
