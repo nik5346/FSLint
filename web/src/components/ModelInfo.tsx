@@ -163,9 +163,11 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
             </div>
           </div>
 
-          <p style={{ margin: '0', lineHeight: '1.6', color: theme.text, fontSize: '1.05em' }}>
-            {summary.description || 'No description provided.'}
-          </p>
+          {summary.description && (
+            <p style={{ margin: '0', lineHeight: '1.6', color: theme.text, fontSize: '1.05em' }}>
+              {summary.description}
+            </p>
+          )}
         </div>
       </div>
 
@@ -199,70 +201,81 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {summary.standard !== 'SSP' && (
-            <>
-              <Section title="FMU Type" theme={theme}>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {summary.fmuTypes.map((t) => (
-                    <span
-                      key={t}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: '6px',
-                        backgroundColor: theme.buttonHoverBg,
-                        fontSize: '0.9em',
-                        border: `1px solid ${theme.border}`,
-                      }}
-                    >
-                      {t}
-                    </span>
-                  ))}
+            <Section title="Capabilities" theme={theme}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', fontSize: '0.95em' }}>
+                  <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
+                    FMU Type:
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {summary.fmuTypes.map((t) => (
+                      <span
+                        key={t}
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: theme.buttonHoverBg,
+                          fontSize: '0.85em',
+                          border: `1px solid ${theme.border}`,
+                        }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </Section>
 
-              <Section title="Implemented Interfaces" theme={theme}>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {summary.interfaces.map((intf) => (
-                    <span
-                      key={intf}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: '6px',
-                        backgroundColor: theme.buttonHoverBg,
-                        fontSize: '0.9em',
-                        border: `1px solid ${theme.border}`,
-                      }}
-                    >
-                      {intf}
-                    </span>
-                  ))}
-                  {summary.interfaces.length === 0 && (
-                    <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
-                  )}
+                <div style={{ display: 'flex', fontSize: '0.95em' }}>
+                  <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
+                    Interfaces:
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {summary.interfaces.map((intf) => (
+                      <span
+                        key={intf}
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: theme.buttonHoverBg,
+                          fontSize: '0.85em',
+                          border: `1px solid ${theme.border}`,
+                        }}
+                      >
+                        {intf}
+                      </span>
+                    ))}
+                    {summary.interfaces.length === 0 && (
+                      <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
+                    )}
+                  </div>
                 </div>
-              </Section>
 
-              <Section title="Supported Platforms" theme={theme}>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {summary.platforms.map((p) => (
-                    <span
-                      key={p}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: '6px',
-                        backgroundColor: theme.buttonHoverBg,
-                        fontSize: '0.9em',
-                        border: `1px solid ${theme.border}`,
-                      }}
-                    >
-                      {p}
-                    </span>
-                  ))}
-                  {summary.platforms.length === 0 && (
-                    <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
-                  )}
+                <div style={{ display: 'flex', fontSize: '0.95em' }}>
+                  <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
+                    Platforms:
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {summary.platforms.map((p) => (
+                      <span
+                        key={p}
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: theme.buttonHoverBg,
+                          fontSize: '0.85em',
+                          border: `1px solid ${theme.border}`,
+                        }}
+                      >
+                        {p}
+                      </span>
+                    ))}
+                    {summary.platforms.length === 0 && (
+                      <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
+                    )}
+                  </div>
                 </div>
-              </Section>
-            </>
+              </div>
+            </Section>
           )}
 
           {summary.layeredStandards.length > 0 && (
