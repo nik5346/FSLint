@@ -158,7 +158,7 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
 
     SECTION("Unused Definitions")
     {
-        validate_warning("warn/unit_unused", "Unit \"s\" is unused.");
+        validate_warning("warn/unit_unused", "Unit \"s\" (line 4) is unused.");
         validate_warning("warn/type_unused", "Type definition \"MyType\" (line 4) is unused.");
     }
 
@@ -470,7 +470,7 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
     SECTION("Unit definitions")
     {
-        validate_warning("unit_unused", "Unit \"s\" is unused");
+        validate_warning("unit_unused", "Unit \"s\" (line 4) is unused");
     }
 
     SECTION("Type definitions")
@@ -733,7 +733,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("Unit definitions")
     {
-        validate_warning("definitions_unused", "Unit \"s\" is unused");
+        validate_warning("definitions_unused", "Unit \"s\" (line 5) is unused");
     }
 
     SECTION("Type definitions")

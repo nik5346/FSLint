@@ -1233,7 +1233,8 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
         {
             if (test.status == TestStatus::PASS)
                 test.status = TestStatus::WARNING;
-            test.messages.push_back("Unit \"" + name + "\" is unused.");
+            test.messages.push_back("Unit \"" + name + "\" (line " + std::to_string(unit_def.sourceline) +
+                                    ") is unused.");
         }
     }
 
