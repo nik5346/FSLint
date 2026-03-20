@@ -75,3 +75,15 @@ export async function getFilesFromEntry(entry: FileSystemEntry): Promise<File[]>
   }
   return [];
 }
+
+export function decodeText(data: Uint8Array): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(data);
+  } catch {
+    try {
+      return new TextDecoder('windows-1252').decode(data);
+    } catch {
+      return new TextDecoder('utf-8').decode(data);
+    }
+  }
+}
