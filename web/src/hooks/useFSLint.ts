@@ -124,7 +124,7 @@ export const useFSLint = () => {
       }
 
       const timestamp = Date.now();
-      const workDir = `/val_${timestamp}`;
+      const workDir = `/model_validation_${timestamp}`;
       const oldCwd = module.FS.cwd();
       setCurrentWorkDir(workDir);
 
@@ -165,8 +165,9 @@ export const useFSLint = () => {
           module.FS.writeFile(`${workDir}/${relPath}`, data);
         }
 
-        const target =
+        const targetPath =
           discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
+        const target = targetPath === '.' ? workDir : `${workDir}/${targetPath}`;
 
         const stack = module.stackSave();
         const targetPtr = module.stackAlloc(target.length * 4 + 1);
