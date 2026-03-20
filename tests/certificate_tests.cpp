@@ -44,4 +44,14 @@ TEST_CASE("Certificate reporting logic", "[certificate]")
         CHECK(cert.isFailed());
         CHECK(cert.getFullReport().find("Result: FAILED") != std::string::npos);
     }
+
+    SECTION("Multiple messages in test result")
+    {
+        cert.printSubsectionHeader("Group 1");
+        cert.printTestResult({"Test 1", TestStatus::FAIL, {"Message 1", "Message 2", "Message 3"}});
+        const std::string report = cert.getFullReport();
+        CHECK(report.find("      ├─ Message 1") != std::string::npos);
+        CHECK(report.find("      ├─ Message 2") != std::string::npos);
+        CHECK(report.find("      └─ Message 3") != std::string::npos);
+    }
 }
