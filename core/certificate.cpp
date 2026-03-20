@@ -212,8 +212,12 @@ void Certificate::printTestResult(const TestResult& test)
     ss << test.test_name;
     log(ss.str());
 
-    for (const auto& msg : test.messages)
-        log("      └─ " + msg);
+    for (size_t i = 0; i < test.messages.size(); ++i)
+    {
+        const bool is_last = (i == test.messages.size() - 1);
+        const std::string marker = is_last ? "└─ " : "├─ ";
+        log("      " + marker + test.messages[i]);
+    }
 }
 
 void Certificate::printSubsectionSummary(bool subsection_valid)
