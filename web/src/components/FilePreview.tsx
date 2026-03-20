@@ -66,6 +66,7 @@ export const whitespaceRenderer = () => {
 
 import { RainbowCsvHighlighter } from './RainbowCsvHighlighter';
 import { MarkdownContent } from './MarkdownContent';
+import { decodeText } from '../utils/file';
 
 export const FilePreview = ({
   selectedFile,
@@ -141,7 +142,7 @@ export const FilePreview = ({
 
   const content = useMemo(() => {
     if (!data || (isBinaryResult && (isStaticImage || isPdf))) return '';
-    return new TextDecoder().decode(data);
+    return decodeText(data);
   }, [data, isBinaryResult, isStaticImage, isPdf]);
 
   useEffect(() => {
