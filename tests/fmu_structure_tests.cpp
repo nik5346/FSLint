@@ -194,6 +194,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     SECTION("Passing Cases")
     {
         validate_pass("tests/data/fmi2/pass/dist_both");
+        validate_pass("tests/data/fmi2/pass/with_doc_entry");
         if (reference_fmus_available())
             validate_pass("tests/reference_fmus/2.0/BouncingBall.fmu");
     }
@@ -287,6 +288,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
     SECTION("Passing Cases")
     {
+        validate_pass("tests/data/fmi3/pass/with_doc_entry");
         if (reference_fmus_available())
             validate_pass("tests/reference_fmus/3.0/BouncingBall.fmu");
     }

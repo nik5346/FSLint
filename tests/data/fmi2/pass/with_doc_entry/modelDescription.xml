@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="2.0" modelName="PassFMI2">
-<CoSimulation modelIdentifier="PassFMI2">
-  <SourceFiles>
-    <File name="dummy.c"/>
-  </SourceFiles>
-</CoSimulation>
+<fmiModelDescription fmiVersion="2.0" modelName="PassFMI2" guid="123">
+  <CoSimulation modelIdentifier="PassFMI2">
+    <SourceFiles>
+      <File name="dummy.c" />
+    </SourceFiles>
+  </CoSimulation>
 </fmiModelDescription>

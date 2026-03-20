@@ -32,7 +32,7 @@
 
 #include "resources_checker.h"
 #include "ssp_description_checker.h"
-#include "ssp_directory_checker.h"
+#include "directory/ssp_directory_checker.h"
 
 #include <filesystem>
 #include <memory>
