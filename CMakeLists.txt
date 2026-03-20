@@ -518,6 +518,7 @@ add_executable(FSLint-tests
     tests/certificate_tests.cpp
     tests/certificate_management_tests.cpp
     tests/fmu_structure_tests.cpp
+    tests/ssp_structure_tests.cpp
     tests/terminals_and_icons_tests.cpp
     tests/binary_checker_tests.cpp
     tests/recursive_checker_tests.cpp

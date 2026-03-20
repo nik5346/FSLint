@@ -320,4 +320,5 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Parameter Mapping (.ssm)**: **Must** be valid against `SystemStructureParameterMapping.xsd`.
 - **Parameter Values (.ssv)**: **Must** be valid against `SystemStructureParameterValues.xsd`.
 - **Signal Dictionary (.ssb)**: **Must** be valid against `SystemStructureSignalDictionary.xsd`.
+- **Documentation Entry Point**: If documentation is provided, the entry point `documentation/index.html` **should** be present as a useful entry point.
 - **Recursive Validation**: All nested SSD/SSM/SSV/SSB files are recursively discovered and **must** be valid against their respective schemas.

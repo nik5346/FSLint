@@ -32,6 +32,7 @@
 
 #include "resources_checker.h"
 #include "ssp_description_checker.h"
+#include "ssp_directory_checker.h"
 
 #include <filesystem>
 #include <memory>
@@ -244,7 +245,7 @@ std::unique_ptr<Checker> CheckerFactory::createDirectoryChecker(const ModelInfo&
     case ModelStandard::SSP1:
         [[fallthrough]];
     case ModelStandard::SSP2:
-        [[fallthrough]];
+        return std::make_unique<SspDirectoryChecker>();
     default:
         return nullptr;
     }
