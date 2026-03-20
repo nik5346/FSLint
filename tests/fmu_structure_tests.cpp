@@ -170,6 +170,8 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 
     SECTION("Warning Cases")
     {
+        validate_warning("tests/data/fmi2/warn/missing_doc_entry",
+                         "Recommended entry point 'documentation/index.html' is missing.");
         validate_warning("tests/data/fmi2/warn/missing_model_png", "Recommended file 'model.png' is missing");
         validate_warning("tests/data/directory/warn/missing_doc_entry",
                          "Recommended entry point 'documentation/index.html' is missing.");
@@ -273,6 +275,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
     SECTION("Warning Cases")
     {
+        validate_warning("tests/data/fmi3/warn/missing_doc_entry",
+                         "Recommended entry point 'documentation/index.html' is missing.");
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
         validate_warning("tests/data/directory/warn/missing_doc_entry",
                          "Recommended entry point 'documentation/index.html' is missing.");
