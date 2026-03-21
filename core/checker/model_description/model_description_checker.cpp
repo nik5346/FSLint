@@ -347,13 +347,14 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     {
         y -= m <= 2;
         const int64_t era = (y >= 0 ? y : y - 399) / 400;
-        const auto yoe = static_cast<uint32_t>(y - era * 400);                // [0, 399]
+        const auto yoe = static_cast<uint32_t>(y - era * 400);               // [0, 399]
         const uint32_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1; // [0, 365]
         const uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;          // [0, 146096]
         return era * 146097 + static_cast<int64_t>(doe) - 719468;
     };
 
-    int64_t total_seconds = calculate_days_since_epoch(year, month, day) * 86400LL + hour * 3600LL + minute * 60LL + second;
+    int64_t total_seconds =
+        calculate_days_since_epoch(year, month, day) * 86400LL + hour * 3600LL + minute * 60LL + second;
 
     // Apply timezone offset
     if (!tz.empty() && tz != "Z")
