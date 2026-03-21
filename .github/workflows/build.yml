@@ -87,16 +87,16 @@ jobs:
             arch: arm64
             runner: ubuntu-24.04-arm
             cmake_args: ""
-          - os: macos-13
-            short_os: macOS
+          - os: macos-latest
+            short_os: darwin
             arch: x64
-            runner: macos-13
-            cmake_args: ""
-          - os: macos-14
-            short_os: macOS
+            runner: macos-latest
+            cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+          - os: macos-latest
+            short_os: darwin
             arch: arm64
-            runner: macos-14
-            cmake_args: ""
+            runner: macos-latest
+            cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64"
 
     steps:
       - uses: actions/checkout@v4
@@ -106,23 +106,16 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install Compilers
-        shell: bash
+      - name: Install GCC 14 (Linux)
+        if: runner.os == 'Linux'
         run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            sudo apt-get update
-            sudo apt-get install -y g++-14
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            brew install gcc@14
-          fi
+          sudo apt-get update
+          sudo apt-get install -y g++-14
 
       - name: Configure CMake
         shell: bash
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
-            export CC=gcc-14
-            export CXX=g++-14
-          elif [ "${{ runner.os }}" == "macOS" ]; then
             export CC=gcc-14
             export CXX=g++-14
           fi
