@@ -86,7 +86,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
                 std::filesystem::remove_all(extract_dir);
 
             cert.printSubsectionHeader("ARCHIVE EXTRACTION");
-            cert.printTestResult({"Archive Extraction", TestStatus::FAIL, {"Failed to extract all files from the archive."}});
+            cert.printTestResult(
+                {"Archive Extraction", TestStatus::FAIL, {"Failed to extract all files from the archive."}});
             cert.printSubsectionSummary(false);
 
             if (!quiet)
