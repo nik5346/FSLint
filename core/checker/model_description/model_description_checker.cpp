@@ -432,8 +432,8 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::string& dt,
-                                                                     sys_seconds generation_time, int32_t release_year,
+void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::string& dt, sys_seconds generation_time,
+                                                                     int32_t release_year,
                                                                      const std::string& fmi_version, TestResult& test)
 {
     const auto fmi_release_time = std::chrono::sys_days{std::chrono::year{release_year} / 1 / 1};
