@@ -516,6 +516,7 @@ export const FilePreview = ({
                     display: 'flex',
                     minWidth: '100%',
                     paddingRight: '15px',
+                    boxSizing: 'border-box',
                   },
                 }}
               >
