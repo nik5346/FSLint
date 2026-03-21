@@ -663,7 +663,10 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     bool found_dynamic = false;
     for (int i = 0; i < ehdr.e_phnum; ++i)
     {
-        if (readFromFile(f, ehdr.e_phoff + i * ehdr.e_phentsize, phdr))
+        if (readFromFile(f,
+                         static_cast<std::streamoff>(ehdr.e_phoff) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(ehdr.e_phentsize),
+                         phdr))
         {
             if (phdr.p_type == PT_DYNAMIC)
             {
@@ -687,6 +690,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     uint32_t symtab_off = 0;
     uint32_t strtab_off = 0;
     uint32_t hash_off = 0;
+    uint32_t gnu_hash_off = 0;
 
     for (const auto& d : dyns)
     {
@@ -704,6 +708,10 @@ static std::set<std::string> parseElf32(std::ifstream& f)
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             hash_off = d.d_un.d_ptr;
             break;
+        case DT_GNU_HASH:
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
+            gnu_hash_off = d.d_un.d_ptr;
+            break;
         default:
             break;
         }
@@ -711,7 +719,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
 
     auto va_to_off = [&](uint32_t va) -> uint32_t
     {
-        f.seekg(ehdr.e_phoff);
+        f.seekg(static_cast<std::streamoff>(ehdr.e_phoff));
         for (int i = 0; i < ehdr.e_phnum; ++i)
         {
             Elf32_Phdr p{};
@@ -728,6 +736,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     symtab_off = va_to_off(symtab_off);
     strtab_off = va_to_off(strtab_off);
     hash_off = va_to_off(hash_off);
+    gnu_hash_off = va_to_off(gnu_hash_off);
 
     uint32_t nsyms = 0;
     if (hash_off != 0)
@@ -736,13 +745,84 @@ static std::set<std::string> parseElf32(std::ifstream& f)
         if (readFromFile(f, static_cast<std::streamoff>(hash_off), nbucket))
             readFromFile(f, static_cast<std::streamoff>(hash_off) + 4, nsyms);
     }
+    else if (gnu_hash_off != 0)
+    {
+        uint32_t nbuckets = 0, symoffset = 0, bloom_size = 0, bloom_shift = 0;
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off), nbuckets);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 4, symoffset);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 8, bloom_size);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 12, bloom_shift);
+
+        uint32_t max_idx = symoffset;
+        std::vector<uint32_t> buckets(nbuckets);
+        f.seekg(static_cast<std::streamoff>(gnu_hash_off) + 16 + static_cast<std::streamoff>(bloom_size) * 4);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets) * 4);
+
+        for (const uint32_t b : buckets)
+            if (b > max_idx)
+                max_idx = b;
+
+        if (max_idx > 0)
+        {
+            bool done = false;
+            uint32_t curr_idx = max_idx;
+            while (!done)
+            {
+                uint32_t chain_val = 0;
+                if (readFromFile(f,
+                                 static_cast<std::streamoff>(gnu_hash_off) + 16 +
+                                     static_cast<std::streamoff>(bloom_size) * 4 +
+                                     static_cast<std::streamoff>(nbuckets) * 4 +
+                                     static_cast<std::streamoff>(curr_idx - symoffset) * 4,
+                                 chain_val))
+                {
+                    if (chain_val & 1)
+                        done = true;
+                    curr_idx++;
+                }
+                else
+                {
+                    done = true;
+                }
+            }
+            nsyms = curr_idx;
+        }
+    }
+
+    if (nsyms == 0)
+    {
+        // Fallback: use section headers if available
+        for (int i = 0; i < ehdr.e_shnum; ++i)
+        {
+            Elf32_Shdr shdr{};
+            if (readFromFile(f,
+                             static_cast<std::streamoff>(ehdr.e_shoff) +
+                                 static_cast<std::streamoff>(i) * static_cast<std::streamoff>(ehdr.e_shentsize),
+                             shdr))
+            {
+                if (shdr.sh_type == SHT_DYNSYM)
+                {
+                    nsyms = (shdr.sh_entsize > 0) ? static_cast<uint32_t>(shdr.sh_size / shdr.sh_entsize) : 0;
+                    symtab_off = shdr.sh_offset;
+                    // Get strtab too
+                    Elf32_Shdr str_shdr{};
+                    if (readFromFile(f,
+                                     static_cast<std::streamoff>(ehdr.e_shoff) +
+                                         static_cast<std::streamoff>(shdr.sh_link) *
+                                             static_cast<std::streamoff>(ehdr.e_shentsize),
+                                     str_shdr))
+                        strtab_off = str_shdr.sh_offset;
+                    break;
+                }
+            }
+        }
+    }
 
     for (uint32_t i = 0; i < nsyms; ++i)
     {
         Elf32_Sym sym{};
-        if (readFromFile(f,
-                         static_cast<std::streamoff>(symtab_off) +
-                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(Elf32_Sym)),
+        if (readFromFile(f, static_cast<std::streamoff>(symtab_off + static_cast<uint32_t>(i) * sizeof(Elf32_Sym)),
                          sym))
         {
             if (ELF32_ST_BIND(sym.st_info) != STB_LOCAL && sym.st_shndx != SHN_UNDEF)
