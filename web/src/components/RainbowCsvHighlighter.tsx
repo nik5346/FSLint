@@ -37,6 +37,7 @@ export const RainbowCsvHighlighter = ({
                 display: 'flex',
                 minWidth: '100%',
                 paddingRight: '15px',
+                boxSizing: 'border-box',
               }}
             >
               <div

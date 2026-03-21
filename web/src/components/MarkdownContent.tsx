@@ -66,6 +66,15 @@ export const MarkdownContent = ({
                 language={match[1]}
                 PreTag="div"
                 renderer={memoizedWhitespaceRenderer}
+                wrapLines={true}
+                lineProps={{
+                  style: {
+                    display: 'flex',
+                    minWidth: '100%',
+                    paddingRight: '15px',
+                    boxSizing: 'border-box',
+                  },
+                }}
                 {...props}
               >
                 {String(children).replace(/\n$/, '')}
