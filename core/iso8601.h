@@ -27,7 +27,7 @@
 
 #include <charconv>
 #include <cmath>
-#include <cstdio>
+#include <cstdlib>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -65,35 +65,34 @@ struct DateTime
 
 // ─── Internal parser ─────────────────────────────────────────────
 
-namespace detail
-{
-
 // Non-owning cursor over the input string
-struct Cursor
+class Cursor
 {
-    const char* p; // current position
-    const char* e; // one past end
+  public:
+    explicit Cursor(std::string_view sv) noexcept : _p(sv.data()), _e(sv.data() + sv.size())
+    {
+    }
 
     [[nodiscard]] bool atEnd() const noexcept
     {
-        return p >= e;
+        return _p >= _e;
     }
 
     [[nodiscard]] char peek(int n = 0) const noexcept
     {
-        return (p + n < e) ? p[n] : '\0';
+        return (_p + n < _e) ? _p[n] : '\0';
     }
 
     char get() noexcept
     {
-        return *p++;
+        return *_p++;
     }
 
     bool eat(char c) noexcept
     {
-        if (p < e && *p == c)
+        if (_p < _e && *_p == c)
         {
-            ++p;
+            ++_p;
             return true;
         }
         return false;
@@ -101,8 +100,22 @@ struct Cursor
 
     [[nodiscard]] int remaining() const noexcept
     {
-        return static_cast<int>(e - p);
+        return static_cast<int>(_e - _p);
     }
+
+    [[nodiscard]] const char* data() const noexcept
+    {
+        return _p;
+    }
+
+    void skip(int n) noexcept
+    {
+        _p += n;
+    }
+
+  private:
+    const char* _p; // current position
+    const char* _e; // one past end
 };
 
 [[nodiscard]] inline bool isDigit(char c) noexcept
@@ -114,14 +127,22 @@ struct Cursor
 [[nodiscard]] inline bool takeDigits(Cursor& c, int n, int& out) noexcept
 {
     if (c.remaining() < n)
+    {
         return false;
+    }
     for (int i = 0; i < n; ++i)
-        if (!isDigit(c.p[i]))
+    {
+        if (!isDigit(c.peek(i)))
+        {
             return false;
+        }
+    }
     out = 0;
     for (int i = 0; i < n; ++i)
-        out = out * 10 + (c.p[i] - '0');
-    c.p += n;
+    {
+        out = out * 10 + (c.peek(i) - '0');
+    }
+    c.skip(n);
     return true;
 }
 
@@ -130,7 +151,9 @@ struct Cursor
 {
     int n = 0;
     while (isDigit(c.peek(n)))
+    {
         ++n;
+    }
     return n;
 }
 
@@ -153,12 +176,16 @@ struct Cursor
         int hh = 0;
         int mm = 0;
         if (!takeDigits(c, 2, hh))
+        {
             return false;
+        }
         c.eat(':');
         if (!c.atEnd() && isDigit(c.peek()))
         {
             if (!takeDigits(c, 2, mm))
+            {
                 return false;
+            }
         }
         tz.offsetMinutes = sign * (hh * 60 + mm);
         return true;
@@ -169,10 +196,12 @@ struct Cursor
 // ── Fractional seconds after the decimal point ───────────────────
 inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
 {
-    const char* fs = c.p;
+    const char* fs = c.data();
     while (!c.atEnd() && isDigit(c.peek()))
-        ++c.p;
-    const int len = static_cast<int>(c.p - fs);
+    {
+        c.skip(1);
+    }
+    const int len = static_cast<int>(c.data() - fs);
     if (len > 0)
     {
         double v = 0;
@@ -181,7 +210,7 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
         const std::string s_str(fs, static_cast<size_t>(len));
         v = std::strtod(s_str.c_str(), &endptr);
 #else
-        std::from_chars(fs, c.p, v);
+        std::from_chars(fs, c.data(), v);
 #endif
         dt.subSecond = v / std::pow(10.0, static_cast<double>(len));
     }
@@ -193,7 +222,9 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
 {
     int hh = 0;
     if (!takeDigits(c, 2, hh))
+    {
         return false;
+    }
     dt.hour = hh;
 
     if (c.peek() == ':')
@@ -202,14 +233,18 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
         c.get(); // ':'
         int mm = 0;
         if (!takeDigits(c, 2, mm))
+        {
             return false;
+        }
         dt.minute = mm;
         if (c.peek() == ':')
         {
             c.get(); // ':'
             int ss = 0;
             if (!takeDigits(c, 2, ss))
+            {
                 return false;
+            }
             dt.second = ss;
             if (c.peek() == '.' || c.peek() == ',')
             {
@@ -223,13 +258,17 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
         // Basic format
         int mm = 0;
         if (!takeDigits(c, 2, mm))
+        {
             return false;
+        }
         dt.minute = mm;
         if (isDigit(c.peek()))
         {
             int ss = 0;
             if (!takeDigits(c, 2, ss))
+            {
                 return false;
+            }
             dt.second = ss;
             if (c.peek() == '.' || c.peek() == ',')
             {
@@ -259,18 +298,24 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
 {
     int yr = 0;
     if (!takeDigits(c, 4, yr))
+    {
         return false;
+    }
     dt.year = yr;
 
     const char nx = c.peek();
 
     // Year only: end of string, or T/t starts time, or tz character
     if (c.atEnd() || nx == 'T' || nx == 't' || nx == 'Z' || nx == '+')
+    {
         return true;
+    }
     // '-' could be: date separator OR negative tz offset (only tz if no digits follow)
     // A date '-' is always followed by a digit or 'W'
     if (nx == '-' && !isDigit(c.peek(1)) && c.peek(1) != 'W')
+    {
         return true; // negative tz, not ours
+    }
 
     // ── Extended format: starts with '-' ─────────────────────────
     if (nx == '-')
@@ -283,13 +328,17 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
             c.get();
             int wk = 0;
             if (!takeDigits(c, 2, wk))
+            {
                 return false;
+            }
             dt.week = wk;
             if (c.eat('-'))
             {
                 int wd = 0;
                 if (!takeDigits(c, 1, wd))
+                {
                     return false;
+                }
                 dt.weekday = wd;
             }
             return true;
@@ -302,7 +351,9 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
             // Ordinal YYYY-DDD
             int yd = 0;
             if (!takeDigits(c, 3, yd))
+            {
                 return false;
+            }
             dt.yearDay = yd;
             return true;
         }
@@ -311,13 +362,17 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
             // Month (and maybe day)
             int mm = 0;
             if (!takeDigits(c, 2, mm))
+            {
                 return false;
+            }
             dt.month = mm;
             if (c.eat('-'))
             {
                 int dd = 0;
                 if (!takeDigits(c, 2, dd))
+                {
                     return false;
+                }
                 dt.day = dd;
             }
             return true;
@@ -331,13 +386,17 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
         c.get();
         int wk = 0;
         if (!takeDigits(c, 2, wk))
+        {
             return false;
+        }
         dt.week = wk;
         if (isDigit(c.peek()))
         {
             int wd = 0;
             if (!takeDigits(c, 1, wd))
+            {
                 return false;
+            }
             dt.weekday = wd;
         }
         return true;
@@ -349,7 +408,9 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
     {
         int yd = 0;
         if (!takeDigits(c, 3, yd))
+        {
             return false;
+        }
         dt.yearDay = yd;
         return true;
     }
@@ -358,10 +419,14 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
         int mm = 0;
         int dd = 0;
         if (!takeDigits(c, 2, mm))
+        {
             return false;
+        }
         dt.month = mm;
         if (!takeDigits(c, 2, dd))
+        {
             return false;
+        }
         dt.day = dd;
         return true;
     }
@@ -369,15 +434,15 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
     {
         int mm = 0;
         if (!takeDigits(c, 2, mm))
+        {
             return false;
+        }
         dt.month = mm;
         return true;
     }
 
     return false;
 }
-
-} // namespace detail
 
 // ─── Public API ──────────────────────────────────────────────────
 
@@ -386,34 +451,46 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
 [[nodiscard]] inline std::optional<DateTime> parse(std::string_view sv) noexcept
 {
     if (sv.empty())
+    {
         return std::nullopt;
-    detail::Cursor c{sv.data(), sv.data() + sv.size()};
+    }
+    Cursor c{sv};
 
     DateTime dt;
 
     // Detect time-only: starts with exactly 2 digits (HH), not 4+ (year).
-    const int leading = detail::countDigits(c);
+    const int leading = countDigits(c);
     if (leading == 2)
     {
         // Time-only string: HH, HH:MM, HH:MM:SS, etc.
-        if (!detail::parseTime(c, dt))
+        if (!parseTime(c, dt))
+        {
             return std::nullopt;
+        }
     }
     else
     {
-        if (!detail::parseDate(c, dt))
+        if (!parseDate(c, dt))
+        {
             return std::nullopt;
+        }
         if (c.eat('T') || c.eat('t'))
         {
-            if (!detail::parseTime(c, dt))
+            if (!parseTime(c, dt))
+            {
                 return std::nullopt;
+            }
         }
     }
 
-    if (!detail::parseTimezone(c, dt.tz))
+    if (!parseTimezone(c, dt.tz))
+    {
         return std::nullopt;
+    }
     if (!c.atEnd())
+    {
         return std::nullopt;
+    }
     return dt;
 }
 

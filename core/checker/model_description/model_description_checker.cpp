@@ -17,13 +17,10 @@
 #include <cstdint>
 #include <ctime>
 #include <filesystem>
-#include <iomanip>
 #include <map>
 #include <optional>
 #include <regex>
 #include <set>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <time.h>
 #include <vector>
@@ -393,7 +390,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         gmtime_r(&current_time, &current_tm);
 #endif
         char buf[64];
-        std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &current_tm);
+        (void)std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &current_tm);
         test.messages.push_back("Generation date and time \"" + dt +
                                 "\" is in the future (current time: " + std::string(buf) + ").");
     }
