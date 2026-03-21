@@ -1,7 +1,7 @@
 #include "model_description_checker.h"
 
 #include "certificate.h"
-#include "date/date.h"
+#include "iso8601.h"
 #include "structured_name_parser.h"
 #include "xml_utils.h"
 
@@ -301,53 +301,103 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         return;
     }
 
-    std::chrono::system_clock::time_point tp;
-    bool parsed = false;
+    // FMI standard recommends YYYY-MM-DDThh:mm:ssZ
+    const std::regex recommended_pattern(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$)");
 
-    // Supported ISO 8601 formats:
-    // 1. YYYY-MM-DDThh:mm:ssZ
-    // 2. YYYY-MM-DDThh:mm:ss.sssZ
-    // 3. YYYY-MM-DDThh:mm:ss+hh:mm
-    // 4. YYYY-MM-DDThh:mm:ss.sss+hh:mm
-
-    std::istringstream in{dt};
-    in >> date::parse("%FT%TZ", tp);
-    if (!in.fail())
-    {
-        parsed = true;
-    }
-    else
-    {
-        in.clear();
-        in.str(dt);
-        in >> date::parse("%FT%T%Ez", tp);
-        if (!in.fail())
-            parsed = true;
-    }
+    const auto parsed = iso8601::parse(dt);
 
     if (!parsed)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Generation date and time \"" + dt +
-                                "\" is invalid or does not match ISO 8601 format (expected YYYY-MM-DDThh:mm:ssZ or "
-                                "similar).");
+                                "\" is invalid or does not match ISO 8601 format.");
         cert.printTestResult(test);
         return;
     }
 
-    // Check if the generation date is in the past
-    auto now = std::chrono::system_clock::now();
-    if (tp > now)
+    if (!std::regex_match(dt, recommended_pattern))
     {
-        test.status = TestStatus::FAIL;
-        std::ostringstream now_str;
-        now_str << date::format("%FT%TZ", date::floor<std::chrono::seconds>(now));
+        test.status = TestStatus::WARNING;
         test.messages.push_back("Generation date and time \"" + dt +
-                                "\" is in the future (current time: " + now_str.str() + ").");
+                                "\" does not match recommended FMI format YYYY-MM-DDThh:mm:ssZ.");
     }
 
-    // Verify it is not before the standard release
-    const std::time_t generation_time = std::chrono::system_clock::to_time_t(tp);
+    // Validate ranges
+    auto check_range = [&](int value, int min, int max, const std::string& name)
+    {
+        if (value != -1 && (value < min || value > max))
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back(name + " value " + std::to_string(value) + " is out of range (" +
+                                    std::to_string(min) + "-" + std::to_string(max) + ").");
+        }
+    };
+
+    check_range(parsed->month, 1, 12, "Month");
+    check_range(parsed->day, 1, 31, "Day");
+    check_range(parsed->hour, 0, 23, "Hour");
+    check_range(parsed->minute, 0, 59, "Minute");
+    check_range(parsed->second, 0, 60, "Second"); // Allow leap seconds
+
+    // FMI specifically mentions dateTime format subset, which usually implies at least a date and a time.
+    if (parsed->hour == -1)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Generation date and time \"" + dt +
+                                "\" is invalid: missing time component (expected YYYY-MM-DDThh:mm:ssZ).");
+    }
+
+    if (test.status == TestStatus::FAIL)
+    {
+        cert.printTestResult(test);
+        return;
+    }
+
+    // Convert to time_t for comparison
+    std::tm tm_time = {};
+    tm_time.tm_year = parsed->year - 1900;
+    tm_time.tm_mon = (parsed->month != -1) ? parsed->month - 1 : 0;
+    tm_time.tm_mday = (parsed->day != -1) ? parsed->day : 1;
+    tm_time.tm_hour = (parsed->hour != -1) ? parsed->hour : 0;
+    tm_time.tm_min = (parsed->minute != -1) ? parsed->minute : 0;
+    tm_time.tm_sec = (parsed->second != -1) ? parsed->second : 0;
+
+#ifdef _WIN32
+    std::time_t generation_time = _mkgmtime(&tm_time);
+#else
+    std::time_t generation_time = timegm(&tm_time);
+#endif
+
+    if (generation_time == -1)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Generation date and time \"" + dt + "\" resulted in an invalid timestamp.");
+        cert.printTestResult(test);
+        return;
+    }
+
+    // Apply offset if not UTC
+    if (!parsed->tz.utc && !parsed->tz.local)
+        generation_time -= static_cast<std::time_t>(parsed->tz.offset_minutes) * 60;
+
+    auto now = std::chrono::system_clock::now();
+    const std::time_t current_time = std::chrono::system_clock::to_time_t(now);
+
+    if (generation_time > current_time)
+    {
+        test.status = TestStatus::FAIL;
+        std::tm current_tm = {};
+#ifdef _WIN32
+        gmtime_s(&current_tm, &current_time);
+#else
+        gmtime_r(&current_time, &current_tm);
+#endif
+        char buf[64];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &current_tm);
+        test.messages.push_back("Generation date and time \"" + dt +
+                                "\" is in the future (current time: " + std::string(buf) + ").");
+    }
+
     checkGenerationDateReleaseYear(dt, generation_time, test);
 
     cert.printTestResult(test);

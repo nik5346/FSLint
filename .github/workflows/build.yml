@@ -19,9 +19,6 @@ jobs:
           python-version: "3.x"
       - name: Install Ninja
         run: python -m pip install ninja
-      - name: Set up MSVC
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
       - name: Check Encodings
         run: python scripts/check_encodings.py
       - name: Configure CMake
@@ -101,37 +98,31 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Configure CMake
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
 
       - name: Build
         run: cmake --build build --config Release --target FSLint-cli
 
-      - name: Prepare Artifact (Unix)
-        if: runner.os != 'Windows'
+      - name: Prepare Artifact
+        shell: bash
         run: |
           mkdir -p dist
-          cp build/FSLint-cli dist/
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            cp build/Release/FSLint-cli.exe dist/
+          else
+            cp build/FSLint-cli dist/
+          fi
           cp LICENSE dist/
           cp -r standard dist/
 
-      - name: Prepare Artifact (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path dist
-          Copy-Item -Path "build/Release/FSLint-cli.exe" -Destination "dist/"
-          Copy-Item -Path "LICENSE" -Destination "dist/"
-          Copy-Item -Path "standard" -Destination "dist/" -Recurse
-
-      - name: Download Reference FMUs (Unix)
-        if: runner.os != 'Windows'
+      - name: Download Reference FMUs
+        shell: bash
         run: curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
-
-      - name: Download Reference FMUs (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Invoke-WebRequest -Uri https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip -OutFile Reference-FMUs.zip
 
       - name: Extract Bouncing Ball FMUs
         shell: python
@@ -155,30 +146,18 @@ jobs:
                   os.remove(dest)
               shutil.move(src, dest)
 
-      - name: Test with Bouncing Ball FMUs (Linux)
-        if: runner.os == 'Linux' && ((matrix.arch == 'x64' && runner.arch == 'X64') || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
+      - name: Test with Bouncing Ball FMUs
+        shell: bash
+        if: (matrix.arch == 'x64' && runner.arch == 'X64') || (matrix.arch == 'arm64' && runner.arch == 'ARM64') || runner.os == 'macOS'
         run: |
-          ./dist/FSLint-cli BouncingBall_1.0_cs.fmu
-          ./dist/FSLint-cli BouncingBall_1.0_me.fmu
-          ./dist/FSLint-cli BouncingBall_2.0.fmu
-          ./dist/FSLint-cli BouncingBall_3.0.fmu
-
-      - name: Test with Bouncing Ball FMUs (macOS)
-        if: runner.os == 'macOS' && ((matrix.arch == 'x64' && (runner.arch == 'X64' || runner.os == 'macOS')) || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
-        run: |
-          ./dist/FSLint-cli BouncingBall_1.0_cs.fmu
-          ./dist/FSLint-cli BouncingBall_1.0_me.fmu
-          ./dist/FSLint-cli BouncingBall_2.0.fmu
-          ./dist/FSLint-cli BouncingBall_3.0.fmu
-
-      - name: Test with Bouncing Ball FMUs (Windows)
-        if: runner.os == 'Windows' && ((matrix.arch == 'x64' && runner.arch == 'X64') || (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
-        shell: pwsh
-        run: |
-          ./dist/FSLint-cli.exe BouncingBall_1.0_cs.fmu
-          ./dist/FSLint-cli.exe BouncingBall_1.0_me.fmu
-          ./dist/FSLint-cli.exe BouncingBall_2.0.fmu
-          ./dist/FSLint-cli.exe BouncingBall_3.0.fmu
+          CLI_BIN="./dist/FSLint-cli"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            CLI_BIN="./dist/FSLint-cli.exe"
+          fi
+          $CLI_BIN BouncingBall_1.0_cs.fmu
+          $CLI_BIN BouncingBall_1.0_me.fmu
+          $CLI_BIN BouncingBall_2.0.fmu
+          $CLI_BIN BouncingBall_3.0.fmu
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
