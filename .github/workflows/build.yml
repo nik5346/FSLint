@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Clang 19 and libc++
+      - name: Install Clang 22 and libc++
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 19
-          sudo apt-get install -y libc++-19-dev libc++abi-19-dev
+          sudo ./llvm.sh 22
+          sudo apt-get install -y libc++-22-dev libc++abi-22-dev
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -31,7 +31,7 @@ jobs:
       - name: Check Encodings
         run: python scripts/check_encodings.py
       - name: Configure CMake
-        run: cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_FLAGS="-stdlib=libc++"
+        run: cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON -DCMAKE_CXX_COMPILER=clang++-22 -DCMAKE_C_COMPILER=clang-22 -DCMAKE_CXX_FLAGS="-stdlib=libc++"
       - name: XML Format Check
         run: cmake --build build --target format-xml-check
       - name: Clang-Format Check
@@ -107,19 +107,19 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install Clang 19 and libc++ (Linux)
+      - name: Install Clang 22 and libc++ (Linux)
         if: runner.os == 'Linux'
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 19
-          sudo apt-get install -y libc++-19-dev libc++abi-19-dev
+          sudo ./llvm.sh 22
+          sudo apt-get install -y libc++-22-dev libc++abi-22-dev
 
       - name: Configure CMake
         shell: bash
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
-            cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }} -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_FLAGS="-stdlib=libc++"
+            cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }} -DCMAKE_CXX_COMPILER=clang++-22 -DCMAKE_C_COMPILER=clang-22 -DCMAKE_CXX_FLAGS="-stdlib=libc++"
           else
             cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
           fi

@@ -27,7 +27,6 @@
 #endif
 
 #if defined(__linux__) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
-#include <sys/types.h> // IWYU pragma: keep
 #include <unistd.h>
 #endif
 
@@ -442,7 +441,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 
 #elif defined(__linux__)
     std::array<char, PATH_MAX> path{};
-    const ssize_t len = readlink("/proc/self/exe", path.data(), path.size() - 1);
+    const auto len = readlink("/proc/self/exe", path.data(), path.size() - 1);
     if (len != -1)
     {
         path[static_cast<size_t>(len)] = '\0';
