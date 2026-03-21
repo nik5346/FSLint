@@ -200,11 +200,18 @@ function App() {
   }, [isResizing, isResizingRules]);
 
   useEffect(() => {
-    if (fileTree) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab('info');
+    if (validationResult) {
+      // If validation failed and we don't even have a file tree, show the certificate
+      if (validationResult.overallStatus === 'FAIL' && !fileTree) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveTab('certificate');
+      } else {
+        // Otherwise default to the info tab
+
+        setActiveTab('info');
+      }
     }
-  }, [fileTree]);
+  }, [validationResult, fileTree]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;

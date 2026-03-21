@@ -101,6 +101,8 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     { label: 'Generation Date', value: summary.generationDateAndTime },
   ].filter((item) => item.value);
 
+  const failedResults = result.results.filter((r) => r.status === 'FAIL');
+
   return (
     <div
       style={{
@@ -112,6 +114,32 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         gap: '24px',
       }}
     >
+      {overallStatus === 'FAIL' && failedResults.length > 0 && (
+        <div
+          style={{
+            padding: '16px',
+            backgroundColor: '#ff555522',
+            border: '1px solid #ff555544',
+            borderRadius: '8px',
+            color: '#ff5555',
+          }}
+        >
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1em', fontWeight: 'bold' }}>
+            Validation Errors
+          </h3>
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            {failedResults.slice(0, 3).map((r, i) => (
+              <li key={i} style={{ marginBottom: '4px' }}>
+                <strong>{r.test_name}:</strong> {r.messages[0] || 'No details provided.'}
+              </li>
+            ))}
+            {failedResults.length > 3 && (
+              <li>... and {failedResults.length - 3} more errors (see Certificate tab)</li>
+            )}
+          </ul>
+        </div>
+      )}
+
       <div
         style={{
           display: 'flex',
@@ -184,27 +212,33 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
       >
         <Section title="Base Information" theme={theme}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {infoItems.map((item) => (
-              <div key={item.label} style={{ display: 'flex', fontSize: '0.95em' }}>
-                <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
-                  {item.label}:
-                </span>
-                <span
-                  style={{
-                    color: theme.text,
-                    fontFamily: item.mono ? 'monospace' : 'inherit',
-                    wordBreak: 'break-all',
-                  }}
-                >
-                  {item.value}
-                </span>
-              </div>
-            ))}
+            {infoItems.length > 0 ? (
+              infoItems.map((item) => (
+                <div key={item.label} style={{ display: 'flex', fontSize: '0.95em' }}>
+                  <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
+                    {item.label}:
+                  </span>
+                  <span
+                    style={{
+                      color: theme.text,
+                      fontFamily: item.mono ? 'monospace' : 'inherit',
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {item.value}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <span style={{ color: theme.muted, fontStyle: 'italic' }}>
+                No base information could be retrieved.
+              </span>
+            )}
           </div>
         </Section>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {summary.standard !== 'SSP' && (
+          {summary.standard !== 'SSP' && summary.standard !== 'UNKNOWN' && (
             <Section title="Capabilities" theme={theme}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', fontSize: '0.95em' }}>
@@ -212,20 +246,24 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
                     FMU Type:
                   </span>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {summary.fmuTypes.map((t) => (
-                      <span
-                        key={t}
-                        style={{
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                          backgroundColor: theme.buttonHoverBg,
-                          fontSize: '0.85em',
-                          border: `1px solid ${theme.border}`,
-                        }}
-                      >
-                        {t}
-                      </span>
-                    ))}
+                    {summary.fmuTypes.length > 0 ? (
+                      summary.fmuTypes.map((t) => (
+                        <span
+                          key={t}
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: theme.buttonHoverBg,
+                            fontSize: '0.85em',
+                            border: `1px solid ${theme.border}`,
+                          }}
+                        >
+                          {t}
+                        </span>
+                      ))
+                    ) : (
+                      <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
+                    )}
                   </div>
                 </div>
 
@@ -234,21 +272,22 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
                     Interfaces:
                   </span>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {summary.interfaces.map((intf) => (
-                      <span
-                        key={intf}
-                        style={{
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                          backgroundColor: theme.buttonHoverBg,
-                          fontSize: '0.85em',
-                          border: `1px solid ${theme.border}`,
-                        }}
-                      >
-                        {intf}
-                      </span>
-                    ))}
-                    {summary.interfaces.length === 0 && (
+                    {summary.interfaces.length > 0 ? (
+                      summary.interfaces.map((intf) => (
+                        <span
+                          key={intf}
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: theme.buttonHoverBg,
+                            fontSize: '0.85em',
+                            border: `1px solid ${theme.border}`,
+                          }}
+                        >
+                          {intf}
+                        </span>
+                      ))
+                    ) : (
                       <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
                     )}
                   </div>
@@ -259,21 +298,22 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
                     Platforms:
                   </span>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {summary.platforms.map((p) => (
-                      <span
-                        key={p}
-                        style={{
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                          backgroundColor: theme.buttonHoverBg,
-                          fontSize: '0.85em',
-                          border: `1px solid ${theme.border}`,
-                        }}
-                      >
-                        {p}
-                      </span>
-                    ))}
-                    {summary.platforms.length === 0 && (
+                    {summary.platforms.length > 0 ? (
+                      summary.platforms.map((p) => (
+                        <span
+                          key={p}
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: theme.buttonHoverBg,
+                            fontSize: '0.85em',
+                            border: `1px solid ${theme.border}`,
+                          }}
+                        >
+                          {p}
+                        </span>
+                      ))
+                    ) : (
                       <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
                     )}
                   </div>
@@ -282,7 +322,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
             </Section>
           )}
 
-          {summary.layeredStandards.length > 0 && (
+          {summary.standard !== 'UNKNOWN' && summary.layeredStandards.length > 0 && (
             <Section title="Layered Standards" theme={theme}>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {summary.layeredStandards.map((s) => (
