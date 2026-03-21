@@ -9,7 +9,6 @@
 
 #include <cctype>
 #include <charconv>
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -113,6 +112,8 @@ struct ModelMetadata
 class ModelDescriptionCheckerBase : public Checker
 {
   public:
+    using sys_seconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
+
     void validate(const std::filesystem::path& path, Certificate& cert) override;
 
     // Non-throwing numeric parsing
@@ -224,9 +225,9 @@ class ModelDescriptionCheckerBase : public Checker
     void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert);
     void checkLogCategories(xmlDocPtr doc, Certificate& cert);
     virtual void checkAnnotations(xmlDocPtr doc, Certificate& cert) = 0;
-    virtual void checkGenerationDateReleaseYear(const std::string& dt, std::chrono::sys_seconds generation_time,
+    virtual void checkGenerationDateReleaseYear(const std::string& dt, sys_seconds generation_time,
                                                 TestResult& test) = 0;
-    void checkGenerationDateReleaseYearBase(const std::string& dt, std::chrono::sys_seconds generation_time,
+    void checkGenerationDateReleaseYearBase(const std::string& dt, sys_seconds generation_time,
                                             int32_t release_year, const std::string& fmi_version, TestResult& test);
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
                                             Certificate& cert);

@@ -2373,8 +2373,7 @@ void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt,
-                                                                 std::chrono::sys_seconds generation_time,
+void Fmi3ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, sys_seconds generation_time,
                                                                  TestResult& test)
 {
     checkGenerationDateReleaseYearBase(dt, generation_time, 2022, "3.0", test);

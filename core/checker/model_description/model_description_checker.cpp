@@ -373,7 +373,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         }
     }
 
-    const std::chrono::sys_seconds tp{std::chrono::seconds(total_seconds)};
+    const sys_seconds tp{std::chrono::seconds(total_seconds)};
 
     // Check if the generation date is in the past and not unreasonably old
     if (test.status == TestStatus::PASS) // Only check if format validation passed
@@ -433,8 +433,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::string& dt,
-                                                                     std::chrono::sys_seconds generation_time,
-                                                                     int32_t release_year,
+                                                                     sys_seconds generation_time, int32_t release_year,
                                                                      const std::string& fmi_version, TestResult& test)
 {
     const auto fmi_release_time = std::chrono::sys_days{std::chrono::year{release_year} / 1 / 1};

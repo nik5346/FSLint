@@ -87,8 +87,7 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt,
-                                                                 std::chrono::sys_seconds generation_time,
+void Fmi1ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, sys_seconds generation_time,
                                                                  TestResult& test)
 {
     checkGenerationDateReleaseYearBase(dt, generation_time, 2010, "1.0", test);
