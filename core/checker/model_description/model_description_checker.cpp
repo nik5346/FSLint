@@ -378,7 +378,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
     // Apply offset if not UTC
     if (!parsed->tz.utc && !parsed->tz.local)
-        generation_time -= static_cast<std::time_t>(parsed->tz.offset_minutes) * 60;
+        generation_time -= static_cast<std::time_t>(parsed->tz.offsetMinutes) * 60;
 
     auto now = std::chrono::system_clock::now();
     const std::time_t current_time = std::chrono::system_clock::to_time_t(now);

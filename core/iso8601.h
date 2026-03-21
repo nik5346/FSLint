@@ -16,8 +16,8 @@
 //   auto r = iso8601::parse("2024-03-15T14:30:00Z");
 //   if (r) {
 //       r->year; r->month; r->day;
-//       r->hour; r->minute; r->second; r->subsecond;
-//       r->tz.utc; r->tz.offset_minutes;
+//       r->hour; r->minute; r->second; r->subSecond;
+//       r->tz.utc; r->tz.offsetMinutes;
 //   }
 //
 // Note: field values are not range-checked (e.g. month 13 will parse).
@@ -39,9 +39,9 @@ namespace iso8601
 
 struct Timezone
 {
-    bool utc = false;       // true  → Z
-    bool local = false;     // true  → no tz suffix
-    int offset_minutes = 0; // e.g. +05:30 → +330, -08:00 → -480
+    bool utc = false;      // true  → Z
+    bool local = false;    // true  → no tz suffix
+    int offsetMinutes = 0; // e.g. +05:30 → +330, -08:00 → -480
 };
 
 struct DateTime
@@ -54,12 +54,12 @@ struct DateTime
     int week = -1;    // 1–53
     int weekday = -1; // 1 (Mon) – 7 (Sun)
     // Ordinal date (-1 = field absent)
-    int yearday = -1; // 1–366
+    int yearDay = -1; // 1–366
     // Time (-1 = field absent)
     int hour = -1;
     int minute = -1;
     int second = -1;
-    double subsecond = 0.0; // fractional seconds [0, 1)
+    double subSecond = 0.0; // fractional seconds [0, 1)
     Timezone tz;
 };
 
@@ -69,12 +69,12 @@ namespace detail
 {
 
 // Non-owning cursor over the input string
-struct Cur
+struct Cursor
 {
     const char* p; // current position
     const char* e; // one past end
 
-    [[nodiscard]] bool at_end() const noexcept
+    [[nodiscard]] bool atEnd() const noexcept
     {
         return p >= e;
     }
@@ -99,55 +99,45 @@ struct Cur
         return false;
     }
 
-    [[nodiscard]] int left() const noexcept
+    [[nodiscard]] int remaining() const noexcept
     {
         return static_cast<int>(e - p);
     }
 };
 
-[[nodiscard]] inline bool isdig(char c) noexcept
+[[nodiscard]] inline bool isDigit(char c) noexcept
 {
     return c >= '0' && c <= '9';
 }
 
 // Consume exactly n decimal digits → out.  Does NOT advance on failure.
-[[nodiscard]] inline bool take(Cur& c, int n, int& out) noexcept
+[[nodiscard]] inline bool takeDigits(Cursor& c, int n, int& out) noexcept
 {
-    if (c.left() < n)
-    {
+    if (c.remaining() < n)
         return false;
-    }
     for (int i = 0; i < n; ++i)
-    {
-        if (!isdig(c.p[i]))
-        {
+        if (!isDigit(c.p[i]))
             return false;
-        }
-    }
     out = 0;
     for (int i = 0; i < n; ++i)
-    {
         out = out * 10 + (c.p[i] - '0');
-    }
     c.p += n;
     return true;
 }
 
 // Count consecutive digits from current position (no advance)
-[[nodiscard]] inline int ndig(const Cur& c) noexcept
+[[nodiscard]] inline int countDigits(const Cursor& c) noexcept
 {
     int n = 0;
-    while (isdig(c.peek(n)))
-    {
+    while (isDigit(c.peek(n)))
         ++n;
-    }
     return n;
 }
 
 // ── Timezone: Z | +hh[:mm] | -hh[:mm] | (empty) ─────────────────
-[[nodiscard]] inline bool parse_tz(Cur& c, Timezone& tz) noexcept
+[[nodiscard]] inline bool parseTimezone(Cursor& c, Timezone& tz) noexcept
 {
-    if (c.at_end())
+    if (c.atEnd())
     {
         tz.local = true;
         return true;
@@ -162,32 +152,26 @@ struct Cur
         const int sign = (c.get() == '+') ? 1 : -1;
         int hh = 0;
         int mm = 0;
-        if (!take(c, 2, hh))
-        {
+        if (!takeDigits(c, 2, hh))
             return false;
-        }
         c.eat(':');
-        if (!c.at_end() && isdig(c.peek()))
+        if (!c.atEnd() && isDigit(c.peek()))
         {
-            if (!take(c, 2, mm))
-            {
+            if (!takeDigits(c, 2, mm))
                 return false;
-            }
         }
-        tz.offset_minutes = sign * (hh * 60 + mm);
+        tz.offsetMinutes = sign * (hh * 60 + mm);
         return true;
     }
     return false; // unexpected character
 }
 
 // ── Fractional seconds after the decimal point ───────────────────
-inline void parse_frac(Cur& c, DateTime& dt) noexcept
+inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
 {
     const char* fs = c.p;
-    while (!c.at_end() && isdig(c.peek()))
-    {
+    while (!c.atEnd() && isDigit(c.peek()))
         ++c.p;
-    }
     const int len = static_cast<int>(c.p - fs);
     if (len > 0)
     {
@@ -199,19 +183,17 @@ inline void parse_frac(Cur& c, DateTime& dt) noexcept
 #else
         std::from_chars(fs, c.p, v);
 #endif
-        dt.subsecond = v / std::pow(10.0, static_cast<double>(len));
+        dt.subSecond = v / std::pow(10.0, static_cast<double>(len));
     }
 }
 
 // ── Time: HH  HH:MM  HH:MM:SS  HH:MM:SS.fff
 //          HH  HHMM   HHMMSS    HHMMSS.fff    ──────────────────────
-[[nodiscard]] inline bool parse_time(Cur& c, DateTime& dt) noexcept
+[[nodiscard]] inline bool parseTime(Cursor& c, DateTime& dt) noexcept
 {
     int hh = 0;
-    if (!take(c, 2, hh))
-    {
+    if (!takeDigits(c, 2, hh))
         return false;
-    }
     dt.hour = hh;
 
     if (c.peek() == ':')
@@ -219,48 +201,40 @@ inline void parse_frac(Cur& c, DateTime& dt) noexcept
         // Extended format
         c.get(); // ':'
         int mm = 0;
-        if (!take(c, 2, mm))
-        {
+        if (!takeDigits(c, 2, mm))
             return false;
-        }
         dt.minute = mm;
         if (c.peek() == ':')
         {
             c.get(); // ':'
             int ss = 0;
-            if (!take(c, 2, ss))
-            {
+            if (!takeDigits(c, 2, ss))
                 return false;
-            }
             dt.second = ss;
             if (c.peek() == '.' || c.peek() == ',')
             {
                 c.get();
-                parse_frac(c, dt);
+                parseFractionalSeconds(c, dt);
             }
         }
     }
-    else if (isdig(c.peek()))
+    else if (isDigit(c.peek()))
     {
         // Basic format
         int mm = 0;
-        if (!take(c, 2, mm))
-        {
+        if (!takeDigits(c, 2, mm))
             return false;
-        }
         dt.minute = mm;
-        if (isdig(c.peek()))
+        if (isDigit(c.peek()))
         {
             int ss = 0;
-            if (!take(c, 2, ss))
-            {
+            if (!takeDigits(c, 2, ss))
                 return false;
-            }
             dt.second = ss;
             if (c.peek() == '.' || c.peek() == ',')
             {
                 c.get();
-                parse_frac(c, dt);
+                parseFractionalSeconds(c, dt);
             }
         }
     }
@@ -281,28 +255,22 @@ inline void parse_frac(Cur& c, DateTime& dt) noexcept
 //   '-' then 2 digits + end   → extended year-month YYYY-MM
 //   4+ digits                 → basic YYYYMMDD (8) or YYYYDDD (7) or YYYYMM (6)
 
-[[nodiscard]] inline bool parse_date(Cur& c, DateTime& dt) noexcept
+[[nodiscard]] inline bool parseDate(Cursor& c, DateTime& dt) noexcept
 {
     int yr = 0;
-    if (!take(c, 4, yr))
-    {
+    if (!takeDigits(c, 4, yr))
         return false;
-    }
     dt.year = yr;
 
     const char nx = c.peek();
 
     // Year only: end of string, or T/t starts time, or tz character
-    if (c.at_end() || nx == 'T' || nx == 't' || nx == 'Z' || nx == '+')
-    {
+    if (c.atEnd() || nx == 'T' || nx == 't' || nx == 'Z' || nx == '+')
         return true;
-    }
     // '-' could be: date separator OR negative tz offset (only tz if no digits follow)
     // A date '-' is always followed by a digit or 'W'
-    if (nx == '-' && !isdig(c.peek(1)) && c.peek(1) != 'W')
-    {
+    if (nx == '-' && !isDigit(c.peek(1)) && c.peek(1) != 'W')
         return true; // negative tz, not ours
-    }
 
     // ── Extended format: starts with '-' ─────────────────────────
     if (nx == '-')
@@ -314,52 +282,42 @@ inline void parse_frac(Cur& c, DateTime& dt) noexcept
         {
             c.get();
             int wk = 0;
-            if (!take(c, 2, wk))
-            {
+            if (!takeDigits(c, 2, wk))
                 return false;
-            }
             dt.week = wk;
             if (c.eat('-'))
             {
                 int wd = 0;
-                if (!take(c, 1, wd))
-                {
+                if (!takeDigits(c, 1, wd))
                     return false;
-                }
                 dt.weekday = wd;
             }
             return true;
         }
 
         // Count how many digits follow
-        const int nd = ndig(c);
+        const int nd = countDigits(c);
         if (nd == 3)
         {
             // Ordinal YYYY-DDD
             int yd = 0;
-            if (!take(c, 3, yd))
-            {
+            if (!takeDigits(c, 3, yd))
                 return false;
-            }
-            dt.yearday = yd;
+            dt.yearDay = yd;
             return true;
         }
         if (nd >= 2)
         {
             // Month (and maybe day)
             int mm = 0;
-            if (!take(c, 2, mm))
-            {
+            if (!takeDigits(c, 2, mm))
                 return false;
-            }
             dt.month = mm;
             if (c.eat('-'))
             {
                 int dd = 0;
-                if (!take(c, 2, dd))
-                {
+                if (!takeDigits(c, 2, dd))
                     return false;
-                }
                 dt.day = dd;
             }
             return true;
@@ -372,58 +330,46 @@ inline void parse_frac(Cur& c, DateTime& dt) noexcept
     {
         c.get();
         int wk = 0;
-        if (!take(c, 2, wk))
-        {
+        if (!takeDigits(c, 2, wk))
             return false;
-        }
         dt.week = wk;
-        if (isdig(c.peek()))
+        if (isDigit(c.peek()))
         {
             int wd = 0;
-            if (!take(c, 1, wd))
-            {
+            if (!takeDigits(c, 1, wd))
                 return false;
-            }
             dt.weekday = wd;
         }
         return true;
     }
 
     // Must be digits
-    const int nd = ndig(c);
+    const int nd = countDigits(c);
     if (nd == 3)
     {
         int yd = 0;
-        if (!take(c, 3, yd))
-        {
+        if (!takeDigits(c, 3, yd))
             return false;
-        }
-        dt.yearday = yd;
+        dt.yearDay = yd;
         return true;
     }
     if (nd >= 4)
     {
         int mm = 0;
         int dd = 0;
-        if (!take(c, 2, mm))
-        {
+        if (!takeDigits(c, 2, mm))
             return false;
-        }
         dt.month = mm;
-        if (!take(c, 2, dd))
-        {
+        if (!takeDigits(c, 2, dd))
             return false;
-        }
         dt.day = dd;
         return true;
     }
     if (nd == 2)
     {
         int mm = 0;
-        if (!take(c, 2, mm))
-        {
+        if (!takeDigits(c, 2, mm))
             return false;
-        }
         dt.month = mm;
         return true;
     }
@@ -440,51 +386,39 @@ inline void parse_frac(Cur& c, DateTime& dt) noexcept
 [[nodiscard]] inline std::optional<DateTime> parse(std::string_view sv) noexcept
 {
     if (sv.empty())
-    {
         return std::nullopt;
-    }
-    detail::Cur c{sv.data(), sv.data() + sv.size()};
+    detail::Cursor c{sv.data(), sv.data() + sv.size()};
 
     DateTime dt;
 
     // Detect time-only: starts with exactly 2 digits (HH), not 4+ (year).
-    const int leading = detail::ndig(c);
+    const int leading = detail::countDigits(c);
     if (leading == 2)
     {
         // Time-only string: HH, HH:MM, HH:MM:SS, etc.
-        if (!detail::parse_time(c, dt))
-        {
+        if (!detail::parseTime(c, dt))
             return std::nullopt;
-        }
     }
     else
     {
-        if (!detail::parse_date(c, dt))
-        {
+        if (!detail::parseDate(c, dt))
             return std::nullopt;
-        }
         if (c.eat('T') || c.eat('t'))
         {
-            if (!detail::parse_time(c, dt))
-            {
+            if (!detail::parseTime(c, dt))
                 return std::nullopt;
-            }
         }
     }
 
-    if (!detail::parse_tz(c, dt.tz))
-    {
+    if (!detail::parseTimezone(c, dt.tz))
         return std::nullopt;
-    }
-    if (!c.at_end())
-    {
+    if (!c.atEnd())
         return std::nullopt;
-    }
     return dt;
 }
 
 /// Returns true if the string is a valid ISO 8601 date/datetime/time.
-[[nodiscard]] inline bool is_valid(std::string_view sv) noexcept
+[[nodiscard]] inline bool isValid(std::string_view sv) noexcept
 {
     return parse(sv).has_value();
 }
