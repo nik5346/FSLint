@@ -69,6 +69,9 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         Zipper zipper;
         if (!zipper.open(path))
         {
+            cert.printSubsectionHeader("ARCHIVE EXTRACTION");
+            cert.printTestResult({"Archive Open", TestStatus::FAIL, {"Failed to open ZIP file for extraction."}});
+            cert.printSubsectionSummary(false);
             if (!quiet)
                 cert.printFooter();
             return cert;
@@ -81,6 +84,11 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
             zipper.close();
             if (std::filesystem::exists(extract_dir))
                 std::filesystem::remove_all(extract_dir);
+
+            cert.printSubsectionHeader("ARCHIVE EXTRACTION");
+            cert.printTestResult({"Archive Extraction", TestStatus::FAIL, {"Failed to extract all files from the archive."}});
+            cert.printSubsectionSummary(false);
+
             if (!quiet)
                 cert.printFooter();
             return cert;
