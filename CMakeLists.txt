@@ -383,6 +383,12 @@ FetchContent_Declare(
   GIT_TAG        v3.4.0
 )
 
+FetchContent_Declare(
+    date
+    GIT_REPOSITORY https://github.com/HowardHinnant/date.git
+    GIT_TAG        v3.0.1
+)
+
 # Prevent dependencies from installing
 set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "" FORCE)
 set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
@@ -401,6 +407,12 @@ FetchContent_GetProperties(Catch2)
 if(NOT catch2_POPULATED)
     FetchContent_Populate(Catch2)
     add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+FetchContent_GetProperties(date)
+if(NOT date_POPULATED)
+    FetchContent_Populate(date)
+    add_subdirectory(${date_SOURCE_DIR} ${date_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
 # ============================================================================
@@ -423,18 +435,11 @@ add_library(FSLint-core STATIC ${CORE_SOURCES})
 file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "core/*")
 foreach(DIR ${HEADER_DIRS})
     if(IS_DIRECTORY ${DIR})
-        file(RELATIVE_PATH REL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/core" "${DIR}")
-        target_include_directories(FSLint-core PUBLIC
-            $<BUILD_INTERFACE:${DIR}>
-            $<INSTALL_INTERFACE:include/${REL_DIR}>
-        )
+        target_include_directories(FSLint-core PUBLIC ${DIR})
     endif()
 endforeach()
 
-target_include_directories(FSLint-core PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/core>
-    $<INSTALL_INTERFACE:include>
-)
+target_include_directories(FSLint-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/core)
 
 # Mark external dependencies as SYSTEM to suppress warnings
 target_include_directories(FSLint-core SYSTEM PRIVATE
@@ -462,11 +467,11 @@ endif()
 
 target_link_libraries(FSLint-core
     PUBLIC
-        $<BUILD_INTERFACE:LibXml2::LibXml2>
-        $<INSTALL_INTERFACE:LibXml2::LibXml2>
+        LibXml2::LibXml2
     PRIVATE
         minizip
         zlibstatic
+        date::date
 )
 
 # Windows-specific libraries
@@ -529,6 +534,7 @@ add_executable(FSLint-tests
 target_link_libraries(FSLint-tests PRIVATE
     FSLint-core
     Catch2::Catch2WithMain
+    date::date
 )
 
 # Mark external dependencies as SYSTEM to suppress warnings

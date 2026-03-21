@@ -107,16 +107,8 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --target FSLint-cli
 
-      - name: Prepare Artifact (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          mkdir -p dist
-          cp build/FSLint-cli dist/
-          cp LICENSE dist/
-          cp -r standard dist/
-
-      - name: Prepare Artifact (macOS)
-        if: runner.os == 'macOS'
+      - name: Prepare Artifact (Unix)
+        if: runner.os != 'Windows'
         run: |
           mkdir -p dist
           cp build/FSLint-cli dist/

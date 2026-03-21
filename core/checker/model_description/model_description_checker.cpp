@@ -1,6 +1,7 @@
 #include "model_description_checker.h"
 
 #include "certificate.h"
+#include "date/date.h"
 #include "structured_name_parser.h"
 #include "xml_utils.h"
 
@@ -300,167 +301,56 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         return;
     }
 
-    // ISO 8601 formats supported:
-    // Basic format: YYYY-MM-DDThh:mm:ssZ
-    // With milliseconds: YYYY-MM-DDThh:mm:ss.sssZ
-    // With timezone offset: YYYY-MM-DDThh:mm:ss+hh:mm or YYYY-MM-DDThh:mm:ss-hh:mm
-    // The FMI standard recommends: YYYY-MM-DDThh:mm:ssZ
-    const std::regex datetime_pattern(
-        R"(^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$)");
-    std::smatch matches;
+    std::chrono::system_clock::time_point tp;
+    bool parsed = false;
 
-    if (!std::regex_match(dt, matches, datetime_pattern))
+    // Supported ISO 8601 formats:
+    // 1. YYYY-MM-DDThh:mm:ssZ
+    // 2. YYYY-MM-DDThh:mm:ss.sssZ
+    // 3. YYYY-MM-DDThh:mm:ss+hh:mm
+    // 4. YYYY-MM-DDThh:mm:ss.sss+hh:mm
+
+    std::istringstream in{dt};
+    in >> date::parse("%FT%TZ", tp);
+    if (!in.fail())
+    {
+        parsed = true;
+    }
+    else
+    {
+        in.clear();
+        in.str(dt);
+        in >> date::parse("%FT%T%Ez", tp);
+        if (!in.fail())
+        {
+            parsed = true;
+        }
+    }
+
+    if (!parsed)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Generation date and time \"" + dt +
-                                "\" does not match ISO 8601 format (expected YYYY-MM-DDThh:mm:ssZ or similar).");
+                                "\" is invalid or does not match ISO 8601 format (expected YYYY-MM-DDThh:mm:ssZ or "
+                                "similar).");
         cert.printTestResult(test);
         return;
     }
 
-    // Validate date/time ranges
-    constexpr int32_t MATCH_INDEX_YEAR = 1;
-    constexpr int32_t MATCH_INDEX_MONTH = 2;
-    constexpr int32_t MATCH_INDEX_DAY = 3;
-    constexpr int32_t MATCH_INDEX_HOUR = 4;
-    constexpr int32_t MATCH_INDEX_MINUTE = 5;
-    constexpr int32_t MATCH_INDEX_SECOND = 6;
-    constexpr int32_t MATCH_INDEX_TIMEZONE = 8;
-
-    constexpr int32_t MIN_MONTH = 1;
-    constexpr int32_t MAX_MONTH = 12;
-    constexpr int32_t MIN_DAY = 1;
-    constexpr int32_t MAX_DAY = 31;
-    constexpr int32_t MAX_HOUR = 23;
-    constexpr int32_t MAX_MINUTE = 59;
-    constexpr int32_t MAX_SECOND = 59;
-
-    const int32_t year = std::stoi(matches[MATCH_INDEX_YEAR]);
-    const int32_t month = std::stoi(matches[MATCH_INDEX_MONTH]);
-    const int32_t day = std::stoi(matches[MATCH_INDEX_DAY]);
-    const int32_t hour = std::stoi(matches[MATCH_INDEX_HOUR]);
-    const int32_t minute = std::stoi(matches[MATCH_INDEX_MINUTE]);
-    const int32_t second = std::stoi(matches[MATCH_INDEX_SECOND]);
-    const std::string timezone = matches[MATCH_INDEX_TIMEZONE];
-
-    if (month < MIN_MONTH || month > MAX_MONTH)
+    // Check if the generation date is in the past
+    auto now = std::chrono::system_clock::now();
+    if (tp > now)
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("Month value " + std::to_string(month) + " is out of range (1-12).");
+        std::ostringstream now_str;
+        now_str << date::format("%FT%TZ", date::floor<std::chrono::seconds>(now));
+        test.messages.push_back("Generation date and time \"" + dt + "\" is in the future (current time: " +
+                                now_str.str() + ").");
     }
 
-    if (day < MIN_DAY || day > MAX_DAY)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Day value " + std::to_string(day) + " is out of range (1-31).");
-    }
-
-    if (hour > MAX_HOUR)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Hour value " + std::to_string(hour) + " is out of range (0-23).");
-    }
-
-    if (minute > MAX_MINUTE)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Minute value " + std::to_string(minute) + " is out of range (0-59).");
-    }
-
-    if (second > MAX_SECOND)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Second value " + std::to_string(second) + " is out of range (0-59).");
-    }
-
-    // Check if the generation date is in the past and not unreasonably old
-    if (test.status == TestStatus::PASS) // Only check if format validation passed
-    {
-        try
-        {
-            constexpr int32_t UNIX_EPOCH_YEAR = 1900;
-            // Parse the datetime string into a time_point
-            std::tm tm_time = {};
-            tm_time.tm_year = year - UNIX_EPOCH_YEAR;
-            tm_time.tm_mon = month - 1;
-            tm_time.tm_mday = day;
-            tm_time.tm_hour = hour;
-            tm_time.tm_min = minute;
-            tm_time.tm_sec = second;
-
-            // Convert to time_t (UTC) using portable function
-#ifdef _WIN32
-            std::time_t generation_time = _mkgmtime(&tm_time);
-#else
-            std::time_t generation_time = timegm(&tm_time);
-#endif
-
-            // Adjust for timezone if not UTC
-            if (timezone != "Z")
-            {
-                // Parse timezone offset (e.g., "+02:00" or "-05:00")
-                const std::regex tz_pattern(R"(([+-])(\d{2}):(\d{2}))");
-                std::smatch tz_matches;
-                if (std::regex_match(timezone, tz_matches, tz_pattern))
-                {
-                    const int32_t tz_sign = (tz_matches[1] == "+") ? 1 : -1;
-                    const int32_t tz_hours = std::stoi(tz_matches[2]);
-                    const int32_t tz_minutes = std::stoi(tz_matches[3]);
-
-                    // Subtract the timezone offset to get UTC time
-                    constexpr int32_t SECONDS_PER_HOUR = 3600;
-                    constexpr int32_t SECONDS_PER_MINUTE = 60;
-                    generation_time -=
-                        static_cast<std::time_t>(tz_sign) * (static_cast<std::time_t>(tz_hours) * SECONDS_PER_HOUR +
-                                                             static_cast<std::time_t>(tz_minutes) * SECONDS_PER_MINUTE);
-                }
-            }
-
-            // Get current time
-            auto now = std::chrono::system_clock::now();
-            const std::time_t current_time = std::chrono::system_clock::to_time_t(now);
-
-            // Check if generation time is in the future
-            if (generation_time > current_time)
-            {
-                test.status = TestStatus::FAIL;
-
-                // Format current time for error message using platform-safe approach
-                std::tm current_tm = {};
-#ifdef _WIN32
-                if (gmtime_s(&current_tm, &current_time) != 0)
-                {
-                    test.messages.push_back("Generation date and time \"" + dt + "\" is in the future.");
-                }
-                else
-#else
-                if (gmtime_r(&current_time, &current_tm) == nullptr)
-                {
-                    test.messages.push_back("Generation date and time \"" + dt + "\" is in the future.");
-                }
-                else
-#endif
-                {
-                    std::ostringstream current_time_str;
-                    current_time_str << std::put_time(&current_tm, "%Y-%m-%dT%H:%M:%SZ");
-                    test.messages.push_back("Generation date and time \"" + dt +
-                                            "\" is in the future (current time: " + current_time_str.str() + ").");
-                }
-            }
-
-            checkGenerationDateReleaseYear(dt, generation_time, test);
-        }
-        catch (const std::logic_error& e)
-        {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Could not verify if generation date is in the past: " + std::string(e.what()));
-        }
-        catch (const std::runtime_error& e)
-        {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Could not verify if generation date is in the past: " + std::string(e.what()));
-        }
-    }
+    // Verify it is not before the standard release
+    const std::time_t generation_time = std::chrono::system_clock::to_time_t(tp);
+    checkGenerationDateReleaseYear(dt, generation_time, test);
 
     cert.printTestResult(test);
 }
