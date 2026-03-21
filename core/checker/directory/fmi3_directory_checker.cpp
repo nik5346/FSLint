@@ -46,10 +46,18 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         auto doc_path = path / "documentation";
 
         // index.html check (recommended entry point)
-        if (!std::filesystem::exists(doc_path / "index.html"))
+        if (std::filesystem::exists(doc_path))
+        {
+            if (!std::filesystem::exists(doc_path / "index.html"))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Documentation directory exists, but recommended entry point 'documentation/index.html' is missing.");
+            }
+        }
+        else
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended entry point 'documentation/index.html' is missing.");
+            test.messages.push_back("Recommended directory 'documentation' is missing. It is recommended to provide documentation.");
         }
 
         // externalDependencies check (must be present even if documentation/ is missing)

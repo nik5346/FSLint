@@ -298,9 +298,6 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         return;
     }
 
-    // FMI standard recommends YYYY-MM-DDThh:mm:ssZ
-    const std::regex recommended_pattern(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$)");
-
     const auto parsed = iso8601::parse(dt);
 
     if (!parsed)
@@ -311,6 +308,9 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         cert.printTestResult(test);
         return;
     }
+
+    // FMI standard recommends YYYY-MM-DDThh:mm:ssZ
+    const std::regex recommended_pattern(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$)");
 
     if (!std::regex_match(dt, recommended_pattern))
     {

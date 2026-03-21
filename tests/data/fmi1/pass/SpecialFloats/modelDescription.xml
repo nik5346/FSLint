@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="SpecialFloats" modelIdentifier="SpecialFloats" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+<fmiModelDescription fmiVersion="1.0" modelName="SpecialFloats" modelIdentifier="SpecialFloats" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" generationDateAndTime="2023-10-27T10:00:00+00:00">
   <UnitDefinitions>
     <BaseUnit unit="m">
       <DisplayUnitDefinition displayUnit="km" gain="INF" offset="0.0" />

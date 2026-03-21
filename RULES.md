@@ -53,6 +53,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Generation Date and Time**:
   - **Must** be in ISO 8601 format (e.g., `YYYY-MM-DDThh:mm:ssZ`).
   - **Must** be a valid date in the past (not after the current system time).
+  - **Should** match the recommended FMI format (`YYYY-MM-DDThh:mm:ssZ`).
 - **Model Version Format**: The `version` attribute of the model. Semantic versioning (`MAJOR.MINOR.PATCH`) is **recommended**.
 - **Copyright Notice**:
   - **Should** begin with ©, "Copyright", or "Copr.".
@@ -101,7 +102,11 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **Mandatory Files**: `modelDescription.xml` **must** be present in the FMU root.
-- **Documentation Entry Point**: A documentation entry point **should** be present (`documentation/_main.html` for FMI 1.0, `documentation/index.html` for FMI 2.0 and later).
+- **Documentation**:
+  - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
+  - If the `documentation/` directory exists, the standard entry point **must** be present (`_main.html` for FMI 1.0, `index.html` for FMI 2.0 and later).
+- **Licenses**:
+  - If a `licenses/` directory exists, it **must** contain a standard entry point (`license.txt` or `license.html`).
 - **Distribution**: The FMU **must** contain at least one implementation (a binary for at least one platform or source code).
 - **Effectively Empty Directories**: Standard directories like `documentation/` or `resources/` **should not** be effectively empty.
 - **Root Entries**: Unknown files or directories in the FMU root **should** be avoided.
@@ -153,7 +158,9 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
-- **Documentation Entry Point**: The **recommended** entry point `documentation/_main.html` **should** be present.
+- **Documentation**:
+  - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
+  - If the `documentation/` directory exists, the standard entry point `_main.html` **must** be present.
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 1.0 headers: `fmiFunctions.h`, `fmiModelFunctions.h`, `fmiModelTypes.h`, `fmiPlatformTypes.h`.
 
 ---
@@ -217,9 +224,11 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
-- **Documentation Entry Point**: The **recommended** entry point `documentation/index.html` **should** be present.
+- **Documentation**:
+  - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
+  - If the `documentation/` directory exists, the standard entry point `index.html` **must** be present.
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` **must** be present.
-- **Licenses**: If a `licenses/` directory exists, it **should** contain an entry point (`license.txt` or `license.html`).
+- **Licenses**: If a `licenses/` directory exists, it **must** contain a standard entry point (`license.txt` or `license.html`).
 - **Source Files Consistency**:
   - Typical source files (extensions: `.c`, `.cc`, `.cpp`, `.cxx`, `.C`, `.c++`) in `sources/` **should** be listed in `modelDescription.xml` `<SourceFiles>`.
   - `SourceFiles/File` entries **must** point to existing files in `sources/`.
@@ -290,7 +299,9 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Directory Structure
 
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` **must** be present.
-- **Documentation Entry Point**: The **recommended** entry point `documentation/index.html` **should** be present.
+- **Documentation**:
+  - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
+  - If the `documentation/` directory exists, the standard entry point `index.html` **must** be present.
 - **Diagrams**: If `documentation/diagram.svg` is provided, a `documentation/diagram.png` fallback **must** also be present.
 - **icon.png Existence**:
   - It is **recommended** to provide an icon `terminalsAndIcons/icon.png` if the `terminalsAndIcons/` directory exists.

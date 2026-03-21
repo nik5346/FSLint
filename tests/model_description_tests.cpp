@@ -147,6 +147,7 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
     SECTION("Metadata")
     {
         validate_warning("warn/generation_date_too_old", "is before the 1.0 standard release (2010)");
+        validate_warning("pass/SpecialFloats", "does not match recommended FMI format");
         validate_warning("warn/author_missing", "Attribute 'author' is missing");
         validate_warning("warn/author_empty", "Attribute 'author' is empty");
         validate_warning("warn/generation_tool_missing", "Attribute 'generationTool' is missing");
