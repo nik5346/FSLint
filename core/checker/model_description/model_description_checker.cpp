@@ -299,56 +299,13 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         return;
     }
 
-    // Use std::chrono::parse (C++20) for robust ISO 8601 validation.
-    // We use a specific name to avoid collision with std::chrono::parse in some contexts.
-    bool date_parsed = false;
-    std::chrono::sys_seconds tp;
+    // Manual ISO 8601 parsing as std::chrono::parse is not universally supported yet.
+    // Supports: YYYY-MM-DD, YYYY-MM-DDThh:mm:ss, YYYY-MM-DDThh:mm:ssZ, YYYY-MM-DDThh:mm:ss+hh:mm, etc.
+    static const std::regex iso8601_regex(
+        R"(^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[\+\-]\d{2}(?::?\d{2})?)?)?$)");
 
-    // Supported formats in order of preference
-    const std::vector<std::string> formats = {
-        "%FT%H:%M:%S%Ez", // 2024-08-21T12:15:13Z or 2024-08-21T12:15:13+02:00
-        "%FT%H:%M:%S%z",  // 2024-08-21T12:15:13+0200
-        "%FT%H:%M:%S",    // 2024-08-21T12:15:13 (local)
-        "%F"              // 2024-08-21
-    };
-
-    for (const auto& fmt : formats)
-    {
-        std::istringstream is{dt};
-        if (fmt == "%FT%H:%M:%S")
-        {
-            // Local time parsing
-            std::chrono::local_seconds ltp;
-            if (is >> std::chrono::parse(fmt, ltp))
-            {
-                tp = std::chrono::sys_seconds(ltp.time_since_epoch());
-                date_parsed = true;
-                break;
-            }
-        }
-        else if (fmt == "%F")
-        {
-            // Date only parsing
-            std::chrono::year_month_day ymd;
-            if (is >> std::chrono::parse(fmt, ymd))
-            {
-                tp = std::chrono::sys_seconds(std::chrono::sys_days{ymd});
-                date_parsed = true;
-                break;
-            }
-        }
-        else
-        {
-            // Standard sys_time parsing (handles timezone)
-            if (is >> std::chrono::parse(fmt, tp))
-            {
-                date_parsed = true;
-                break;
-            }
-        }
-    }
-
-    if (!date_parsed)
+    std::smatch match;
+    if (!std::regex_match(dt, match, iso8601_regex))
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Generation date and time \"" + dt +
@@ -356,6 +313,66 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         cert.printTestResult(test);
         return;
     }
+
+    const int year = std::stoi(match[1]);
+    const int month = std::stoi(match[2]);
+    const int day = std::stoi(match[3]);
+    const int hour = match[4].matched ? std::stoi(match[4]) : 0;
+    const int minute = match[5].matched ? std::stoi(match[5]) : 0;
+    const int second = match[6].matched ? std::stoi(match[6]) : 0;
+    const std::string tz = match[7].matched ? match[7].str() : "";
+
+    // Basic validation of components
+    auto is_leap = [](int y) { return y % 4 == 0 && (y % 100 != 0 || y % 400 == 0); };
+    auto days_in_month = [&](int m, int y)
+    {
+        static const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        if (m == 2 && is_leap(y))
+            return 29;
+        return days[m - 1];
+    };
+
+    if (month < 1 || month > 12 || day < 1 || day > days_in_month(month, year) || hour > 23 || minute > 59 ||
+        second > 61)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Generation date and time \"" + dt +
+                                "\" does not match ISO 8601 format (expected YYYY-MM-DDThh:mm:ssZ or similar).");
+        cert.printTestResult(test);
+        return;
+    }
+
+    // Helper to calculate days since epoch (Gregorian)
+    auto calculate_days_since_epoch = [](int y, int m, int d) -> int64_t
+    {
+        y -= m <= 2;
+        const int64_t era = (y >= 0 ? y : y - 399) / 400;
+        const auto yoe = static_cast<uint32_t>(y - era * 400);                // [0, 399]
+        const uint32_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1; // [0, 365]
+        const uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;          // [0, 146096]
+        return era * 146097 + static_cast<int64_t>(doe) - 719468;
+    };
+
+    int64_t total_seconds = calculate_days_since_epoch(year, month, day) * 86400LL + hour * 3600LL + minute * 60LL + second;
+
+    // Apply timezone offset
+    if (!tz.empty() && tz != "Z")
+    {
+        static const std::regex tz_regex(R"(([\+\-])(\d{2})(?::?(\d{2}))?)");
+        std::smatch tz_match;
+        if (std::regex_match(tz, tz_match, tz_regex))
+        {
+            const int tz_h = std::stoi(tz_match[2]);
+            const int tz_m = tz_match[3].matched ? std::stoi(tz_match[3]) : 0;
+            const int64_t offset = tz_h * 3600LL + tz_m * 60LL;
+            if (tz_match[1] == "+")
+                total_seconds -= offset;
+            else
+                total_seconds += offset;
+        }
+    }
+
+    const std::chrono::sys_seconds tp{std::chrono::seconds(total_seconds)};
 
     // Check if the generation date is in the past and not unreasonably old
     if (test.status == TestStatus::PASS) // Only check if format validation passed

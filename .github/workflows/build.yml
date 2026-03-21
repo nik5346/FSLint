@@ -10,7 +10,7 @@ on:
 jobs:
   lint:
     name: Formatting and Static Analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -24,17 +24,8 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
       - name: Check Encodings
         run: python scripts/check_encodings.py
-      - name: Install GCC 14 (Linux)
-        run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt-get update
-          sudo apt-get install -y g++-14
-
       - name: Configure CMake
-        run: |
-          export CC=gcc-14
-          export CXX=g++-14
-          cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON
+        run: cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON
       - name: XML Format Check
         run: cmake --build build --target format-xml-check
       - name: Clang-Format Check
@@ -81,25 +72,25 @@ jobs:
             arch: arm64
             runner: windows-11-arm
             cmake_args: "-A ARM64"
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             short_os: linux
             arch: x64
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
             cmake_args: ""
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             short_os: linux
             arch: arm64
             runner: ubuntu-24.04-arm
             cmake_args: ""
-          - os: macos-latest
+          - os: macos-13
             short_os: darwin
             arch: x64
-            runner: macos-latest
+            runner: macos-13
             cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
-          - os: macos-latest
+          - os: macos-14
             short_os: darwin
             arch: arm64
-            runner: macos-latest
+            runner: macos-14
             cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64"
 
     steps:
@@ -110,17 +101,8 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install GCC 14 (Linux/macOS)
-        run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-            sudo apt-get update
-            sudo apt-get install -y g++-14
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            brew install gcc@14
-          fi
-
       - name: Configure CMake
+        shell: bash
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
             export CC=gcc-14
