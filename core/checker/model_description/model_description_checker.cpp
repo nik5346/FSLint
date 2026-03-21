@@ -314,9 +314,10 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
     if (!std::regex_match(dt, recommended_pattern))
     {
-        test.status = TestStatus::WARNING;
         test.messages.push_back("Generation date and time \"" + dt +
                                 "\" does not match recommended FMI format YYYY-MM-DDThh:mm:ssZ.");
+        if (test.status == TestStatus::PASS)
+            test.status = TestStatus::WARNING;
     }
 
     // Validate ranges

@@ -120,13 +120,15 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             if (!std::filesystem::exists(doc_path / "_main.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Documentation directory exists, but recommended entry point 'documentation/_main.html' is missing.");
+                test.messages.push_back("Documentation directory exists, but recommended entry point "
+                                        "'documentation/_main.html' is missing.");
             }
         }
         else
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended directory 'documentation' is missing. It is recommended to provide documentation.");
+            test.messages.push_back(
+                "Recommended directory 'documentation' is missing. It is recommended to provide documentation.");
         }
         cert.printTestResult(test);
     }

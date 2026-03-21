@@ -173,6 +173,9 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     SECTION("Failure Cases")
     {
         validate_fail("tests/data/directory/fail/no_impl", "must contain either a precompiled binary");
+        validate_fail("tests/data/fmi2/warn/empty_documentation", "documentation/index.html' is missing");
+        validate_fail("tests/data/fmi2/warn/missing_license_txt",
+                      "licenses/' exists but does not contain a 'license.txt'");
     }
 
     SECTION("Warning Cases")
@@ -180,7 +183,6 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/fmi2/warn/missing_model_png", "Recommended file 'model.png' is missing");
         validate_warning("tests/data/directory/warn/missing_doc_entry",
                          "Recommended directory 'documentation' is missing");
-        validate_warning("tests/data/fmi2/warn/empty_documentation", "Standard directory 'documentation' is empty");
         validate_warning("tests/data/fmi2/warn/empty_extra", "Standard directory 'extra' is empty");
         validate_warning("tests/data/fmi2/warn/empty_terminalsAndIcons",
                          "Standard directory 'terminalsAndIcons' is empty");

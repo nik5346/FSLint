@@ -18,8 +18,14 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
 
-        static const std::set<std::string> fmi3_standard_entries = {
-            "modelDescription.xml", "documentation", "terminalsAndIcons", "sources", "binaries", "resources", "extra"};
+        static const std::set<std::string> fmi3_standard_entries = {"modelDescription.xml",
+                                                                    "documentation",
+                                                                    "terminalsAndIcons",
+                                                                    "sources",
+                                                                    "binaries",
+                                                                    "resources",
+                                                                    "extra",
+                                                                    "licenses"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
@@ -37,6 +43,19 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 test.messages.push_back("Standard directory '" + name + "' is empty.");
             }
         }
+        // Root-level licenses check
+        auto licenses_path = path / "licenses";
+        if (std::filesystem::exists(licenses_path))
+        {
+            if (!std::filesystem::exists(licenses_path / "license.spdx") &&
+                !std::filesystem::exists(licenses_path / "license.txt") &&
+                !std::filesystem::exists(licenses_path / "license.html"))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("'licenses/' exists at root but does not contain "
+                                        "a 'license.spdx', 'license.txt', or 'license.html' entry point.");
+            }
+        }
         cert.printTestResult(test);
     }
 
@@ -51,13 +70,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             if (!std::filesystem::exists(doc_path / "index.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Documentation directory exists, but recommended entry point 'documentation/index.html' is missing.");
+                test.messages.push_back("Documentation directory exists, but recommended entry point "
+                                        "'documentation/index.html' is missing.");
             }
         }
         else
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended directory 'documentation' is missing. It is recommended to provide documentation.");
+            test.messages.push_back(
+                "Recommended directory 'documentation' is missing. It is recommended to provide documentation.");
         }
 
         // externalDependencies check (must be present even if documentation/ is missing)
