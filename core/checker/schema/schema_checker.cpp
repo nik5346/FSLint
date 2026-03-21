@@ -27,13 +27,13 @@
 #endif
 
 #if defined(__linux__) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
+#include <sys/types.h> // IWYU pragma: keep
 #include <unistd.h>
 #endif
 
 #ifdef __linux__
 #include <linux/limits.h>
 #include <string>
-#include <sys/types.h>
 #endif
 
 #ifdef __EMSCRIPTEN__

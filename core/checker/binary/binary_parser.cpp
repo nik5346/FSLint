@@ -188,7 +188,9 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     bool found_dynamic = false;
     for (int i = 0; i < ehdr.e_phnum; ++i)
     {
-        if (readFromFile(f, static_cast<std::streamoff>(ehdr.e_phoff + static_cast<uint64_t>(i) * ehdr.e_phentsize),
+        if (readFromFile(f,
+                         static_cast<std::streamoff>(ehdr.e_phoff) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(ehdr.e_phentsize),
                          phdr))
         {
             if (phdr.p_type == PT_DYNAMIC)
@@ -269,20 +271,20 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         // Read nchain from DT_HASH
         uint32_t nbucket = 0;
         if (readFromFile(f, static_cast<std::streamoff>(hash_off), nbucket))
-            readFromFile(f, static_cast<std::streamoff>(hash_off + 4), nsyms);
+            readFromFile(f, static_cast<std::streamoff>(hash_off) + 4, nsyms);
     }
     else if (gnu_hash_off != 0)
     {
         // DT_GNU_HASH is harder, but we can find the number of symbols by looking at the buckets and chains.
         uint32_t nbuckets = 0, symoffset = 0, bloom_size = 0, bloom_shift = 0;
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off), nbuckets);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 4), symoffset);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 8), bloom_size);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 12), bloom_shift);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 4, symoffset);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 8, bloom_size);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 12, bloom_shift);
 
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
-        f.seekg(static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint64_t>(bloom_size) * 8));
+        f.seekg(static_cast<std::streamoff>(gnu_hash_off) + 16 + static_cast<std::streamoff>(bloom_size) * 8);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets) * 4);
 
@@ -299,9 +301,10 @@ static std::set<std::string> parseElf64(std::ifstream& f)
             {
                 uint32_t chain_val = 0;
                 if (readFromFile(f,
-                                 static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint64_t>(bloom_size) * 8 +
-                                                             static_cast<uint64_t>(nbuckets) * 4 +
-                                                             static_cast<uint64_t>(curr_idx - symoffset) * 4),
+                                 static_cast<std::streamoff>(gnu_hash_off) + 16 +
+                                     static_cast<std::streamoff>(bloom_size) * 8 +
+                                     static_cast<std::streamoff>(nbuckets) * 4 +
+                                     static_cast<std::streamoff>(curr_idx - symoffset) * 4,
                                  chain_val))
                 {
                     if (chain_val & 1)
@@ -323,18 +326,21 @@ static std::set<std::string> parseElf64(std::ifstream& f)
         for (int i = 0; i < ehdr.e_shnum; ++i)
         {
             Elf64_Shdr shdr{};
-            if (readFromFile(f, static_cast<std::streamoff>(ehdr.e_shoff + static_cast<uint64_t>(i) * ehdr.e_shentsize),
+            if (readFromFile(f,
+                             static_cast<std::streamoff>(ehdr.e_shoff) +
+                                 static_cast<std::streamoff>(i) * static_cast<std::streamoff>(ehdr.e_shentsize),
                              shdr))
             {
                 if (shdr.sh_type == SHT_DYNSYM)
                 {
-                    nsyms = static_cast<uint32_t>(shdr.sh_size / shdr.sh_entsize);
+                    nsyms = (shdr.sh_entsize > 0) ? static_cast<uint32_t>(shdr.sh_size / shdr.sh_entsize) : 0;
                     symtab_off = shdr.sh_offset;
                     // Get strtab too
                     Elf64_Shdr str_shdr{};
                     if (readFromFile(f,
-                                     static_cast<std::streamoff>(ehdr.e_shoff + static_cast<uint64_t>(shdr.sh_link) *
-                                                                                    ehdr.e_shentsize),
+                                     static_cast<std::streamoff>(ehdr.e_shoff) +
+                                         static_cast<std::streamoff>(shdr.sh_link) *
+                                             static_cast<std::streamoff>(ehdr.e_shentsize),
                                      str_shdr))
                         strtab_off = str_shdr.sh_offset;
                     break;
@@ -346,7 +352,9 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     for (uint32_t i = 0; i < nsyms; ++i)
     {
         Elf64_Sym sym{};
-        if (readFromFile(f, static_cast<std::streamoff>(symtab_off + static_cast<uint64_t>(i) * sizeof(Elf64_Sym)),
+        if (readFromFile(f,
+                         static_cast<std::streamoff>(symtab_off) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(Elf64_Sym)),
                          sym))
         {
             if (ELF64_ST_BIND(sym.st_info) != STB_LOCAL && sym.st_shndx != SHN_UNDEF)
@@ -618,14 +626,20 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
             if (is_64)
             {
                 nlist_64 nl{};
-                readFromFile(f, static_cast<std::streamoff>(base_off + symoff + i * sizeof(nlist_64)), nl);
+                readFromFile(f,
+                             static_cast<std::streamoff>(base_off) + static_cast<std::streamoff>(symoff) +
+                                 static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(nlist_64)),
+                             nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
             }
             else
             {
                 nlist nl{};
-                readFromFile(f, static_cast<std::streamoff>(base_off + symoff + i * sizeof(nlist)), nl);
+                readFromFile(f,
+                             static_cast<std::streamoff>(base_off) + static_cast<std::streamoff>(symoff) +
+                                 static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(nlist)),
+                             nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
             }
@@ -822,7 +836,9 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     for (uint32_t i = 0; i < nsyms; ++i)
     {
         Elf32_Sym sym{};
-        if (readFromFile(f, static_cast<std::streamoff>(symtab_off + static_cast<uint32_t>(i) * sizeof(Elf32_Sym)),
+        if (readFromFile(f,
+                         static_cast<std::streamoff>(symtab_off) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(Elf32_Sym)),
                          sym))
         {
             if (ELF32_ST_BIND(sym.st_info) != STB_LOCAL && sym.st_shndx != SHN_UNDEF)
@@ -1144,7 +1160,10 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
         for (uint32_t i = 0; i < nfat; ++i)
         {
             fat_arch fa{};
-            readFromFile(f, static_cast<std::streamoff>(sizeof(fat_header) + i * sizeof(fat_arch)), fa);
+            readFromFile(f,
+                         static_cast<std::streamoff>(sizeof(fat_header)) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(fat_arch)),
+                         fa);
             const uint32_t offset = (magic == 0xBEBAFECA) ? swap32(fa.offset) : fa.offset;
             // For FMUs, we just take the first architecture that we can parse
             auto res = parseMachO(f, offset);

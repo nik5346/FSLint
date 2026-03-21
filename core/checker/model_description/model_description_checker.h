@@ -157,7 +157,7 @@ class ModelDescriptionCheckerBase : public Checker
 #if defined(__APPLE__) || defined(__EMSCRIPTEN__) || (defined(__clang__) && defined(_LIBCPP_VERSION))
             // Fallback for platforms without full std::from_chars support for floats
             char* endptr = nullptr;
-            std::string s_str(s);
+            const std::string s_str(s);
             T val = static_cast<T>(std::strtod(s_str.c_str(), &endptr));
             if (endptr == s_str.c_str() + s_str.size())
                 return val;
