@@ -9,6 +9,7 @@
 #include <libxml/xpath.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
