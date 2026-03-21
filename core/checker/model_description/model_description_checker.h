@@ -154,7 +154,7 @@ class ModelDescriptionCheckerBase : public Checker
             if (lower == "-inf" || lower == "-infinity")
                 return -std::numeric_limits<T>::infinity();
 
-#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__) || (defined(__clang__) && defined(_LIBCPP_VERSION))
             // Fallback for platforms without full std::from_chars support for floats
             char* endptr = nullptr;
             std::string s_str(s);

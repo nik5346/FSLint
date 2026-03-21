@@ -11,7 +11,7 @@ execute_process(
 
 project(FSLint VERSION ${PROJECT_VERSION_STRING} LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -313,7 +313,7 @@ endif()
 FetchContent_Declare(
     libxml2
     GIT_REPOSITORY https://github.com/GNOME/libxml2.git
-    GIT_TAG        v2.12.4
+    GIT_TAG        v2.13.6
 )
 
 set(LIBXML2_WITH_TESTS OFF CACHE BOOL "" FORCE)
@@ -368,7 +368,7 @@ endif()
 FetchContent_Declare(
     picosha2
     GIT_REPOSITORY https://github.com/okdshin/PicoSHA2.git
-    GIT_TAG        b699e6c900be6e00152db5a3d123c1db42ea13d0  # Latest commit
+    GIT_TAG        v1.0.1
 )
 
 FetchContent_Declare(
@@ -380,7 +380,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.4.0
+  GIT_TAG        v3.8.0
 )
 
 # Prevent dependencies from installing
