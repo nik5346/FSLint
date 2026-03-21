@@ -34,7 +34,7 @@ jobs:
         run: |
           export CC=gcc-14
           export CXX=g++-14
-          cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON -DCMAKE_CXX_FLAGS="-Wno-error=misc-include-cleaner"
+          cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON
       - name: XML Format Check
         run: cmake --build build --target format-xml-check
       - name: Clang-Format Check
