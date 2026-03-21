@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <map>
 #include <optional>
-#include <string>
 #include <vector>
 
 struct Variable;

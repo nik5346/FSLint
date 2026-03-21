@@ -24,7 +24,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <time.h>
 #include <vector>
 
 void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
@@ -300,8 +299,9 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         return;
     }
 
-    // Use std::chrono::parse (C++20) for robust ISO 8601 validation
-    bool parsed = false;
+    // Use std::chrono::parse (C++20) for robust ISO 8601 validation.
+    // We use a specific name to avoid collision with std::chrono::parse in some contexts.
+    bool date_parsed = false;
     std::chrono::sys_seconds tp;
 
     // Supported formats in order of preference
@@ -322,7 +322,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
             if (is >> std::chrono::parse(fmt, ltp))
             {
                 tp = std::chrono::sys_seconds(ltp.time_since_epoch());
-                parsed = true;
+                date_parsed = true;
                 break;
             }
         }
@@ -333,7 +333,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
             if (is >> std::chrono::parse(fmt, ymd))
             {
                 tp = std::chrono::sys_seconds(std::chrono::sys_days{ymd});
-                parsed = true;
+                date_parsed = true;
                 break;
             }
         }
@@ -342,13 +342,13 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
             // Standard sys_time parsing (handles timezone)
             if (is >> std::chrono::parse(fmt, tp))
             {
-                parsed = true;
+                date_parsed = true;
                 break;
             }
         }
     }
 
-    if (!parsed)
+    if (!date_parsed)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Generation date and time \"" + dt +
@@ -358,7 +358,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     }
 
     // Check if the generation date is in the past and not unreasonably old
-    if (test.status == TestStatus::PASS)
+    if (test.status == TestStatus::PASS) // Only check if format validation passed
     {
         try
         {
