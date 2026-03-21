@@ -1585,7 +1585,8 @@ void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
+void Fmi2ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt,
+                                                                 std::chrono::sys_seconds generation_time,
                                                                  TestResult& test)
 {
     checkGenerationDateReleaseYearBase(dt, generation_time, 2014, "2.0", test);

@@ -223,10 +223,10 @@ class ModelDescriptionCheckerBase : public Checker
     void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert);
     void checkLogCategories(xmlDocPtr doc, Certificate& cert);
     virtual void checkAnnotations(xmlDocPtr doc, Certificate& cert) = 0;
-    virtual void checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
+    virtual void checkGenerationDateReleaseYear(const std::string& dt, std::chrono::sys_seconds generation_time,
                                                 TestResult& test) = 0;
-    void checkGenerationDateReleaseYearBase(const std::string& dt, std::time_t generation_time, int32_t release_year,
-                                            const std::string& fmi_version, TestResult& test);
+    void checkGenerationDateReleaseYearBase(const std::string& dt, std::chrono::sys_seconds generation_time,
+                                            int32_t release_year, const std::string& fmi_version, TestResult& test);
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
                                             Certificate& cert);
     virtual void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,

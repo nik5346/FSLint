@@ -31,7 +31,7 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("model_name_missing", "modelName attribute is missing");
         validate_fail("model_name_empty", "modelName attribute is empty");
 
-        validate_fail("date_invalid", "is out of range");
+        validate_fail("date_invalid", "does not match ISO 8601 format");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
     }
@@ -262,7 +262,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("guid_empty", "guid attribute is empty");
         validate_fail("guid_invalid", "does not match expected GUID format");
 
-        validate_fail("date_invalid", "is out of range");
+        validate_fail("date_invalid", "does not match ISO 8601 format");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
     }
@@ -538,7 +538,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("instantiation_token_missing", "instantiationToken attribute is missing");
         validate_fail("instantiation_token_empty", "instantiationToken attribute is empty");
 
-        validate_fail("date_invalid", "is out of range");
+        validate_fail("date_invalid", "does not match ISO 8601 format");
         validate_fail("date_future", "is in the future");
         validate_fail("date_format", "does not match ISO 8601 format");
     }

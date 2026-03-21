@@ -29,7 +29,8 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void validateFmiVersionValue(const std::string& version, TestResult& test) override;
     void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
     void checkAnnotations(xmlDocPtr doc, Certificate& cert) override;
-    void checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time, TestResult& test) override;
+    void checkGenerationDateReleaseYear(const std::string& dt, std::chrono::sys_seconds generation_time,
+                                        TestResult& test) override;
 
     void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
                               Certificate& cert) override;
