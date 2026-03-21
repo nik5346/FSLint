@@ -412,29 +412,22 @@ file(COPY "${CMAKE_SOURCE_DIR}/standard" DESTINATION "${CMAKE_BINARY_DIR}")
 # Core library
 # ============================================================================
 file(GLOB_RECURSE CORE_SOURCES "core/*.cpp")
-include_directories(core/checker/directory)
-include_directories(core/checker/build_description)
-include_directories(core/checker/terminals_and_icons)
-include_directories(core/checker/binary)
-include_directories(core/checker/resources)
-include_directories(core/checker/ssp)
 add_library(FSLint-core STATIC ${CORE_SOURCES})
 
-file(GLOB_RECURSE HEADER_DIRS LIST_DIRECTORIES true "core/*")
-foreach(DIR ${HEADER_DIRS})
-    if(IS_DIRECTORY ${DIR})
-        file(RELATIVE_PATH REL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/core" "${DIR}")
-        target_include_directories(FSLint-core PUBLIC
-            $<BUILD_INTERFACE:${DIR}>
-            $<INSTALL_INTERFACE:include/${REL_DIR}>
-        )
+target_include_directories(FSLint-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/core)
+
+# Recursively find all directories under core/ and add them to the include path
+file(GLOB_RECURSE CORE_HEADERS LIST_DIRECTORIES true "core/*")
+set(CORE_INCLUDE_DIRS "")
+foreach(HEADER_PATH ${CORE_HEADERS})
+    if(IS_DIRECTORY ${HEADER_PATH})
+        list(APPEND CORE_INCLUDE_DIRS ${HEADER_PATH})
     endif()
 endforeach()
+target_include_directories(FSLint-core PUBLIC ${CORE_INCLUDE_DIRS})
 
-target_include_directories(FSLint-core PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/core>
-    $<INSTALL_INTERFACE:include>
-)
+# Add core/checker to include path for components that include headers without the subdirectory prefix
+target_include_directories(FSLint-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/core/checker)
 
 # Mark external dependencies as SYSTEM to suppress warnings
 target_include_directories(FSLint-core SYSTEM PRIVATE
@@ -462,8 +455,7 @@ endif()
 
 target_link_libraries(FSLint-core
     PUBLIC
-        $<BUILD_INTERFACE:LibXml2::LibXml2>
-        $<INSTALL_INTERFACE:LibXml2::LibXml2>
+        LibXml2::LibXml2
     PRIVATE
         minizip
         zlibstatic
