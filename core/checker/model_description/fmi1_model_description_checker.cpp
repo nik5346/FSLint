@@ -2,8 +2,6 @@
 
 #include "model_description_checker.h"
 
-#include <chrono>
-
 #include "certificate.h"
 
 #include <libxml/tree.h>
