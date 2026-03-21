@@ -128,8 +128,6 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
               backgroundColor: isDark ? '#333' : '#f0f0f0',
               borderRadius: '12px',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               overflow: 'hidden',
               border: `1px solid ${theme.border}`,
               flexShrink: 0,
@@ -138,7 +136,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
             <img
               src={iconUrl}
               alt="FMU Icon"
-              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </div>
         )}
