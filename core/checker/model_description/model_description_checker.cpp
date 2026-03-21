@@ -322,9 +322,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         in.str(dt);
         in >> date::parse("%FT%T%Ez", tp);
         if (!in.fail())
-        {
             parsed = true;
-        }
     }
 
     if (!parsed)
@@ -344,8 +342,8 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         test.status = TestStatus::FAIL;
         std::ostringstream now_str;
         now_str << date::format("%FT%TZ", date::floor<std::chrono::seconds>(now));
-        test.messages.push_back("Generation date and time \"" + dt + "\" is in the future (current time: " +
-                                now_str.str() + ").");
+        test.messages.push_back("Generation date and time \"" + dt +
+                                "\" is in the future (current time: " + now_str.str() + ").");
     }
 
     // Verify it is not before the standard release
