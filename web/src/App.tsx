@@ -63,7 +63,7 @@ function App() {
 
   const [copied, setCopied] = useState(false);
   const [isDark, setIsDark] = useState(true);
-  const [activeTab, setActiveTab] = useState<'info' | 'certificate' | 'rules' | 'explorer'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'certificate' | 'rules' | 'explorer'>('rules');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [rulesText, setRulesText] = useState<string>('');
   const [explorerWidth, setExplorerWidth] = useState(300);
@@ -406,6 +406,11 @@ function App() {
         <button
           className={`tab-btn ${activeTab === 'certificate' ? 'active' : ''}`}
           onClick={() => setActiveTab('certificate')}
+          disabled={!validationResult}
+          style={{
+            opacity: validationResult ? 1 : 0.3,
+            cursor: validationResult ? 'pointer' : 'default',
+          }}
           title="Validation Certificate"
         >
           <svg
