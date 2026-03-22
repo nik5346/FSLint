@@ -77,7 +77,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         Certificate cert2;
         checker.validate("tests/data/fmi1/warn/empty_documentation", cert2);
         REQUIRE(has_fail(cert2));
-        CHECK(has_error_with_text(cert2, "documentation/_main.html' is missing"));
+        CHECK(has_error_with_text(cert2, "The documentation entry point 'documentation/_main.html' is missing."));
     }
 
     SECTION("Warning Cases")
@@ -94,10 +94,10 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         {
             Certificate cert;
             checker.validate("tests/data/fmi1/warn/missing_main_html", cert);
-            CHECK(has_error_with_text(cert, "documentation/_main.html' is missing"));
+            CHECK(has_error_with_text(cert, "The documentation entry point 'documentation/_main.html' is missing."));
         }
         validate_warning("tests/data/directory/warn/missing_doc_entry",
-                         "Recommended directory 'documentation' is missing");
+                         "Providing documentation is recommended.");
         validate_warning("tests/data/fmi1/warn/fmi_headers_in_sources",
                          "Standard FMI header file 'fmiFunctions.h' found in 'sources/' directory");
         validate_warning("tests/data/fmi1/warn/unknown_root_entry", "Unknown file in FMU root: 'unknown.txt'");
@@ -173,16 +173,16 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     SECTION("Failure Cases")
     {
         validate_fail("tests/data/directory/fail/no_impl", "must contain either a precompiled binary");
-        validate_fail("tests/data/fmi2/warn/empty_documentation", "documentation/index.html' is missing");
+        validate_fail("tests/data/fmi2/warn/empty_documentation", "The documentation entry point 'documentation/index.html' is missing.");
         validate_fail("tests/data/fmi2/warn/missing_license_txt",
-                      "licenses/' exists but does not contain a 'license.txt'");
+                      "The license entry point (e.g. 'licenses/license.txt') is missing.");
     }
 
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi2/warn/missing_model_png", "Recommended file 'model.png' is missing");
         validate_warning("tests/data/directory/warn/missing_doc_entry",
-                         "Recommended directory 'documentation' is missing");
+                         "Providing documentation is recommended.");
         validate_warning("tests/data/fmi2/warn/empty_extra", "Standard directory 'extra' is empty");
         validate_warning("tests/data/fmi2/warn/empty_terminalsAndIcons",
                          "Standard directory 'terminalsAndIcons' is empty");
@@ -270,19 +270,19 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
     SECTION("Failure Cases")
     {
-        validate_fail("tests/data/fmi3/fail/no_impl", "at least one implementation");
+        validate_fail("tests/data/fmi3/fail/no_impl", "FMU must contain at least one implementation");
         validate_fail("tests/data/fmi3/fail/missing_diagram_png", "diagram.png is missing");
-        validate_fail("tests/data/fmi3/fail/missing_license", "license.spdx");
+        validate_fail("tests/data/fmi3/fail/missing_license", "The license entry point");
         validate_fail("tests/data/fmi3/fail/missing_ext_deps", "externalDependencies");
         validate_fail("tests/data/fmi3/fail/missing_icon_png", "fallback");
-        validate_fail("tests/data/fmi3/warn/missing_index_html", "documentation/index.html' is missing");
+        validate_fail("tests/data/fmi3/warn/missing_index_html", "The documentation entry point 'documentation/index.html' is missing.");
     }
 
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
         validate_warning("tests/data/directory/warn/missing_doc_entry",
-                         "Recommended directory 'documentation' is missing");
+                         "Providing documentation is recommended.");
         validate_warning("tests/data/fmi3/warn/invalid_binaries_tuple", "does not follow the <arch>-<sys>");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
         validate_warning("tests/data/fmi3/warn/missing_icon_png",
@@ -362,7 +362,7 @@ TEST_CASE("Build Description Validation", "[build_description]")
                       "does not exist or is not a directory in 'sources/' directory");
         validate_fail("tests/data/build_description/fail/version_mismatch", "does not match FMU version");
         validate_fail("tests/data/build_description/fail/id_mismatch", "does not match any modelIdentifier");
-        validate_fail("tests/data/build_description/fail/dotdot", "contains illegal '..' sequence");
+        validate_fail("tests/data/build_description/fail/dotdot", "contains illegal '.' sequence");
     }
 
     SECTION("Warning Cases")

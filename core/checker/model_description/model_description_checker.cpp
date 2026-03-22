@@ -282,8 +282,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (!generation_date_time.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationDateAndTime' is missing. It is recommended to provide a "
-                                "generation timestamp for traceability.");
+        test.messages.push_back("Providing 'generationDateAndTime' is recommended.");
         cert.printTestResult(test);
         return;
     }
@@ -293,7 +292,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (dt.empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationDateAndTime' is empty.");
+        test.messages.push_back("The 'generationDateAndTime' attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -315,7 +314,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (!std::regex_match(dt, recommended_pattern))
     {
         test.messages.push_back("Generation date and time \"" + dt +
-                                "\" does not match recommended FMI format YYYY-MM-DDThh:mm:ssZ.");
+                                "\" should follow the recommended FMI format (YYYY-MM-DDThh:mm:ssZ).");
         if (test.status == TestStatus::PASS)
             test.status = TestStatus::WARNING;
     }
@@ -464,8 +463,7 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
     if (!version.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'version' is missing. It is recommended to provide a version number for "
-                                "the model.");
+        test.messages.push_back("Providing a model version is recommended.");
     }
     else if (version->empty())
     {
@@ -496,7 +494,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     if (!copyright.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'copyright' is missing. It is recommended to provide a copyright notice.");
+        test.messages.push_back("Providing a copyright notice is recommended.");
     }
     else if (copyright->empty())
     {
@@ -573,14 +571,12 @@ void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>&
     if (!license.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back(
-            "Attribute 'license' is missing. It is recommended to specify a license (e.g., 'BSD', 'MIT', "
-            "'Proprietary').");
+        test.messages.push_back("Providing a license is recommended.");
     }
     else if (license->empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'license' is empty.");
+        test.messages.push_back("The 'license' attribute is empty.");
     }
 
     cert.printTestResult(test);
@@ -593,12 +589,12 @@ void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& 
     if (!author.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'author' is missing. It is recommended to provide the name of the author.");
+        test.messages.push_back("Providing the author name is recommended.");
     }
     else if (author->empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'author' is empty.");
+        test.messages.push_back("The 'author' attribute is empty.");
     }
 
     cert.printTestResult(test);
@@ -611,13 +607,12 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
     if (!tool.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationTool' is missing. It is recommended to provide the name of the "
-                                "tool that generated the model.");
+        test.messages.push_back("Providing the generation tool name is recommended.");
     }
     else if (tool->empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'generationTool' is empty.");
+        test.messages.push_back("The 'generationTool' attribute is empty.");
     }
 
     cert.printTestResult(test);

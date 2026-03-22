@@ -78,15 +78,13 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             if (!std::filesystem::exists(doc_path / "index.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Documentation directory exists, but recommended entry point "
-                                        "'documentation/index.html' is missing.");
+                test.messages.push_back("The documentation entry point 'documentation/index.html' is missing.");
             }
         }
         else
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back(
-                "Recommended directory 'documentation' is missing. It is recommended to provide documentation.");
+            test.messages.push_back("Providing documentation is recommended.");
         }
 
         if (needs_execution_tool)
@@ -108,8 +106,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 !std::filesystem::exists(licenses_path / "license.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("'licenses/' exists but does not contain "
-                                        "a 'license.txt' or 'license.html' entry point.");
+                test.messages.push_back("The license entry point (e.g. 'licenses/license.txt') is missing.");
             }
         }
         cert.printTestResult(test);

@@ -109,11 +109,6 @@ class Certificate
         return _report_buffer;
     }
 
-    std::vector<TestResult>& getResults()
-    {
-        return _results;
-    }
-
     const std::vector<TestResult>& getResults() const
     {
         return _results;

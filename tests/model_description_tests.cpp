@@ -148,13 +148,13 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
     {
         validate_warning("warn/generation_date_too_old", "is before the 1.0 standard release (2010)");
         validate_warning("pass/SpecialFloats", "does not match recommended FMI format");
-        validate_warning("warn/author_missing", "Attribute 'author' is missing");
-        validate_warning("warn/author_empty", "Attribute 'author' is empty");
-        validate_warning("warn/generation_tool_missing", "Attribute 'generationTool' is missing");
-        validate_warning("warn/license_missing", "Attribute 'license' is missing");
-        validate_warning("warn/copyright_missing", "Attribute 'copyright' is missing");
-        validate_warning("warn/model_version_missing", "Attribute 'version' is missing");
-        validate_warning("warn/generation_date_missing", "Attribute 'generationDateAndTime' is missing");
+        validate_warning("warn/author_missing", "Providing the author name is recommended.");
+        validate_warning("warn/author_empty", "The 'author' attribute is empty.");
+        validate_warning("warn/generation_tool_missing", "Providing the generation tool name is recommended.");
+        validate_warning("warn/license_missing", "Providing a license is recommended.");
+        validate_warning("warn/copyright_missing", "Providing a copyright notice is recommended.");
+        validate_warning("warn/model_version_missing", "Providing a model version is recommended.");
+        validate_warning("warn/generation_date_missing", "Providing 'generationDateAndTime' is recommended.");
     }
 
     SECTION("Unused Definitions")
@@ -438,28 +438,24 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
     SECTION("Metadata")
     {
         validate_warning("author_missing",
-                         "Attribute 'author' is missing. It is recommended to provide the name of the author.");
-        validate_warning("author_empty", "Attribute 'author' is empty.");
-        validate_warning("generation_tool_missing", "Attribute 'generationTool' is missing. It is recommended to "
-                                                    "provide the name of the tool that generated the model.");
-        validate_warning("generation_tool_empty", "Attribute 'generationTool' is empty.");
-        validate_warning("license_missing", "Attribute 'license' is missing. It is recommended to specify a license "
-                                            "(e.g., 'BSD', 'MIT', 'Proprietary').");
-        validate_warning("license_empty", "Attribute 'license' is empty.");
+                         "Providing the author name is recommended.");
+        validate_warning("author_empty", "The 'author' attribute is empty.");
+        validate_warning("generation_tool_missing", "Providing the generation tool name is recommended.");
+        validate_warning("generation_tool_empty", "The 'generationTool' attribute is empty.");
+        validate_warning("license_missing", "Providing a license is recommended.");
+        validate_warning("license_empty", "The 'license' attribute is empty.");
         validate_warning("copyright_missing",
-                         "Attribute 'copyright' is missing. It is recommended to provide a copyright notice.");
-        validate_warning("copyright_empty", "Attribute 'copyright' is empty.");
+                         "Providing a copyright notice is recommended.");
+        validate_warning("copyright_empty", "The 'copyright' attribute is empty.");
         validate_warning("copyright_format_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
         validate_warning("copyright_format_no_year", "should include the year of publication");
         validate_warning("copyright_format_no_holder", "should include the name of the copyright holder");
         validate_warning(
             "model_version_missing",
-            "Attribute 'version' is missing. It is recommended to provide a version number for the model.");
+            "Providing a model version is recommended.");
         validate_warning("model_version_empty", "Attribute 'version' is empty.");
-        validate_warning("generation_date_and_time_missing", "Attribute 'generationDateAndTime' is missing. It is "
-                                                             "recommended to provide a generation timestamp for "
-                                                             "traceability.");
-        validate_warning("generation_date_and_time_empty", "Attribute 'generationDateAndTime' is empty.");
+        validate_warning("generation_date_and_time_missing", "Providing 'generationDateAndTime' is recommended.");
+        validate_warning("generation_date_and_time_empty", "The 'generationDateAndTime' attribute is empty.");
         validate_warning("generation_date_and_time_old", "is before the 2.0 standard release (2014)");
         validate_warning("generation_date_and_time_too_old", "is before the 2.0 standard release (2014)");
     }
@@ -700,23 +696,17 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("Metadata")
     {
-        validate_warning("metadata_missing",
-                         "Attribute 'author' is missing. It is recommended to provide the name of the author.");
-        validate_warning("metadata_missing", "Attribute 'generationTool' is missing. It is recommended to provide the "
-                                             "name of the tool that generated the model.");
-        validate_warning("metadata_missing", "Attribute 'license' is missing. It is recommended to specify a license "
-                                             "(e.g., 'BSD', 'MIT', 'Proprietary').");
-        validate_warning("metadata_missing",
-                         "Attribute 'copyright' is missing. It is recommended to provide a copyright notice.");
+        validate_warning("metadata_missing", "Providing the author name is recommended.");
+        validate_warning("metadata_missing", "Providing the generation tool name is recommended.");
+        validate_warning("metadata_missing", "Providing a license is recommended.");
+        validate_warning("metadata_missing", "Providing a copyright notice is recommended.");
 
         validate_warning(
             "model_version_missing",
-            "Attribute 'version' is missing. It is recommended to provide a version number for the model.");
+            "Providing a model version is recommended.");
         validate_warning("model_version_empty", "Attribute 'version' is empty.");
 
-        validate_warning("generation_date_and_time_missing", "Attribute 'generationDateAndTime' is missing. It is "
-                                                             "recommended to provide a generation timestamp for "
-                                                             "traceability.");
+        validate_warning("generation_date_and_time_missing", "Providing 'generationDateAndTime' is recommended.");
         validate_warning("generation_date_and_time_old", "is before the 3.0 standard release (2022)");
         validate_warning("generation_date_and_time_too_old", "is before the 3.0 standard release (2022)");
 
