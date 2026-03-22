@@ -18,8 +18,14 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
 
-        static const std::set<std::string> fmi3_standard_entries = {
-            "modelDescription.xml", "documentation", "terminalsAndIcons", "sources", "binaries", "resources", "extra"};
+        static const std::set<std::string> fmi3_standard_entries = {"modelDescription.xml",
+                                                                    "documentation",
+                                                                    "terminalsAndIcons",
+                                                                    "sources",
+                                                                    "binaries",
+                                                                    "resources",
+                                                                    "extra",
+                                                                    "licenses"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
@@ -37,6 +43,18 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 test.messages.push_back("Standard directory '" + name + "' is empty.");
             }
         }
+        // Root-level licenses check
+        auto licenses_path = path / "licenses";
+        if (std::filesystem::exists(licenses_path))
+        {
+            if (!std::filesystem::exists(licenses_path / "license.spdx") &&
+                !std::filesystem::exists(licenses_path / "license.txt") &&
+                !std::filesystem::exists(licenses_path / "license.html"))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("The license entry point (e.g. 'licenses/license.txt') is missing.");
+            }
+        }
         cert.printTestResult(test);
     }
 
@@ -46,10 +64,18 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         auto doc_path = path / "documentation";
 
         // index.html check (recommended entry point)
-        if (!std::filesystem::exists(doc_path / "index.html"))
+        if (std::filesystem::exists(doc_path))
+        {
+            if (!std::filesystem::exists(doc_path / "index.html"))
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("The documentation entry point 'documentation/index.html' is missing.");
+            }
+        }
+        else
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended entry point 'documentation/index.html' is missing.");
+            test.messages.push_back("Providing documentation is recommended.");
         }
 
         // externalDependencies check (must be present even if documentation/ is missing)
@@ -94,9 +120,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         !std::filesystem::exists(licenses_path / "license.html"))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("'documentation/" + std::string(entry_name) +
-                                                "/' exists but does not contain "
-                                                "a 'license.spdx', 'license.txt', or 'license.html' entry point.");
+                        test.messages.push_back("The license entry point (e.g. 'documentation/" +
+                                                std::string(entry_name) + "/license.txt') is missing.");
                     }
                 }
             }
