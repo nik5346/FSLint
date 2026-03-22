@@ -106,7 +106,13 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
 
       - name: Build
-        run: cmake --build build --config Release --target FSLint-cli
+        run: cmake --build build --config Release --target FSLint-cli FSLint-tests
+
+      - name: Run Tests
+        shell: bash
+        run: |
+          cd build
+          ctest --output-on-failure -C Release
 
       - name: Prepare Artifact
         shell: bash
@@ -154,10 +160,10 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             CLI_BIN="./dist/FSLint-cli.exe"
           fi
-          $CLI_BIN BouncingBall_1.0_cs.fmu
-          $CLI_BIN BouncingBall_1.0_me.fmu
-          $CLI_BIN BouncingBall_2.0.fmu
-          $CLI_BIN BouncingBall_3.0.fmu
+          $CLI_BIN BouncingBall_1.0_cs.fmu > fslint_cli_10cs.log 2>&1
+          $CLI_BIN BouncingBall_1.0_me.fmu > fslint_cli_10me.log 2>&1
+          $CLI_BIN BouncingBall_2.0.fmu > fslint_cli_20.log 2>&1
+          $CLI_BIN BouncingBall_3.0.fmu > fslint_cli_30.log 2>&1
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
