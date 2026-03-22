@@ -214,40 +214,37 @@ export const FilePreview = ({
 
     // Find all src and href attributes using a more robust regex
     const attrRegex = /(src|href)\s*=\s*(?:(['"])(.*?)\2|([^'">\s]+))/gi;
-    const processed = content.replace(
-      attrRegex,
-      (full, attr, _quote, quotedPath, unquotedPath) => {
-        const relPath = (quotedPath || unquotedPath || '').trim();
+    const processed = content.replace(attrRegex, (full, attr, _quote, quotedPath, unquotedPath) => {
+      const relPath = (quotedPath || unquotedPath || '').trim();
 
-        if (
-          !relPath ||
-          relPath.startsWith('http') ||
-          relPath.startsWith('data:') ||
-          relPath.startsWith('#') ||
-          relPath.startsWith('mailto:') ||
-          relPath.startsWith('javascript:')
-        ) {
-          return full;
-        }
+      if (
+        !relPath ||
+        relPath.startsWith('http') ||
+        relPath.startsWith('data:') ||
+        relPath.startsWith('#') ||
+        relPath.startsWith('mailto:') ||
+        relPath.startsWith('javascript:')
+      ) {
+        return full;
+      }
 
-        const resolvedPath = resolve(dir, relPath);
-        if (!resolvedPath) return full;
+      const resolvedPath = resolve(dir, relPath);
+      if (!resolvedPath) return full;
 
-        try {
-          const fileData = module.FS.readFile(resolvedPath) as Uint8Array;
-          const subExt = resolvedPath.split('.').pop()?.toLowerCase() || '';
-          const type = mimeMap[subExt] || 'application/octet-stream';
+      try {
+        const fileData = module.FS.readFile(resolvedPath) as Uint8Array;
+        const subExt = resolvedPath.split('.').pop()?.toLowerCase() || '';
+        const type = mimeMap[subExt] || 'application/octet-stream';
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const blob = new Blob([fileData as any], { type });
-          const url = URL.createObjectURL(blob);
-          htmlBlobUrls.current.push(url);
-          return `${attr}="${url}"`;
-        } catch {
-          return full;
-        }
-      },
-    );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const blob = new Blob([fileData as any], { type });
+        const url = URL.createObjectURL(blob);
+        htmlBlobUrls.current.push(url);
+        return `${attr}="${url}"`;
+      } catch {
+        return full;
+      }
+    });
 
     setHtmlContent(processed);
 
