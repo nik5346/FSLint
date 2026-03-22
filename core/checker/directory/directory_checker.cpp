@@ -152,7 +152,10 @@ bool DirectoryChecker::isEffectivelyEmpty(const std::filesystem::path& path)
         return false;
 
     for (const auto& entry : std::filesystem::directory_iterator(path))
-        if (entry.path().filename() != ".gitkeep")
+    {
+        const auto filename = entry.path().filename();
+        if (filename != ".gitkeep" && filename != ".DS_Store" && filename != "Thumbs.db")
             return false;
+    }
     return true;
 }

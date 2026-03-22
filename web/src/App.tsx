@@ -230,11 +230,11 @@ function App() {
     if (window.showDirectoryPicker) {
       try {
         const handle = await window.showDirectoryPicker();
-        const files = await getFilesFromHandle(handle);
-        if (files.length > 0) {
+        const items = await getFilesFromHandle(handle);
+        if (items.files.length > 0 || items.directories.length > 0) {
           setFileTree(null);
           setSelectedFile(null);
-          await processItems(files);
+          await processItems(items);
         }
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
@@ -251,18 +251,20 @@ function App() {
     event.preventDefault();
     const items = event.dataTransfer.items;
     if (items && items.length > 0) {
-      const files: File[] = [];
+      const allFiles: File[] = [];
+      const allDirs: string[] = [];
       for (let i = 0; i < items.length; i++) {
         const entry = items[i].webkitGetAsEntry();
         if (entry) {
-          const entryFiles = await getFilesFromEntry(entry);
-          files.push(...entryFiles);
+          const collected = await getFilesFromEntry(entry);
+          allFiles.push(...collected.files);
+          allDirs.push(...collected.directories);
         }
       }
-      if (files.length > 0) {
+      if (allFiles.length > 0 || allDirs.length > 0) {
         setFileTree(null);
         setSelectedFile(null);
-        await processItems(files);
+        await processItems({ files: allFiles, directories: allDirs });
       }
     }
   };
