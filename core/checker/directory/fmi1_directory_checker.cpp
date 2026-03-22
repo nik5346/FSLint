@@ -120,8 +120,8 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             if (!std::filesystem::exists(doc_path / "_main.html") && !std::filesystem::exists(doc_path / "index.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    "The documentation entry point ('documentation/_main.html' or 'documentation/index.html') is missing.");
+                test.messages.push_back("The documentation entry point ('documentation/_main.html' or "
+                                        "'documentation/index.html') is missing.");
             }
         }
         else
