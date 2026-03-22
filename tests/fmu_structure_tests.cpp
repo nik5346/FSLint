@@ -103,6 +103,34 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         validate_warning("tests/data/fmi1/pass/TestME", "Recommended file 'model.png' is missing");
         validate_warning("tests/data/fmi1/warn/empty_resources", "Standard directory 'resources' is empty");
     }
+
+    SECTION("Effectively Empty (Hidden Files)")
+    {
+        const fs::path temp_dir = "tests/data/fmi1/effectively_empty";
+        fs::create_directories(temp_dir / "resources");
+        fs::copy_file("tests/data/fmi1/pass/TestME/modelDescription.xml", temp_dir / "modelDescription.xml",
+                      fs::copy_options::overwrite_existing);
+
+        {
+            const std::string ds_store = ".DS_Store";
+            std::ofstream(temp_dir / "resources" / ds_store).close();
+            Certificate cert;
+            checker.validate(temp_dir, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'resources' is empty."));
+            fs::remove(temp_dir / "resources" / ds_store);
+        }
+
+        {
+            const std::string thumbs_db = "Thumbs.db";
+            std::ofstream(temp_dir / "resources" / thumbs_db).close();
+            Certificate cert;
+            checker.validate(temp_dir, cert);
+            CHECK(has_warning_with_text(cert, "Standard directory 'resources' is empty."));
+            fs::remove(temp_dir / "resources" / thumbs_db);
+        }
+
+        fs::remove_all(temp_dir);
+    }
 }
 
 TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
