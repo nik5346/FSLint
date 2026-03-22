@@ -101,8 +101,6 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     { label: 'Generation Date', value: summary.generationDateAndTime },
   ].filter((item) => item.value);
 
-  const failedResults = result.results.filter((r) => r.status === 'FAIL');
-
   return (
     <div
       style={{
@@ -114,7 +112,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         gap: '24px',
       }}
     >
-      {overallStatus === 'FAIL' && failedResults.length > 0 && (
+      {overallStatus === 'FAIL' && (!summary.standard || summary.standard === 'UNKNOWN') && (
         <div
           style={{
             padding: '16px',
@@ -125,18 +123,13 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
           }}
         >
           <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1em', fontWeight: 'bold' }}>
-            Validation Errors
+            Critical Failure
           </h3>
-          <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            {failedResults.slice(0, 3).map((r, i) => (
-              <li key={i} style={{ marginBottom: '4px' }}>
-                <strong>{r.test_name}:</strong> {r.messages[0] || 'No details provided.'}
-              </li>
-            ))}
-            {failedResults.length > 3 && (
-              <li>... and {failedResults.length - 3} more errors (see Certificate tab)</li>
-            )}
-          </ul>
+          <p style={{ margin: 0 }}>
+            A critical error occurred (e.g., archive extraction or model detection failed),
+            preventing metadata extraction. Please check the <strong>Certificate</strong> tab for
+            details.
+          </p>
         </div>
       )}
 
