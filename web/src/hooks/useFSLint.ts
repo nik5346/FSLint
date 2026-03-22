@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FSLintModule, FileNode, ValidationResult } from '../types';
+import { CollectedItems } from '../utils/file';
 
 export const useFSLint = () => {
   const [module, setModule] = useState<FSLintModule | null>(null);
@@ -87,32 +88,12 @@ export const useFSLint = () => {
     [module],
   );
 
-  const listVFS = useCallback(
-    (path: string, indent = '') => {
-      if (!module) return;
-      try {
-        const entries = module.FS.readdir(path);
-        for (const entry of entries) {
-          if (entry === '.' || entry === '..') continue;
-          const fullPath = path === '/' ? `/${entry}` : `${path}/${entry}`;
-          const stat = module.FS.stat(fullPath);
-          if (module.FS.isDir(stat.mode)) {
-            console.log(`${indent}[DIR] ${entry}`);
-            listVFS(fullPath, indent + '  ');
-          } else {
-            console.log(`${indent}[FILE] ${entry}`);
-          }
-        }
-      } catch (e) {
-        console.error(`Failed to list VFS at ${path}:`, e);
-      }
-    },
-    [module],
-  );
-
   const processItems = useCallback(
-    async (files: File[]) => {
-      if (!module || isProcessing || files.length === 0) return;
+    async (items: CollectedItems | File[]) => {
+      if (!module || isProcessing) return;
+
+      const collected = Array.isArray(items) ? { files: items, directories: [] } : items;
+      if (collected.files.length === 0 && collected.directories.length === 0) return;
 
       setIsProcessing(true);
       setOutput('');
@@ -132,7 +113,7 @@ export const useFSLint = () => {
         mkdirP(workDir);
         module.FS.chdir(workDir);
 
-        const normalizedFiles = files.map((f) => ({
+        const normalizedFiles = collected.files.map((f) => ({
           file: f,
           relPath: (f.webkitRelativePath || f.name).replace(/\\/g, '/'),
         }));
@@ -156,6 +137,12 @@ export const useFSLint = () => {
           }
         }
 
+        // 1. Create all explicitly discovered directories
+        for (const dirPath of collected.directories) {
+          mkdirP(`${workDir}/${dirPath}`);
+        }
+
+        // 2. Create parent directories and write files
         for (const { file, relPath } of normalizedFiles) {
           const lastSlash = relPath.lastIndexOf('/');
           if (lastSlash !== -1) {

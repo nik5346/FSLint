@@ -14,11 +14,16 @@ export const extractHeaders = (text: string) => {
   return headers;
 };
 
+export interface CollectedItems {
+  files: File[];
+  directories: string[];
+}
+
 export async function getFilesFromHandle(
   handle: FileSystemDirectoryHandle,
   path = handle.name,
-): Promise<File[]> {
-  const files: File[] = [];
+): Promise<CollectedItems> {
+  const result: CollectedItems = { files: [], directories: [path] };
   for await (const entry of handle.values()) {
     const entryPath = `${path}/${entry.name}`;
     if (entry.kind === 'file') {
@@ -26,16 +31,17 @@ export async function getFilesFromHandle(
       Object.defineProperty(file, 'webkitRelativePath', {
         value: entryPath,
       });
-      files.push(file);
+      result.files.push(file);
     } else if (entry.kind === 'directory') {
-      const subFiles = await getFilesFromHandle(entry as FileSystemDirectoryHandle, entryPath);
-      files.push(...subFiles);
+      const subItems = await getFilesFromHandle(entry as FileSystemDirectoryHandle, entryPath);
+      result.files.push(...subItems.files);
+      result.directories.push(...subItems.directories);
     }
   }
-  return files;
+  return result;
 }
 
-export async function getFilesFromEntry(entry: FileSystemEntry): Promise<File[]> {
+export async function getFilesFromEntry(entry: FileSystemEntry): Promise<CollectedItems> {
   if (entry.isFile) {
     return new Promise((resolve, reject) => {
       (entry as FileSystemFileEntry).file(
@@ -46,12 +52,13 @@ export async function getFilesFromEntry(entry: FileSystemEntry): Promise<File[]>
           Object.defineProperty(file, 'webkitRelativePath', {
             value: path,
           });
-          resolve([file]);
+          resolve({ files: [file], directories: [] });
         },
         (err) => reject(err),
       );
     });
   } else if (entry.isDirectory) {
+    const dirPath = entry.fullPath.startsWith('/') ? entry.fullPath.substring(1) : entry.fullPath;
     const dirReader = (entry as FileSystemDirectoryEntry).createReader();
     const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
       const allEntries: FileSystemEntry[] = [];
@@ -70,10 +77,15 @@ export async function getFilesFromEntry(entry: FileSystemEntry): Promise<File[]>
       };
       readEntries();
     });
-    const files = await Promise.all(entries.map((e) => getFilesFromEntry(e)));
-    return files.flat();
+    const subResults = await Promise.all(entries.map((e) => getFilesFromEntry(e)));
+    const finalResult: CollectedItems = { files: [], directories: [dirPath] };
+    for (const sub of subResults) {
+      finalResult.files.push(...sub.files);
+      finalResult.directories.push(...sub.directories);
+    }
+    return finalResult;
   }
-  return [];
+  return { files: [], directories: [] };
 }
 
 export function decodeText(data: Uint8Array): string {
