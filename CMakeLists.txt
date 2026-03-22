@@ -539,7 +539,7 @@ catch_discover_tests(FSLint-tests)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
 
 # Check for Reference FMUs (required for binary tests)
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus/BouncingBall_20")
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_fmus/2.0/BouncingBall.fmu")
     message(WARNING "Reference FMUs for binary tests are missing. Some tests will be skipped. "
                     "Run 'scripts/download_reference_fmus.py' to download them.")
 endif()
