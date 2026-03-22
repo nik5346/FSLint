@@ -849,6 +849,8 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         if (var.value_reference.has_value())
             alias_sets[{get_base_type(var.type), *var.value_reference}].push_back(&var);
 
+    TestResult variability_consistency_test{"Alias Variability Consistency", TestStatus::PASS, {}};
+
     for (const auto& [key, alias_set] : alias_sets)
     {
         if (alias_set.size() <= 1)
@@ -993,15 +995,16 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         }
         else if (variability_mismatch)
         {
-            cert.printTestResult(
-                {"Alias Variability Consistency",
-                 TestStatus::WARNING,
-                 {std::format(
-                     "Variables in alias set VR {} (base type {}) have different variabilities. It is recommended that "
-                     "aliased variables have the same variability.",
-                     vr, base_type)}});
+            variability_consistency_test.status = TestStatus::WARNING;
+            variability_consistency_test.messages.push_back(std::format(
+                "Variables in alias set VR {} (base type {}) have different variabilities. It is recommended that "
+                "aliased variables have the same variability.",
+                vr, base_type));
         }
     }
+
+    if (variability_consistency_test.status != TestStatus::PASS)
+        cert.printTestResult(variability_consistency_test);
 
     cert.printTestResult(test);
 }
