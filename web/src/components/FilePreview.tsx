@@ -157,54 +157,98 @@ export const FilePreview = ({
     }
 
     const dir = selectedFile.substring(0, selectedFile.lastIndexOf('/'));
-    let processed = content;
 
     const resolve = (base: string, rel: string) => {
+      // Strip query parameters or hashes
+      const cleanRel = rel.split(/[?#]/)[0].replace(/\\/g, '/').trim();
+      if (!cleanRel) return null;
+
       const stack = base.split('/').filter(Boolean);
-      const parts = rel.split('/').filter(Boolean);
+      const parts = cleanRel.split('/').filter(Boolean);
       for (const part of parts) {
         if (part === '.') continue;
         if (part === '..') stack.pop();
         else stack.push(part);
       }
-      return (selectedFile?.startsWith('/') ? '/' : '') + stack.join('/');
+      const resolved = (selectedFile?.startsWith('/') ? '/' : '') + stack.join('/');
+
+      // Case-insensitive fallback
+      try {
+        module.FS.stat(resolved);
+        return resolved;
+      } catch {
+        try {
+          const parentDir = resolved.substring(0, resolved.lastIndexOf('/')) || '/';
+          const fileName = resolved.substring(resolved.lastIndexOf('/') + 1).toLowerCase();
+          const entries = module.FS.readdir(parentDir);
+          for (const entry of entries) {
+            if (entry.toLowerCase() === fileName) {
+              return (parentDir === '/' ? '' : parentDir) + '/' + entry;
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      return resolved;
     };
 
-    // Find all src and href attributes
-    const matches = Array.from(processed.matchAll(/(src|href)=["']([^"']+)["']/g));
-    for (const match of matches) {
-      const [full, attr, relPath] = match;
-      if (
-        relPath.startsWith('http') ||
-        relPath.startsWith('data:') ||
-        relPath.startsWith('#') ||
-        relPath.startsWith('mailto:') ||
-        relPath.startsWith('javascript:')
-      ) {
-        continue;
-      }
+    const mimeMap: { [key: string]: string } = {
+      svg: 'image/svg+xml',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      bmp: 'image/bmp',
+      ico: 'image/x-icon',
+      css: 'text/css',
+      js: 'application/javascript',
+      pdf: 'application/pdf',
+      html: 'text/html',
+      htm: 'text/html',
+      txt: 'text/plain',
+      xml: 'application/xml',
+      xsd: 'application/xml',
+    };
 
-      const resolvedPath = resolve(dir, relPath);
-      try {
-        const fileData = module.FS.readFile(resolvedPath) as Uint8Array;
-        const subExt = resolvedPath.split('.').pop()?.toLowerCase();
-        let type = 'application/octet-stream';
-        if (subExt === 'svg') type = 'image/svg+xml';
-        else if (subExt === 'png') type = 'image/png';
-        else if (subExt === 'jpg' || subExt === 'jpeg') type = 'image/jpeg';
-        else if (subExt === 'css') type = 'text/css';
-        else if (subExt === 'js') type = 'application/javascript';
+    // Find all src and href attributes using a more robust regex
+    const attrRegex = /(src|href)\s*=\s*(?:(['"])(.*?)\2|([^'">\s]+))/gi;
+    const processed = content.replace(
+      attrRegex,
+      (full, attr, _quote, quotedPath, unquotedPath) => {
+        const relPath = (quotedPath || unquotedPath || '').trim();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const blob = new Blob([fileData as any], { type });
-        const url = URL.createObjectURL(blob);
-        htmlBlobUrls.current.push(url);
-        // Replace all occurrences of this exact match
-        processed = processed.split(full).join(`${attr}="${url}"`);
-      } catch {
-        // Skip if file doesn't exist
-      }
-    }
+        if (
+          !relPath ||
+          relPath.startsWith('http') ||
+          relPath.startsWith('data:') ||
+          relPath.startsWith('#') ||
+          relPath.startsWith('mailto:') ||
+          relPath.startsWith('javascript:')
+        ) {
+          return full;
+        }
+
+        const resolvedPath = resolve(dir, relPath);
+        if (!resolvedPath) return full;
+
+        try {
+          const fileData = module.FS.readFile(resolvedPath) as Uint8Array;
+          const subExt = resolvedPath.split('.').pop()?.toLowerCase() || '';
+          const type = mimeMap[subExt] || 'application/octet-stream';
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const blob = new Blob([fileData as any], { type });
+          const url = URL.createObjectURL(blob);
+          htmlBlobUrls.current.push(url);
+          return `${attr}="${url}"`;
+        } catch {
+          return full;
+        }
+      },
+    );
+
     setHtmlContent(processed);
 
     return () => {
