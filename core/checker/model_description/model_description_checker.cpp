@@ -314,7 +314,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (!std::regex_match(dt, recommended_pattern))
     {
         test.messages.push_back("Generation date and time \"" + dt +
-                                "\" should follow the recommended FMI format (YYYY-MM-DDThh:mm:ssZ).");
+                                "\" does not match recommended FMI format (YYYY-MM-DDThh:mm:ssZ).");
         if (test.status == TestStatus::PASS)
             test.status = TestStatus::WARNING;
     }
@@ -499,7 +499,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     else if (copyright->empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'copyright' is empty.");
+        test.messages.push_back("The 'copyright' attribute is empty.");
     }
     else
     {

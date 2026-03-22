@@ -6,7 +6,9 @@
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <regex>
 
 TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
 {
@@ -15,7 +17,22 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
     auto validate_fail = [&](const std::string& path, const std::string& expected_error)
     {
         Certificate cert;
-        checker.validate("tests/data/fmi1/fail/" + path, cert);
+        std::string full_path = "tests/data/fmi1/fail/" + path;
+        std::string model_id = "Test";
+
+        std::filesystem::path md_path = std::filesystem::path(full_path) / "modelDescription.xml";
+        if (std::filesystem::exists(md_path))
+        {
+            std::ifstream f(md_path);
+            std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+            std::regex id_regex("modelIdentifier=\"([^\"]*)\"");
+            std::smatch match;
+            if (std::regex_search(content, match, id_regex))
+                model_id = match[1];
+        }
+
+        checker.setOriginalPath(model_id + ".fmu");
+        checker.validate(full_path, cert);
         INFO("Checking path: " << path);
         REQUIRE(has_fail(cert));
         CHECK(has_error_with_text(cert, expected_error));
@@ -130,7 +147,22 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
     auto validate_warning = [&](const std::string& path, const std::string& expected_warning)
     {
         Certificate cert;
-        checker.validate("tests/data/fmi1/" + path, cert);
+        std::string full_path = "tests/data/fmi1/" + path;
+        std::string model_id = "Test";
+
+        std::filesystem::path md_path = std::filesystem::path(full_path) / "modelDescription.xml";
+        if (std::filesystem::exists(md_path))
+        {
+            std::ifstream f(md_path);
+            std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+            std::regex id_regex("modelIdentifier=\"([^\"]*)\"");
+            std::smatch match;
+            if (std::regex_search(content, match, id_regex))
+                model_id = match[1];
+        }
+
+        checker.setOriginalPath(model_id + ".fmu");
+        checker.validate(full_path, cert);
         INFO("Checking path: " << path);
         REQUIRE(has_warning(cert));
         CHECK(has_warning_with_text(cert, expected_warning));

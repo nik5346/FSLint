@@ -389,7 +389,7 @@ TEST_CASE("Build Description Validation", "[build_description]")
                       "does not exist or is not a directory in 'sources/' directory");
         validate_fail("tests/data/build_description/fail/version_mismatch", "does not match FMU version");
         validate_fail("tests/data/build_description/fail/id_mismatch", "does not match any modelIdentifier");
-        validate_fail("tests/data/build_description/fail/dotdot", "contains illegal '.' sequence");
+        validate_fail("tests/data/build_description/fail/dotdot", "contains illegal '..' sequence");
     }
 
     SECTION("Warning Cases")

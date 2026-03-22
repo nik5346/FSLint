@@ -120,19 +120,9 @@ void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables)
+void Fmi1ModelDescriptionChecker::applyDefaultInitialValues([[maybe_unused]] std::vector<Variable>& variables)
 {
-    for (auto& var : variables)
-    {
-        if (!var.initial.empty())
-            continue;
-
-        // FMI 1.0 default for 'fixed' (which we mapped to initial)
-        // Table in 3.3 says for Real: "fixed: ... = true: ... this is the default."
-        // But it's only allowed if causality is NOT input.
-        if (var.causality != "input")
-            var.initial = "exact";
-    }
+    // FMI 1.0 does not have the 'initial' attribute.
 }
 
 void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
@@ -445,10 +435,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
                 auto fixed = getXmlAttribute(child, "fixed");
                 if (fixed)
-                {
                     var.fixed = (*fixed == "true");
-                    var.initial = (var.fixed.value() ? "exact" : "approx");
-                }
 
                 if (elem_name == "Real")
                 {
@@ -879,7 +866,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                     var->name, var->sourceline, var->type));
             }
 
-            // noAlias count
+            // noAlias count: in FMI 1.0, a variable is a base variable if alias is "noAlias" or is absent.
             if (!var->alias.has_value() || *var->alias == "noAlias")
                 no_alias_count++;
 
