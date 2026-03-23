@@ -1,6 +1,7 @@
 #include "directory_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -131,7 +132,7 @@ void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, C
     {
         if (entry.is_regular_file())
         {
-            const std::string filename = entry.path().filename().string();
+            const std::string filename = file_utils::pathToUtf8(entry.path().filename());
             if (headers.contains(filename))
             {
                 test.status = TestStatus::WARNING;
@@ -153,7 +154,7 @@ bool DirectoryChecker::isEffectivelyEmpty(const std::filesystem::path& path)
 
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
-        const auto filename = entry.path().filename();
+        const std::string filename = file_utils::pathToUtf8(entry.path().filename());
         if (filename != ".gitkeep" && filename != ".DS_Store" && filename != "Thumbs.db" && filename != "dummy.c")
             return false;
     }

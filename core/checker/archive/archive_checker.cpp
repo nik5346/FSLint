@@ -1,6 +1,7 @@
 #include "archive_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "zipper.h"
 
 #include <algorithm>
@@ -19,7 +20,8 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
     if (!std::filesystem::exists(fmu_path))
     {
         std::cerr << "File does not exist: " << fmu_path << "\n";
-        cert.printTestResult({"File Existence", TestStatus::FAIL, {"File does not exist: " + fmu_path.string()}});
+        cert.printTestResult(
+            {"File Existence", TestStatus::FAIL, {"File does not exist: " + file_utils::pathToUtf8(fmu_path)}});
         cert.printSubsectionSummary(false);
         return;
     }
@@ -32,7 +34,8 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
     if (!handler.open(fmu_path))
     {
         std::cerr << "Failed to open ZIP file: " << fmu_path << "\n";
-        cert.printTestResult({"Archive Open", TestStatus::FAIL, {"Failed to open ZIP file: " + fmu_path.string()}});
+        cert.printTestResult(
+            {"Archive Open", TestStatus::FAIL, {"Failed to open ZIP file: " + file_utils::pathToUtf8(fmu_path)}});
         cert.printSubsectionSummary(false);
         return;
     }
@@ -45,7 +48,8 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
     if (entries.empty())
     {
         std::cerr << "ZIP file is empty: " << fmu_path << "\n";
-        cert.printTestResult({"Archive Content", TestStatus::FAIL, {"ZIP file is empty: " + fmu_path.string()}});
+        cert.printTestResult(
+            {"Archive Content", TestStatus::FAIL, {"ZIP file is empty: " + file_utils::pathToUtf8(fmu_path)}});
         cert.printSubsectionSummary(false);
         return;
     }

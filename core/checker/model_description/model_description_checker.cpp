@@ -1,6 +1,7 @@
 #include "model_description_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "iso8601.h"
 #include "structured_name_parser.h"
 #include "xml_utils.h"
@@ -125,7 +126,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     {
         for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
             if (entry.is_directory())
-                summary.platforms.push_back(entry.path().filename().string());
+                summary.platforms.push_back(file_utils::pathToUtf8(entry.path().filename()));
     }
 
     const bool has_sources = std::filesystem::exists(path / "sources");

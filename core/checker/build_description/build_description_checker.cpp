@@ -1,6 +1,7 @@
 #include "build_description_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -59,7 +60,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
                 if (entry.is_regular_file())
                 {
                     auto rel_path = std::filesystem::relative(entry.path(), sources_path);
-                    std::string filename = rel_path.string();
+                    std::string filename = file_utils::pathToUtf8(rel_path);
                     std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
 
                     if (filename == "buildDescription.xml")
@@ -67,7 +68,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
 
                     // Only check typical source files
                     static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
-                    const std::string ext = entry.path().extension().string();
+                    const std::string ext = file_utils::pathToUtf8(entry.path().extension());
 
                     if (source_extensions.contains(ext))
                     {

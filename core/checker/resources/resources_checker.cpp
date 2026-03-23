@@ -1,6 +1,7 @@
 #include "resources_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "model_checker.h"
 
 #include <filesystem>
@@ -21,7 +22,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
     {
         if (entry.is_regular_file())
         {
-            auto ext = entry.path().extension().string();
+            auto ext = file_utils::pathToUtf8(entry.path().extension());
             if (ext == ".fmu" || ext == ".ssp")
             {
                 const ModelChecker nested_checker;
@@ -30,7 +31,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                 const Certificate nested_cert = nested_checker.validate(entry.path(), true);
 
                 NestedModelResult result;
-                result.name = entry.path().filename().string();
+                result.name = file_utils::pathToUtf8(entry.path().filename());
                 result.status = nested_cert.getOverallStatus();
                 result.nested_models = nested_cert.getNestedModels();
 
@@ -51,7 +52,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                 const Certificate nested_cert = nested_checker.validate(entry.path(), true);
 
                 NestedModelResult result;
-                result.name = entry.path().filename().string() + "/";
+                result.name = file_utils::pathToUtf8(entry.path().filename()) + "/";
                 result.status = nested_cert.getOverallStatus();
                 result.nested_models = nested_cert.getNestedModels();
 

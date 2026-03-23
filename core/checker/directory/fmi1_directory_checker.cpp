@@ -1,6 +1,7 @@
 #include "fmi1_directory_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -19,7 +20,8 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     cert.printSubsectionHeader("DIRECTORY STRUCTURE");
 
     const auto& original_path = m_original_path;
-    const std::string stem = original_path.empty() ? path.stem().string() : original_path.stem().string();
+    const std::string stem = original_path.empty() ? file_utils::pathToUtf8(path.stem())
+                                                   : file_utils::pathToUtf8(original_path.stem());
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
@@ -95,7 +97,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
-            const std::string name = entry.path().filename().string();
+            const std::string name = file_utils::pathToUtf8(entry.path().filename());
             // Ignore .gitkeep
             if (name == ".gitkeep")
                 continue;

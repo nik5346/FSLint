@@ -1,6 +1,7 @@
 #include "fmi2_directory_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -31,7 +32,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
-            const std::string name = entry.path().filename().string();
+            const std::string name = file_utils::pathToUtf8(entry.path().filename());
             if (!fmi2_standard_entries.contains(name))
             {
                 test.status = TestStatus::WARNING;
@@ -168,12 +169,12 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 if (entry.is_regular_file())
                 {
                     auto rel_path = std::filesystem::relative(entry.path(), sources_path);
-                    std::string filename = rel_path.string();
+                    std::string filename = file_utils::pathToUtf8(rel_path);
                     std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
 
                     // Only check typical source files
                     static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
-                    const std::string ext = entry.path().extension().string();
+                    const std::string ext = file_utils::pathToUtf8(entry.path().extension());
 
                     if (source_extensions.contains(ext))
                     {
