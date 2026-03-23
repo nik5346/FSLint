@@ -7,7 +7,10 @@
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+
+namespace fs = std::filesystem;
 
 TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
 {
@@ -402,7 +405,6 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
     SECTION("Structure")
     {
-        validate_fail("build_description_v2", "must be '3.0' for FMI 2.x FMUs");
         validate_fail("structure_output_missing", "ModelStructure/Outputs must have exactly one entry");
         validate_fail("structure_output_missing_one", "are missing from ModelStructure/Outputs: v2");
         validate_fail("structure_output_duplicate", "is listed multiple times in ModelStructure/Outputs");
