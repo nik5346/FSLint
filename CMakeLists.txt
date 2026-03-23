@@ -24,7 +24,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 # ============================================================================
 if(MSVC)
     # MSVC (also applies to Clang-CL)
-    add_compile_options(/W4 /permissive- /EHsc)
+    add_compile_options(/W4 /permissive- /EHsc /utf-8)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
     # GCC, Clang, and Clang on Unix-like systems
@@ -304,7 +304,7 @@ set_target_properties(minizip PROPERTIES
 # Windows-specific
 if(WIN32)
     target_sources(minizip PRIVATE ${MINIZIP_DIR}/iowin32.c)
-    target_compile_definitions(minizip PRIVATE USE_FILE32API)
+    target_compile_definitions(minizip PRIVATE USE_FILE64API UNICODE _UNICODE)
 endif()
 
 # ============================================================================

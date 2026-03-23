@@ -1,9 +1,20 @@
 #pragma once
 
 #include <filesystem>
+#include <string>
 
 namespace file_utils
 {
+/**
+ * Safely converts a path to a UTF-8 encoded std::string.
+ */
+std::string pathToUtf8(const std::filesystem::path& path);
+
+/**
+ * Safely converts a UTF-8 encoded std::string back to a std::filesystem::path.
+ */
+std::filesystem::path utf8ToPath(const std::string& utf8);
+
 /**
  * Checks if a file is binary by looking for null bytes in the first 1KB.
  */

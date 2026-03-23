@@ -1,6 +1,7 @@
 #include "schema_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -49,8 +50,9 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
     // Check if directory exists
     if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
     {
-        std::cerr << "Directory does not exist: " << path << "\n";
-        cert.printTestResult({"Directory Existence", TestStatus::FAIL, {"Directory does not exist: " + path.string()}});
+        std::cerr << "Directory does not exist: " << file_utils::pathToUtf8(path) << "\n";
+        cert.printTestResult(
+            {"Directory Existence", TestStatus::FAIL, {"Directory does not exist: " + file_utils::pathToUtf8(path)}});
         cert.printSubsectionSummary(false);
         return;
     }
@@ -434,9 +436,9 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     std::filesystem::path bin_dir;
 
 #ifdef _WIN32
-    std::array<char, 260> path{};
+    std::array<wchar_t, MAX_PATH> path{};
     // NOLINTNEXTLINE(misc-include-cleaner)
-    auto length = GetModuleFileNameA(nullptr, path.data(), static_cast<unsigned long>(path.size()));
+    auto length = GetModuleFileNameW(nullptr, path.data(), static_cast<unsigned long>(path.size()));
     if (length > 0 && length < path.size())
         bin_dir = std::filesystem::path(path.data()).parent_path();
 
@@ -501,7 +503,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 
             // Robustness: try access() in case std::filesystem::exists is flaky in WASM
 #if defined(__EMSCRIPTEN__) || defined(__linux__) || defined(__APPLE__)
-        if (access(candidate.string().c_str(), F_OK) == 0)
+        if (access(file_utils::pathToUtf8(candidate).c_str(), F_OK) == 0)
             return candidate;
 #endif
     }
@@ -509,23 +511,23 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 #ifdef __EMSCRIPTEN__
     std::cerr << "[ERROR] Schema not found: " << schema_filename << "\n";
     std::cerr << "  Standard Name: " << getStandardName() << ", Version: " << version << "\n";
-    std::cerr << "  Current CWD: " << cwd.string() << "\n";
+    std::cerr << "  Current CWD: " << file_utils::pathToUtf8(cwd) << "\n";
     std::cerr << "  Attempted paths:\n";
     for (const auto& candidate : candidates)
-        std::cerr << "    - " << candidate.string() << "\n";
+        std::cerr << "    - " << file_utils::pathToUtf8(candidate) << "\n";
 
     // Debug: List /standard directory if it exists, otherwise list root
     if (std::filesystem::exists("/standard"))
     {
         std::cerr << "  Contents of /standard:\n";
         for (const auto& entry : std::filesystem::recursive_directory_iterator("/standard"))
-            std::cerr << "    " << entry.path().string() << "\n";
+            std::cerr << "    " << file_utils::pathToUtf8(entry.path()) << "\n";
     }
     else
     {
         std::cerr << "  /standard directory does NOT exist in VFS. Listing root /:\n";
         for (const auto& entry : std::filesystem::recursive_directory_iterator("/"))
-            std::cerr << "    " << entry.path().string() << "\n";
+            std::cerr << "    " << file_utils::pathToUtf8(entry.path()) << "\n";
     }
 #endif
 
@@ -570,7 +572,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     xmlInitParser();
 
     // Load schema
-    xmlSchemaParserCtxtPtr parser_ctx = xmlSchemaNewParserCtxt(schema_path.string().c_str());
+    xmlSchemaParserCtxtPtr parser_ctx = xmlSchemaNewParserCtxt(file_utils::pathToUtf8(schema_path).c_str());
     if (!parser_ctx)
     {
         test.status = TestStatus::FAIL;
@@ -617,7 +619,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
                             reinterpret_cast<xmlSchemaValidityWarningFunc>(warningCallback), &test);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
-    const std::int32_t valid_result = xmlSchemaValidateFile(valid_ctx, xml_path.string().c_str(), 0);
+    const std::int32_t valid_result = xmlSchemaValidateFile(valid_ctx, file_utils::pathToUtf8(xml_path).c_str(), 0);
 
     if (valid_result != 0)
     {

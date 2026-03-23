@@ -3,6 +3,7 @@
 #include "model_description_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
@@ -576,7 +577,7 @@ void Fmi1ModelDescriptionChecker::checkModelIdentifierMatch(const std::string& m
     // If original_path is not set, we can't perform this check reliably in some contexts,
     // but in normal execution it should be set. If it's empty, we fall back to root path stem.
     const auto& path_to_check = original_path.empty() ? fmu_root_path : original_path;
-    const std::string expected_id = path_to_check.stem().string();
+    const std::string expected_id = file_utils::pathToUtf8(path_to_check.stem());
 
     if (model_identifier != expected_id)
     {

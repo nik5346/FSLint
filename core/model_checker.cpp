@@ -3,6 +3,7 @@
 #include "archive_checker.h"
 #include "certificate.h"
 #include "checker_factory.h"
+#include "file_utils.h"
 #include "model_info.h"
 #include "zipper.h"
 
@@ -28,9 +29,9 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     if (!quiet)
     {
         const std::string hash = calculateSHA256(path);
-        std::string model_name = path.filename().string();
+        std::string model_name = file_utils::pathToUtf8(path.filename());
         if (model_name.empty() && path.has_parent_path())
-            model_name = path.parent_path().filename().string();
+            model_name = file_utils::pathToUtf8(path.parent_path().filename());
         cert.printMainHeader(model_name, hash);
     }
 
@@ -125,7 +126,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         checker->validate(extract_dir, cert);
 
     if (show_tree)
-        cert.printFileTree(extract_dir, model_info.original_path.filename().string());
+        cert.printFileTree(extract_dir, file_utils::pathToUtf8(model_info.original_path.filename()));
 
         // Cleanup temporary directory
 #ifndef __EMSCRIPTEN__
@@ -148,9 +149,9 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 
     // Print header
     const std::string hash = calculateSHA256(path);
-    std::string model_name = path.filename().string();
+    std::string model_name = file_utils::pathToUtf8(path.filename());
     if (model_name.empty() && path.has_parent_path())
-        model_name = path.parent_path().filename().string();
+        model_name = file_utils::pathToUtf8(path.parent_path().filename());
     cert.printMainHeader(model_name, hash);
 
     std::filesystem::path extract_dir;
@@ -593,7 +594,7 @@ bool ModelChecker::package(const std::filesystem::path& extract_dir, const std::
             if (entry.is_regular_file())
             {
                 const std::filesystem::path rel_path = std::filesystem::relative(entry.path(), extract_dir);
-                std::string internal_path = rel_path.string();
+                std::string internal_path = file_utils::pathToUtf8(rel_path);
 
                 // Convert backslashes to forward slashes for ZIP compatibility
                 std::replace(internal_path.begin(), internal_path.end(), '\\', '/');
@@ -636,7 +637,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
             if (entry.is_regular_file())
             {
                 auto rel_path = std::filesystem::relative(entry.path(), path);
-                std::string rel_path_str = rel_path.string();
+                std::string rel_path_str = file_utils::pathToUtf8(rel_path);
                 std::replace(rel_path_str.begin(), rel_path_str.end(), '\\', '/');
 
                 if (rel_path_str == "extra/validation_certificate.txt")
@@ -649,7 +650,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
 
         for (const auto& rel_path : files)
         {
-            std::string rel_path_str = rel_path.string();
+            std::string rel_path_str = file_utils::pathToUtf8(rel_path);
             std::replace(rel_path_str.begin(), rel_path_str.end(), '\\', '/');
 
             // Hash path to include structure in hash
@@ -710,7 +711,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
             }
             else
             {
-                std::cerr << "Error: Failed to open file for hashing: " << path << "\n";
+                std::cerr << "Error: Failed to open file for hashing: " << file_utils::pathToUtf8(path) << "\n";
                 return "";
             }
         }

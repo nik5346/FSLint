@@ -1,5 +1,6 @@
 #include "ssp2_schema_checker.h"
 
+#include "file_utils.h"
 #include "schema_checker.h"
 
 #include <filesystem>
@@ -18,8 +19,8 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
         if (entry.is_regular_file() && entry.path().extension() == ".ssd" &&
             entry.path().filename() != "SystemStructure.ssd")
         {
-            rules.push_back(
-                {entry.path().filename(), "SystemStructureDescription.xsd", false, entry.path().filename().string()});
+            rules.push_back({entry.path().filename(), "SystemStructureDescription.xsd", false,
+                             file_utils::pathToUtf8(entry.path().filename())});
         }
     }
 
@@ -29,7 +30,8 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
         if (entry.is_regular_file() && entry.path().extension() == ".ssm")
         {
             auto rel_path = std::filesystem::relative(entry.path(), path);
-            rules.push_back({rel_path, "SystemStructureParameterMapping.xsd", false, entry.path().filename().string()});
+            rules.push_back(
+                {rel_path, "SystemStructureParameterMapping.xsd", false, file_utils::pathToUtf8(entry.path().filename())});
         }
     }
 
@@ -39,7 +41,8 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
         if (entry.is_regular_file() && entry.path().extension() == ".ssv")
         {
             auto rel_path = std::filesystem::relative(entry.path(), path);
-            rules.push_back({rel_path, "SystemStructureParameterValues.xsd", false, entry.path().filename().string()});
+            rules.push_back(
+                {rel_path, "SystemStructureParameterValues.xsd", false, file_utils::pathToUtf8(entry.path().filename())});
         }
     }
 
@@ -49,7 +52,8 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
         if (entry.is_regular_file() && entry.path().extension() == ".ssb")
         {
             auto rel_path = std::filesystem::relative(entry.path(), path);
-            rules.push_back({rel_path, "SystemStructureSignalDictionary.xsd", false, entry.path().filename().string()});
+            rules.push_back(
+                {rel_path, "SystemStructureSignalDictionary.xsd", false, file_utils::pathToUtf8(entry.path().filename())});
         }
     }
 

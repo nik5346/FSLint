@@ -1,6 +1,7 @@
 #include "directory_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -131,7 +132,7 @@ void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, C
     {
         if (entry.is_regular_file())
         {
-            const std::string filename = entry.path().filename().string();
+            const std::string filename = file_utils::pathToUtf8(entry.path().filename());
             if (headers.contains(filename))
             {
                 test.status = TestStatus::WARNING;

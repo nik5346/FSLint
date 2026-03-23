@@ -1,6 +1,7 @@
 #include "fmi1_directory_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -79,7 +80,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
-            const std::string name = entry.path().filename().string();
+            const std::string name = file_utils::pathToUtf8(entry.path().filename());
             // Ignore .gitkeep
             if (name == ".gitkeep")
                 continue;

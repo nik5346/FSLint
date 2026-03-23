@@ -1,5 +1,7 @@
 #include "xml_utils.h"
 
+#include "file_utils.h"
+
 #include <libxml/parser.h>
 #include <libxml/tree.h> // IWYU pragma: keep
 
@@ -23,7 +25,7 @@ xmlDocPtr readXmlFile(const std::filesystem::path& path)
     if (!file.read(buffer.data(), size))
         return nullptr;
 
-    const std::string path_str = path.string();
+    const std::string path_str = file_utils::pathToUtf8(path);
     return xmlReadMemory(buffer.data(), static_cast<int>(size), path_str.c_str(), nullptr,
                          XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
 }
