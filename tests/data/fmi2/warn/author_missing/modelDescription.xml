@@ -8,10 +8,10 @@
   </ModelVariables>
   <ModelStructure>
     <Outputs>
-      <Unknown index="1" />
+      <Unknown index="1" dependencies="" />
     </Outputs>
     <InitialUnknowns>
-      <Unknown index="1" />
+      <Unknown index="1" dependencies="" />
     </InitialUnknowns>
   </ModelStructure>
 </fmiModelDescription>

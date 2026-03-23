@@ -18,6 +18,9 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
 {
     cert.printSubsectionHeader("DIRECTORY STRUCTURE");
 
+    const auto& original_path = m_original_path;
+    const std::string stem = original_path.empty() ? path.stem().string() : original_path.stem().string();
+
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
     {
@@ -60,6 +63,18 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
             model_identifiers["CoSimulation"] = *model_id;
         else
             model_identifiers["ModelExchange"] = *model_id;
+
+        // FMI 1.0 rule: modelIdentifier must match filename stem
+        if (*model_id != stem)
+        {
+            TestResult test{"Model Identifier Filename Match", TestStatus::FAIL, {}};
+            test.messages.push_back(std::format("modelIdentifier '{}' must match the FMU filename '{}'.", *model_id, stem));
+            cert.printTestResult(test);
+        }
+        else
+        {
+            cert.printTestResult({"Model Identifier Filename Match", TestStatus::PASS, {}});
+        }
     }
     xmlFreeDoc(doc);
 
@@ -117,11 +132,10 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         auto doc_path = path / "documentation";
         if (std::filesystem::exists(doc_path))
         {
-            if (!std::filesystem::exists(doc_path / "_main.html") && !std::filesystem::exists(doc_path / "index.html"))
+            if (!std::filesystem::exists(doc_path / "_main.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("The documentation entry point ('documentation/_main.html' or "
-                                        "'documentation/index.html') is missing.");
+                test.messages.push_back("The documentation entry point 'documentation/_main.html' is missing.");
             }
         }
         else
