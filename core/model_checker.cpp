@@ -127,7 +127,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     if (show_tree)
         cert.printFileTree(extract_dir, model_info.original_path.filename().string());
 
-    // Cleanup temporary directory
+        // Cleanup temporary directory
 #ifndef __EMSCRIPTEN__
     if (is_temporary && std::filesystem::exists(extract_dir))
         std::filesystem::remove_all(extract_dir);
@@ -493,7 +493,7 @@ bool ModelChecker::verifyCertificate(const std::filesystem::path& path) const
                 if (std::string::npos != first)
                 {
                     const size_t last = stored_version.find_last_not_of(' ');
-                    stored_version = stored_version.substr(first, (last - first + 1));
+                    stored_version = stored_version.substr(first, last - first + 1);
                 }
             }
         }
@@ -506,7 +506,7 @@ bool ModelChecker::verifyCertificate(const std::filesystem::path& path) const
             if (std::string::npos != first)
             {
                 const size_t last = stored_hash.find_last_not_of(' ');
-                stored_hash = stored_hash.substr(first, (last - first + 1));
+                stored_hash = stored_hash.substr(first, last - first + 1);
             }
         }
     }
