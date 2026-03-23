@@ -170,9 +170,9 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
     for (const auto& entry : entries)
     {
 #ifdef _WIN32
-        const std::filesystem::path file_path = destination / std::filesystem::path(std::u8string(
-                                                                  reinterpret_cast<const char8_t*>(entry.filename.data()),
-                                                                  entry.filename.size()));
+        const std::filesystem::path file_path =
+            destination / std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(entry.filename.data()),
+                                                              entry.filename.size()));
 #else
         const std::filesystem::path file_path = destination / entry.filename;
 #endif
