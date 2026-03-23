@@ -15,11 +15,11 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
     //  - sources/
     //  - resources/📁.txt
 
-    fs::path test_data_root = "tests/data/utf8/pass/🚀";
+    fs::path test_data_root = u8"tests/data/utf8/pass/🚀";
 
     REQUIRE(fs::exists(test_data_root));
-    REQUIRE(fs::exists(test_data_root / "modelDescription.xml"));
-    REQUIRE(fs::exists(test_data_root / "resources" / "📁.txt"));
+    REQUIRE(fs::exists(test_data_root / u8"modelDescription.xml"));
+    REQUIRE(fs::exists(test_data_root / "resources" / u8"📁.txt"));
 
     SECTION("Validate directory model with UTF-8")
     {
@@ -39,7 +39,7 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
 
     SECTION("Validate ZIP model with UTF-8")
     {
-        fs::path zip_path = fs::temp_directory_path() / "test_🚀.fmu";
+        fs::path zip_path = fs::temp_directory_path() / u8"test_🚀.fmu";
         if (fs::exists(zip_path))
             fs::remove(zip_path);
 
@@ -58,7 +58,7 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
     SECTION("Validate nested UTF-8 FMU")
     {
         // Create a temporary directory to avoid polluting tests/data
-        fs::path temp_dir = fs::temp_directory_path() / "utf8_nested_test_🚀";
+        fs::path temp_dir = fs::temp_directory_path() / u8"utf8_nested_test_🚀";
         if (fs::exists(temp_dir))
             fs::remove_all(temp_dir);
         fs::create_directories(temp_dir);
@@ -66,8 +66,8 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
         // Copy static data to temp dir
         fs::copy(test_data_root, temp_dir, fs::copy_options::recursive);
 
-        std::string nested_name = "nested_🚀.fmu";
-        fs::path nested_fmu_path = temp_dir / "resources" / nested_name;
+        std::string nested_name = (const char*)u8"nested_🚀.fmu";
+        fs::path nested_fmu_path = temp_dir / "resources" / (const char*)u8"nested_🚀.fmu";
 
         ModelChecker checker;
         // Package the same static data as a nested FMU
