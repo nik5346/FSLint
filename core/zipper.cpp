@@ -4,6 +4,7 @@
 #include "zip.h"
 
 #ifdef _WIN32
+#define NOMINMAX
 #include "iowin32.h"
 #endif
 
