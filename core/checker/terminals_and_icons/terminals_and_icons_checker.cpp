@@ -1,6 +1,7 @@
 #include "terminals_and_icons_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -413,7 +414,7 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                     if (!std::filesystem::exists(png_path))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("Terminal icon PNG file \"" + png_path.string() +
+                        test.messages.push_back("Terminal icon PNG file \"" + file_utils::pathToUtf8(png_path) +
                                                 "\" (referenced line " + std::to_string(node->line) + ") not found.");
                     }
                 }

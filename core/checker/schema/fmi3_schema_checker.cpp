@@ -2,6 +2,8 @@
 
 #include "schema_checker.h"
 
+#include "file_utils.h"
+
 #include <filesystem>
 #include <vector>
 
@@ -32,7 +34,7 @@ std::vector<XmlFileRule> Fmi3SchemaChecker::getXmlRules(const std::filesystem::p
             if (entry.is_regular_file() && entry.path().filename() == "fmi-ls-manifest.xml")
             {
                 auto rel_path = std::filesystem::relative(entry.path(), path);
-                rules.push_back({rel_path, "fmi3LayeredStandardManifest.xsd", false, rel_path.string()});
+                rules.push_back({rel_path, "fmi3LayeredStandardManifest.xsd", false, file_utils::pathToUtf8(rel_path)});
             }
         }
     }

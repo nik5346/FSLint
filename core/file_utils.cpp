@@ -36,6 +36,16 @@ bool isBinary(const std::filesystem::path& path)
     return std::any_of(buffer.begin(), buffer.end(), [](unsigned char c) { return c == '\0'; });
 }
 
+std::string pathToUtf8(const std::filesystem::path& path)
+{
+#ifdef _WIN32
+    const std::u8string u8_path = path.u8string();
+    return std::string(reinterpret_cast<const char*>(u8_path.data()), u8_path.size());
+#else
+    return path.string();
+#endif
+}
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* allocator_ptr)
 {
@@ -43,7 +53,7 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
     auto& allocator = *reinterpret_cast<rapidjson::Document::AllocatorType*>(allocator_ptr);
 
     std::error_code ec;
-    const std::string name = path.filename().string();
+    const std::string name = pathToUtf8(path.filename());
     const bool is_dir = std::filesystem::is_directory(path, ec);
     if (ec)
         return;
@@ -52,7 +62,7 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
 
     node.SetObject();
     node.AddMember("name", rapidjson::Value(name.c_str(), allocator).Move(), allocator);
-    node.AddMember("path", rapidjson::Value(path.string().c_str(), allocator).Move(), allocator);
+    node.AddMember("path", rapidjson::Value(pathToUtf8(path).c_str(), allocator).Move(), allocator);
     node.AddMember("kind", rapidjson::Value(is_dir ? "directory" : "file", allocator).Move(), allocator);
     node.AddMember("isBinary", binary, allocator);
 
@@ -79,7 +89,7 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
                       const bool b_is_dir = std::filesystem::is_directory(b, ec_b);
                       if (a_is_dir != b_is_dir)
                           return a_is_dir;
-                      return a.filename().string() < b.filename().string();
+                      return pathToUtf8(a.filename()) < pathToUtf8(b.filename());
                   });
 
         for (const auto& entry : entries)

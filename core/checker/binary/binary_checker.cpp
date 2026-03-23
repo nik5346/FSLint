@@ -1,6 +1,7 @@
 #include "binary_checker.h"
 
 #include "binary_parser.h"
+#include "file_utils.h"
 #include "certificate.h"
 #include "xml_utils.h"
 
@@ -79,7 +80,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
         if (!platform_entry.is_directory())
             continue;
 
-        const std::string platform = platform_entry.path().filename().string();
+        const std::string platform = file_utils::pathToUtf8(platform_entry.path().filename());
 
         for (const auto& model_id : model_identifiers)
         {
