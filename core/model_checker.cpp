@@ -593,7 +593,13 @@ bool ModelChecker::package(const std::filesystem::path& extract_dir, const std::
             if (entry.is_regular_file())
             {
                 const std::filesystem::path rel_path = std::filesystem::relative(entry.path(), extract_dir);
+
+#ifdef _WIN32
+                auto u8_path = rel_path.u8string();
+                std::string internal_path(reinterpret_cast<const char*>(u8_path.data()), u8_path.size());
+#else
                 std::string internal_path = rel_path.string();
+#endif
 
                 // Convert backslashes to forward slashes for ZIP compatibility
                 std::replace(internal_path.begin(), internal_path.end(), '\\', '/');
