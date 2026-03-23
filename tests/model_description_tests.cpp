@@ -13,7 +13,8 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
 {
     Fmi1ModelDescriptionChecker checker;
 
-    auto validate_fail = [&](const std::string& path, const std::string& expected_error, const std::string& original_path = "Test.fmu")
+    auto validate_fail =
+        [&](const std::string& path, const std::string& expected_error, const std::string& original_path = "Test.fmu")
     {
         Certificate cert;
         checker.setOriginalPath(original_path);
@@ -66,7 +67,6 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("implementation/InvalidUriScheme", "has an unsupported or invalid URI scheme");
         validate_fail("implementation/InvalidHttpUrl", "has an invalid or unsafe HTTP/HTTPS URI");
     }
-
 
     SECTION("Vendor Annotations")
     {
@@ -132,7 +132,8 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                std::string status_str = (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
+                std::string status_str =
+                    (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
                 UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
                 for (const auto& msg : res.messages)
                     UNSCOPED_INFO("    - " << msg);
@@ -234,7 +235,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 {
     Fmi2ModelDescriptionChecker checker;
 
-    auto validate_fail = [&](const std::string& path, const std::string& expected_error, const std::string& original_path = "Test.fmu")
+    auto validate_fail =
+        [&](const std::string& path, const std::string& expected_error, const std::string& original_path = "Test.fmu")
     {
         Certificate cert;
         checker.setOriginalPath(original_path);
@@ -439,7 +441,8 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                std::string status_str = (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
+                std::string status_str =
+                    (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
                 UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
                 for (const auto& msg : res.messages)
                     UNSCOPED_INFO("    - " << msg);

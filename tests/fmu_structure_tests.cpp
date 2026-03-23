@@ -38,17 +38,14 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
             ModelChecker mc;
             cert = mc.validate(path, true);
         }
+        else if (!original_path.empty())
+        {
+            ModelChecker mc;
+            cert = mc.validate(path, true);
+        }
         else
         {
-            if (!original_path.empty())
-            {
-                ModelChecker mc;
-                cert = mc.validate(path, true);
-            }
-            else
-            {
-                checker.validate(path, cert);
-            }
+            checker.validate(path, cert);
         }
         INFO("Checking path: " << path);
         if (has_fail(cert))
@@ -86,12 +83,8 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                     if (res.status == TestStatus::FAIL)
                     {
                         for (const auto& msg : res.messages)
-                        {
                             if (msg.find("_main.html") == std::string::npos)
-                            {
                                 FAIL("Unexpected failure in reference FMU " << path << ": " << msg);
-                            }
-                        }
                     }
                 }
             };
@@ -124,7 +117,8 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
 
     SECTION("Warning Cases")
     {
-        auto validate_warning = [&](const fs::path& path, const std::string& expected_warning, const std::string& original_path = "Test.fmu")
+        auto validate_warning = [&](const fs::path& path, const std::string& expected_warning,
+                                    const std::string& original_path = "Test.fmu")
         {
             Certificate cert;
             Fmi1DirectoryChecker warn_checker(original_path);

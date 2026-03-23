@@ -68,7 +68,8 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
         if (*model_id != stem)
         {
             TestResult test{"Model Identifier Filename Match", TestStatus::FAIL, {}};
-            test.messages.push_back(std::format("modelIdentifier '{}' must match the FMU filename '{}'.", *model_id, stem));
+            test.messages.push_back(
+                std::format("modelIdentifier '{}' must match the FMU filename '{}'.", *model_id, stem));
             cert.printTestResult(test);
         }
         else
