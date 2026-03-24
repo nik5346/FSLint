@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     auto sources_path = path / "sources";
     auto build_desc_path = sources_path / "buildDescription.xml";
@@ -92,7 +92,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
 
 void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                                                const std::filesystem::path& sources_path, Certificate& cert,
-                                               std::set<std::string>& listed_files)
+                                               std::set<std::string>& listed_files) const
 {
     TestResult test{"Build Description Source Files", TestStatus::PASS, {}};
     xmlXPathObjectPtr sources_xpath =
@@ -134,7 +134,8 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
 }
 
 void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_context,
-                                                      const std::filesystem::path& sources_path, Certificate& cert)
+                                                      const std::filesystem::path& sources_path,
+                                                      Certificate& cert) const
 {
     TestResult test{"Build Description Include Directories", TestStatus::PASS, {}};
     xmlXPathObjectPtr includes_xpath =
@@ -176,7 +177,7 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
 
 void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context,
                                                                 const std::set<std::string>& valid_ids,
-                                                                Certificate& cert)
+                                                                Certificate& cert) const
 {
     TestResult test{"Build Configuration Attributes", TestStatus::PASS, {}};
     xmlXPathObjectPtr configs_xpath =
@@ -250,7 +251,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
     cert.printTestResult(test);
 }
 
-std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const std::filesystem::path& path)
+std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const std::filesystem::path& path) const
 {
     std::set<std::string> ids;
     auto md_path = path / "modelDescription.xml";
@@ -292,7 +293,7 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
     return ids;
 }
 
-std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
+std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name) const
 {
     if (!node)
         return std::nullopt;

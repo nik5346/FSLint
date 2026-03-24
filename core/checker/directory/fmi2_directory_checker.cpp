@@ -13,7 +13,7 @@
 void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::path& path, Certificate& cert,
                                                         const std::map<std::string, std::string>& model_identifiers,
                                                         const std::set<std::string>& listed_sources_in_md,
-                                                        [[maybe_unused]] bool needs_execution_tool)
+                                                        [[maybe_unused]] bool needs_execution_tool) const
 {
     // 1. FMU Root Entries
     {

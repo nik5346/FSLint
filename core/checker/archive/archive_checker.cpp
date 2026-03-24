@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate& cert)
+void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate& cert) const
 {
     cert.printSubsectionHeader("ARCHIVE VALIDATION");
 
@@ -68,7 +68,7 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
     cert.printSubsectionSummary(!cert.isFailed());
 }
 
-void ArchiveChecker::checkFileExtension(const std::filesystem::path& path, Certificate& cert)
+void ArchiveChecker::checkFileExtension(const std::filesystem::path& path, Certificate& cert) const
 {
     TestResult ext_test{"File Extension Check", TestStatus::PASS, {}};
 
@@ -81,7 +81,7 @@ void ArchiveChecker::checkFileExtension(const std::filesystem::path& path, Certi
     cert.printTestResult(ext_test);
 }
 
-void ArchiveChecker::checkCompressionMethods(const std::vector<ZipFileEntry>& entries, Certificate& cert)
+void ArchiveChecker::checkCompressionMethods(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
     TestResult test{"Compression Method Check", TestStatus::PASS, {}};
 
@@ -104,7 +104,7 @@ void ArchiveChecker::checkCompressionMethods(const std::vector<ZipFileEntry>& en
     cert.printTestResult(test);
 }
 
-void ArchiveChecker::checkVersionNeeded(const std::vector<ZipFileEntry>& entries, Certificate& cert)
+void ArchiveChecker::checkVersionNeeded(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
     TestResult test{"Version Needed Check", TestStatus::PASS, {}};
 
@@ -126,7 +126,7 @@ void ArchiveChecker::checkVersionNeeded(const std::vector<ZipFileEntry>& entries
     cert.printTestResult(test);
 }
 
-void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& entries, Certificate& cert)
+void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
     TestResult test{"Language Encoding Flag Check", TestStatus::PASS, {}};
     constexpr uint16_t LANGUAGE_ENCODING_BIT = 0x800; // Bit 11
@@ -144,7 +144,7 @@ void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& 
     cert.printTestResult(test);
 }
 
-void ArchiveChecker::checkEncryption(const std::vector<ZipFileEntry>& entries, Certificate& cert)
+void ArchiveChecker::checkEncryption(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
     TestResult test{"Encryption Check", TestStatus::PASS, {}};
 
@@ -160,7 +160,7 @@ void ArchiveChecker::checkEncryption(const std::vector<ZipFileEntry>& entries, C
     cert.printTestResult(test);
 }
 
-void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, Certificate& cert)
+void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
     TestResult test{"Path Format Check", TestStatus::PASS, {}};
 
@@ -229,7 +229,7 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
     cert.printTestResult(test);
 }
 
-void ArchiveChecker::checkSymbolicLinks(const std::vector<ZipFileEntry>& entries, Certificate& cert)
+void ArchiveChecker::checkSymbolicLinks(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
     TestResult test{"Symbolic Links Check", TestStatus::PASS, {}};
 
@@ -246,7 +246,7 @@ void ArchiveChecker::checkSymbolicLinks(const std::vector<ZipFileEntry>& entries
     cert.printTestResult(test);
 }
 
-void ArchiveChecker::checkGeneralPurposeBit3(const std::vector<ZipFileEntry>& entries, Certificate& cert)
+void ArchiveChecker::checkGeneralPurposeBit3(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
     TestResult test{"General Purpose Bit 3 Check", TestStatus::PASS, {}};
 
@@ -273,7 +273,7 @@ void ArchiveChecker::checkGeneralPurposeBit3(const std::vector<ZipFileEntry>& en
     cert.printTestResult(test);
 }
 
-void ArchiveChecker::checkDiskSpanning(Zipper& handler, Certificate& cert)
+void ArchiveChecker::checkDiskSpanning(Zipper& handler, Certificate& cert) const
 {
     TestResult test{"Disk Spanning Check", TestStatus::PASS, {}};
 

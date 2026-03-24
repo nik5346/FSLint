@@ -12,16 +12,16 @@
 class DirectoryChecker : public Checker
 {
   public:
-    void validate(const std::filesystem::path& path, Certificate& cert) override;
+    void validate(const std::filesystem::path& path, Certificate& cert) const override;
 
   protected:
     virtual void performVersionSpecificChecks(const std::filesystem::path& path, Certificate& cert,
                                               const std::map<std::string, std::string>& model_identifiers,
                                               const std::set<std::string>& listed_sources_in_md,
-                                              bool needs_execution_tool) = 0;
+                                              bool needs_execution_tool) const = 0;
 
     void checkStandardHeaders(const std::filesystem::path& path, Certificate& cert,
-                              const std::set<std::string>& headers);
+                              const std::set<std::string>& headers) const;
 
     static std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 

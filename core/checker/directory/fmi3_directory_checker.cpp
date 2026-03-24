@@ -13,7 +13,7 @@
 
 void Fmi3DirectoryChecker::performVersionSpecificChecks(
     const std::filesystem::path& path, Certificate& cert, const std::map<std::string, std::string>& model_identifiers,
-    [[maybe_unused]] const std::set<std::string>& listed_sources_in_md, bool needs_execution_tool)
+    [[maybe_unused]] const std::set<std::string>& listed_sources_in_md, bool needs_execution_tool) const
 {
     // 1. FMU Root Entries
     {
@@ -151,8 +151,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         test.messages.push_back(
                             std::format("'{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
                                         "fallback).",
-                                    file_utils::pathToUtf8(entry.path().filename()),
-                                    file_utils::pathToUtf8(png_path.filename())));
+                                        file_utils::pathToUtf8(entry.path().filename()),
+                                        file_utils::pathToUtf8(png_path.filename())));
                     }
                 }
             }
@@ -283,8 +283,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 if (entry.is_directory())
                 {
-                const std::string name = file_utils::pathToUtf8(entry.path().filename());
-                // Reverse domain notation: e.g. com.example
+                    const std::string name = file_utils::pathToUtf8(entry.path().filename());
+                    // Reverse domain notation: e.g. com.example
                     // It should have at least one dot and follow basic domain naming rules.
                     const std::regex rd_regex("^[a-z0-9]+(\\.[a-z0-9]+)+$");
                     if (!std::regex_match(name, rd_regex))

@@ -41,7 +41,7 @@
 #include <emscripten.h>
 #endif
 
-void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
+void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     bool is_valid = true;
 
@@ -144,7 +144,7 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
 }
 
 bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_path, const std::string& validation_name,
-                                             Certificate& cert)
+                                             Certificate& cert) const
 {
     TestResult test{validation_name + " (XML Version, Encoding)", TestStatus::PASS, {}};
 
@@ -564,7 +564,7 @@ bool SchemaCheckerBase::hasElement(const std::filesystem::path& xml_path, const 
 }
 
 void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, const std::filesystem::path& schema_path,
-                                        const std::string& validation_name, Certificate& cert)
+                                        const std::string& validation_name, Certificate& cert) const
 {
     TestResult test{validation_name + " (XML Schema)", TestStatus::PASS, {}};
 

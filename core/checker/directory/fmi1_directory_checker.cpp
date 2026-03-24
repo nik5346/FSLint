@@ -15,13 +15,13 @@
 #include <set>
 #include <string>
 
-void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     cert.printSubsectionHeader("DIRECTORY STRUCTURE");
 
     const auto& original_path = m_original_path;
-    const std::string stem = original_path.empty() ? file_utils::pathToUtf8(path.stem())
-                                                   : file_utils::pathToUtf8(original_path.stem());
+    const std::string stem =
+        original_path.empty() ? file_utils::pathToUtf8(path.stem()) : file_utils::pathToUtf8(original_path.stem());
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
@@ -87,7 +87,8 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
 
 void Fmi1DirectoryChecker::performVersionSpecificChecks(
     const std::filesystem::path& path, Certificate& cert, const std::map<std::string, std::string>& model_identifiers,
-    [[maybe_unused]] const std::set<std::string>& listed_sources_in_md, [[maybe_unused]] bool needs_execution_tool)
+    [[maybe_unused]] const std::set<std::string>& listed_sources_in_md,
+    [[maybe_unused]] bool needs_execution_tool) const
 {
     // 1. FMU Root Entries
     {

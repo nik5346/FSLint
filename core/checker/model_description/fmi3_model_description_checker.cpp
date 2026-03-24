@@ -27,7 +27,7 @@
 void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,
     [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
-    [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
+    [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert) const
 {
     // FMI3-specific checks
     checkEnumerationVariables(variables, cert);
@@ -46,7 +46,7 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     checkModelStructure(doc, variables, cert);
 }
 
-std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
+std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr doc) const
 {
     std::vector<Variable> variables;
 
@@ -157,13 +157,13 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
     return variables;
 }
 
-std::string Fmi3ModelDescriptionChecker::getVariableType(xmlNodePtr node)
+std::string Fmi3ModelDescriptionChecker::getVariableType(xmlNodePtr node) const
 {
     return std::string(
         reinterpret_cast<const char*>(node->name)); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 }
 
-void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables)
+void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables) const
 {
     for (auto& var : variables)
     {
@@ -211,7 +211,7 @@ void Fmi3ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
     }
 }
 
-void Fmi3ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Legal Variability", TestStatus::PASS, {}};
 
@@ -243,7 +243,7 @@ void Fmi3ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Clock Type Validation", TestStatus::PASS, {}};
 
@@ -282,7 +282,8 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables,
+                                                           Certificate& cert) const
 {
     TestResult test{"Required Start Values", TestStatus::PASS, {}};
 
@@ -318,7 +319,7 @@ void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
 }
 
 void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
-                                                                               Certificate& cert)
+                                                                               Certificate& cert) const
 {
     TestResult test{"Causality/Variability/Initial Combinations", TestStatus::PASS, {}};
 
@@ -380,7 +381,8 @@ void Fmi3ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables,
+                                                          Certificate& cert) const
 {
     TestResult test{"Illegal Start Values", TestStatus::PASS, {}};
 
@@ -408,7 +410,7 @@ void Fmi3ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
 
 void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Variable>& variables,
                                                          const std::map<std::string, TypeDefinition>& type_definitions,
-                                                         Certificate& cert)
+                                                         Certificate& cert) const
 {
     TestResult test{"Min/Max/Start Value Constraints", TestStatus::PASS, {}};
 
@@ -450,7 +452,8 @@ void Fmi3ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
 
     cert.printTestResult(test);
 }
-void Fmi3ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables,
+                                                            Certificate& cert) const
 {
     TestResult test{"Enumeration Variable Type", TestStatus::PASS, {}};
 
@@ -467,7 +470,8 @@ void Fmi3ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Variable>& variables,
+                                                           Certificate& cert) const
 {
     TestResult test{"Independent Variable", TestStatus::PASS, {}};
 
@@ -516,7 +520,8 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<Variable>& variables,
+                                                             Certificate& cert) const
 {
     TestResult test{"Derivative Consistency", TestStatus::PASS, {}};
 
@@ -576,7 +581,8 @@ void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<V
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkCanHandleMultipleSet(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkCanHandleMultipleSet(const std::vector<Variable>& variables,
+                                                            Certificate& cert) const
 {
     TestResult test{"CanHandleMultipleSetPerTimeInstant", TestStatus::PASS, {}};
 
@@ -594,7 +600,7 @@ void Fmi3ModelDescriptionChecker::checkCanHandleMultipleSet(const std::vector<Va
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkReinitAttribute(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkReinitAttribute(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Reinit Attribute", TestStatus::PASS, {}};
 
@@ -630,7 +636,7 @@ void Fmi3ModelDescriptionChecker::checkReinitAttribute(const std::vector<Variabl
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Alias Variables", TestStatus::PASS, {}};
 
@@ -760,7 +766,8 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Variable>& variables,
+                                                           Certificate& cert) const
 {
     TestResult test{"Structural Parameter Validation", TestStatus::PASS, {}};
 
@@ -827,7 +834,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
 }
 
 void Fmi3ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                      Certificate& cert)
+                                                      Certificate& cert) const
 {
     validateOutputs(doc, variables, cert);
     validateDerivatives(doc, variables, cert);
@@ -838,7 +845,7 @@ void Fmi3ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::
 }
 
 void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                  Certificate& cert)
+                                                  Certificate& cert) const
 {
     TestResult test{"ModelStructure Outputs", TestStatus::PASS, {}};
 
@@ -958,7 +965,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 }
 
 void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                        Certificate& cert)
+                                                        Certificate& cert) const
 {
     TestResult test{"ModelStructure Clocked States", TestStatus::PASS, {}};
 
@@ -1072,7 +1079,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
 }
 
 void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                      Certificate& cert)
+                                                      Certificate& cert) const
 {
     TestResult test{"ModelStructure Derivatives", TestStatus::PASS, {}};
 
@@ -1169,7 +1176,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Variable>& variables,
+                                                            Certificate& cert) const
 {
     TestResult test{"Derivative Dimension Matching", TestStatus::PASS, {}};
 
@@ -1218,7 +1226,7 @@ void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Va
 }
 
 // Helper function to compare dimensions between two variables
-bool Fmi3ModelDescriptionChecker::compareDimensions(const Variable& var1, const Variable& var2)
+bool Fmi3ModelDescriptionChecker::compareDimensions(const Variable& var1, const Variable& var2) const
 {
     // If one is an array and the other is not, they don't match
     if (var1.dimensions.empty() != var2.dimensions.empty())
@@ -1262,7 +1270,7 @@ bool Fmi3ModelDescriptionChecker::compareDimensions(const Variable& var1, const 
 }
 
 // Helper function to format dimensions for error messages
-std::string Fmi3ModelDescriptionChecker::formatDimensions(const Variable& var)
+std::string Fmi3ModelDescriptionChecker::formatDimensions(const Variable& var) const
 {
     if (var.dimensions.empty())
         return "scalar";
@@ -1287,7 +1295,7 @@ std::string Fmi3ModelDescriptionChecker::formatDimensions(const Variable& var)
 }
 
 void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                            Certificate& cert)
+                                                            Certificate& cert) const
 {
     TestResult test{"Variable Dependencies", TestStatus::PASS, {}};
 
@@ -1421,7 +1429,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
 }
 
 void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                          Certificate& cert)
+                                                          Certificate& cert) const
 {
     TestResult test{"ModelStructure Event Indicators", TestStatus::PASS, {}};
 
@@ -1519,7 +1527,7 @@ void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const s
 }
 
 void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                          Certificate& cert)
+                                                          Certificate& cert) const
 {
     TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
@@ -1667,7 +1675,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     cert.printTestResult(test);
 }
 
-std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDefinitions(xmlDocPtr doc)
+std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDefinitions(xmlDocPtr doc) const
 {
     std::map<std::string, TypeDefinition> type_definitions;
 
@@ -1717,7 +1725,7 @@ std::map<std::string, TypeDefinition> Fmi3ModelDescriptionChecker::extractTypeDe
     return type_definitions;
 }
 
-void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& var)
+void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& var) const
 {
     // Look for Dimension child elements
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -1748,7 +1756,8 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 }
 
-void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Variable>& variables,
+                                                           Certificate& cert) const
 {
     TestResult test{"Dimension References", TestStatus::PASS, {}};
 
@@ -1876,7 +1885,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Array Start Values", TestStatus::PASS, {}};
 
@@ -1987,7 +1996,7 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Check Clock References", TestStatus::PASS, {}};
 
@@ -2062,7 +2071,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Check Clocked Variables", TestStatus::PASS, {}};
 
@@ -2133,21 +2142,21 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
 
 void Fmi3ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& /*test*/, const Variable& /*var*/,
                                                                const std::string& /*val*/,
-                                                               const std::string& /*attr_name*/)
+                                                               const std::string& /*attr_name*/) const
 {
     // Special floats are allowed in FMI 3.0 variable values
 }
 
 void Fmi3ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& /*test*/,
                                                                         const std::string& /*val*/,
-                                                                        const std::string& /*attr_name*/)
+                                                                        const std::string& /*attr_name*/) const
 {
     // Special floats are allowed in FMI 3.0
 }
 
 void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& /*test*/, const std::string& /*val*/,
                                                            const std::string& /*attr_name*/,
-                                                           const std::string& /*context*/, size_t /*line*/)
+                                                           const std::string& /*context*/, size_t /*line*/) const
 {
     // Special floats are allowed in FMI 3.0
 }
@@ -2155,12 +2164,12 @@ void Fmi3ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& /*test*/,
 void Fmi3ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& /*test*/,
                                                                      const TypeDefinition& /*type_def*/,
                                                                      const std::string& /*val*/,
-                                                                     const std::string& /*attr_name*/)
+                                                                     const std::string& /*attr_name*/) const
 {
     // Special floats are allowed in FMI 3.0 type definitions
 }
 
-void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Type Definitions", TestStatus::PASS, {}};
 
@@ -2322,7 +2331,7 @@ void Fmi3ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Annotations Uniqueness", TestStatus::PASS, {}};
 
@@ -2373,12 +2382,12 @@ void Fmi3ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
 }
 
 void Fmi3ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
-                                                                 TestResult& test)
+                                                                 TestResult& test) const
 {
     checkGenerationDateReleaseYearBase(dt, generation_time, 2022, "3.0", test);
 }
 
-void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert) const
 {
     TestResult test{"Instantiation Token Format", TestStatus::PASS, {}};
 
@@ -2413,7 +2422,7 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     cert.printTestResult(test);
 }
 
-ModelMetadata Fmi3ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
+ModelMetadata Fmi3ModelDescriptionChecker::extractMetadata(xmlNodePtr root) const
 {
     ModelMetadata metadata;
     metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
@@ -2431,7 +2440,7 @@ ModelMetadata Fmi3ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
     return metadata;
 }
 
-void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
+void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
 
@@ -2502,7 +2511,7 @@ void Fmi3ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
     cert.printTestResult(test);
 }
 
-std::map<std::string, UnitDefinition> Fmi3ModelDescriptionChecker::extractUnitDefinitions(xmlDocPtr doc)
+std::map<std::string, UnitDefinition> Fmi3ModelDescriptionChecker::extractUnitDefinitions(xmlDocPtr doc) const
 {
     std::map<std::string, UnitDefinition> units;
 
@@ -2562,7 +2571,7 @@ std::map<std::string, UnitDefinition> Fmi3ModelDescriptionChecker::extractUnitDe
     return units;
 }
 
-void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
+void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test) const
 {
     // FMI 3.0: must be exactly "3.0" (or follow the official FMI 3.0+ regex)
     // The user requested that for 1.0, 2.0, and 3.0, only "1.0", "2.0", and "3.0" are allowed.

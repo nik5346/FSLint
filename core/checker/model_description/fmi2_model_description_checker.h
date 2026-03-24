@@ -19,59 +19,61 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
   protected:
     void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
                                       const std::map<std::string, TypeDefinition>& type_definitions,
-                                      const std::map<std::string, UnitDefinition>& units, Certificate& cert) override;
+                                      const std::map<std::string, UnitDefinition>& units,
+                                      Certificate& cert) const override;
     std::string getFmiVersion() const override
     {
         return "2.0";
     }
 
     // FMI2-specific implementations
-    void applyDefaultInitialValues(std::vector<Variable>& variables) override;
+    void applyDefaultInitialValues(std::vector<Variable>& variables) const override;
     void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
-                                                      Certificate& cert) override;
-    void checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) override;
-    void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) override;
-    void validateFmiVersionValue(const std::string& version, TestResult& test) override;
-    void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) override;
+                                                      Certificate& cert) const override;
+    void checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) const override;
+    void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) const override;
+    void validateFmiVersionValue(const std::string& version, TestResult& test) const override;
+    void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) const override;
     void checkMinMaxStartValues(const std::vector<Variable>& variables,
                                 const std::map<std::string, TypeDefinition>& type_definitions,
-                                Certificate& cert) override;
+                                Certificate& cert) const override;
 
-    void checkUnits(xmlDocPtr doc, Certificate& cert) override;
-    void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) override;
-    void checkAnnotations(xmlDocPtr doc, Certificate& cert) override;
-    void checkGuid(const std::optional<std::string>& guid, Certificate& cert) override;
-    void checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time, TestResult& test) override;
+    void checkUnits(xmlDocPtr doc, Certificate& cert) const override;
+    void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) const override;
+    void checkAnnotations(xmlDocPtr doc, Certificate& cert) const override;
+    void checkGuid(const std::optional<std::string>& guid, Certificate& cert) const override;
+    void checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
+                                        TestResult& test) const override;
 
     void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
-                                      const std::string& attr_name) override;
+                                      const std::string& attr_name) const override;
     void validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
-                                               const std::string& attr_name) override;
+                                               const std::string& attr_name) const override;
     void validateUnitSpecialFloat(TestResult& test, const std::string& val, const std::string& attr_name,
-                                  const std::string& context, size_t line) override;
+                                  const std::string& context, size_t line) const override;
     void validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def, const std::string& val,
-                                            const std::string& attr_name) override;
+                                            const std::string& attr_name) const override;
 
   private:
     // FMI2-specific variable extraction (different XML structure than FMI3)
-    std::vector<Variable> extractVariables(xmlDocPtr doc) override;
-    ModelMetadata extractMetadata(xmlNodePtr root) override;
+    std::vector<Variable> extractVariables(xmlDocPtr doc) const override;
+    ModelMetadata extractMetadata(xmlNodePtr root) const override;
 
     // FMI2-specific checks
-    std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) override;
-    std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) override;
+    std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) const override;
+    std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) const override;
 
     // FMI2-specific model structure checks
-    void checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
-    void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
-    void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
-    void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
+    void checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
+    void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
+    void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
+    void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
 
-    void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert);
-    void checkAliases(const std::vector<Variable>& variables, Certificate& cert);
-    void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert);
-    void checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
-    void checkMultipleSetAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert);
-    void checkContinuousStatesAndDerivatives(const std::vector<Variable>& variables, Certificate& cert);
-    void checkSourceFilesSemantic(xmlDocPtr doc, Certificate& cert);
+    void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkAliases(const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkMultipleSetAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkContinuousStatesAndDerivatives(const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkSourceFilesSemantic(xmlDocPtr doc, Certificate& cert) const;
 };

@@ -8,5 +8,5 @@
 class Fmi2BinaryChecker : public BinaryChecker
 {
   protected:
-    std::vector<std::string> getExpectedFunctions() override;
+    std::vector<std::string> getExpectedFunctions() const override;
 };

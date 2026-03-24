@@ -13,9 +13,9 @@
 #include <map>
 #include <string>
 
-void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& test)
+void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& test) const
 {
-    auto version_attr = getXmlAttribute(root, "fmiVersion");
+    const auto version_attr = getXmlAttribute(root, "fmiVersion");
     if (!version_attr)
     {
         test.status = TestStatus::FAIL;
@@ -25,7 +25,7 @@ void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& 
 
 std::map<std::string, TerminalVariableInfo>
 Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,
-                                               std::string& fmiVersion)
+                                               std::string& fmiVersion) const
 {
     std::map<std::string, TerminalVariableInfo> variables;
     auto model_desc_path = path / "modelDescription.xml";
