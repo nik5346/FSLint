@@ -46,7 +46,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     else
     {
         // Step 1: Archive validation (version-agnostic)
-        ArchiveChecker archive_checker;
+        const ArchiveChecker archive_checker;
         archive_checker.validate(path, cert);
 
         if (cert.isFailed())
@@ -164,7 +164,7 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     else
     {
         // Step 1: Archive validation
-        ArchiveChecker archive_checker;
+        const ArchiveChecker archive_checker;
         archive_checker.validate(path, cert);
 
         // Step 2: Extract to temporary directory
