@@ -1,3 +1,4 @@
+#include "file_utils.h"
 #include "certificate.h"
 #include "model_checker.h"
 #include "test_helpers.h"
@@ -26,7 +27,7 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
         ModelChecker checker;
         Certificate cert = checker.validate(test_data_root, true);
 
-        INFO("Checking results for " << test_data_root);
+        INFO("Checking results for " << file_utils::pathToUtf8(test_data_root));
         for (const auto& res : cert.getResults())
         {
             if (res.status == TestStatus::FAIL)
@@ -66,8 +67,8 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
         // Copy static data to temp dir
         fs::copy(test_data_root, temp_dir, fs::copy_options::recursive);
 
-        std::string nested_name = (const char*)u8"nested_🚀.fmu";
-        fs::path nested_fmu_path = temp_dir / "resources" / (const char*)u8"nested_🚀.fmu";
+        std::string nested_name = file_utils::pathToUtf8(u8"nested_🚀.fmu");
+        fs::path nested_fmu_path = temp_dir / "resources" / file_utils::utf8ToPath(nested_name);
 
         ModelChecker checker;
         // Package the same static data as a nested FMU

@@ -1,3 +1,4 @@
+#include "file_utils.h"
 #include "build_description_checker.h"
 #include "certificate.h"
 #include "checker_factory.h"
@@ -47,7 +48,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         {
             checker.validate(path, cert);
         }
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (has_fail(cert))
         {
             for (const auto& res : cert.getResults())
@@ -75,7 +76,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                 Certificate cert;
                 ModelChecker mc;
                 cert = mc.validate(path, true);
-                INFO("Checking path: " << path);
+                INFO("Checking path: " << file_utils::pathToUtf8(path));
                 // Reference FMUs for FMI 1.0 are missing _main.html and model.png
                 // We check that there are no FAILs other than the expected ones if any
                 for (const auto& res : cert.getResults())
@@ -84,7 +85,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                     {
                         for (const auto& msg : res.messages)
                             if (msg.find("_main.html") == std::string::npos)
-                                FAIL("Unexpected failure in reference FMU " << path << ": " << msg);
+                                FAIL("Unexpected failure in reference FMU " << file_utils::pathToUtf8(path) << ": " << msg);
                     }
                 }
             };
@@ -123,7 +124,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
             Certificate cert;
             Fmi1DirectoryChecker warn_checker(original_path);
             warn_checker.validate(path, cert);
-            INFO("Checking path: " << path);
+            INFO("Checking path: " << file_utils::pathToUtf8(path));
             if (!has_warning_with_text(cert, expected_warning))
             {
                 UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
@@ -215,7 +216,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         {
             checker.validate(path, cert);
         }
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -223,7 +224,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -244,7 +245,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_warning_with_text(cert, expected_warning))
         {
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
@@ -258,7 +259,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
             }
         }
         if (!has_warning(cert))
-            UNSCOPED_INFO("No warnings at all in certificate for path: " << path);
+            UNSCOPED_INFO("No warnings at all in certificate for path: " << file_utils::pathToUtf8(path));
         REQUIRE(has_warning(cert));
         REQUIRE(has_warning_with_text(cert, expected_warning));
     };
@@ -315,7 +316,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         {
             checker.validate(path, cert);
         }
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -323,7 +324,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -344,7 +345,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_warning_with_text(cert, expected_warning))
         {
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
@@ -400,7 +401,7 @@ TEST_CASE("Build Description Validation", "[build_description]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -408,7 +409,7 @@ TEST_CASE("Build Description Validation", "[build_description]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -430,7 +431,7 @@ TEST_CASE("Build Description Validation", "[build_description]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_warning_with_text(cert, expected_warning))
         {
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
@@ -492,7 +493,7 @@ TEST_CASE("FMI 2.0 Build Description Validation", "[build_description][fmi2]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -500,7 +501,7 @@ TEST_CASE("FMI 2.0 Build Description Validation", "[build_description][fmi2]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -537,7 +538,7 @@ TEST_CASE("FMI 2.0 legacy source files validation", "[fmi2][sources]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");

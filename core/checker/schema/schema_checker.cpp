@@ -50,7 +50,7 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
     // Check if directory exists
     if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
     {
-        std::cerr << "Directory does not exist: " << path << "\n";
+        std::cerr << "Directory does not exist: " << file_utils::pathToUtf8(path) << "\n";
         cert.printTestResult(
             {"Directory Existence", TestStatus::FAIL, {"Directory does not exist: " + file_utils::pathToUtf8(path)}});
         cert.printSubsectionSummary(false);
@@ -436,9 +436,9 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     std::filesystem::path bin_dir;
 
 #ifdef _WIN32
-    std::array<char, 260> path{};
+    std::array<wchar_t, MAX_PATH> path{};
     // NOLINTNEXTLINE(misc-include-cleaner)
-    auto length = GetModuleFileNameA(nullptr, path.data(), static_cast<unsigned long>(path.size()));
+    auto length = GetModuleFileNameW(nullptr, path.data(), static_cast<unsigned long>(path.size()));
     if (length > 0 && length < path.size())
         bin_dir = std::filesystem::path(path.data()).parent_path();
 

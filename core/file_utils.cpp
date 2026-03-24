@@ -46,6 +46,15 @@ std::string pathToUtf8(const std::filesystem::path& path)
 #endif
 }
 
+std::filesystem::path utf8ToPath(const std::string& utf8)
+{
+#ifdef _WIN32
+    return std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(utf8.data()), utf8.size()));
+#else
+    return std::filesystem::path(utf8);
+#endif
+}
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* allocator_ptr)
 {

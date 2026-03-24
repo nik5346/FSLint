@@ -16,6 +16,12 @@ bool isBinary(const std::filesystem::path& path);
 std::string pathToUtf8(const std::filesystem::path& path);
 
 /**
+ * Returns a std::filesystem::path from a UTF-8 encoded string.
+ * On Windows, this handles potential non-ASCII characters correctly.
+ */
+std::filesystem::path utf8ToPath(const std::string& utf8);
+
+/**
  * Generates a JSON representation of the file tree starting at root.
  */
 std::string getFileTreeJson(const std::filesystem::path& root);
