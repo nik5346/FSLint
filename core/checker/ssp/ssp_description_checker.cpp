@@ -28,7 +28,7 @@ std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& a
 
 } // namespace
 
-void SspDescriptionChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void SspDescriptionChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     const auto ssd_path = path / "SystemStructure.ssd";
     if (!std::filesystem::exists(ssd_path))

@@ -1,8 +1,8 @@
 #include "binary_checker.h"
 
 #include "binary_parser.h"
-#include "file_utils.h"
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     auto binaries_path = path / "binaries";
     if (!std::filesystem::exists(binaries_path))

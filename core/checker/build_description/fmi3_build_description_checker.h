@@ -18,5 +18,5 @@ class Fmi3BuildDescriptionChecker : public BuildDescriptionChecker
     }
 
   protected:
-    void checkFmiVersion(xmlNodePtr root, Certificate& cert) override;
+    void checkFmiVersion(xmlNodePtr root, Certificate& cert) const override;
 };

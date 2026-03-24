@@ -17,7 +17,7 @@
 #include <sstream>
 #include <string>
 
-void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
+void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     auto terminals_path = path / "terminalsAndIcons" / "terminalsAndIcons.xml";
     if (!std::filesystem::exists(terminals_path))
@@ -39,7 +39,8 @@ void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, C
     cert.printSubsectionSummary(true);
 }
 
-std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
+std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNodePtr node,
+                                                                         const std::string& attr_name) const
 {
     if (!node)
         return std::nullopt;
@@ -57,7 +58,7 @@ std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNode
 
 bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem::path& path,
                                                           const std::map<std::string, TerminalVariableInfo>& variables,
-                                                          Certificate& cert)
+                                                          Certificate& cert) const
 {
     auto terminals_path = path / "terminalsAndIcons" / "terminalsAndIcons.xml";
 
@@ -137,7 +138,7 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
 }
 
 void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr context, const std::string& p,
-                                                            TestResult& test)
+                                                            TestResult& test) const
 {
     auto check_unique_terminals = [&](auto self, xmlNodePtr parent) -> void
     {
@@ -176,7 +177,7 @@ void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr c
 
 void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr context, const std::string& p,
                                                            const std::map<std::string, TerminalVariableInfo>& variables,
-                                                           TestResult& test)
+                                                           TestResult& test) const
 {
     std::string expr = "//" + p + "TerminalMemberVariable";
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -297,7 +298,7 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
 }
 
 void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr context, const std::string& p,
-                                                          TestResult& test)
+                                                          TestResult& test) const
 {
     auto check_unique_members = [&](auto self, xmlNodePtr terminal) -> void
     {
@@ -380,7 +381,7 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
 
 void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::filesystem::path& path,
                                                                 xmlXPathContextPtr context, const std::string& p,
-                                                                TestResult& test)
+                                                                TestResult& test) const
 {
     const std::string expr = "//" + p + "TerminalGraphicalRepresentation";
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -451,7 +452,7 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
 }
 
 void TerminalsAndIconsCheckerBase::checkStreamFlowConstraints(xmlXPathContextPtr context, const std::string& p,
-                                                              TestResult& test)
+                                                              TestResult& test) const
 {
     auto check_stream_flow_constraint = [&](auto self, xmlNodePtr terminal) -> void
     {

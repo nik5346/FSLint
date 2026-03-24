@@ -4,7 +4,7 @@
 
 #include <libxml/tree.h>
 
-void Fmi2BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& cert)
+void Fmi2BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& cert) const
 {
     TestResult test{"Version", TestStatus::PASS, {}};
     auto bd_fmi_version = getXmlAttribute(root, "fmiVersion");

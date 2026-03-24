@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     cert.printSubsectionHeader("FMU DIRECTORY STRUCTURE");
 
@@ -121,7 +121,7 @@ std::optional<std::string> DirectoryChecker::getXmlAttribute(xmlNodePtr node, co
 }
 
 void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, Certificate& cert,
-                                            const std::set<std::string>& headers)
+                                            const std::set<std::string>& headers) const
 {
     auto sources_path = path / "sources";
     if (!std::filesystem::exists(sources_path) || !std::filesystem::is_directory(sources_path))

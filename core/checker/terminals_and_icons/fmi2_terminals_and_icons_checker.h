@@ -14,6 +14,6 @@ class Fmi2TerminalsAndIconsChecker : public TerminalsAndIconsCheckerBase
 {
   protected:
     std::map<std::string, TerminalVariableInfo> extractVariables(const std::filesystem::path& path, Certificate& cert,
-                                                                 std::string& fmiVersion) override;
-    void checkFmiVersion(xmlNodePtr root, TestResult& test) override;
+                                                                 std::string& fmiVersion) const override;
+    void checkFmiVersion(xmlNodePtr root, TestResult& test) const override;
 };

@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     cert.printSubsectionHeader("BINARY EXPORTS");
 

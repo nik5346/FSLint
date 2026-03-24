@@ -18,24 +18,24 @@ class BuildDescriptionChecker : public Checker
         : _fmi_version(std::move(fmi_version))
     {
     }
-    void validate(const std::filesystem::path& path, Certificate& cert) override;
+    void validate(const std::filesystem::path& path, Certificate& cert) const override;
 
   protected:
     const std::string& getFmiVersion() const
     {
         return _fmi_version;
     }
-    std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
+    std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name) const;
 
-    virtual void checkFmiVersion(xmlNodePtr root, Certificate& cert) = 0;
+    virtual void checkFmiVersion(xmlNodePtr root, Certificate& cert) const = 0;
     void checkSourceFiles(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
-                          Certificate& cert, std::set<std::string>& listed_files);
+                          Certificate& cert, std::set<std::string>& listed_files) const;
     void checkIncludeDirectories(xmlXPathContextPtr xpath_context, const std::filesystem::path& sources_path,
-                                 Certificate& cert);
+                                 Certificate& cert) const;
     void checkBuildConfigurationAttributes(xmlXPathContextPtr xpath_context, const std::set<std::string>& valid_ids,
-                                           Certificate& cert);
+                                           Certificate& cert) const;
 
-    std::set<std::string> getValidModelIdentifiers(const std::filesystem::path& path);
+    std::set<std::string> getValidModelIdentifiers(const std::filesystem::path& path) const;
 
   private:
     std::string _fmi_version;

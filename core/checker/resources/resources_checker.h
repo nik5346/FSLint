@@ -7,8 +7,8 @@
 class ResourcesChecker : public Checker
 {
   public:
-    void validate(const std::filesystem::path& path, Certificate& cert) override;
+    void validate(const std::filesystem::path& path, Certificate& cert) const override;
 
   private:
-    void scanResources(const std::filesystem::path& resources_dir, Certificate& cert);
+    void scanResources(const std::filesystem::path& resources_dir, Certificate& cert) const;
 };

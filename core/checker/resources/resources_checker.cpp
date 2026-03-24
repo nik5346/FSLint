@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <string>
 
-void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     auto resources_dir = path / "resources";
     if (!std::filesystem::exists(resources_dir) || !std::filesystem::is_directory(resources_dir))
@@ -16,7 +16,7 @@ void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& 
     scanResources(resources_dir, cert);
 }
 
-void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir, Certificate& cert)
+void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir, Certificate& cert) const
 {
     for (const auto& entry : std::filesystem::directory_iterator(resources_dir))
     {
