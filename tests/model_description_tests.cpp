@@ -1,3 +1,4 @@
+#include "file_utils.h"
 #include "certificate.h"
 #include "fmi1_directory_checker.h"
 #include "fmi1_model_description_checker.h"
@@ -22,7 +23,7 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         Certificate cert;
         checker.setOriginalPath(original_path);
         checker.validate("tests/data/fmi1/fail/" + path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         REQUIRE(has_fail(cert));
         CHECK(has_error_with_text(cert, expected_error));
     };
@@ -129,7 +130,7 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         Certificate cert;
         checker.setOriginalPath("Test.fmu");
         checker.validate("tests/data/fmi1/" + path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_warning_with_text(cert, expected_warning))
         {
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
@@ -244,7 +245,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         Certificate cert;
         checker.setOriginalPath(original_path);
         checker.validate("tests/data/fmi2/fail/" + path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -437,7 +438,7 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         Certificate cert;
         checker.setOriginalPath("Test.fmu");
         checker.validate("tests/data/fmi2/warn/" + path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_warning_with_text(cert, expected_warning))
         {
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
@@ -518,7 +519,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         Certificate cert;
         checker.setOriginalPath("Test.fmu");
         checker.validate("tests/data/fmi3/fail/" + path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -692,7 +693,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         Certificate cert;
         checker.setOriginalPath("Test.fmu");
         checker.validate("tests/data/fmi3/warn/" + path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_warning_with_text(cert, expected_warning))
         {
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");

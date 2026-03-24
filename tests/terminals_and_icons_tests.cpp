@@ -1,3 +1,4 @@
+#include "file_utils.h"
 #include "certificate.h"
 #include "fmi2_terminals_and_icons_checker.h"
 #include "fmi3_terminals_and_icons_checker.h"
@@ -12,7 +13,7 @@ TEST_CASE("FMI 2.0 Terminals and Icons Validation", "[terminals][icons][fmi2]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -20,7 +21,7 @@ TEST_CASE("FMI 2.0 Terminals and Icons Validation", "[terminals][icons][fmi2]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
@@ -61,7 +62,7 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -69,7 +70,7 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
     {
         Certificate cert;
         checker.validate(path, cert);
-        INFO("Checking path: " << path);
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (!has_error_with_text(cert, expected_error))
         {
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
