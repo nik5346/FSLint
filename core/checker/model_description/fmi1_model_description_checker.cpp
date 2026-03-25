@@ -936,10 +936,9 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back(std::format(
-                                "Variables sharing VR {} must have equivalent start values. \"{}\" has start=\"{}\" "
-                                "(normalized: {}) but \"{}\" has start=\"{}\" (normalized: {}).",
-                                vr, var->name, *var->start, current_val, first_with_start->name,
-                                *first_with_start->start, first_normalized_start));
+                                "Variables sharing VR {} must have equivalent start values. \"{}\" and \"{}\" have "
+                                "inconsistent start values.",
+                                vr, var->name, first_with_start->name));
                         }
                     }
                 }
