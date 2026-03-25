@@ -145,6 +145,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
 bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 {
     Certificate cert;
+    cert.setQuiet(false);
 
     // Print header
     const std::string hash = calculateSHA256(path);
