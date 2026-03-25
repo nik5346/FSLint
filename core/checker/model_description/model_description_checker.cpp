@@ -321,11 +321,16 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         }
     };
 
-    if (parsed->month != -1) check_range(parsed->month, 1, 12, "Month");
-    if (parsed->day != -1) check_range(parsed->day, 1, 31, "Day");
-    if (parsed->hour != -1) check_range(parsed->hour, 0, 23, "Hour");
-    if (parsed->minute != -1) check_range(parsed->minute, 0, 59, "Minute");
-    if (parsed->second != -1) check_range(parsed->second, 0, 60, "Second"); // Allow leap seconds
+    if (parsed->month != -1)
+        check_range(parsed->month, 1, 12, "Month");
+    if (parsed->day != -1)
+        check_range(parsed->day, 1, 31, "Day");
+    if (parsed->hour != -1)
+        check_range(parsed->hour, 0, 23, "Hour");
+    if (parsed->minute != -1)
+        check_range(parsed->minute, 0, 59, "Minute");
+    if (parsed->second != -1)
+        check_range(parsed->second, 0, 60, "Second"); // Allow leap seconds
 
     if (test.status == TestStatus::FAIL)
     {
