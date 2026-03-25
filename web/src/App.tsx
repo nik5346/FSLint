@@ -72,9 +72,11 @@ function App() {
   const [rulesWidth, setRulesWidth] = useState(250);
   const [isResizing, setIsResizing] = useState(false);
   const [isResizingRules, setIsResizingRules] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const outputEndRef = useRef<HTMLPreElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
 
   const fileMap = useMemo(() => {
     const map = new Map<string, FileNode>();
@@ -247,8 +249,26 @@ function App() {
     }
   };
 
+  const handleDragEnter = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    dragCounter.current += 1;
+    if (dragCounter.current === 1) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
   const onDrop = async (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
+    dragCounter.current = 0;
+    setIsDragging(false);
     const items = event.dataTransfer.items;
     if (items && items.length > 0) {
       const allFiles: File[] = [];
@@ -511,15 +531,21 @@ function App() {
           />
           <div
             onDragOver={(e) => e.preventDefault()}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
             onDrop={onDrop}
             style={{
-              border: `2px dashed ${theme.border}`,
+              border: `2px dashed ${isDragging ? '#007bff' : theme.border}`,
               borderRadius: '8px',
               padding: '20px',
               textAlign: 'center',
               cursor: isReady && !isProcessing ? 'default' : 'wait',
               opacity: isReady && !isProcessing ? 1 : 0.6,
-              background: theme.surface,
+              background: isDragging
+                ? isDark
+                  ? 'rgba(0, 123, 255, 0.1)'
+                  : 'rgba(0, 123, 255, 0.05)'
+                : theme.surface,
               color: theme.text,
               font: 'inherit',
               flex: 1,
@@ -542,47 +568,55 @@ function App() {
               onChange={handleFileChange}
               disabled={!isReady || isProcessing}
             />
-            {isProcessing ? (
-              <p style={{ margin: 0 }}>Processing...</p>
-            ) : (
-              <div>
-                <p style={{ margin: 0 }}>Drag & drop an FMU/SSP file or folder here</p>
-                <div
-                  style={{
-                    marginTop: '10px',
-                    display: 'flex',
-                    gap: '10px',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <label
-                    htmlFor="fileInput"
+            <div
+              style={{
+                filter: isDragging ? 'blur(2px)' : 'none',
+                transition: 'filter 0.2s',
+                pointerEvents: isDragging ? 'none' : 'auto',
+              }}
+            >
+              {isProcessing ? (
+                <p style={{ margin: 0 }}>Processing...</p>
+              ) : (
+                <div>
+                  <p style={{ margin: 0 }}>Drag & drop an FMU/SSP file or folder here</p>
+                  <div
                     style={{
-                      textDecoration: 'underline',
-                      cursor: 'pointer',
+                      marginTop: '10px',
+                      display: 'flex',
+                      gap: '10px',
+                      justifyContent: 'center',
                     }}
                   >
-                    Select File
-                  </label>
-                  <span>or</span>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={handleFolderSelect}
-                    onKeyDown={(e) =>
-                      (e.key === 'Enter' || e.key === ' ') &&
-                      handleFolderSelect(e as unknown as React.MouseEvent)
-                    }
-                    style={{
-                      textDecoration: 'underline',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Select Folder
-                  </span>
+                    <label
+                      htmlFor="fileInput"
+                      style={{
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Select File
+                    </label>
+                    <span>or</span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={handleFolderSelect}
+                      onKeyDown={(e) =>
+                        (e.key === 'Enter' || e.key === ' ') &&
+                        handleFolderSelect(e as unknown as React.MouseEvent)
+                      }
+                      style={{
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Select Folder
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <div
