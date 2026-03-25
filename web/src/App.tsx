@@ -763,11 +763,7 @@ function App() {
                 flexShrink: 0,
               }}
             >
-              <RulesOutline
-                headers={rulesHeaders}
-                theme={theme}
-                activeLine={activeRuleLine}
-              />
+              <RulesOutline headers={rulesHeaders} theme={theme} activeLine={activeRuleLine} />
             </div>
             {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
             <div
