@@ -272,6 +272,9 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
                       "The documentation entry point 'documentation/index.html' is missing.");
         validate_fail("tests/data/fmi2/warn/missing_license_txt",
                       "The license entry point (e.g. 'licenses/license.txt') is missing.");
+        validate_fail("tests/data/fmi2/fail/undeclared_sources",
+                      "Source code FMU contains a 'sources/' directory, but no <SourceFiles> are listed in "
+                      "'modelDescription.xml'.");
     }
 
     SECTION("Warning Cases")
@@ -287,12 +290,10 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
                          "needsExecutionTool is true, but 'documentation/externalDependencies.{txt|html}' is missing");
 
         validate_warning("tests/data/directory/warn/unknown_entry", "Unknown file");
-        validate_warning("tests/data/fmi2/warn/dist_sources_only", "only contains <SourceFiles>");
-        validate_warning("tests/data/fmi2/warn/dist_build_desc_only", "only contains buildDescription.xml");
+        validate_warning("tests/data/fmi2/warn/dist_sources_only", "buildDescription.xml' is recommended");
+        validate_warning("tests/data/fmi2/warn/dist_build_desc_only", "recommended to also provide <SourceFiles>");
         validate_warning("tests/data/fmi2/warn/fmi_header_in_sources",
                          "Standard FMI header file 'fmi2Functions.h' found in 'sources/' directory");
-        validate_warning("tests/data/fmi2/warn/undeclared_sources",
-                         "Source code FMU contains a 'sources/' directory, but no description");
     }
 
     SECTION("Passing Cases")

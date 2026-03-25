@@ -162,7 +162,16 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     // 5. Source Files Consistency
     {
         TestResult test{"Source Files Consistency", TestStatus::PASS, {}};
-        if (std::filesystem::exists(sources_path) && !has_build_description)
+        const bool has_physical_sources = std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path);
+        const bool has_sources_in_md = !listed_sources_in_md.empty();
+
+        if (has_physical_sources && !has_sources_in_md)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Source code FMU contains a 'sources/' directory, but no <SourceFiles> are listed "
+                                    "in 'modelDescription.xml'.");
+        }
+        else if (has_physical_sources && !has_build_description)
         {
             for (const auto& entry : std::filesystem::recursive_directory_iterator(sources_path))
             {
@@ -202,19 +211,11 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         if (has_physical_sources || has_sources_in_md || has_build_description_anywhere)
         {
             TestResult test{"2.0.4 Compatibility", TestStatus::PASS, {}};
-            if (has_physical_sources && !has_sources_in_md && !has_build_description_anywhere)
+            if ((has_physical_sources || has_sources_in_md) && !has_build_description_anywhere)
             {
                 test.status = TestStatus::WARNING;
-                test.messages.push_back("Source code FMU contains a 'sources/' directory, but no description "
-                                        "(neither <SourceFiles> in 'modelDescription.xml' nor a "
-                                        "'buildDescription.xml' file).");
-            }
-            else if (has_sources_in_md && !has_build_description_anywhere)
-            {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Source code FMU only contains <SourceFiles> in modelDescription.xml. "
-                                        "It is recommended to also provide a buildDescription.xml for 2.0.4+ "
-                                        "compatibility.");
+                test.messages.push_back("Providing a 'buildDescription.xml' is recommended for source code FMUs (FMI "
+                                        "2.0.4+).");
             }
             else if (!has_sources_in_md && has_build_description_anywhere)
             {
