@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useFSLint } from './hooks/useFSLint';
 import { FileNode } from './types';
 import { FileTreeItem } from './components/FileTreeItem';
@@ -73,10 +73,12 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
   const [isResizingRules, setIsResizingRules] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [activeRuleLine, setActiveRuleLine] = useState<number | undefined>();
 
   const outputEndRef = useRef<HTMLPreElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
+  const rulesScrollRef = useRef<HTMLDivElement>(null);
 
   const fileMap = useMemo(() => {
     const map = new Map<string, FileNode>();
@@ -87,6 +89,26 @@ function App() {
     if (fileTree) traverse(fileTree);
     return map;
   }, [fileTree]);
+
+  const rulesHeaders = useMemo(() => extractHeaders(rulesText), [rulesText]);
+
+  const handleRulesScroll = useCallback(() => {
+    if (!rulesScrollRef.current) return;
+
+    const container = rulesScrollRef.current;
+    const scrollPos = container.scrollTop + 50; // buffer
+
+    let currentHeaderLine = rulesHeaders[0]?.line;
+    for (const header of rulesHeaders) {
+      const el = document.getElementById(`line-${header.line}`);
+      if (el && el.offsetTop <= scrollPos) {
+        currentHeaderLine = header.line;
+      } else if (el && el.offsetTop > scrollPos) {
+        break;
+      }
+    }
+    setActiveRuleLine(currentHeaderLine);
+  }, [rulesHeaders]);
 
   const theme = useMemo(
     () => ({
@@ -741,7 +763,11 @@ function App() {
                 flexShrink: 0,
               }}
             >
-              <RulesOutline headers={extractHeaders(rulesText)} theme={theme} />
+              <RulesOutline
+                headers={rulesHeaders}
+                theme={theme}
+                activeLine={activeRuleLine}
+              />
             </div>
             {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
             <div
@@ -758,6 +784,8 @@ function App() {
               }}
             />
             <div
+              ref={rulesScrollRef}
+              onScroll={handleRulesScroll}
               style={{
                 flex: 1,
                 minHeight: 0,
