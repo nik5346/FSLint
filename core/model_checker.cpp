@@ -28,11 +28,13 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
 
     if (!quiet)
     {
+        std::string filename = file_utils::pathToUtf8(path.filename());
+        if (filename.empty() && path.has_parent_path())
+            filename = file_utils::pathToUtf8(path.parent_path().filename());
+        std::cout << "Validating: " << filename << "\n";
+
         const std::string hash = calculateSHA256(path);
-        std::string model_name = file_utils::pathToUtf8(path.filename());
-        if (model_name.empty() && path.has_parent_path())
-            model_name = file_utils::pathToUtf8(path.parent_path().filename());
-        cert.printMainHeader(model_name, hash);
+        cert.printMainHeader(hash);
     }
 
     std::filesystem::path extract_dir;
@@ -126,7 +128,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         checker->validate(extract_dir, cert);
 
     if (show_tree)
-        cert.printFileTree(extract_dir, file_utils::pathToUtf8(model_info.original_path.filename()));
+        cert.printFileTree(extract_dir);
 
 #ifndef __EMSCRIPTEN__
     if (is_temporary && std::filesystem::exists(extract_dir))
@@ -148,11 +150,13 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     cert.setQuiet(false);
 
     // Print header
+    std::string filename = file_utils::pathToUtf8(path.filename());
+    if (filename.empty() && path.has_parent_path())
+        filename = file_utils::pathToUtf8(path.parent_path().filename());
+    std::cout << "Validating: " << filename << "\n";
+
     const std::string hash = calculateSHA256(path);
-    std::string model_name = file_utils::pathToUtf8(path.filename());
-    if (model_name.empty() && path.has_parent_path())
-        model_name = file_utils::pathToUtf8(path.parent_path().filename());
-    cert.printMainHeader(model_name, hash);
+    cert.printMainHeader(hash);
 
     std::filesystem::path extract_dir;
     bool is_temporary = false;

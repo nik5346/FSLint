@@ -1598,7 +1598,7 @@ void Fmi2ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::stri
 
 void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert) const
 {
-    TestResult test{"GUID Format", TestStatus::PASS, {}};
+    TestResult test{"GUID", TestStatus::PASS, {}};
 
     if (!guid_opt.has_value())
     {
@@ -1615,6 +1615,8 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         cert.printTestResult(test);
         return;
     }
+
+    test.messages.push_back("GUID: " + *guid_opt);
 
     const std::string& guid = *guid_opt;
     const std::regex guid_pattern(

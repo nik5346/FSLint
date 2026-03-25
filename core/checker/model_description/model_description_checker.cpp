@@ -194,7 +194,7 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
 
 void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string>& model_name, Certificate& cert) const
 {
-    TestResult test{"Model Name Format", TestStatus::PASS, {}};
+    TestResult test{"Model Name", TestStatus::PASS, {}};
 
     if (!model_name.has_value())
     {
@@ -212,6 +212,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
         return;
     }
 
+    test.messages.push_back("Name: " + *model_name);
     cert.printTestResult(test);
 }
 
@@ -423,7 +424,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::
 void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::string>& fmi_version,
                                                   Certificate& cert) const
 {
-    TestResult test{"Version", TestStatus::PASS, {}};
+    TestResult test{"FMI Version", TestStatus::PASS, {}};
 
     if (!fmi_version.has_value())
     {
@@ -432,6 +433,8 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
         cert.printTestResult(test);
         return;
     }
+
+    test.messages.push_back("Version: " + fmi_version.value_or("[missing]"));
 
     if (fmi_version->empty())
     {
