@@ -128,7 +128,6 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     if (show_tree)
         cert.printFileTree(extract_dir, file_utils::pathToUtf8(model_info.original_path.filename()));
 
-    // Cleanup temporary directory
 #ifndef __EMSCRIPTEN__
     if (is_temporary && std::filesystem::exists(extract_dir))
         std::filesystem::remove_all(extract_dir);
