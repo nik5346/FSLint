@@ -102,11 +102,20 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Download Reference FMUs
+        run: python scripts/download_reference_fmus.py
+
       - name: Configure CMake
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
 
       - name: Build
-        run: cmake --build build --config Release --target FSLint-cli
+        run: cmake --build build --config Release --target FSLint-cli FSLint-tests
+
+      - name: Run Tests
+        shell: bash
+        run: |
+          cd build
+          ctest --output-on-failure -C Release
 
       - name: Prepare Artifact
         shell: bash
@@ -120,32 +129,6 @@ jobs:
           cp LICENSE dist/
           cp -r standard dist/
 
-      - name: Download Reference FMUs
-        shell: bash
-        run: curl -L -o Reference-FMUs.zip https://github.com/modelica/Reference-FMUs/releases/download/v0.0.39/Reference-FMUs-0.0.39.zip
-
-      - name: Extract Bouncing Ball FMUs
-        shell: python
-        run: |
-          import zipfile
-          import os
-          import shutil
-          with zipfile.ZipFile('Reference-FMUs.zip') as z:
-              z.extract('1.0/cs/BouncingBall.fmu', 'test_fmu_10cs')
-              z.extract('1.0/me/BouncingBall.fmu', 'test_fmu_10me')
-              z.extract('2.0/BouncingBall.fmu', 'test_fmu_20')
-              z.extract('3.0/BouncingBall.fmu', 'test_fmu_30')
-          mapping = {
-              'test_fmu_10cs/1.0/cs/BouncingBall.fmu': 'BouncingBall_1.0_cs.fmu',
-              'test_fmu_10me/1.0/me/BouncingBall.fmu': 'BouncingBall_1.0_me.fmu',
-              'test_fmu_20/2.0/BouncingBall.fmu': 'BouncingBall_2.0.fmu',
-              'test_fmu_30/3.0/BouncingBall.fmu': 'BouncingBall_3.0.fmu'
-          }
-          for src, dest in mapping.items():
-              if os.path.exists(dest):
-                  os.remove(dest)
-              shutil.move(src, dest)
-
       - name: Test with Bouncing Ball FMUs
         shell: bash
         if: (matrix.arch == 'x64' && runner.arch == 'X64') || (matrix.arch == 'arm64' && runner.arch == 'ARM64') || runner.os == 'macOS'
@@ -154,10 +137,10 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             CLI_BIN="./dist/FSLint-cli.exe"
           fi
-          $CLI_BIN BouncingBall_1.0_cs.fmu
-          $CLI_BIN BouncingBall_1.0_me.fmu
-          $CLI_BIN BouncingBall_2.0.fmu
-          $CLI_BIN BouncingBall_3.0.fmu
+          $CLI_BIN tests/reference_fmus/1.0/cs/BouncingBall.fmu > fslint_cli_10cs.log 2>&1
+          $CLI_BIN tests/reference_fmus/1.0/me/BouncingBall.fmu > fslint_cli_10me.log 2>&1
+          $CLI_BIN tests/reference_fmus/2.0/BouncingBall.fmu > fslint_cli_20.log 2>&1
+          $CLI_BIN tests/reference_fmus/3.0/BouncingBall.fmu > fslint_cli_30.log 2>&1
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

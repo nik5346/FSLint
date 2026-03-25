@@ -2,6 +2,7 @@
 
 #include "binary_parser.h"
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -14,7 +15,7 @@
 #include <string>
 #include <vector>
 
-void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     cert.printSubsectionHeader("BINARY EXPORTS");
 
@@ -121,7 +122,7 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
         {
             if (!platform_entry.is_directory())
                 continue;
-            const std::string platform = platform_entry.path().filename().string();
+            const std::string platform = file_utils::pathToUtf8(platform_entry.path().filename());
 
             for (const auto& ext : {".dll", ".so", ".dylib"})
             {

@@ -16,5 +16,5 @@ class Checker
     Checker(Checker&&) = delete;
     Checker& operator=(Checker&&) = delete;
 
-    virtual void validate(const std::filesystem::path& path, Certificate& cert) = 0;
+    virtual void validate(const std::filesystem::path& path, Certificate& cert) const = 0;
 };

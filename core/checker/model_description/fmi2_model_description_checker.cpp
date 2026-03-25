@@ -27,7 +27,7 @@
 void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,
     [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
-    [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
+    [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert) const
 {
     // Enumeration variables must have a declaredType
     checkEnumerationVariables(variables, cert);
@@ -54,7 +54,8 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     checkModelStructure(doc, variables, cert);
 }
 
-void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Variable>& variables,
+                                                            Certificate& cert) const
 {
     TestResult test{"Enumeration Variable Type", TestStatus::PASS, {}};
 
@@ -72,7 +73,7 @@ void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
 }
 
 void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                       Certificate& cert)
+                                                       Certificate& cert) const
 {
     TestResult test{"Reinit Attribute", TestStatus::PASS, {}};
 
@@ -108,7 +109,7 @@ void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
 }
 
 void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                            Certificate& cert)
+                                                            Certificate& cert) const
 {
     TestResult test{"Multiple Set Attribute", TestStatus::PASS, {}};
 
@@ -141,7 +142,7 @@ void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const
 }
 
 void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std::vector<Variable>& variables,
-                                                                      Certificate& cert)
+                                                                      Certificate& cert) const
 {
     TestResult test{"Continuous-time States and Derivatives", TestStatus::PASS, {}};
 
@@ -225,7 +226,8 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Variable>& variables,
+                                                           Certificate& cert) const
 {
     TestResult test{"Independent Variable", TestStatus::PASS, {}};
 
@@ -280,7 +282,7 @@ void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Alias Variables", TestStatus::PASS, {}};
 
@@ -431,7 +433,7 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     cert.printTestResult(test);
 }
 
-std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
+std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr doc) const
 {
     std::vector<Variable> variables;
 
@@ -537,7 +539,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
     return variables;
 }
 
-void Fmi2ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables)
+void Fmi2ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables) const
 {
     for (auto& var : variables)
     {
@@ -580,7 +582,7 @@ void Fmi2ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
     }
 }
 
-void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Legal Variability", TestStatus::PASS, {}};
 
@@ -608,7 +610,7 @@ void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
+void Fmi2ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test) const
 {
     // FMI 2.0: must be exactly "2.0"
     if (version != "2.0")
@@ -618,7 +620,8 @@ void Fmi2ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
     }
 }
 
-void Fmi2ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables,
+                                                           Certificate& cert) const
 {
     TestResult test{"Required Start Values", TestStatus::PASS, {}};
 
@@ -650,7 +653,7 @@ void Fmi2ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
 }
 
 void Fmi2ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
-                                                                               Certificate& cert)
+                                                                               Certificate& cert) const
 {
     TestResult test{"Causality/Variability/Initial Combinations", TestStatus::PASS, {}};
 
@@ -709,7 +712,8 @@ void Fmi2ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables,
+                                                          Certificate& cert) const
 {
     TestResult test{"Illegal Start Values", TestStatus::PASS, {}};
 
@@ -737,7 +741,7 @@ void Fmi2ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
 
 void Fmi2ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Variable>& variables,
                                                          const std::map<std::string, TypeDefinition>& type_definitions,
-                                                         Certificate& cert)
+                                                         Certificate& cert) const
 {
     TestResult test{"Min/Max/Start Value Constraints", TestStatus::PASS, {}};
 
@@ -765,7 +769,7 @@ void Fmi2ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
 }
 
 void Fmi2ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                      Certificate& cert)
+                                                      Certificate& cert) const
 {
     validateOutputs(doc, variables, cert);
     validateDerivatives(doc, variables, cert);
@@ -773,7 +777,7 @@ void Fmi2ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::
 }
 
 void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                  Certificate& cert)
+                                                  Certificate& cert) const
 {
     TestResult test{"ModelStructure Outputs", TestStatus::PASS, {}};
 
@@ -938,7 +942,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 }
 
 void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                      Certificate& cert)
+                                                      Certificate& cert) const
 {
     TestResult test{"ModelStructure Derivatives", TestStatus::PASS, {}};
 
@@ -1104,7 +1108,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 }
 
 void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                          Certificate& cert)
+                                                          Certificate& cert) const
 {
     TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
@@ -1270,7 +1274,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     cert.printTestResult(test);
 }
 
-std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDefinitions(xmlDocPtr doc)
+std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDefinitions(xmlDocPtr doc) const
 {
     std::map<std::string, TypeDefinition> type_definitions;
 
@@ -1334,7 +1338,8 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
 }
 
 void Fmi2ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test, const Variable& var,
-                                                               const std::string& val, const std::string& attr_name)
+                                                               const std::string& val,
+                                                               const std::string& attr_name) const
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -1343,7 +1348,7 @@ void Fmi2ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test,
 }
 
 void Fmi2ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
-                                                                        const std::string& attr_name)
+                                                                        const std::string& attr_name) const
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back(attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
@@ -1352,7 +1357,7 @@ void Fmi2ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResu
 
 void Fmi2ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
                                                            const std::string& attr_name, const std::string& context,
-                                                           size_t line)
+                                                           size_t line) const
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
@@ -1361,7 +1366,7 @@ void Fmi2ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, con
 
 void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
                                                                      const std::string& val,
-                                                                     const std::string& attr_name)
+                                                                     const std::string& attr_name) const
 {
     test.status = TestStatus::FAIL;
     test.messages.push_back("Type definition \"" + type_def.name + "\" (line " + std::to_string(type_def.sourceline) +
@@ -1369,7 +1374,7 @@ void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult&
                             ", which is not allowed.");
 }
 
-void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Type Definitions", TestStatus::PASS, {}};
 
@@ -1551,7 +1556,7 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Vendor Annotations Uniqueness", TestStatus::PASS, {}};
 
@@ -1586,12 +1591,12 @@ void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
 }
 
 void Fmi2ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
-                                                                 TestResult& test)
+                                                                 TestResult& test) const
 {
     checkGenerationDateReleaseYearBase(dt, generation_time, 2014, "2.0", test);
 }
 
-void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert) const
 {
     TestResult test{"GUID Format", TestStatus::PASS, {}};
 
@@ -1625,7 +1630,7 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     cert.printTestResult(test);
 }
 
-ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
+ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root) const
 {
     ModelMetadata metadata;
     metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
@@ -1647,7 +1652,7 @@ ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
     return metadata;
 }
 
-void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
 
@@ -1734,7 +1739,7 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
     cert.printTestResult(test);
 }
 
-std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDefinitions(xmlDocPtr doc)
+std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDefinitions(xmlDocPtr doc) const
 {
     std::map<std::string, UnitDefinition> units;
 
@@ -1799,7 +1804,7 @@ std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDe
     return units;
 }
 
-void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certificate& cert)
+void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Source Files Semantic Validation", TestStatus::PASS, {}};
 

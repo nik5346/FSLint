@@ -1,5 +1,6 @@
 #include "checker_factory.h"
 
+#include "file_utils.h"
 #include "model_info.h"
 
 #include "checker.h"
@@ -49,7 +50,7 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir,
 
     std::string original_ext;
     if (!original_path.empty() && std::filesystem::is_regular_file(original_path))
-        original_ext = original_path.extension().string();
+        original_ext = file_utils::pathToUtf8(original_path.extension());
 
     // Check for FMI
     const auto model_desc_path = extract_dir / "modelDescription.xml";

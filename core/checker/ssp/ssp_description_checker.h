@@ -8,5 +8,5 @@
 class SspDescriptionChecker : public Checker
 {
   public:
-    void validate(const std::filesystem::path& path, Certificate& cert) override;
+    void validate(const std::filesystem::path& path, Certificate& cert) const override;
 };

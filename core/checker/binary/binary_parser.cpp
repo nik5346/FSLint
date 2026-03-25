@@ -188,7 +188,9 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     bool found_dynamic = false;
     for (int i = 0; i < ehdr.e_phnum; ++i)
     {
-        if (readFromFile(f, static_cast<std::streamoff>(ehdr.e_phoff + static_cast<uint64_t>(i) * ehdr.e_phentsize),
+        if (readFromFile(f,
+                         static_cast<std::streamoff>(ehdr.e_phoff) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(ehdr.e_phentsize),
                          phdr))
         {
             if (phdr.p_type == PT_DYNAMIC)
@@ -244,6 +246,8 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     // We need to map these back to file offsets using program headers.
     auto va_to_off = [&](uint64_t va) -> uint64_t
     {
+        if (va == 0)
+            return 0;
         f.seekg(static_cast<std::streamoff>(ehdr.e_phoff));
         for (int i = 0; i < ehdr.e_phnum; ++i)
         {
@@ -346,7 +350,9 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     for (uint32_t i = 0; i < nsyms; ++i)
     {
         Elf64_Sym sym{};
-        if (readFromFile(f, static_cast<std::streamoff>(symtab_off + static_cast<uint64_t>(i) * sizeof(Elf64_Sym)),
+        if (readFromFile(f,
+                         static_cast<std::streamoff>(symtab_off) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(Elf64_Sym)),
                          sym))
         {
             if (ELF64_ST_BIND(sym.st_info) != STB_LOCAL && sym.st_shndx != SHN_UNDEF)
@@ -822,7 +828,9 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     for (uint32_t i = 0; i < nsyms; ++i)
     {
         Elf32_Sym sym{};
-        if (readFromFile(f, static_cast<std::streamoff>(symtab_off + static_cast<uint32_t>(i) * sizeof(Elf32_Sym)),
+        if (readFromFile(f,
+                         static_cast<std::streamoff>(symtab_off) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(Elf32_Sym)),
                          sym))
         {
             if (ELF32_ST_BIND(sym.st_info) != STB_LOCAL && sym.st_shndx != SHN_UNDEF)

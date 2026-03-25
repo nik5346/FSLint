@@ -1,6 +1,7 @@
 #include "schema_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -40,7 +41,7 @@
 #include <emscripten.h>
 #endif
 
-void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
+void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     bool is_valid = true;
 
@@ -49,8 +50,9 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
     // Check if directory exists
     if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
     {
-        std::cerr << "Directory does not exist: " << path << "\n";
-        cert.printTestResult({"Directory Existence", TestStatus::FAIL, {"Directory does not exist: " + path.string()}});
+        std::cerr << "Directory does not exist: " << file_utils::pathToUtf8(path) << "\n";
+        cert.printTestResult(
+            {"Directory Existence", TestStatus::FAIL, {"Directory does not exist: " + file_utils::pathToUtf8(path)}});
         cert.printSubsectionSummary(false);
         return;
     }
@@ -142,7 +144,7 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
 }
 
 bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_path, const std::string& validation_name,
-                                             Certificate& cert)
+                                             Certificate& cert) const
 {
     TestResult test{validation_name + " (XML Version, Encoding)", TestStatus::PASS, {}};
 
@@ -434,9 +436,9 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     std::filesystem::path bin_dir;
 
 #ifdef _WIN32
-    std::array<char, 260> path{};
+    std::array<wchar_t, MAX_PATH> path{};
     // NOLINTNEXTLINE(misc-include-cleaner)
-    auto length = GetModuleFileNameA(nullptr, path.data(), static_cast<unsigned long>(path.size()));
+    auto length = GetModuleFileNameW(nullptr, path.data(), static_cast<unsigned long>(path.size()));
     if (length > 0 && length < path.size())
         bin_dir = std::filesystem::path(path.data()).parent_path();
 
@@ -499,9 +501,8 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         if (std::filesystem::exists(candidate))
             return candidate;
 
-            // Robustness: try access() in case std::filesystem::exists is flaky in WASM
 #if defined(__EMSCRIPTEN__) || defined(__linux__) || defined(__APPLE__)
-        if (access(candidate.string().c_str(), F_OK) == 0)
+        if (access(file_utils::pathToUtf8(candidate).c_str(), F_OK) == 0)
             return candidate;
 #endif
     }
@@ -509,23 +510,23 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 #ifdef __EMSCRIPTEN__
     std::cerr << "[ERROR] Schema not found: " << schema_filename << "\n";
     std::cerr << "  Standard Name: " << getStandardName() << ", Version: " << version << "\n";
-    std::cerr << "  Current CWD: " << cwd.string() << "\n";
+    std::cerr << "  Current CWD: " << file_utils::pathToUtf8(cwd) << "\n";
     std::cerr << "  Attempted paths:\n";
     for (const auto& candidate : candidates)
-        std::cerr << "    - " << candidate.string() << "\n";
+        std::cerr << "    - " << file_utils::pathToUtf8(candidate) << "\n";
 
     // Debug: List /standard directory if it exists, otherwise list root
     if (std::filesystem::exists("/standard"))
     {
         std::cerr << "  Contents of /standard:\n";
         for (const auto& entry : std::filesystem::recursive_directory_iterator("/standard"))
-            std::cerr << "    " << entry.path().string() << "\n";
+            std::cerr << "    " << file_utils::pathToUtf8(entry.path()) << "\n";
     }
     else
     {
         std::cerr << "  /standard directory does NOT exist in VFS. Listing root /:\n";
         for (const auto& entry : std::filesystem::recursive_directory_iterator("/"))
-            std::cerr << "    " << entry.path().string() << "\n";
+            std::cerr << "    " << file_utils::pathToUtf8(entry.path()) << "\n";
     }
 #endif
 
@@ -562,20 +563,31 @@ bool SchemaCheckerBase::hasElement(const std::filesystem::path& xml_path, const 
 }
 
 void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, const std::filesystem::path& schema_path,
-                                        const std::string& validation_name, Certificate& cert)
+                                        const std::string& validation_name, Certificate& cert) const
 {
     TestResult test{validation_name + " (XML Schema)", TestStatus::PASS, {}};
 
     // Initialize libxml2
     xmlInitParser();
 
-    // Load schema
-    xmlSchemaParserCtxtPtr parser_ctx = xmlSchemaNewParserCtxt(schema_path.string().c_str());
+    // Load schema from memory to support UTF-8 paths on Windows
+    xmlDocPtr schema_doc = readXmlFile(schema_path);
+    if (!schema_doc)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Failed to read schema file: " + file_utils::pathToUtf8(schema_path));
+        cert.printTestResult(test);
+        xmlCleanupParser();
+        return;
+    }
+
+    xmlSchemaParserCtxtPtr parser_ctx = xmlSchemaNewDocParserCtxt(schema_doc);
     if (!parser_ctx)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("Failed to create schema parser context.");
         cert.printTestResult(test);
+        xmlFreeDoc(schema_doc);
         xmlCleanupParser();
         return;
     }
@@ -587,6 +599,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
 
     xmlSchemaPtr schema = xmlSchemaParse(parser_ctx);
     xmlSchemaFreeParserCtxt(parser_ctx);
+    xmlFreeDoc(schema_doc);
 
     if (!schema)
     {
@@ -617,7 +630,20 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
                             reinterpret_cast<xmlSchemaValidityWarningFunc>(warningCallback), &test);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
-    const std::int32_t valid_result = xmlSchemaValidateFile(valid_ctx, xml_path.string().c_str(), 0);
+    // Load XML document from memory to support UTF-8 paths on Windows
+    xmlDocPtr xml_doc = readXmlFile(xml_path);
+    if (!xml_doc)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Failed to read XML file: " + file_utils::pathToUtf8(xml_path));
+        cert.printTestResult(test);
+        xmlSchemaFreeValidCtxt(valid_ctx);
+        xmlSchemaFree(schema);
+        xmlCleanupParser();
+        return;
+    }
+
+    const std::int32_t valid_result = xmlSchemaValidateDoc(valid_ctx, xml_doc);
 
     if (valid_result != 0)
     {
@@ -631,6 +657,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     cert.printTestResult(test);
 
     // Cleanup
+    xmlFreeDoc(xml_doc);
     xmlSchemaFreeValidCtxt(valid_ctx);
     xmlSchemaFree(schema);
     xmlCleanupParser();

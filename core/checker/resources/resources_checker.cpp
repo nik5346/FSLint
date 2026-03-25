@@ -1,12 +1,13 @@
 #include "resources_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "model_checker.h"
 
 #include <filesystem>
 #include <string>
 
-void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     auto resources_dir = path / "resources";
     if (!std::filesystem::exists(resources_dir) || !std::filesystem::is_directory(resources_dir))
@@ -15,13 +16,13 @@ void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& 
     scanResources(resources_dir, cert);
 }
 
-void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir, Certificate& cert)
+void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir, Certificate& cert) const
 {
     for (const auto& entry : std::filesystem::directory_iterator(resources_dir))
     {
         if (entry.is_regular_file())
         {
-            auto ext = entry.path().extension().string();
+            auto ext = file_utils::pathToUtf8(entry.path().extension());
             if (ext == ".fmu" || ext == ".ssp")
             {
                 const ModelChecker nested_checker;
@@ -30,7 +31,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                 const Certificate nested_cert = nested_checker.validate(entry.path(), true);
 
                 NestedModelResult result;
-                result.name = entry.path().filename().string();
+                result.name = file_utils::pathToUtf8(entry.path().filename());
                 result.status = nested_cert.getOverallStatus();
                 result.nested_models = nested_cert.getNestedModels();
 
@@ -51,7 +52,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                 const Certificate nested_cert = nested_checker.validate(entry.path(), true);
 
                 NestedModelResult result;
-                result.name = entry.path().filename().string() + "/";
+                result.name = file_utils::pathToUtf8(entry.path().filename()) + "/";
                 result.status = nested_cert.getOverallStatus();
                 result.nested_models = nested_cert.getNestedModels();
 

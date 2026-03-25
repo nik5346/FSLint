@@ -6,5 +6,7 @@
     </SourceFiles>
   </CoSimulation>
   <ModelVariables />
-  <ModelStructure />
+  <ModelStructure>
+    <InitialUnknowns />
+  </ModelStructure>
 </fmiModelDescription>

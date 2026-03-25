@@ -112,7 +112,7 @@ struct ModelMetadata
 class ModelDescriptionCheckerBase : public Checker
 {
   public:
-    void validate(const std::filesystem::path& path, Certificate& cert) override;
+    void validate(const std::filesystem::path& path, Certificate& cert) const override;
 
     // Non-throwing numeric parsing
     template <typename T>
@@ -190,7 +190,7 @@ class ModelDescriptionCheckerBase : public Checker
     virtual void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
                                               const std::map<std::string, TypeDefinition>& type_definitions,
                                               const std::map<std::string, UnitDefinition>& units,
-                                              Certificate& cert) = 0;
+                                              Certificate& cert) const = 0;
 
   protected:
     const std::filesystem::path& getFmuRootPath() const
@@ -206,75 +206,75 @@ class ModelDescriptionCheckerBase : public Checker
     virtual std::string getFmiVersion() const = 0;
 
     // Common validation methods that work the same way across FMI versions
-    void checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert);
-    virtual void checkUnits(xmlDocPtr doc, Certificate& cert) = 0;
-    virtual void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) = 0;
+    void checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert) const;
+    virtual void checkUnits(xmlDocPtr doc, Certificate& cert) const = 0;
+    virtual void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) const = 0;
     void checkVariableNamingConvention(const std::vector<Variable>& variables, const std::string& convention,
-                                       Certificate& cert);
-    void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert);
-    virtual void checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert);
-    virtual void validateFmiVersionValue(const std::string& version, TestResult& test) = 0;
-    void checkModelName(const std::optional<std::string>& model_name, Certificate& cert);
-    virtual void checkGuid(const std::optional<std::string>& guid, Certificate& cert) = 0;
-    void checkModelVersion(const std::optional<std::string>& version, Certificate& cert);
-    void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert);
-    void checkLicense(const std::optional<std::string>& license, Certificate& cert);
-    void checkAuthor(const std::optional<std::string>& author, Certificate& cert);
-    void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert);
-    void checkLogCategories(xmlDocPtr doc, Certificate& cert);
-    virtual void checkAnnotations(xmlDocPtr doc, Certificate& cert) = 0;
+                                       Certificate& cert) const;
+    void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert) const;
+    virtual void checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert) const;
+    virtual void validateFmiVersionValue(const std::string& version, TestResult& test) const = 0;
+    void checkModelName(const std::optional<std::string>& model_name, Certificate& cert) const;
+    virtual void checkGuid(const std::optional<std::string>& guid, Certificate& cert) const = 0;
+    void checkModelVersion(const std::optional<std::string>& version, Certificate& cert) const;
+    void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert) const;
+    void checkLicense(const std::optional<std::string>& license, Certificate& cert) const;
+    void checkAuthor(const std::optional<std::string>& author, Certificate& cert) const;
+    void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert) const;
+    void checkLogCategories(xmlDocPtr doc, Certificate& cert) const;
+    virtual void checkAnnotations(xmlDocPtr doc, Certificate& cert) const = 0;
     virtual void checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
-                                                TestResult& test) = 0;
+                                                TestResult& test) const = 0;
     void checkGenerationDateReleaseYearBase(const std::string& dt, std::time_t generation_time, int32_t release_year,
-                                            const std::string& fmi_version, TestResult& test);
+                                            const std::string& fmi_version, TestResult& test) const;
     void checkNumberOfImplementedInterfaces(const std::map<std::string, std::string>& model_identifiers,
-                                            Certificate& cert);
+                                            Certificate& cert) const;
     virtual void checkModelIdentifier(const std::string& model_identifier, const std::string& interface_name,
-                                      Certificate& cert);
-    void checkDefaultExperiment(xmlDocPtr doc, Certificate& cert);
+                                      Certificate& cert) const;
+    void checkDefaultExperiment(xmlDocPtr doc, Certificate& cert) const;
 
     // Common reference checks
     void checkTypeAndUnitReferences(const std::vector<Variable>& variables,
                                     const std::map<std::string, TypeDefinition>& type_definitions,
-                                    const std::map<std::string, UnitDefinition>& units, Certificate& cert);
+                                    const std::map<std::string, UnitDefinition>& units, Certificate& cert) const;
     void checkUnusedDefinitions(const std::map<std::string, TypeDefinition>& type_definitions,
-                                const std::map<std::string, UnitDefinition>& units, Certificate& cert);
+                                const std::map<std::string, UnitDefinition>& units, Certificate& cert) const;
 
     // Version-specific validation methods (must be implemented by derived classes)
-    virtual void applyDefaultInitialValues(std::vector<Variable>& variables) = 0;
+    virtual void applyDefaultInitialValues(std::vector<Variable>& variables) const = 0;
     virtual void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
-                                                              Certificate& cert) = 0;
-    virtual void checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) = 0;
-    virtual void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) = 0;
-    virtual void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) = 0;
+                                                              Certificate& cert) const = 0;
+    virtual void checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) const = 0;
+    virtual void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) const = 0;
+    virtual void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) const = 0;
     virtual void checkMinMaxStartValues(const std::vector<Variable>& variables,
                                         const std::map<std::string, TypeDefinition>& type_definitions,
-                                        Certificate& cert) = 0;
+                                        Certificate& cert) const = 0;
 
     // XML parsing helpers
-    virtual ModelMetadata extractMetadata(xmlNodePtr root) = 0;
+    virtual ModelMetadata extractMetadata(xmlNodePtr root) const = 0;
     virtual std::map<std::string, std::string>
-    extractModelIdentifiers(xmlDocPtr doc, const std::vector<std::string>& interface_elements);
-    virtual std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) = 0;
-    virtual std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) = 0;
-    virtual std::vector<Variable> extractVariables(xmlDocPtr doc) = 0;
-    std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
-    xmlXPathObjectPtr getXPathNodes(xmlDocPtr doc, const std::string& xpath);
+    extractModelIdentifiers(xmlDocPtr doc, const std::vector<std::string>& interface_elements) const;
+    virtual std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) const = 0;
+    virtual std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) const = 0;
+    virtual std::vector<Variable> extractVariables(xmlDocPtr doc) const = 0;
+    std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name) const;
+    xmlXPathObjectPtr getXPathNodes(xmlDocPtr doc, const std::string& xpath) const;
 
     // Helper to check for special float values (NaN, INF)
-    bool isSpecialFloat(const std::string& value);
-    std::string getSpecialFloatDescription(const std::string& value);
-    std::string normalizeFloatString(const std::string& value);
+    bool isSpecialFloat(const std::string& value) const;
+    std::string getSpecialFloatDescription(const std::string& value) const;
+    std::string normalizeFloatString(const std::string& value) const;
 
     // Version-specific special float validation hooks
     virtual void validateVariableSpecialFloat(TestResult& test, const Variable& var, const std::string& val,
-                                              const std::string& attr_name) = 0;
+                                              const std::string& attr_name) const = 0;
     virtual void validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
-                                                       const std::string& attr_name) = 0;
+                                                       const std::string& attr_name) const = 0;
     virtual void validateUnitSpecialFloat(TestResult& test, const std::string& val, const std::string& attr_name,
-                                          const std::string& unit_name, size_t line) = 0;
+                                          const std::string& unit_name, size_t line) const = 0;
     virtual void validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
-                                                    const std::string& val, const std::string& attr_name) = 0;
+                                                    const std::string& val, const std::string& attr_name) const = 0;
 
     // Helper to get effective min/max for a variable considering type definitions
     struct EffectiveBounds
@@ -283,24 +283,25 @@ class ModelDescriptionCheckerBase : public Checker
         std::optional<std::string> max;
     };
     EffectiveBounds getEffectiveBounds(const Variable& var,
-                                       const std::map<std::string, TypeDefinition>& type_definitions);
+                                       const std::map<std::string, TypeDefinition>& type_definitions) const;
 
     // Validation helpers
     template <typename T>
     bool validateTypeBounds(const Variable& var, const std::optional<std::string>& effective_min,
-                            const std::optional<std::string>& effective_max, TestResult& test);
+                            const std::optional<std::string>& effective_max, TestResult& test) const;
 
   private:
-    std::filesystem::path _fmu_root_path;
-    std::filesystem::path _original_path;
-    std::set<std::string> _used_type_definitions;
-    std::set<std::string> _used_units;
+    mutable std::filesystem::path _fmu_root_path;
+    mutable std::filesystem::path _original_path;
+    mutable std::set<std::string> _used_type_definitions;
+    mutable std::set<std::string> _used_units;
 };
 
 template <typename T>
 bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
                                                      const std::optional<std::string>& effective_min,
-                                                     const std::optional<std::string>& effective_max, TestResult& test)
+                                                     const std::optional<std::string>& effective_max,
+                                                     TestResult& test) const
 {
     auto parse = [&](const std::optional<std::string>& str_opt, const std::string& attr_name) -> std::optional<T>
     {

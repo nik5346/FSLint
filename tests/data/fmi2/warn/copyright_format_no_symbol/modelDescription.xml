@@ -6,5 +6,7 @@
       <Real />
     </ScalarVariable>
   </ModelVariables>
-  <ModelStructure />
+  <ModelStructure>
+    <InitialUnknowns />
+  </ModelStructure>
 </fmiModelDescription>

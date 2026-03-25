@@ -35,7 +35,7 @@
 void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,
     [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
-    [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert)
+    [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert) const
 {
     // Check Alias variables
     checkAliases(variables, cert);
@@ -44,7 +44,7 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
     checkImplementation(doc, cert);
 }
 
-void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test)
+void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test) const
 {
     if (version != "1.0")
     {
@@ -53,7 +53,7 @@ void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
     }
 }
 
-void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid, Certificate& cert) const
 {
     TestResult test{"GUID Format", TestStatus::PASS, {}};
     if (!guid.has_value())
@@ -86,12 +86,12 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
 }
 
 void Fmi1ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::string& dt, std::time_t generation_time,
-                                                                 TestResult& test)
+                                                                 TestResult& test) const
 {
     checkGenerationDateReleaseYearBase(dt, generation_time, 2010, "1.0", test);
 }
 
-void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Vendor Annotations Uniqueness", TestStatus::PASS, {}};
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/VendorAnnotations/Tool");
@@ -120,7 +120,7 @@ void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables)
+void Fmi1ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable>& variables) const
 {
     for (auto& var : variables)
     {
@@ -136,7 +136,7 @@ void Fmi1ModelDescriptionChecker::applyDefaultInitialValues(std::vector<Variable
 }
 
 void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
-                                                                               Certificate& cert)
+                                                                               Certificate& cert) const
 {
     TestResult test{"Causality/Variability/Initial Combinations", TestStatus::PASS, {}};
 
@@ -156,7 +156,7 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Legal Variability", TestStatus::PASS, {}};
     for (const auto& var : variables)
@@ -175,7 +175,8 @@ void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Variable>& variables,
+                                                           Certificate& cert) const
 {
     TestResult test{"Required Start Values", TestStatus::PASS, {}};
     for (const auto& var : variables)
@@ -198,7 +199,8 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Variable>& variables,
+                                                          Certificate& cert) const
 {
     TestResult test{"Illegal Start Values", TestStatus::PASS, {}};
     for (const auto& var : variables)
@@ -234,7 +236,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
 
 void Fmi1ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Variable>& variables,
                                                          const std::map<std::string, TypeDefinition>& type_definitions,
-                                                         Certificate& cert)
+                                                         Certificate& cert) const
 {
     TestResult test{"Min/Max/Start Value Constraints", TestStatus::PASS, {}};
     for (const auto& var : variables)
@@ -252,7 +254,7 @@ void Fmi1ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
 }
 
 std::map<std::string, std::string> Fmi1ModelDescriptionChecker::extractModelIdentifiers(
-    xmlDocPtr doc, [[maybe_unused]] const std::vector<std::string>& interface_elements)
+    xmlDocPtr doc, [[maybe_unused]] const std::vector<std::string>& interface_elements) const
 {
     std::map<std::string, std::string> model_identifiers;
     xmlNodePtr root = xmlDocGetRootElement(doc);
@@ -274,7 +276,7 @@ std::map<std::string, std::string> Fmi1ModelDescriptionChecker::extractModelIden
     return model_identifiers;
 }
 
-ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
+ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root) const
 {
     ModelMetadata metadata;
     metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
@@ -297,7 +299,7 @@ ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root)
     return metadata;
 }
 
-std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDefinitions(xmlDocPtr doc)
+std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDefinitions(xmlDocPtr doc) const
 {
     std::map<std::string, UnitDefinition> units;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/UnitDefinitions/BaseUnit");
@@ -344,7 +346,7 @@ std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDe
     return units;
 }
 
-std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDefinitions(xmlDocPtr doc)
+std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDefinitions(xmlDocPtr doc) const
 {
     std::map<std::string, TypeDefinition> type_definitions;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/TypeDefinitions/Type");
@@ -391,7 +393,7 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
     return type_definitions;
 }
 
-std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr doc)
+std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr doc) const
 {
     _is_cs = false;
     xmlXPathObjectPtr xpath_obj_impl = getXPathNodes(doc, "/fmiModelDescription/Implementation");
@@ -474,7 +476,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
     return variables;
 }
 
-void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/UnitDefinitions/BaseUnit");
@@ -503,7 +505,7 @@ void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert)
     cert.printTestResult(test);
 }
 
-void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Type Definitions", TestStatus::PASS, {}};
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/TypeDefinitions/Type");
@@ -534,21 +536,21 @@ void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
 void Fmi1ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& /*test*/, const Variable& /*var*/,
                                                                const std::string& /*val*/,
-                                                               const std::string& /*attr_name*/)
+                                                               const std::string& /*attr_name*/) const
 {
     // Special floats are allowed in FMI 1.0
 }
 
 void Fmi1ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& /*test*/,
                                                                         const std::string& /*val*/,
-                                                                        const std::string& /*attr_name*/)
+                                                                        const std::string& /*attr_name*/) const
 {
     // Special floats are allowed in FMI 1.0
 }
 
 void Fmi1ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& /*test*/, const std::string& /*val*/,
                                                            const std::string& /*attr_name*/,
-                                                           const std::string& /*unit_name*/, size_t /*line*/)
+                                                           const std::string& /*unit_name*/, size_t /*line*/) const
 {
     // Special floats are allowed in FMI 1.0
 }
@@ -556,42 +558,18 @@ void Fmi1ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& /*test*/,
 void Fmi1ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& /*test*/,
                                                                      const TypeDefinition& /*type_def*/,
                                                                      const std::string& /*val*/,
-                                                                     const std::string& /*attr_name*/)
+                                                                     const std::string& /*attr_name*/) const
 {
     // Special floats are allowed in FMI 1.0
 }
 
 void Fmi1ModelDescriptionChecker::checkModelIdentifier(const std::string& model_identifier,
-                                                       const std::string& interface_name, Certificate& cert)
+                                                       const std::string& interface_name, Certificate& cert) const
 {
     ModelDescriptionCheckerBase::checkModelIdentifier(model_identifier, interface_name, cert);
-    checkModelIdentifierMatch(model_identifier, cert);
 }
 
-void Fmi1ModelDescriptionChecker::checkModelIdentifierMatch(const std::string& model_identifier, Certificate& cert)
-{
-    const auto& original_path = getOriginalPath();
-    const auto& fmu_root_path = getFmuRootPath();
-
-    // If original_path is not set, we can't perform this check reliably in some contexts,
-    // but in normal execution it should be set. If it's empty, we fall back to root path stem.
-    const auto& path_to_check = original_path.empty() ? fmu_root_path : original_path;
-    const std::string expected_id = path_to_check.stem().string();
-
-    if (model_identifier != expected_id)
-    {
-        cert.printTestResult(
-            {"Model Identifier Filename Match",
-             TestStatus::FAIL,
-             {std::format("modelIdentifier '{}' must match the FMU filename '{}'.", model_identifier, expected_id)}});
-    }
-    else
-    {
-        cert.printTestResult({"Model Identifier Filename Match", TestStatus::PASS, {}});
-    }
-}
-
-void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate& cert) const
 {
     // For FMI 1.0, the presence of the Implementation element distinguishes Co-Simulation from Model Exchange.
     // If present, we validate its contents (CoSimulation_StandAlone or CoSimulation_Tool).
@@ -687,7 +665,7 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::string& attr_name, int line,
-                                           TestResult& test)
+                                           TestResult& test) const
 {
     if (uri.compare(0, 6, "fmu://") == 0)
     {
@@ -822,7 +800,7 @@ static int runProcess(const std::string& url)
 #endif
 // NOLINTEND(misc-include-cleaner)
 
-bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url)
+bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url) const
 {
     static const std::regex safe_url_regex(R"(^https?://[a-zA-Z0-9\-\._~:/?#%@\+&!=\[\]]+$)", std::regex::optimize);
     if (!std::regex_match(url, safe_url_regex))
@@ -831,7 +809,7 @@ bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url)
     return runProcess(url) == 0;
 }
 
-void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert)
+void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert) const
 {
     TestResult test{"Alias Variables", TestStatus::PASS, {}};
 

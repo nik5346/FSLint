@@ -46,23 +46,23 @@ class TerminalsAndIconsCheckerBase : public Checker
     TerminalsAndIconsCheckerBase(TerminalsAndIconsCheckerBase&&) = delete;
     TerminalsAndIconsCheckerBase& operator=(TerminalsAndIconsCheckerBase&&) = delete;
 
-    void validate(const std::filesystem::path& path, Certificate& cert) override;
+    void validate(const std::filesystem::path& path, Certificate& cert) const override;
 
   protected:
     virtual std::map<std::string, TerminalVariableInfo>
-    extractVariables(const std::filesystem::path& path, Certificate& cert, std::string& fmiVersion) = 0;
+    extractVariables(const std::filesystem::path& path, Certificate& cert, std::string& fmiVersion) const = 0;
 
     bool checkTerminalsAndIcons(const std::filesystem::path& path,
-                                const std::map<std::string, TerminalVariableInfo>& variables, Certificate& cert);
+                                const std::map<std::string, TerminalVariableInfo>& variables, Certificate& cert) const;
 
-    virtual void checkFmiVersion(xmlNodePtr root, TestResult& test) = 0;
-    void checkUniqueTerminalNames(xmlXPathContextPtr context, const std::string& p, TestResult& test);
+    virtual void checkFmiVersion(xmlNodePtr root, TestResult& test) const = 0;
+    void checkUniqueTerminalNames(xmlXPathContextPtr context, const std::string& p, TestResult& test) const;
     void checkVariableReferences(xmlXPathContextPtr context, const std::string& p,
-                                 const std::map<std::string, TerminalVariableInfo>& variables, TestResult& test);
-    void checkUniqueMemberNames(xmlXPathContextPtr context, const std::string& p, TestResult& test);
-    void checkStreamFlowConstraints(xmlXPathContextPtr context, const std::string& p, TestResult& test);
+                                 const std::map<std::string, TerminalVariableInfo>& variables, TestResult& test) const;
+    void checkUniqueMemberNames(xmlXPathContextPtr context, const std::string& p, TestResult& test) const;
+    void checkStreamFlowConstraints(xmlXPathContextPtr context, const std::string& p, TestResult& test) const;
     void checkGraphicalRepresentation(const std::filesystem::path& path, xmlXPathContextPtr context,
-                                      const std::string& p, TestResult& test);
+                                      const std::string& p, TestResult& test) const;
 
-    std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
+    std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name) const;
 };

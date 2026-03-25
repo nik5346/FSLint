@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-std::vector<std::string> Fmi2BinaryChecker::getExpectedFunctions()
+std::vector<std::string> Fmi2BinaryChecker::getExpectedFunctions() const
 {
     return {"fmi2GetTypesPlatform",
             "fmi2GetVersion",

@@ -1,6 +1,7 @@
 #include "fmi3_directory_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 
 #include <filesystem>
 #include <format>
@@ -12,7 +13,7 @@
 
 void Fmi3DirectoryChecker::performVersionSpecificChecks(
     const std::filesystem::path& path, Certificate& cert, const std::map<std::string, std::string>& model_identifiers,
-    [[maybe_unused]] const std::set<std::string>& listed_sources_in_md, bool needs_execution_tool)
+    [[maybe_unused]] const std::set<std::string>& listed_sources_in_md, bool needs_execution_tool) const
 {
     // 1. FMU Root Entries
     {
@@ -29,7 +30,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
-            const std::string name = entry.path().filename().string();
+            const std::string name = file_utils::pathToUtf8(entry.path().filename());
             if (!fmi3_standard_entries.contains(name))
             {
                 test.status = TestStatus::WARNING;
@@ -150,7 +151,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         test.messages.push_back(
                             std::format("'{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
                                         "fallback).",
-                                        entry.path().filename().string(), png_path.filename().string()));
+                                        file_utils::pathToUtf8(entry.path().filename()),
+                                        file_utils::pathToUtf8(png_path.filename())));
                     }
                 }
             }
@@ -193,7 +195,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 if (entry.is_directory())
                 {
-                    const std::string tuple = entry.path().filename().string();
+                    const std::string tuple = file_utils::pathToUtf8(entry.path().filename());
                     const std::regex tuple_regex("^([a-z0-9_]+)-([a-z0-9_]+)(-([a-z0-9_]+))?$");
                     std::smatch match;
                     if (!std::regex_match(tuple, match, tuple_regex))
@@ -281,7 +283,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 if (entry.is_directory())
                 {
-                    const std::string name = entry.path().filename().string();
+                    const std::string name = file_utils::pathToUtf8(entry.path().filename());
                     // Reverse domain notation: e.g. com.example
                     // It should have at least one dot and follow basic domain naming rules.
                     const std::regex rd_regex("^[a-z0-9]+(\\.[a-z0-9]+)+$");

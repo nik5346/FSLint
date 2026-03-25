@@ -3,6 +3,11 @@
 #include "unzip.h"
 #include "zip.h"
 
+#ifdef _WIN32
+#define NOMINMAX
+#include "iowin32.h"
+#endif
+
 #include <zconf.h>
 #include <zlib.h>
 
@@ -28,7 +33,14 @@ bool Zipper::open(const std::filesystem::path& zip_path)
     close(); // Close any previously opened file
 
     _zip_path = zip_path;
+
+#ifdef _WIN32
+    zlib_filefunc64_def ffunc;
+    fill_win32_filefunc64W(&ffunc);
+    _zip_file = unzOpen2_64(zip_path.wstring().c_str(), &ffunc);
+#else
     _zip_file = unzOpen(zip_path.string().c_str());
+#endif
 
     return _zip_file != nullptr;
 }
@@ -38,7 +50,14 @@ bool Zipper::create(const std::filesystem::path& zip_path)
     close(); // Close any previously opened file
 
     _zip_path = zip_path;
+
+#ifdef _WIN32
+    zlib_filefunc64_def ffunc;
+    fill_win32_filefunc64W(&ffunc);
+    _zip_writer = zipOpen2_64(zip_path.wstring().c_str(), APPEND_STATUS_CREATE, nullptr, &ffunc);
+#else
     _zip_writer = zipOpen(zip_path.string().c_str(), APPEND_STATUS_CREATE);
+#endif
 
     return _zip_writer != nullptr;
 }
@@ -151,7 +170,13 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
     auto entries = getEntries();
     for (const auto& entry : entries)
     {
+#ifdef _WIN32
+        const std::filesystem::path file_path =
+            destination / std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(entry.filename.data()),
+                                                              entry.filename.size()));
+#else
         const std::filesystem::path file_path = destination / entry.filename;
+#endif
 
         // Check if it's a directory (ends with /)
         if (!entry.filename.empty() && entry.filename.back() == '/')

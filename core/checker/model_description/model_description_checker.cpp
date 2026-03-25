@@ -1,6 +1,7 @@
 #include "model_description_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "iso8601.h"
 #include "structured_name_parser.h"
 #include "xml_utils.h"
@@ -25,7 +26,7 @@
 #include <time.h>
 #include <vector>
 
-void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Certificate& cert)
+void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     cert.printSubsectionHeader("MODEL DESCRIPTION VALIDATION");
     _fmu_root_path = path;
@@ -125,7 +126,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     {
         for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
             if (entry.is_directory())
-                summary.platforms.push_back(entry.path().filename().string());
+                summary.platforms.push_back(file_utils::pathToUtf8(entry.path().filename()));
     }
 
     const bool has_sources = std::filesystem::exists(path / "sources");
@@ -170,7 +171,8 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     cert.printSubsectionSummary(true);
 }
 
-void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Variable>& variables, Certificate& cert)
+void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Variable>& variables,
+                                                           Certificate& cert) const
 {
     TestResult test{"Unique Variable Names", TestStatus::PASS, {}};
 
@@ -190,7 +192,7 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string>& model_name, Certificate& cert)
+void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string>& model_name, Certificate& cert) const
 {
     TestResult test{"Model Name Format", TestStatus::PASS, {}};
 
@@ -214,7 +216,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
 }
 
 void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vector<Variable>& variables,
-                                                                const std::string& convention, Certificate& cert)
+                                                                const std::string& convention, Certificate& cert) const
 {
     TestResult test{"Variable Naming Convention", TestStatus::PASS, {}};
 
@@ -275,7 +277,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
 }
 
 void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time,
-                                                             Certificate& cert)
+                                                             Certificate& cert) const
 {
     TestResult test{"Generation Date and Time Format", TestStatus::PASS, {}};
 
@@ -314,7 +316,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (!std::regex_match(dt, recommended_pattern))
     {
         test.messages.push_back("Generation date and time \"" + dt +
-                                "\" should follow the recommended FMI format (YYYY-MM-DDThh:mm:ssZ).");
+                                "\" does not match recommended FMI format (YYYY-MM-DDThh:mm:ssZ).");
         if (test.status == TestStatus::PASS)
             test.status = TestStatus::WARNING;
     }
@@ -403,7 +405,8 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::string& dt, std::time_t generation_time,
                                                                      int32_t release_year,
-                                                                     const std::string& fmi_version, TestResult& test)
+                                                                     const std::string& fmi_version,
+                                                                     TestResult& test) const
 {
     constexpr int32_t UNIX_EPOCH_YEAR = 1900;
 
@@ -431,7 +434,8 @@ void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::
     }
 }
 
-void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert)
+void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::string>& fmi_version,
+                                                  Certificate& cert) const
 {
     TestResult test{"Version", TestStatus::PASS, {}};
 
@@ -456,7 +460,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::string>& version, Certificate& cert)
+void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::string>& version, Certificate& cert) const
 {
     TestResult test{"Model Version", TestStatus::PASS, {}};
 
@@ -487,7 +491,7 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string>& copyright, Certificate& cert)
+void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string>& copyright, Certificate& cert) const
 {
     TestResult test{"Copyright", TestStatus::PASS, {}};
 
@@ -499,7 +503,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     else if (copyright->empty())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'copyright' is empty.");
+        test.messages.push_back("The 'copyright' attribute is empty.");
     }
     else
     {
@@ -564,7 +568,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>& license, Certificate& cert)
+void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>& license, Certificate& cert) const
 {
     TestResult test{"License", TestStatus::PASS, {}};
 
@@ -582,7 +586,7 @@ void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>&
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& author, Certificate& cert)
+void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& author, Certificate& cert) const
 {
     TestResult test{"Author", TestStatus::PASS, {}};
 
@@ -600,7 +604,7 @@ void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& 
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert)
+void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert) const
 {
     TestResult test{"Generation Tool", TestStatus::PASS, {}};
 
@@ -618,7 +622,7 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate& cert)
+void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Log Categories Uniqueness", TestStatus::PASS, {}};
 
@@ -653,7 +657,7 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
 }
 
 void ModelDescriptionCheckerBase::checkNumberOfImplementedInterfaces(
-    const std::map<std::string, std::string>& model_identifiers, Certificate& cert)
+    const std::map<std::string, std::string>& model_identifiers, Certificate& cert) const
 {
     TestResult test{"Number of Implemented Interfaces", TestStatus::FAIL, {}};
 
@@ -666,7 +670,7 @@ void ModelDescriptionCheckerBase::checkNumberOfImplementedInterfaces(
 }
 
 void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_identifier,
-                                                       const std::string& interface_name, Certificate& cert)
+                                                       const std::string& interface_name, Certificate& cert) const
 {
     TestResult test{"Model Identifier Format for Interface \"" + interface_name + "\"", TestStatus::PASS, {}};
 
@@ -725,7 +729,7 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
 
 ModelDescriptionCheckerBase::EffectiveBounds
 ModelDescriptionCheckerBase::getEffectiveBounds(const Variable& var,
-                                                const std::map<std::string, TypeDefinition>& type_definitions)
+                                                const std::map<std::string, TypeDefinition>& type_definitions) const
 {
     EffectiveBounds bounds;
 
@@ -758,7 +762,8 @@ ModelDescriptionCheckerBase::getEffectiveBounds(const Variable& var,
 }
 
 std::map<std::string, std::string>
-ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::vector<std::string>& interface_elements)
+ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc,
+                                                     const std::vector<std::string>& interface_elements) const
 {
     std::map<std::string, std::string> model_identifiers;
 
@@ -780,7 +785,8 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc, const std::v
     return model_identifiers;
 }
 
-std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
+std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodePtr node,
+                                                                        const std::string& attr_name) const
 {
     if (!node)
         return std::nullopt;
@@ -797,7 +803,7 @@ std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodeP
     return value;
 }
 
-std::string ModelDescriptionCheckerBase::normalizeFloatString(const std::string& value)
+std::string ModelDescriptionCheckerBase::normalizeFloatString(const std::string& value) const
 {
     std::string s = value;
     // Remove leading/trailing whitespace
@@ -815,7 +821,7 @@ std::string ModelDescriptionCheckerBase::normalizeFloatString(const std::string&
     return lower;
 }
 
-bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
+bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value) const
 {
     const std::string lower = normalizeFloatString(value);
 
@@ -831,7 +837,7 @@ bool ModelDescriptionCheckerBase::isSpecialFloat(const std::string& value)
     return false;
 }
 
-std::string ModelDescriptionCheckerBase::getSpecialFloatDescription(const std::string& value)
+std::string ModelDescriptionCheckerBase::getSpecialFloatDescription(const std::string& value) const
 {
     const std::string lower = normalizeFloatString(value);
 
@@ -847,7 +853,7 @@ std::string ModelDescriptionCheckerBase::getSpecialFloatDescription(const std::s
     return "NaN or Infinity";
 }
 
-xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, const std::string& xpath)
+xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, const std::string& xpath) const
 {
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
     if (!context)
@@ -861,7 +867,7 @@ xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, cons
     return result;
 }
 
-void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certificate& cert)
+void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certificate& cert) const
 {
     TestResult test{"Default Experiment", TestStatus::PASS, {}};
 
@@ -999,7 +1005,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
 
 void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
     const std::vector<Variable>& variables, const std::map<std::string, TypeDefinition>& type_definitions,
-    const std::map<std::string, UnitDefinition>& units, Certificate& cert)
+    const std::map<std::string, UnitDefinition>& units, Certificate& cert) const
 {
     TestResult test{"Type and Unit References", TestStatus::PASS, {}};
 
@@ -1143,7 +1149,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
 
 void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::string, TypeDefinition>& type_definitions,
                                                          const std::map<std::string, UnitDefinition>& units,
-                                                         Certificate& cert)
+                                                         Certificate& cert) const
 {
     TestResult test{"Unused Definitions", TestStatus::PASS, {}};
 

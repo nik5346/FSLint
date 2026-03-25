@@ -4,7 +4,7 @@
     <ScalarVariable name="v1" valueReference="1" causality="internal" variability="discrete">
       <Real start="1.0" />
     </ScalarVariable>
-    <ScalarVariable name="v2" valueReference="1" causality="internal" variability="continuous">
+    <ScalarVariable name="v2" valueReference="1" causality="internal" variability="continuous" alias="alias">
       <Real start="1.0" />
     </ScalarVariable>
   </ModelVariables>

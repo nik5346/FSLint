@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-std::vector<std::string> Fmi3BinaryChecker::getExpectedFunctions()
+std::vector<std::string> Fmi3BinaryChecker::getExpectedFunctions() const
 {
     return {"fmi3GetVersion",
             "fmi3SetDebugLogging",

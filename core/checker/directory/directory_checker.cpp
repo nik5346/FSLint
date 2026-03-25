@@ -1,6 +1,7 @@
 #include "directory_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -15,7 +16,7 @@
 #include <string>
 #include <vector>
 
-void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert)
+void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
     cert.printSubsectionHeader("FMU DIRECTORY STRUCTURE");
 
@@ -120,7 +121,7 @@ std::optional<std::string> DirectoryChecker::getXmlAttribute(xmlNodePtr node, co
 }
 
 void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, Certificate& cert,
-                                            const std::set<std::string>& headers)
+                                            const std::set<std::string>& headers) const
 {
     auto sources_path = path / "sources";
     if (!std::filesystem::exists(sources_path) || !std::filesystem::is_directory(sources_path))
@@ -131,7 +132,7 @@ void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, C
     {
         if (entry.is_regular_file())
         {
-            const std::string filename = entry.path().filename().string();
+            const std::string filename = file_utils::pathToUtf8(entry.path().filename());
             if (headers.contains(filename))
             {
                 test.status = TestStatus::WARNING;
@@ -153,8 +154,8 @@ bool DirectoryChecker::isEffectivelyEmpty(const std::filesystem::path& path)
 
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
-        const auto filename = entry.path().filename();
-        if (filename != ".gitkeep" && filename != ".DS_Store" && filename != "Thumbs.db")
+        const std::string filename = file_utils::pathToUtf8(entry.path().filename());
+        if (filename != ".gitkeep" && filename != ".DS_Store" && filename != "Thumbs.db" && filename != "dummy.c")
             return false;
     }
     return true;

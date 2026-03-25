@@ -304,14 +304,14 @@ static void printFileTreeRecursive(Certificate& cert, const std::filesystem::pat
               {
                   if (a.is_directory() != b.is_directory())
                       return a.is_directory();
-                  return a.path().filename().string() < b.path().filename().string();
+                  return file_utils::pathToUtf8(a.path().filename()) < file_utils::pathToUtf8(b.path().filename());
               });
 
     for (size_t i = 0; i < entries.size(); ++i)
     {
         const bool is_last = (i == entries.size() - 1);
         const auto& entry = entries[i];
-        std::string name = entry.path().filename().string();
+        std::string name = file_utils::pathToUtf8(entry.path().filename());
         if (entry.is_regular_file() && file_utils::isBinary(entry.path()))
             name += " (binary)";
 
@@ -523,7 +523,7 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
         {
             std::string label = _summary.modelName;
             if (label.empty() && !root_path.empty())
-                label = root_path.filename().string();
+                label = file_utils::pathToUtf8(root_path.filename());
 
             if (!label.empty())
                 tree["name"].SetString(label.c_str(), static_cast<rapidjson::SizeType>(label.length()), allocator);

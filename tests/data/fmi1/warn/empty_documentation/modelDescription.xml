@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="test" guid="123">
+<fmiModelDescription fmiVersion="1.0" modelName="test" modelIdentifier="test" guid="{8c4e7a0f-5da3-424b-8e99-46747d95368a}" numberOfContinuousStates="0" numberOfEventIndicators="0">
   <ModelVariables />
 </fmiModelDescription>
