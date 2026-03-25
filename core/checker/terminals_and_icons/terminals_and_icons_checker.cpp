@@ -424,13 +424,13 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                         auto dimensions = file_utils::getPngDimensions(png_path);
                         if (dimensions)
                         {
-                            if (dimensions->first < 200 || dimensions->second < 200)
+                            if (dimensions->first < 100 || dimensions->second < 100)
                             {
                                 if (test.status != TestStatus::FAIL)
                                     test.status = TestStatus::WARNING;
                                 test.messages.push_back(std::format(
                                     "Terminal icon '{}' (referenced line {}) is small ({}x{} pixels). A size of at "
-                                    "least 200x200 pixels is recommended.",
+                                    "least 100x100 pixels is recommended.",
                                     file_utils::pathToUtf8(png_path.filename()), node->line, dimensions->first,
                                     dimensions->second));
                             }

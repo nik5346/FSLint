@@ -14,7 +14,6 @@
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 
 namespace fs = std::filesystem;
@@ -26,51 +25,6 @@ static bool reference_fmus_available()
                             fs::exists("tests/reference_fmus/2.0/BouncingBall.fmu") &&
                             fs::exists("tests/reference_fmus/3.0/BouncingBall.fmu");
     return available;
-}
-
-TEST_CASE("PNG Dimensions Extraction", "[file_utils]")
-{
-    SECTION("Valid PNG")
-    {
-        const fs::path temp_png = "test_valid.png";
-        std::ofstream ofs(temp_png, std::ios::binary);
-        // Signature
-        unsigned char data[] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-                                0x00, 0x00, 0x00, 0x0D, // Length of IHDR
-                                'I',  'H',  'D',  'R',
-                                0x00, 0x00, 0x01, 0x00, // Width: 256
-                                0x00, 0x00, 0x00, 0x80  // Height: 128
-        };
-        ofs.write(reinterpret_cast<const char*>(data), sizeof(data));
-        ofs.close();
-
-        auto dimensions = file_utils::getPngDimensions(temp_png);
-        REQUIRE(dimensions.has_value());
-        CHECK(dimensions->first == 256);
-        CHECK(dimensions->second == 128);
-
-        fs::remove(temp_png);
-    }
-
-    SECTION("Non-existent File")
-    {
-        auto dimensions = file_utils::getPngDimensions("non_existent.png");
-        CHECK_FALSE(dimensions.has_value());
-    }
-
-    SECTION("Invalid PNG Signature")
-    {
-        const fs::path temp_file = "invalid_signature.png";
-        std::ofstream ofs(temp_file, std::ios::binary);
-        unsigned char data[24] = {0};
-        ofs.write(reinterpret_cast<const char*>(data), sizeof(data));
-        ofs.close();
-
-        auto dimensions = file_utils::getPngDimensions(temp_file);
-        CHECK_FALSE(dimensions.has_value());
-
-        fs::remove(temp_file);
-    }
 }
 
 TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")

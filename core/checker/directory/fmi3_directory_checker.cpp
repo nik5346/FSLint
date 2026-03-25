@@ -107,13 +107,13 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 auto dimensions = file_utils::getPngDimensions(diag_png_path);
                 if (dimensions)
                 {
-                    if (dimensions->first < 200 || dimensions->second < 200)
+                    if (dimensions->first < 100 || dimensions->second < 100)
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
                         test.messages.push_back(
-                            std::format("Icon 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
-                                        "200x200 pixels is recommended.",
+                            std::format("Diagram 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
+                                        "100x100 pixels is recommended.",
                                         dimensions->first, dimensions->second));
                     }
                 }
@@ -178,12 +178,12 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         auto dimensions = file_utils::getPngDimensions(png_path);
                         if (dimensions)
                         {
-                            if (dimensions->first < 200 || dimensions->second < 200)
+                            if (dimensions->first < 100 || dimensions->second < 100)
                             {
                                 if (test.status != TestStatus::FAIL)
                                     test.status = TestStatus::WARNING;
                                 test.messages.push_back(std::format(
-                                    "Icon '{}' is small ({}x{} pixels). A size of at least 200x200 pixels is "
+                                    "Icon '{}' is small ({}x{} pixels). A size of at least 100x100 pixels is "
                                     "recommended.",
                                     file_utils::pathToUtf8(png_path.filename()), dimensions->first,
                                     dimensions->second));
@@ -199,13 +199,13 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             auto dimensions = file_utils::getPngDimensions(icon_png_path);
             if (dimensions)
             {
-                if (dimensions->first < 200 || dimensions->second < 200)
+                if (dimensions->first < 100 || dimensions->second < 100)
                 {
                     if (test.status != TestStatus::FAIL)
                         test.status = TestStatus::WARNING;
                     test.messages.push_back(
                         std::format("Icon 'terminalsAndIcons/icon.png' is small ({}x{} pixels). A size of at least "
-                                    "200x200 pixels is recommended.",
+                                    "100x100 pixels is recommended.",
                                     dimensions->first, dimensions->second));
                 }
             }
