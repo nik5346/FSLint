@@ -5,7 +5,9 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+#include <bit>
 #include <algorithm>
+#include <cstring>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -126,5 +128,47 @@ std::string getFileTreeJson(const std::filesystem::path& root)
     doc.Accept(writer);
 
     return buffer.GetString();
+}
+
+std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesystem::path& path)
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file)
+        return std::nullopt;
+
+    // PNG header (8 bytes) + IHDR chunk header (4 bytes length + 4 bytes type + 8 bytes width/height)
+    unsigned char header[24];
+    file.read(reinterpret_cast<char*>(header), sizeof(header));
+    if (file.gcount() < 24)
+        return std::nullopt;
+
+    // Check PNG signature: 89 50 4E 47 0D 0A 1A 0A
+    static const unsigned char signature[] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+    if (std::memcmp(header, signature, 8) != 0)
+        return std::nullopt;
+
+    // Check IHDR chunk type: "IHDR"
+    if (std::memcmp(header + 12, "IHDR", 4) != 0)
+        return std::nullopt;
+
+    auto readUint32Be = [](const unsigned char* data)
+    {
+        uint32_t val = 0;
+        std::memcpy(&val, data, 4);
+        if constexpr (std::endian::native == std::endian::little)
+        {
+#if defined(_MSC_VER)
+            return _byteswap_ulong(val);
+#else
+            return __builtin_bswap32(val);
+#endif
+        }
+        return val;
+    };
+
+    const uint32_t width = readUint32Be(header + 16);
+    const uint32_t height = readUint32Be(header + 20);
+
+    return std::make_pair(width, height);
 }
 } // namespace file_utils

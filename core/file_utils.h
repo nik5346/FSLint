@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
+#include <optional>
+#include <utility>
 
 namespace file_utils
 {
@@ -25,6 +28,11 @@ std::filesystem::path utf8ToPath(const std::string& utf8);
  * Generates a JSON representation of the file tree starting at root.
  */
 std::string getFileTreeJson(const std::filesystem::path& root);
+
+/**
+ * Returns the dimensions (width, height) of a PNG file.
+ */
+std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesystem::path& path);
 
 /**
  * Low-level helper to serialize a file node to a RapidJSON Value.

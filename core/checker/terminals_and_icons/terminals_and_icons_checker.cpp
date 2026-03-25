@@ -11,6 +11,7 @@
 #include <libxml/xpathInternals.h>
 
 #include <filesystem>
+#include <format>
 #include <map>
 #include <optional>
 #include <set>
@@ -417,6 +418,23 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("Terminal icon PNG file \"" + file_utils::pathToUtf8(png_path) +
                                                 "\" (referenced line " + std::to_string(node->line) + ") not found.");
+                    }
+                    else
+                    {
+                        auto dimensions = file_utils::getPngDimensions(png_path);
+                        if (dimensions)
+                        {
+                            if (dimensions->first < 200 || dimensions->second < 200)
+                            {
+                                if (test.status != TestStatus::FAIL)
+                                    test.status = TestStatus::WARNING;
+                                test.messages.push_back(std::format(
+                                    "Terminal icon '{}' (referenced line {}) is small ({}x{} pixels). A size of at "
+                                    "least 200x200 pixels is recommended.",
+                                    file_utils::pathToUtf8(png_path.filename()), node->line, dimensions->first,
+                                    dimensions->second));
+                            }
+                        }
                     }
                 }
             }

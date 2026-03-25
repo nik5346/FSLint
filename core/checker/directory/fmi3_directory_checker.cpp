@@ -94,11 +94,29 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         if (std::filesystem::exists(doc_path))
         {
             // diagram.svg/png check
-            if (std::filesystem::exists(doc_path / "diagram.svg") && !std::filesystem::exists(doc_path / "diagram.png"))
+            auto diag_png_path = doc_path / "diagram.png";
+            if (std::filesystem::exists(doc_path / "diagram.svg") && !std::filesystem::exists(diag_png_path))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("diagram.svg exists in documentation/ but diagram.png is missing (required "
                                         "if diagram.svg is provided).");
+            }
+
+            if (std::filesystem::exists(diag_png_path))
+            {
+                auto dimensions = file_utils::getPngDimensions(diag_png_path);
+                if (dimensions)
+                {
+                    if (dimensions->first < 200 || dimensions->second < 200)
+                    {
+                        if (test.status != TestStatus::FAIL)
+                            test.status = TestStatus::WARNING;
+                        test.messages.push_back(
+                            std::format("Icon 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
+                                        "200x200 pixels is recommended.",
+                                        dimensions->first, dimensions->second));
+                    }
+                }
             }
 
             // licenses directory check
@@ -134,14 +152,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"Terminals and Icons Files", TestStatus::PASS, {}};
         auto tai_path = path / "terminalsAndIcons";
-        const bool icon_png_missing = !std::filesystem::exists(tai_path / "icon.png");
+        auto icon_png_path = tai_path / "icon.png";
+        const bool icon_png_exists = std::filesystem::exists(icon_png_path);
         const bool icon_svg_exists = std::filesystem::exists(tai_path / "icon.svg");
 
         if (std::filesystem::exists(tai_path))
         {
             for (const auto& entry : std::filesystem::directory_iterator(tai_path))
             {
-                if (entry.path().extension() == ".svg")
+                if (entry.path().extension() == ".svg" && entry.path().stem() != "icon")
                 {
                     auto png_path = entry.path();
                     png_path.replace_extension(".png");
@@ -154,15 +173,54 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                                         file_utils::pathToUtf8(entry.path().filename()),
                                         file_utils::pathToUtf8(png_path.filename())));
                     }
+                    else
+                    {
+                        auto dimensions = file_utils::getPngDimensions(png_path);
+                        if (dimensions)
+                        {
+                            if (dimensions->first < 200 || dimensions->second < 200)
+                            {
+                                if (test.status != TestStatus::FAIL)
+                                    test.status = TestStatus::WARNING;
+                                test.messages.push_back(std::format(
+                                    "Icon '{}' is small ({}x{} pixels). A size of at least 200x200 pixels is "
+                                    "recommended.",
+                                    file_utils::pathToUtf8(png_path.filename()), dimensions->first,
+                                    dimensions->second));
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        if (icon_png_missing && !icon_svg_exists)
+        if (icon_png_exists)
+        {
+            auto dimensions = file_utils::getPngDimensions(icon_png_path);
+            if (dimensions)
+            {
+                if (dimensions->first < 200 || dimensions->second < 200)
+                {
+                    if (test.status != TestStatus::FAIL)
+                        test.status = TestStatus::WARNING;
+                    test.messages.push_back(
+                        std::format("Icon 'terminalsAndIcons/icon.png' is small ({}x{} pixels). A size of at least "
+                                    "200x200 pixels is recommended.",
+                                    dimensions->first, dimensions->second));
+                }
+            }
+        }
+
+        if (!icon_png_exists && !icon_svg_exists)
         {
             if (test.status != TestStatus::FAIL)
                 test.status = TestStatus::WARNING;
             test.messages.push_back("Recommended file 'terminalsAndIcons/icon.png' is missing.");
+        }
+        else if (icon_svg_exists && !icon_png_exists)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("terminalsAndIcons/icon.svg exists but icon.png is missing (required as fallback).");
         }
         cert.printTestResult(test);
     }
