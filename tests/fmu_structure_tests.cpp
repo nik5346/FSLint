@@ -1,7 +1,7 @@
-#include "file_utils.h"
 #include "build_description_checker.h"
 #include "certificate.h"
 #include "checker_factory.h"
+#include "file_utils.h"
 #include "fmi1_binary_checker.h"
 #include "fmi1_directory_checker.h"
 #include "fmi1_model_description_checker.h"
@@ -85,7 +85,8 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                     {
                         for (const auto& msg : res.messages)
                             if (msg.find("_main.html") == std::string::npos)
-                                FAIL("Unexpected failure in reference FMU " << file_utils::pathToUtf8(path) << ": " << msg);
+                                FAIL("Unexpected failure in reference FMU " << file_utils::pathToUtf8(path) << ": "
+                                                                            << msg);
                     }
                 }
             };

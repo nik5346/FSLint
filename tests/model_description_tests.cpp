@@ -1,5 +1,5 @@
-#include "file_utils.h"
 #include "certificate.h"
+#include "file_utils.h"
 #include "fmi1_directory_checker.h"
 #include "fmi1_model_description_checker.h"
 #include "fmi2_model_description_checker.h"

@@ -1,5 +1,5 @@
-#include "file_utils.h"
 #include "certificate.h"
+#include "file_utils.h"
 #include "model_checker.h"
 #include "test_helpers.h"
 #include <catch2/catch_test_macros.hpp>

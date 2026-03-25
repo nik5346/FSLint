@@ -1,5 +1,5 @@
-#include "file_utils.h"
 #include "certificate.h"
+#include "file_utils.h"
 #include "fmi2_terminals_and_icons_checker.h"
 #include "fmi3_terminals_and_icons_checker.h"
 #include "test_helpers.h"

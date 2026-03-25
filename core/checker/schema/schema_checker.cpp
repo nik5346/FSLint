@@ -501,7 +501,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
         if (std::filesystem::exists(candidate))
             return candidate;
 
-            // Robustness: try access() in case std::filesystem::exists is flaky in WASM
+        // Robustness: try access() in case std::filesystem::exists is flaky in WASM
 #if defined(__EMSCRIPTEN__) || defined(__linux__) || defined(__APPLE__)
         if (access(file_utils::pathToUtf8(candidate).c_str(), F_OK) == 0)
             return candidate;
