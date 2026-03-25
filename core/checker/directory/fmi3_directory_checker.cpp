@@ -111,10 +111,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
-                        test.messages.push_back(
-                            std::format("Diagram 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
-                                        "100x100 pixels is recommended.",
-                                        dimensions->first, dimensions->second));
+                        test.messages.push_back(std::format(
+                            "Diagram 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
+                            "100x100 pixels is recommended.",
+                            dimensions->first, dimensions->second));
                     }
                 }
             }
@@ -220,7 +220,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         else if (icon_svg_exists && !icon_png_exists)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("terminalsAndIcons/icon.svg exists but icon.png is missing (required as fallback).");
+            test.messages.push_back(
+                "terminalsAndIcons/icon.svg exists but icon.png is missing (required as fallback).");
         }
         cert.printTestResult(test);
     }

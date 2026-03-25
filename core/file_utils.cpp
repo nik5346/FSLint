@@ -5,11 +5,11 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-#include <bit>
 #include <algorithm>
-#include <cstring>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <ios>
@@ -156,13 +156,11 @@ std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesys
         uint32_t val = 0;
         std::memcpy(&val, data, 4);
         if constexpr (std::endian::native == std::endian::little)
-        {
 #if defined(_MSC_VER)
             return _byteswap_ulong(val);
 #else
             return __builtin_bswap32(val);
 #endif
-        }
         return val;
     };
 
