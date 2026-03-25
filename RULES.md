@@ -51,9 +51,8 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Model Name Format**: The `modelName` attribute **must** be present and non-empty.
 - **FMI Version Format**: The `fmiVersion` attribute **must** match the standard version string. For FMI 1.0, 2.0, and 3.0, only "1.0", "2.0", and "3.0" are allowed respectively.
 - **Generation Date and Time**:
-  - **Must** be in ISO 8601 format (e.g., `YYYY-MM-DDThh:mm:ssZ`).
+  - **Must** be a valid ISO 8601 date-time string.
   - **Must** be a valid date in the past (not after the current system time).
-  - **Should** match the recommended FMI format (`YYYY-MM-DDThh:mm:ssZ`).
 - **Model Version Format**: The `version` attribute of the model. Semantic versioning (`MAJOR.MINOR.PATCH`) is **recommended**.
 - **Copyright Notice**:
   - **Should** begin with ©, "Copyright", or "Copr.".

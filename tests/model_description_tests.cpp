@@ -40,7 +40,6 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
 
         validate_fail("date_invalid", "out of range");
         validate_fail("date_future", "is in the future");
-        validate_fail("date_format", "missing time component");
     }
 
     SECTION("Model Identifier")
@@ -160,7 +159,6 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         // Add dummy source to satisfy implementation check
         fs::create_directories("tests/data/fmi1/pass/SpecialFloats/sources");
         std::ofstream("tests/data/fmi1/pass/SpecialFloats/sources/test.c").close();
-        validate_warning("pass/SpecialFloats", "does not match recommended FMI format");
         validate_warning("warn/author_missing", "Providing the author name is recommended.");
         validate_warning("warn/author_empty", "The 'author' attribute is empty.");
         validate_warning("warn/generation_tool_missing", "Providing the generation tool name is recommended.");
@@ -232,6 +230,15 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
         Certificate cert_alias_int;
         checker.validate("tests/data/fmi1/pass/AliasNegatedInteger", cert_alias_int);
         CHECK_FALSE(has_fail(cert_alias_int));
+    }
+
+    SECTION("FMI 1.0 Date Format (Date Only) Valid")
+    {
+        Certificate cert_date;
+        checker.validate("tests/data/fmi1/pass/date_format", cert_date);
+        CHECK_FALSE(has_fail(cert_date));
+        CHECK_FALSE(has_error_with_text(cert_date, "Generation date and time"));
+        CHECK_FALSE(has_warning_with_text(cert_date, "Generation date and time"));
     }
 }
 
