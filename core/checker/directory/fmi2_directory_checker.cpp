@@ -196,14 +196,20 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     // 6. 2.0.4 Compatibility
     {
         const bool has_build_description_anywhere = has_build_description;
-        const bool has_sources = !listed_sources_in_md.empty() || has_build_description_anywhere ||
-                                 (std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path));
+        const bool has_physical_sources = std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path);
+        const bool has_sources_in_md = !listed_sources_in_md.empty();
 
-        if (has_sources)
+        if (has_physical_sources || has_sources_in_md || has_build_description_anywhere)
         {
             TestResult test{"2.0.4 Compatibility", TestStatus::PASS, {}};
-            const bool has_sources_in_md = !listed_sources_in_md.empty();
-            if (has_sources_in_md && !has_build_description_anywhere)
+            if (has_physical_sources && !has_sources_in_md && !has_build_description_anywhere)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Source code FMU contains a 'sources/' directory, but no description "
+                                        "(neither <SourceFiles> in 'modelDescription.xml' nor a "
+                                        "'buildDescription.xml' file).");
+            }
+            else if (has_sources_in_md && !has_build_description_anywhere)
             {
                 test.status = TestStatus::WARNING;
                 test.messages.push_back("Source code FMU only contains <SourceFiles> in modelDescription.xml. "

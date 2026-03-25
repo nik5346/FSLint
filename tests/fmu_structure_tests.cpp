@@ -272,6 +272,8 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
                       "The documentation entry point 'documentation/index.html' is missing.");
         validate_fail("tests/data/fmi2/warn/missing_license_txt",
                       "The license entry point (e.g. 'licenses/license.txt') is missing.");
+        validate_fail("tests/data/fmi2/fail/undeclared_sources",
+                      "Source code FMU contains a 'sources/' directory, but no description");
     }
 
     SECTION("Warning Cases")
