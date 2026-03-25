@@ -2389,7 +2389,7 @@ void Fmi3ModelDescriptionChecker::checkGenerationDateReleaseYear(const std::stri
 
 void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid_opt, Certificate& cert) const
 {
-    TestResult test{"Instantiation Token Format", TestStatus::PASS, {}};
+    TestResult test{"Instantiation Token", TestStatus::PASS, {}};
 
     if (!guid_opt.has_value())
     {
@@ -2406,6 +2406,8 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         cert.printTestResult(test);
         return;
     }
+
+    test.messages.push_back("Token: " + *guid_opt);
 
     const std::string& guid = *guid_opt;
     const std::regex guid_pattern(

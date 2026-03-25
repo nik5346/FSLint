@@ -91,7 +91,7 @@ class Certificate
     }
     TestStatus getOverallStatus() const;
     void log(const std::string& message);
-    void printMainHeader(const std::string& model_name, const std::string& hash);
+    void printMainHeader(const std::string& filename, const std::string& hash);
     void printSubsectionHeader(const std::string& name);
     void printTestResult(const TestResult& test);
     void printSubsectionSummary(bool subsection_valid);
