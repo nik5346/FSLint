@@ -204,7 +204,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             TestResult test{"2.0.4 Compatibility", TestStatus::PASS, {}};
             if (has_physical_sources && !has_sources_in_md && !has_build_description_anywhere)
             {
-                test.status = TestStatus::FAIL;
+                test.status = TestStatus::WARNING;
                 test.messages.push_back("Source code FMU contains a 'sources/' directory, but no description "
                                         "(neither <SourceFiles> in 'modelDescription.xml' nor a "
                                         "'buildDescription.xml' file).");
