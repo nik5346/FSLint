@@ -310,17 +310,6 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         return;
     }
 
-    // FMI standard recommends YYYY-MM-DDThh:mm:ssZ
-    const std::regex recommended_pattern(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$)");
-
-    if (!std::regex_match(dt, recommended_pattern))
-    {
-        test.messages.push_back("Generation date and time \"" + dt +
-                                "\" does not match recommended FMI format (YYYY-MM-DDThh:mm:ssZ).");
-        if (test.status == TestStatus::PASS)
-            test.status = TestStatus::WARNING;
-    }
-
     // Validate ranges
     auto check_range = [&](int value, int min, int max, const std::string& name)
     {
@@ -332,19 +321,11 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         }
     };
 
-    check_range(parsed->month, 1, 12, "Month");
-    check_range(parsed->day, 1, 31, "Day");
-    check_range(parsed->hour, 0, 23, "Hour");
-    check_range(parsed->minute, 0, 59, "Minute");
-    check_range(parsed->second, 0, 60, "Second"); // Allow leap seconds
-
-    // FMI specifically mentions dateTime format subset, which usually implies at least a date and a time.
-    if (parsed->hour == -1)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Generation date and time \"" + dt +
-                                "\" is invalid: missing time component (expected YYYY-MM-DDThh:mm:ssZ).");
-    }
+    if (parsed->month != -1) check_range(parsed->month, 1, 12, "Month");
+    if (parsed->day != -1) check_range(parsed->day, 1, 31, "Day");
+    if (parsed->hour != -1) check_range(parsed->hour, 0, 23, "Hour");
+    if (parsed->minute != -1) check_range(parsed->minute, 0, 59, "Minute");
+    if (parsed->second != -1) check_range(parsed->second, 0, 60, "Second"); // Allow leap seconds
 
     if (test.status == TestStatus::FAIL)
     {
