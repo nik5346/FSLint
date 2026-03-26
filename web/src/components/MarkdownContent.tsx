@@ -26,7 +26,7 @@ export const MarkdownContent = ({
         .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
         .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
         .markdown-body th { background-color: ${theme.bg}; }
-        .markdown-body code { background-color: ${theme.bg}; color: ${theme.text}; padding: 2px 4px; border-radius: 4px; }
+        .markdown-body code { background-color: ${theme.bg}; color: ${theme.text}; border-radius: 4px; overflow-x: auto; max-width: 100%; display: inline-block; vertical-align: bottom; }
         .markdown-body pre { background-color: transparent !important; padding: 0 !important; margin: 0.4em 0 !important; border-radius: 4px; overflow: hidden; }
         .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
       `}</style>
