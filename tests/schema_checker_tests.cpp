@@ -127,4 +127,22 @@ TEST_CASE("FMI 2.0 Encoding Validation", "[fmi2][encoding]")
         CHECK(has_error_with_text(cert, "File content is not valid UTF-8"));
         CHECK(has_fail(cert));
     }
+
+    SECTION("ISO-8859-1 with Schema Error")
+    {
+        Certificate cert;
+        checker.validate("tests/data/fmi2/fail/encoding_iso_with_schema_error", cert);
+
+        // Should have encoding error
+        CHECK(has_error_with_text(cert, "Encoding must be UTF-8, found: ISO-8859-1"));
+
+        // Now, it SHOULD also have schema errors
+        // Attribute 'maxNumberOfConstraints' is not allowed
+        // Element 'AlgebraicVariables': This element is not expected
+        CHECK(has_error_with_text(
+            cert, "attribute 'maxNumberOfConstraints': The attribute 'maxNumberOfConstraints' is not allowed"));
+        CHECK(has_error_with_text(cert, "Element 'AlgebraicVariables': This element is not expected"));
+
+        CHECK(has_fail(cert));
+    }
 }

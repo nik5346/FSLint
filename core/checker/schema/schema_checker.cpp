@@ -81,7 +81,8 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
         if (!validateUtf8Encoding(xml_path, rule.validation_name, cert))
         {
             is_valid = false;
-            continue; // Skip schema validation if encoding is wrong
+            // Proceed with schema validation anyway, as the XML might still be parsable
+            // (e.g., if it's just a different encoding but otherwise valid XML)
         }
 
         // Find schema
