@@ -54,4 +54,22 @@ TEST_CASE("Certificate reporting logic", "[certificate]")
         CHECK(report.find("      ├─ Message 2") != std::string::npos);
         CHECK(report.find("      └─ Message 3") != std::string::npos);
     }
+
+    SECTION("Suppress PASS results")
+    {
+        cert.printSubsectionHeader("Group 1");
+        cert.printTestResult({"Test 1", TestStatus::PASS, {"This should not appear"}});
+        const std::string report = cert.getFullReport();
+        CHECK(report.find("[✓ PASS]") == std::string::npos);
+        CHECK(report.find("Test 1") == std::string::npos);
+        CHECK(report.find("This should not appear") == std::string::npos);
+
+        // Nested models
+        cert.addNestedModelResult({"Nested PASS", TestStatus::PASS, {}});
+        cert.addNestedModelResult({"Nested FAIL", TestStatus::FAIL, {}});
+        cert.printNestedModelsTree();
+        const std::string report2 = cert.getFullReport();
+        CHECK(report2.find("Nested PASS") == std::string::npos);
+        CHECK(report2.find("Nested FAIL") != std::string::npos);
+    }
 }
