@@ -72,7 +72,8 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         return;
     }
 
-    test.messages.push_back("GUID: " + *guid);
+    if (test.status != TestStatus::PASS)
+        test.messages.push_back("GUID: " + *guid);
 
     static const std::regex guid_pattern(
         R"(^(\{)?[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}(\})?$)");
