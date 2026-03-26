@@ -139,7 +139,8 @@ TEST_CASE("FMI 2.0 Encoding Validation", "[fmi2][encoding]")
         // Now, it SHOULD also have schema errors
         // Attribute 'maxNumberOfConstraints' is not allowed
         // Element 'AlgebraicVariables': This element is not expected
-        CHECK(has_error_with_text(cert, "attribute 'maxNumberOfConstraints': The attribute 'maxNumberOfConstraints' is not allowed"));
+        CHECK(has_error_with_text(
+            cert, "attribute 'maxNumberOfConstraints': The attribute 'maxNumberOfConstraints' is not allowed"));
         CHECK(has_error_with_text(cert, "Element 'AlgebraicVariables': This element is not expected"));
 
         CHECK(has_fail(cert));
