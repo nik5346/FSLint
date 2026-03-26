@@ -54,4 +54,13 @@ TEST_CASE("Certificate reporting logic", "[certificate]")
         CHECK(report.find("      ├─ Message 2") != std::string::npos);
         CHECK(report.find("      └─ Message 3") != std::string::npos);
     }
+
+    SECTION("Pass results are included without messages")
+    {
+        cert.printSubsectionHeader("Group 1");
+        cert.printTestResult({"Test Pass", TestStatus::PASS, {"Message 1"}});
+        const std::string report = cert.getFullReport();
+        CHECK(report.find("[✓ PASS] Test Pass") != std::string::npos);
+        CHECK(report.find("Message 1") == std::string::npos);
+    }
 }
