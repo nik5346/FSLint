@@ -2407,7 +2407,8 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         return;
     }
 
-    test.messages.push_back("Token: " + *guid_opt);
+    if (test.status != TestStatus::PASS)
+        test.messages.push_back("Token: " + *guid_opt);
 
     const std::string& guid = *guid_opt;
     const std::regex guid_pattern(

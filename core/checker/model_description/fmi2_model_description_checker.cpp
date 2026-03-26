@@ -1616,7 +1616,8 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         return;
     }
 
-    test.messages.push_back("GUID: " + *guid_opt);
+    if (test.status != TestStatus::PASS)
+        test.messages.push_back("GUID: " + *guid_opt);
 
     const std::string& guid = *guid_opt;
     const std::regex guid_pattern(

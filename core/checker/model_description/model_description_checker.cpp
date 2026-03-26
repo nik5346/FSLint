@@ -212,7 +212,9 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
         return;
     }
 
-    test.messages.push_back("Name: " + *model_name);
+    if (test.status != TestStatus::PASS)
+        test.messages.push_back("Name: " + *model_name);
+
     cert.printTestResult(test);
 }
 
@@ -434,7 +436,8 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
         return;
     }
 
-    test.messages.push_back("Version: " + fmi_version.value_or("[missing]"));
+    if (test.status != TestStatus::PASS)
+        test.messages.push_back("Version: " + fmi_version.value_or("[missing]"));
 
     if (fmi_version->empty())
     {
