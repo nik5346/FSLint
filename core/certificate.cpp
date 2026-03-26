@@ -205,11 +205,11 @@ void Certificate::printTestResult(const TestResult& test)
         _current_subsection_passed++; // Warnings count as passed
     }
 
+    ss << test.test_name;
+    log(ss.str());
+
     if (test.status != TestStatus::PASS)
     {
-        ss << test.test_name;
-        log(ss.str());
-
         for (size_t i = 0; i < test.messages.size(); ++i)
         {
             const bool is_last = (i == test.messages.size() - 1);
@@ -244,15 +244,10 @@ void Certificate::addNestedModelResult(const NestedModelResult& result)
 static void printTree(Certificate& cert, const std::vector<NestedModelResult>& models, const std::string& tree_prefix,
                       bool is_top_level)
 {
-    std::vector<const NestedModelResult*> non_pass_models;
-    for (const auto& m : models)
-        if (m.status != TestStatus::PASS)
-            non_pass_models.push_back(&m);
-
-    for (size_t i = 0; i < non_pass_models.size(); ++i)
+    for (size_t i = 0; i < models.size(); ++i)
     {
-        const bool is_last = (i == non_pass_models.size() - 1);
-        const auto& model = *non_pass_models[i];
+        const bool is_last = (i == models.size() - 1);
+        const auto& model = models[i];
 
         std::string status_tag;
         switch (model.status)
