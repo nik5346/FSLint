@@ -246,10 +246,8 @@ static void printTree(Certificate& cert, const std::vector<NestedModelResult>& m
 {
     std::vector<const NestedModelResult*> non_pass_models;
     for (const auto& m : models)
-    {
         if (m.status != TestStatus::PASS)
             non_pass_models.push_back(&m);
-    }
 
     for (size_t i = 0; i < non_pass_models.size(); ++i)
     {
