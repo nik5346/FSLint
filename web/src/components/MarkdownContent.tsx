@@ -73,6 +73,7 @@ export const MarkdownContent = ({
                   padding: '8px 12px',
                   backgroundColor: theme.bg,
                   color: theme.text,
+                  lineHeight: '1.5em',
                 }}
                 codeTagProps={{ style: { color: 'inherit' } }}
                 lineProps={{
@@ -85,7 +86,7 @@ export const MarkdownContent = ({
                 }}
                 {...props}
               >
-                {String(children).replace(/\n$/, '')}
+                {String(children).trim()}
               </SyntaxHighlighter>
             ) : (
               <code className={className} {...props}>
