@@ -6,7 +6,6 @@
 #include <rapidjson/writer.h>
 
 #include <algorithm>
-#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -153,17 +152,10 @@ std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesys
     if (std::memcmp(header + 12, "IHDR", 4) != 0)
         return std::nullopt;
 
-    auto readUint32Be = [](const unsigned char* data)
+    auto readUint32Be = [](const unsigned char* data) -> uint32_t
     {
-        uint32_t val = 0;
-        std::memcpy(&val, data, 4);
-        if constexpr (std::endian::native == std::endian::little)
-#if defined(_MSC_VER)
-            return _byteswap_ulong(val);
-#else
-            return __builtin_bswap32(val);
-#endif
-        return val;
+        return (static_cast<uint32_t>(data[0]) << 24) | (static_cast<uint32_t>(data[1]) << 16) |
+               (static_cast<uint32_t>(data[2]) << 8) | (static_cast<uint32_t>(data[3]));
     };
 
     const uint32_t width = readUint32Be(header + 16);
