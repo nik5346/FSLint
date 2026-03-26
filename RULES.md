@@ -156,7 +156,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Directory Structure
 
-- **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
+- **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root. PNG icons **should** have at least a size of 100x100 pixels.
 - **Documentation**:
   - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
   - If the `documentation/` directory exists, the standard entry point `_main.html` **must** be present.
@@ -211,7 +211,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Variable References**: All `variableName` references **must** exist in `modelDescription.xml`.
 - **Causality Constraints**: Variables used as stream members or flows **must** have compatible causalities (input, output, parameter, etc.).
 - **Graphical Representation**:
-  - Icons **must** exist (`iconBaseName` must point to a PNG file).
+  - Icons **must** exist (`iconBaseName` must point to a PNG file). PNG icons **should** have at least a size of 100x100 pixels.
   - Colors **must** be valid RGB (3 space-separated values).
 - **Stream/Flow Constraints**: Only one inflow/outflow **is** allowed when a stream variable is present in a terminal.
 
@@ -222,7 +222,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Directory Structure
 
-- **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root.
+- **model.png Existence**: It is **recommended** to provide an icon `model.png` in the FMU root. PNG icons **should** have at least a size of 100x100 pixels.
 - **Documentation**:
   - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
   - If the `documentation/` directory exists, the standard entry point `index.html` **must** be present.
@@ -285,7 +285,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Variable References**: All `variableName` references **must** exist in `modelDescription.xml`.
 - **Causality Constraints**: Variables used as stream members or flows **must** have compatible causalities (input, output, parameter, etc.).
 - **Graphical Representation**:
-  - Icons **must** exist (`iconBaseName` must point to a PNG file).
+  - Icons **must** exist (`iconBaseName` must point to a PNG file). PNG icons **should** have at least a size of 100x100 pixels.
   - PNG fallback required if SVG is provided in `terminalsAndIcons/`.
   - Colors **must** be valid RGB (3 space-separated values).
 - **Stream/Flow Constraints**: Only one inflow/outflow allowed when a stream variable is present in a terminal.
@@ -301,10 +301,11 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Documentation**:
   - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
   - If the `documentation/` directory exists, the standard entry point `index.html` **must** be present.
-- **Diagrams**: If `documentation/diagram.svg` is provided, a `documentation/diagram.png` fallback **must** also be present.
+- **Diagrams**: If `documentation/diagram.svg` is provided, a `documentation/diagram.png` fallback **must** also be present. PNG diagrams **should** have at least a size of 100x100 pixels.
 - **icon.png Existence**:
   - It is **recommended** to provide an icon `terminalsAndIcons/icon.png` if the `terminalsAndIcons/` directory exists.
   - If `terminalsAndIcons/icon.svg` is provided, a `terminalsAndIcons/icon.png` fallback **must** also be present.
+  - PNG icons **should** have at least a size of 100x100 pixels.
 - **Build Description**: If the `sources/` directory exists, `sources/buildDescription.xml` **must** be present.
 - **Platform Tuples**: Platform directories **should** follow the `<arch>-<sys>[-<abi>]` format.
 - **Static Linking**: If static libraries are present, `documentation/staticLinking.{txt|html}` **must** be present.

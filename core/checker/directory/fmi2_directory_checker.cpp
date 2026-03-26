@@ -52,10 +52,26 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     // 2. model.png Existence
     {
         TestResult test{"model.png Existence", TestStatus::PASS, {}};
-        if (!std::filesystem::exists(path / "model.png"))
+        auto png_path = path / "model.png";
+        if (!std::filesystem::exists(png_path))
         {
             test.status = TestStatus::WARNING;
             test.messages.push_back("Recommended file 'model.png' is missing from the FMU root.");
+        }
+        else
+        {
+            auto dimensions = file_utils::getPngDimensions(png_path);
+            if (dimensions)
+            {
+                if (dimensions->first < 100 || dimensions->second < 100)
+                {
+                    test.status = TestStatus::WARNING;
+                    test.messages.push_back(
+                        std::format("Icon 'model.png' is small ({}x{} pixels). A size of at least 100x100 pixels is "
+                                    "recommended.",
+                                    dimensions->first, dimensions->second));
+                }
+            }
         }
         cert.printTestResult(test);
     }
