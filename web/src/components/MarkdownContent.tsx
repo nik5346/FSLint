@@ -26,8 +26,8 @@ export const MarkdownContent = ({
         .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
         .markdown-body th, .markdown-body td { border: 1px solid ${theme.border}; padding: 8px; text-align: left; }
         .markdown-body th { background-color: ${theme.bg}; }
-        .markdown-body code { background-color: ${theme.bg}; padding: 2px 4px; border-radius: 4px; }
-        .markdown-body pre { background-color: transparent !important; padding: 0 !important; margin: 1em 0 !important; border-radius: 4px; overflow: hidden; }
+        .markdown-body code { background-color: ${theme.bg}; color: ${theme.text}; padding: 2px 4px; border-radius: 4px; }
+        .markdown-body pre { background-color: transparent !important; padding: 0 !important; margin: 0.4em 0 !important; border-radius: 4px; overflow: hidden; }
         .markdown-body blockquote { border-left: 4px solid ${theme.border}; padding-left: 16px; color: ${theme.muted}; }
       `}</style>
       <ReactMarkdown
@@ -60,13 +60,21 @@ export const MarkdownContent = ({
           },
           code({ inline, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || '');
+            const isBnf = match && match[1] === 'bnf';
             return !inline && match ? (
               <SyntaxHighlighter
-                style={syntaxStyle}
-                language={match[1]}
+                style={isBnf ? {} : syntaxStyle}
+                language={isBnf ? 'text' : match[1]}
                 PreTag="div"
                 renderer={memoizedWhitespaceRenderer}
                 wrapLines={true}
+                customStyle={{
+                  margin: 0,
+                  padding: '8px 12px',
+                  backgroundColor: theme.bg,
+                  color: theme.text,
+                }}
+                codeTagProps={{ style: { color: 'inherit' } }}
                 lineProps={{
                   style: {
                     display: 'flex',
