@@ -138,8 +138,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         if (std::filesystem::exists(path / "binaries"))
         {
-            static const std::set<std::string> fmi2_platforms = {"win32",    "win64",    "linux32",
-                                                                 "linux64",  "darwin32", "darwin64"};
+            static const std::set<std::string> fmi2_platforms = {"win32",   "win64",    "linux32",
+                                                                 "linux64", "darwin32", "darwin64"};
 
             for (const auto& entry : std::filesystem::directory_iterator(path / "binaries"))
             {

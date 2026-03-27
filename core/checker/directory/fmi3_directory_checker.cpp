@@ -251,7 +251,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         if (std::filesystem::exists(binaries_path))
         {
             static const std::set<std::string> fmi3_architectures = {"aarch32", "aarch64", "riscv32", "riscv64",
-                                                                    "x86",     "x86_64",  "ppc32",   "ppc64"};
+                                                                     "x86",     "x86_64",  "ppc32",   "ppc64"};
             static const std::set<std::string> fmi3_systems = {"darwin", "linux", "windows"};
 
             for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
