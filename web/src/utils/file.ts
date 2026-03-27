@@ -99,3 +99,71 @@ export function decodeText(data: Uint8Array): string {
     }
   }
 }
+
+export const mimeMap: { [key: string]: string } = {
+  svg: 'image/svg+xml',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  bmp: 'image/bmp',
+  ico: 'image/x-icon',
+  css: 'text/css',
+  js: 'application/javascript',
+  pdf: 'application/pdf',
+  html: 'text/html',
+  htm: 'text/html',
+  txt: 'text/plain',
+  xml: 'application/xml',
+  xsd: 'application/xml',
+};
+
+// Case-insensitive file resolution using Emscripten FS
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function resolveCaseInsensitive(module: any, base: string, rel: string): string | null {
+  // Strip query parameters or hashes
+  const cleanRel = rel.split(/[?#]/)[0].replace(/\\/g, '/').trim();
+  if (!cleanRel) return null;
+
+  const stack = base.split('/').filter(Boolean);
+  const parts = cleanRel.split('/').filter(Boolean);
+  for (const part of parts) {
+    if (part === '.') continue;
+    if (part === '..') stack.pop();
+    else stack.push(part);
+  }
+
+  // Preserve absolute path if base was absolute
+  const prefix = base.startsWith('/') ? '/' : '';
+  let resolved = prefix + stack.join('/');
+
+  // Recursive case-insensitive check for each component
+  const components = resolved.split('/').filter(Boolean);
+  let current = prefix;
+
+  for (const component of components) {
+    try {
+      const next = (current === '/' ? '/' : current + '/') + component;
+      module.FS.stat(next);
+      current = next;
+    } catch {
+      try {
+        const entries = module.FS.readdir(current || '/');
+        const lower = component.toLowerCase();
+        const found = entries.find((e: string) => e.toLowerCase() === lower);
+        if (found) {
+          current = (current === '/' ? '/' : current + '/') + found;
+        } else {
+          // If not found, just proceed with the original name and let the final stat/read fail
+          current = (current === '/' ? '/' : current + '/') + component;
+        }
+      } catch {
+        current = (current === '/' ? '/' : current + '/') + component;
+      }
+    }
+  }
+  resolved = current;
+
+  return resolved;
+}
