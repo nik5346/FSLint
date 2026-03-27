@@ -212,9 +212,9 @@ export const FilePreview = ({
       xsd: 'application/xml',
     };
 
-    // Find all src and href attributes using a more robust regex
+    // 1. Find all src and href attributes
     const attrRegex = /(src|href)\s*=\s*(?:(['"])(.*?)\2|([^'">\s]+))/gi;
-    const processed = content.replace(attrRegex, (full, attr, _quote, quotedPath, unquotedPath) => {
+    let processed = content.replace(attrRegex, (full, attr, _quote, quotedPath, unquotedPath) => {
       const relPath = (quotedPath || unquotedPath || '').trim();
 
       if (
@@ -241,6 +241,33 @@ export const FilePreview = ({
         const url = URL.createObjectURL(blob);
         htmlBlobUrls.current.push(url);
         return `${attr}="${url}"`;
+      } catch {
+        return full;
+      }
+    });
+
+    // 2. Find all url(...) in <style> tags or inline styles
+    const urlRegex = /url\(\s*(?:(['"])(.*?)\1|([^)]+))\s*\)/gi;
+    processed = processed.replace(urlRegex, (full, _quote, quotedPath, unquotedPath) => {
+      const relPath = (quotedPath || unquotedPath || '').trim();
+
+      if (!relPath || relPath.startsWith('http') || relPath.startsWith('data:')) {
+        return full;
+      }
+
+      const resolvedPath = resolve(dir, relPath);
+      if (!resolvedPath) return full;
+
+      try {
+        const fileData = module.FS.readFile(resolvedPath) as Uint8Array;
+        const subExt = resolvedPath.split('.').pop()?.toLowerCase() || '';
+        const type = mimeMap[subExt] || 'application/octet-stream';
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const blob = new Blob([fileData as any], { type });
+        const url = URL.createObjectURL(blob);
+        htmlBlobUrls.current.push(url);
+        return `url("${url}")`;
       } catch {
         return full;
       }
@@ -486,10 +513,10 @@ export const FilePreview = ({
             style={{
               flex: 1,
               display: 'flex',
-              justifyContent: isMarkdown ? 'flex-start' : 'center',
-              padding: '20px',
-              backgroundColor: isHtml ? '#fff' : 'transparent',
-              minHeight: '200px',
+              justifyContent: isHtml || isMarkdown ? 'flex-start' : 'center',
+              padding: isHtml ? '0' : '20px',
+              backgroundColor: 'transparent',
+              minHeight: isHtml ? '100%' : '200px',
             }}
           >
             {isSvg ? (
