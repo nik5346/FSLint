@@ -148,7 +148,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 {
                     const std::string platform = file_utils::pathToUtf8(entry.path().filename());
 
-                    static const std::set<std::string> fmi2_platforms = {"win32",   "win64",   "linux32",
+                    static const std::set<std::string> fmi2_platforms = {"win32",   "win64",    "linux32",
                                                                          "linux64", "darwin32", "darwin64"};
                     if (!fmi2_platforms.contains(platform))
                     {
