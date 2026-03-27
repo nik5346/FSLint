@@ -311,7 +311,8 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     SECTION("Binary Existence")
     {
         validate_fail("tests/data/directory/fail/missing_binary", "does not contain a binary matching modelIdentifier");
-        validate_fail("tests/data/directory/fail/missing_one_binary", "does not contain a binary matching modelIdentifier 'TestME'");
+        validate_fail("tests/data/directory/fail/missing_one_binary",
+                      "does not contain a binary matching modelIdentifier 'TestME'");
     }
 }
 
@@ -386,7 +387,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_fail("tests/data/fmi3/fail/missing_icon_png", "fallback");
         validate_fail("tests/data/fmi3/warn/missing_index_html",
                       "The documentation entry point 'documentation/index.html' is missing.");
-        validate_fail("tests/data/fmi3/warn/invalid_binaries_tuple", "does not contain a binary matching modelIdentifier");
+        validate_fail("tests/data/fmi3/warn/invalid_binaries_tuple",
+                      "does not contain a binary matching modelIdentifier");
     }
 
     SECTION("Warning Cases")

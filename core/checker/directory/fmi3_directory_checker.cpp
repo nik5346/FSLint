@@ -289,9 +289,19 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         bool found_model_id = false;
                         for (const std::string_view ext : {".dll", ".so", ".dylib", ".lib", ".a"})
                         {
+                            // 1. Check direct binary (e.g. binaries/x64-windows/model.dll)
                             if (std::filesystem::exists(entry.path() / (model_id + std::string(ext))))
                             {
                                 found_model_id = true;
+                            }
+                            // 2. Check subdirectory (e.g. binaries/x64-windows/model/model.dll)
+                            else if (std::filesystem::exists(entry.path() / model_id / (model_id + std::string(ext))))
+                            {
+                                found_model_id = true;
+                            }
+
+                            if (found_model_id)
+                            {
                                 has_binaries = true;
                                 if (ext == ".lib" || ext == ".a")
                                     static_library_detected = true;

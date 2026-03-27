@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="123">
-  <CoSimulation modelIdentifier="TestCS"/>
-  <ModelExchange modelIdentifier="TestME"/>
-  <ModelVariables/>
-  <ModelStructure/>
+  <CoSimulation modelIdentifier="TestCS" />
+  <ModelExchange modelIdentifier="TestME" />
+  <ModelVariables />
+  <ModelStructure />
 </fmiModelDescription>
