@@ -138,10 +138,24 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         if (std::filesystem::exists(path / "binaries"))
         {
+            static const std::set<std::string> fmi2_platforms = {"win32",    "win64",    "linux32",
+                                                                 "linux64",  "darwin32", "darwin64"};
+
             for (const auto& entry : std::filesystem::directory_iterator(path / "binaries"))
             {
                 if (entry.is_directory())
                 {
+                    const std::string platform = file_utils::pathToUtf8(entry.path().filename());
+                    if (!fmi2_platforms.contains(platform))
+                    {
+                        if (test.status != TestStatus::FAIL)
+                            test.status = TestStatus::WARNING;
+                        test.messages.push_back(
+                            std::format("Platform directory '{}' is not one of the standardized FMI 2.0 values "
+                                        "(win32, win64, linux32, linux64, darwin32, darwin64).",
+                                        platform));
+                    }
+
                     for (const auto& [interface, model_id] : model_identifiers)
                     {
                         for (const auto& ext : {".dll", ".so", ".dylib", ".lib", ".a"})
@@ -156,8 +170,6 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                             break;
                     }
                 }
-                if (has_binaries)
-                    break;
             }
         }
 

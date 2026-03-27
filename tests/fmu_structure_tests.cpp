@@ -294,6 +294,8 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/fmi2/warn/dist_build_desc_only", "recommended to also provide <SourceFiles>");
         validate_warning("tests/data/fmi2/warn/fmi_header_in_sources",
                          "Standard FMI header file 'fmi2Functions.h' found in 'sources/' directory");
+        validate_warning("tests/data/fmi2/warn/non_standard_platform",
+                         "Platform directory 'invalid_platform' is not one of the standardized FMI 2.0 values");
     }
 
     SECTION("Passing Cases")

@@ -233,6 +233,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - `SourceFiles/File` entries **must** point to existing files in `sources/`.
 - **FMI 2.0.4 Compatibility**: Source-only FMUs **should** provide both `<SourceFiles>` in `modelDescription.xml` and a `buildDescription.xml` for maximum compatibility.
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 2.0 headers: `fmi2Functions.h`, `fmi2FunctionTypes.h`, `fmi2TypesPlatform.h`.
+- **Platform Names**: Platform directories in `binaries/` **should** use standardized names: `win32`, `win64`, `linux32`, `linux64`, `darwin32`, `darwin64`.
 
 ### Build Description
 
