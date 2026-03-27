@@ -235,7 +235,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - `SourceFiles/File` entries **must** point to existing files in `sources/`.
 - **FMI 2.0.4 Compatibility**: Source-only FMUs **should** provide both `<SourceFiles>` in `modelDescription.xml` and a `buildDescription.xml` for maximum compatibility.
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 2.0 headers: `fmi2Functions.h`, `fmi2FunctionTypes.h`, `fmi2TypesPlatform.h`.
-- **Platform Names**: Platform directories in `binaries/` **should** use standardized names: `win32`, `win64`, `linux32`, `linux64`, `darwin32`, `darwin64`.
 
 ### Build Description
 
@@ -310,10 +309,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - If `terminalsAndIcons/icon.svg` is provided, a `terminalsAndIcons/icon.png` fallback **must** also be present.
   - PNG icons **should** have at least a size of 100x100 pixels.
 - **Build Description**: If the `sources/` directory exists, `sources/buildDescription.xml` **must** be present.
-- **Platform Tuples**:
-  - Platform directories **should** follow the `<arch>-<sys>[-<abi>]` format.
-  - Architecture `<arch>` **should** be one of: `aarch32`, `aarch64`, `riscv32`, `riscv64`, `x86`, `x86_64`, `ppc32`, `ppc64`.
-  - Operating system `<sys>` **should** be one of: `darwin`, `linux`, `windows`.
+- **Platform Tuples**: Platform directories **should** follow the `<arch>-<sys>[-<abi>]` format.
 - **Static Linking**: If static libraries are present, `documentation/staticLinking.{txt|html}` **must** be present.
 - **Extra Directory**: Subdirectories in `extra/` **should** use reverse domain name notation (e.g., `com.example`).
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 3.0 headers: `fmi3Functions.h`, `fmi3FunctionTypes.h`, `fmi3PlatformTypes.h`.

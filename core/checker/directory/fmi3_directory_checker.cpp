@@ -250,15 +250,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         if (std::filesystem::exists(binaries_path))
         {
-<<<<<<< fix-binary-existence-check-18441872147396985717
             std::set<std::string> unique_model_ids;
             for (const auto& [interface, model_id] : model_identifiers)
                 unique_model_ids.insert(model_id);
-=======
-            static const std::set<std::string> fmi3_architectures = {"aarch32", "aarch64", "riscv32", "riscv64",
-                                                                     "x86",     "x86_64",  "ppc32",   "ppc64"};
-            static const std::set<std::string> fmi3_systems = {"darwin", "linux", "windows"};
->>>>>>> master
 
             for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
             {
@@ -274,45 +268,18 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         test.messages.push_back(
                             std::format("Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
-                    else
+                    else if (match[4].matched) // ABI present
                     {
-                        const std::string arch = match[1].str();
-                        const std::string sys = match[2].str();
-
-                        if (!fmi3_architectures.contains(arch))
+                        static_library_detected = true;
+                        const std::string abi = match[4].str();
+                        const std::regex abi_regex("^[a-z][a-z0-9_]*$");
+                        if (!std::regex_match(abi, abi_regex))
                         {
-                            if (test.status != TestStatus::FAIL)
-                                test.status = TestStatus::WARNING;
-                            test.messages.push_back(
-                                std::format("Architecture '{}' in platform tuple '{}' is not one of the standardized "
-                                            "FMI 3.0 values (aarch32, aarch64, riscv32, riscv64, x86, x86_64, "
-                                            "ppc32, ppc64).",
-                                            arch, tuple));
-                        }
-
-                        if (!fmi3_systems.contains(sys))
-                        {
-                            if (test.status != TestStatus::FAIL)
-                                test.status = TestStatus::WARNING;
-                            test.messages.push_back(
-                                std::format("Operating system '{}' in platform tuple '{}' is not one of the "
-                                            "standardized FMI 3.0 values (darwin, linux, windows).",
-                                            sys, tuple));
-                        }
-
-                        if (match[4].matched) // ABI present
-                        {
-                            static_library_detected = true;
-                            const std::string abi = match[4].str();
-                            const std::regex abi_regex("^[a-z][a-z0-9_]*$");
-                            if (!std::regex_match(abi, abi_regex))
-                            {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back(std::format(
-                                    "ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
-                                    "letter and contain only lowercase letters, digits, or underscores).",
-                                    abi, tuple));
-                            }
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(std::format(
+                                "ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
+                                "letter and contain only lowercase letters, digits, or underscores).",
+                                abi, tuple));
                         }
                     }
 
