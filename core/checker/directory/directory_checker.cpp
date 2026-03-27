@@ -54,7 +54,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     {
         for (const auto& elem : interface_elements)
         {
-            const std::string xpath = "//" + elem;
+            const std::string xpath = "//*[local-name()='" + elem + "']";
             xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
