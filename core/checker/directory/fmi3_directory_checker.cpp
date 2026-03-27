@@ -268,7 +268,36 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         test.messages.push_back(
                             std::format("Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
-                    else if (match[4].matched) // ABI present
+                    else
+                    {
+                        const std::string arch = match[1].str();
+                        const std::string sys = match[2].str();
+
+                        static const std::set<std::string> fmi3_architectures = {
+                            "aarch32", "aarch64", "riscv32", "riscv64", "x86", "x86_64", "ppc32", "ppc64"};
+                        if (!fmi3_architectures.contains(arch))
+                        {
+                            if (test.status != TestStatus::FAIL)
+                                test.status = TestStatus::WARNING;
+                            test.messages.push_back(std::format(
+                                "Architecture '{}' in platform tuple '{}' is not one of the standardized FMI 3.0 "
+                                "architectures (aarch32, aarch64, riscv32, riscv64, x86, x86_64, ppc32, ppc64).",
+                                arch, tuple));
+                        }
+
+                        static const std::set<std::string> fmi3_systems = {"darwin", "linux", "windows"};
+                        if (!fmi3_systems.contains(sys))
+                        {
+                            if (test.status != TestStatus::FAIL)
+                                test.status = TestStatus::WARNING;
+                            test.messages.push_back(std::format(
+                                "Operating system '{}' in platform tuple '{}' is not one of the standardized "
+                                "FMI 3.0 systems (darwin, linux, windows).",
+                                sys, tuple));
+                        }
+                    }
+
+                    if (match[4].matched) // ABI present
                     {
                         static_library_detected = true;
                         const std::string abi = match[4].str();

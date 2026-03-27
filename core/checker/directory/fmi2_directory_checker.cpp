@@ -147,6 +147,18 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 if (entry.is_directory())
                 {
                     const std::string platform = file_utils::pathToUtf8(entry.path().filename());
+
+                    static const std::set<std::string> fmi2_platforms = {"win32",   "win64",   "linux32",
+                                                                         "linux64", "darwin32", "darwin64"};
+                    if (!fmi2_platforms.contains(platform))
+                    {
+                        test.status = TestStatus::WARNING;
+                        test.messages.push_back(
+                            std::format("Platform directory '{}' is not one of the standardized FMI 2.0 platform "
+                                        "names (win32, win64, linux32, linux64, darwin32, darwin64).",
+                                        platform));
+                    }
+
                     for (const auto& model_id : unique_model_ids)
                     {
                         bool found_model_id = false;
