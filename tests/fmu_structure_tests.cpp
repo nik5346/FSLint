@@ -61,6 +61,16 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                 }
             }
         }
+        if (has_fail(cert))
+        {
+            for (const auto& r : cert.getResults())
+                if (r.status == TestStatus::FAIL)
+                {
+                    std::cout << "FAIL: " << r.test_name << std::endl;
+                    for (const auto& m : r.messages)
+                        std::cout << "  - " << m << std::endl;
+                }
+        }
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -223,6 +233,16 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
             checker.validate(path, cert);
         }
         INFO("Checking path: " << file_utils::pathToUtf8(path));
+        if (has_fail(cert))
+        {
+            for (const auto& r : cert.getResults())
+                if (r.status == TestStatus::FAIL)
+                {
+                    std::cout << "FAIL: " << r.test_name << std::endl;
+                    for (const auto& m : r.messages)
+                        std::cout << "  - " << m << std::endl;
+                }
+        }
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -335,6 +355,16 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
             checker.validate(path, cert);
         }
         INFO("Checking path: " << file_utils::pathToUtf8(path));
+        if (has_fail(cert))
+        {
+            for (const auto& r : cert.getResults())
+                if (r.status == TestStatus::FAIL)
+                {
+                    std::cout << "FAIL: " << r.test_name << std::endl;
+                    for (const auto& m : r.messages)
+                        std::cout << "  - " << m << std::endl;
+                }
+        }
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -423,6 +453,16 @@ TEST_CASE("Build Description Validation", "[build_description]")
         Certificate cert;
         checker.validate(path, cert);
         INFO("Checking path: " << file_utils::pathToUtf8(path));
+        if (has_fail(cert))
+        {
+            for (const auto& r : cert.getResults())
+                if (r.status == TestStatus::FAIL)
+                {
+                    std::cout << "FAIL: " << r.test_name << std::endl;
+                    for (const auto& m : r.messages)
+                        std::cout << "  - " << m << std::endl;
+                }
+        }
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -515,6 +555,16 @@ TEST_CASE("FMI 2.0 Build Description Validation", "[build_description][fmi2]")
         Certificate cert;
         checker.validate(path, cert);
         INFO("Checking path: " << file_utils::pathToUtf8(path));
+        if (has_fail(cert))
+        {
+            for (const auto& r : cert.getResults())
+                if (r.status == TestStatus::FAIL)
+                {
+                    std::cout << "FAIL: " << r.test_name << std::endl;
+                    for (const auto& m : r.messages)
+                        std::cout << "  - " << m << std::endl;
+                }
+        }
         CHECK_FALSE(has_fail(cert));
     };
 

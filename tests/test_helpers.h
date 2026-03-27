@@ -49,7 +49,7 @@ inline bool has_warning_with_text(const Certificate& cert, const std::string& te
     const auto& results = cert.getResults();
     for (const auto& r : results)
     {
-        if (r.status != TestStatus::WARNING)
+        if (r.status != TestStatus::WARNING && r.status != TestStatus::FAIL)
             continue;
         if (r.test_name.find(text) != std::string::npos)
             return true;
