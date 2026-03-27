@@ -14,7 +14,6 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith(FMU_CONTENTS_PREFIX)) {
     event.respondWith(
       (async () => {
-        // We need to find the main window client, as it has the file data
         const allClients = await self.clients.matchAll({ type: 'window' });
         const client = allClients.find((c) => !c.url.includes(FMU_CONTENTS_PREFIX));
 
@@ -22,7 +21,7 @@ self.addEventListener('fetch', (event) => {
           return new Response('Main client not found', { status: 404 });
         }
 
-        const filePath = url.pathname.substring(FMU_CONTENTS_PREFIX.length);
+        const filePath = decodeURIComponent(url.pathname.substring(FMU_CONTENTS_PREFIX.length));
 
         return new Promise((resolve) => {
           const messageChannel = new MessageChannel();
@@ -31,15 +30,19 @@ self.addEventListener('fetch', (event) => {
               resolve(new Response(msgEvent.data.error, { status: 404 }));
             } else {
               const { data, mimeType } = msgEvent.data;
-              resolve(
-                new Response(data, {
-                  headers: {
-                    'Content-Type': mimeType,
-                    // Ensure the browser doesn't cache these virtual files too aggressively
-                    'Cache-Control': 'no-cache'
-                  },
-                }),
-              );
+              const headers = new Headers({
+                'Content-Type': mimeType,
+                'Cache-Control': 'no-cache',
+                'Cross-Origin-Resource-Policy': 'same-origin',
+              });
+
+              // Apply security headers to nested HTML to allow them to be embedded
+              if (mimeType === 'text/html') {
+                headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+                headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+              }
+
+              resolve(new Response(data, { headers }));
             }
           };
 
