@@ -250,6 +250,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         if (std::filesystem::exists(binaries_path))
         {
+            std::set<std::string> unique_model_ids;
+            for (const auto& [interface, model_id] : model_identifiers)
+                unique_model_ids.insert(model_id);
+
             for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
             {
                 if (entry.is_directory())
@@ -280,9 +284,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     }
 
                     // Check for modelIdentifier.<ext>
-                    bool found_model_id = false;
-                    for (const auto& [interface, model_id] : model_identifiers)
+                    for (const auto& model_id : unique_model_ids)
                     {
+                        bool found_model_id = false;
                         for (const std::string_view ext : {".dll", ".so", ".dylib", ".lib", ".a"})
                         {
                             if (std::filesystem::exists(entry.path() / (model_id + std::string(ext))))
@@ -294,15 +298,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                                 break;
                             }
                         }
-                        if (found_model_id)
-                            break;
-                    }
-                    if (!found_model_id && !model_identifiers.empty())
-                    {
-                        if (test.status != TestStatus::FAIL)
-                            test.status = TestStatus::WARNING;
-                        test.messages.push_back(std::format(
-                            "Platform directory '{}' does not contain a binary matching any modelIdentifier.", tuple));
+
+                        if (!found_model_id)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(
+                                std::format("Platform directory '{}' does not contain a binary matching "
+                                            "modelIdentifier '{}'.",
+                                            tuple, model_id));
+                        }
                     }
                 }
             }

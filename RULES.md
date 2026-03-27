@@ -106,7 +106,9 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - If the `documentation/` directory exists, the standard entry point **must** be present (`_main.html` for FMI 1.0, `index.html` for FMI 2.0 and later).
 - **Licenses**:
   - If a `licenses/` directory exists, it **must** contain a standard entry point (`license.txt` or `license.html`).
-- **Distribution**: The FMU **must** contain at least one implementation (a binary for at least one platform or source code).
+- **Distribution**:
+  - The FMU **must** contain at least one implementation (a binary for at least one platform or source code).
+  - Every platform directory in `binaries/` **must** contain a binary for each `modelIdentifier` defined in `modelDescription.xml`.
 - **Effectively Empty Directories**: Standard directories like `documentation/` or `resources/` **should not** be effectively empty.
 - **Root Entries**: Unknown files or directories in the FMU root **should** be avoided.
 

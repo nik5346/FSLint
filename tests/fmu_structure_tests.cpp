@@ -115,6 +115,11 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         checker.validate("tests/data/fmi1/warn/empty_documentation", cert2);
         REQUIRE(has_fail(cert2));
         CHECK(has_error_with_text(cert2, "The documentation entry point 'documentation/_main.html' is missing."));
+
+        Certificate cert3;
+        checker.validate("tests/data/fmi1/fail/missing_binary", cert3);
+        REQUIRE(has_fail(cert3));
+        CHECK(has_error_with_text(cert3, "does not contain a binary matching modelIdentifier"));
     }
 
     SECTION("Warning Cases")
@@ -302,6 +307,12 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         if (reference_fmus_available())
             validate_pass("tests/reference_fmus/2.0/BouncingBall.fmu");
     }
+
+    SECTION("Binary Existence")
+    {
+        validate_fail("tests/data/directory/fail/missing_binary", "does not contain a binary matching modelIdentifier");
+        validate_fail("tests/data/directory/fail/missing_one_binary", "does not contain a binary matching modelIdentifier 'TestME'");
+    }
 }
 
 TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
@@ -375,13 +386,13 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_fail("tests/data/fmi3/fail/missing_icon_png", "fallback");
         validate_fail("tests/data/fmi3/warn/missing_index_html",
                       "The documentation entry point 'documentation/index.html' is missing.");
+        validate_fail("tests/data/fmi3/warn/invalid_binaries_tuple", "does not contain a binary matching modelIdentifier");
     }
 
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
         validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended.");
-        validate_warning("tests/data/fmi3/warn/invalid_binaries_tuple", "does not follow the <arch>-<sys>");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
         validate_warning("tests/data/fmi3/warn/missing_icon_png",
                          "Recommended file 'terminalsAndIcons/icon.png' is missing");
