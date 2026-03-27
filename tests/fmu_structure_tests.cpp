@@ -382,6 +382,12 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
         validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended.");
         validate_warning("tests/data/fmi3/warn/invalid_binaries_tuple", "does not follow the <arch>-<sys>");
+        validate_warning("tests/data/fmi3/warn/non_standard_tuple", "Architecture 'invalid_arch' in platform tuple "
+                                                                    "'invalid_arch-windows' is not one of the "
+                                                                    "standardized FMI 3.0 values");
+        validate_warning("tests/data/fmi3/warn/non_standard_tuple", "Operating system 'invalid_sys' in platform tuple "
+                                                                    "'x86_64-invalid_sys' is not one of the "
+                                                                    "standardized FMI 3.0 values");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
         validate_warning("tests/data/fmi3/warn/missing_icon_png",
                          "Recommended file 'terminalsAndIcons/icon.png' is missing");

@@ -307,7 +307,10 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - If `terminalsAndIcons/icon.svg` is provided, a `terminalsAndIcons/icon.png` fallback **must** also be present.
   - PNG icons **should** have at least a size of 100x100 pixels.
 - **Build Description**: If the `sources/` directory exists, `sources/buildDescription.xml` **must** be present.
-- **Platform Tuples**: Platform directories **should** follow the `<arch>-<sys>[-<abi>]` format.
+- **Platform Tuples**:
+  - Platform directories **should** follow the `<arch>-<sys>[-<abi>]` format.
+  - Architecture `<arch>` **should** be one of: `aarch32`, `aarch64`, `riscv32`, `riscv64`, `x86`, `x86_64`, `ppc32`, `ppc64`.
+  - Operating system `<sys>` **should** be one of: `darwin`, `linux`, `windows`.
 - **Static Linking**: If static libraries are present, `documentation/staticLinking.{txt|html}` **must** be present.
 - **Extra Directory**: Subdirectories in `extra/` **should** use reverse domain name notation (e.g., `com.example`).
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 3.0 headers: `fmi3Functions.h`, `fmi3FunctionTypes.h`, `fmi3PlatformTypes.h`.
