@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FSLintModule, FileNode, ValidationResult } from '../types';
-import { CollectedItems } from '../utils/file';
+import { CollectedItems, resolveCaseInsensitive, mimeMap } from '../utils/file';
 
 export const useFSLint = () => {
   const [module, setModule] = useState<FSLintModule | null>(null);
@@ -10,6 +10,36 @@ export const useFSLint = () => {
   const [currentWorkDir, setCurrentWorkDir] = useState<string | null>(null);
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'GET_FMU_FILE' && module) {
+        const filePath = event.data.path;
+        const port = event.ports[0];
+
+        try {
+          // The selectedFile path in the explorer is relative to the workDir.
+          // The Service Worker sends paths like '/model_validation_.../documentation/index.html'
+          // module.FS.readFile expects absolute path in the virtual FS.
+          const resolvedPath = resolveCaseInsensitive(module, '', filePath);
+          if (!resolvedPath) throw new Error('File not found');
+
+          const data = module.FS.readFile(resolvedPath) as Uint8Array;
+          const ext = resolvedPath.split('.').pop()?.toLowerCase() || '';
+          const mimeType = mimeMap[ext] || 'application/octet-stream';
+
+          port.postMessage({ data, mimeType });
+        } catch (err) {
+          port.postMessage({ error: (err as Error).message });
+        }
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleMessage);
+    };
+  }, [module]);
 
   useEffect(() => {
     const script = document.createElement('script');
