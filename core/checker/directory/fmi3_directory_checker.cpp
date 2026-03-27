@@ -291,14 +291,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         {
                             // 1. Check direct binary (e.g. binaries/x64-windows/model.dll)
                             if (std::filesystem::exists(entry.path() / (model_id + std::string(ext))))
-                            {
                                 found_model_id = true;
-                            }
                             // 2. Check subdirectory (e.g. binaries/x64-windows/model/model.dll)
                             else if (std::filesystem::exists(entry.path() / model_id / (model_id + std::string(ext))))
-                            {
                                 found_model_id = true;
-                            }
 
                             if (found_model_id)
                             {
