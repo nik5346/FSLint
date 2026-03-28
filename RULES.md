@@ -153,7 +153,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Binary Format Consistency**:
   - The binary format **must** match the platform (PE for Windows, ELF for Linux, Mach-O for macOS).
   - The binary **must** be a shared library (DLL, shared object, or dynamic library).
-  - The architecture and bitness **must** match the platform directory (e.g., `win64` requires a 64-bit x86_64 PE binary).
+  - The architecture and bitness **must** match the platform directory (e.g., `win64` requires a 64-bit x86_64 PE binary). For multi-architecture (Fat) binaries, at least one architecture **must** match the platform directory.
 - **Function Prefixing**: All exported functions must be prefixed with `<modelIdentifier>_`.
 - **Mandatory Functions (CS)**:
   `fmiGetTypesPlatform`, `fmiGetVersion`, `fmiInstantiateSlave`, `fmiInitializeSlave`, `fmiTerminateSlave`, `fmiResetSlave`, `fmiFreeSlaveInstance`, `fmiSetDebugLogging`, `fmiSetReal`, `fmiSetInteger`, `fmiSetBoolean`, `fmiSetString`, `fmiSetRealInputDerivatives`, `fmiGetReal`, `fmiGetInteger`, `fmiGetBoolean`, `fmiGetString`, `fmiGetRealOutputDerivatives`, `fmiDoStep`, `fmiCancelStep`, `fmiGetStatus`, `fmiGetRealStatus`, `fmiGetIntegerStatus`, `fmiGetBooleanStatus`, `fmiGetStringStatus`.
@@ -226,7 +226,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Binary Format Consistency**:
   - The binary format **must** match the platform (PE for Windows, ELF for Linux, Mach-O for macOS).
   - The binary **must** be a shared library (DLL, shared object, or dynamic library).
-  - The architecture and bitness **must** match the platform directory (e.g., `win64` requires a 64-bit x86_64 PE binary).
+  - The architecture and bitness **must** match the platform directory (e.g., `win64` requires a 64-bit x86_64 PE binary). For multi-architecture (Fat) binaries, at least one architecture **must** match the platform directory.
 - **Mandatory Functions**:
   `fmi2GetTypesPlatform`, `fmi2GetVersion`, `fmi2SetDebugLogging`, `fmi2Instantiate`, `fmi2FreeInstance`, `fmi2SetupExperiment`, `fmi2EnterInitializationMode`, `fmi2ExitInitializationMode`, `fmi2Terminate`, `fmi2Reset`, `fmi2GetReal`, `fmi2GetInteger`, `fmi2GetBoolean`, `fmi2GetString`, `fmi2SetReal`, `fmi2SetInteger`, `fmi2SetBoolean`, `fmi2SetString`, `fmi2GetFMUstate`, `fmi2SetFMUstate`, `fmi2FreeFMUstate`, `fmi2SerializedFMUstateSize`, `fmi2SerializeFMUstate`, `fmi2DeSerializeFMUstate`, `fmi2GetDirectionalDerivative`, `fmi2EnterEventMode`, `fmi2NewDiscreteStates`, `fmi2EnterContinuousTimeMode`, `fmi2CompletedIntegratorStep`, `fmi2SetTime`, `fmi2SetContinuousStates`, `fmi2GetDerivatives`, `fmi2GetEventIndicators`, `fmi2GetContinuousStates`, `fmi2GetNominalsOfContinuousStates`, `fmi2SetRealInputDerivatives`, `fmi2GetRealOutputDerivatives`, `fmi2DoStep`, `fmi2CancelStep`, `fmi2GetStatus`, `fmi2GetRealStatus`, `fmi2GetIntegerStatus`, `fmi2GetBooleanStatus`, `fmi2GetStringStatus`.
 
