@@ -1,94 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import Editor from '@monaco-editor/react';
 import { FileNode, Theme, FSLintModule } from '../types';
-import { createElement } from 'react-syntax-highlighter';
-import { VirtualList } from './VirtualList';
-
-// Utility to strip textShadow from Prism styles to fix "ghosting"
-export const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
-  const newStyle: { [key: string]: React.CSSProperties } = {};
-  for (const key in style) {
-    if (Object.prototype.hasOwnProperty.call(style, key)) {
-      newStyle[key] = { ...style[key], textShadow: 'none' };
-    }
-  }
-  return newStyle;
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const transformNode = (node: any): any => {
-  if (!node) return node;
-  if (node.type === 'text' && typeof node.value === 'string') {
-    const parts = node.value.split(/([ \t]+)/);
-    if (parts.length === 1 && !/^[ \t]+$/.test(parts[0])) return node;
-
-    return {
-      type: 'element',
-      tagName: 'span',
-      properties: { className: [] },
-      children: parts.flatMap((part: string) => {
-        if (/^[ \t]+$/.test(part)) {
-          return part.split('').map((char) => ({
-            type: 'element',
-            tagName: 'span',
-            properties: {
-              className: ['whitespace-marker'],
-              'data-marker': char === '\t' ? '→' : '·',
-              'data-marker-type': char === '\t' ? 'tab' : 'space',
-            },
-            children: [{ type: 'text', value: char }],
-          }));
-        }
-        return [{ type: 'text', value: part }];
-      }),
-    };
-  }
-  if (node.children) {
-    return { ...node, children: node.children.map(transformNode) };
-  }
-  return node;
-};
-
-export const whitespaceRenderer = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Renderer = ({ rows, stylesheet, useInlineStyles }: any): any => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return rows.map((node: any, i: number) =>
-      createElement({
-        node: transformNode(node),
-        stylesheet,
-        useInlineStyles,
-        key: `code-segment-${i}`,
-      }),
-    );
-  };
-  Renderer.displayName = 'WhitespaceRenderer';
-  return Renderer;
-};
-
-export const virtualizedRenderer = (itemHeight: number) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Renderer = ({ rows, stylesheet, useInlineStyles }: any): any => {
-    return (
-      <VirtualList
-        items={rows}
-        itemHeight={itemHeight}
-        containerStyle={{ flex: 1 }}
-        renderItem={(node, i) =>
-          createElement({
-            node: transformNode(node),
-            stylesheet,
-            useInlineStyles,
-            key: `code-segment-${i}`,
-          })
-        }
-      />
-    );
-  };
-  Renderer.displayName = 'VirtualizedRenderer';
-  return Renderer;
-};
 
 import { RainbowCsvHighlighter } from './RainbowCsvHighlighter';
 import { MarkdownContent } from './MarkdownContent';
@@ -169,11 +81,6 @@ export const FilePreview = ({
     return decodeText(data);
   }, [data, isBinaryResult, isStaticImage, isPdf]);
 
-  const itemHeight = 21; // Match 1.5em line-height for 0.9em font-size
-  const memoizedVirtualizedRenderer = useMemo(() => virtualizedRenderer(itemHeight), []);
-
-  const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
-
   if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
     return (
       <div
@@ -216,11 +123,11 @@ export const FilePreview = ({
 
   const getLanguage = (filename: string, text: string) => {
     const ext = filename.split('.').pop()?.toLowerCase();
-    if (ext === 'xml' || ext === 'xsd' || ext === 'ssd' || ext === 'svg') return 'markup';
-    if (ext === 'html' || ext === 'htm') return 'markup';
+    if (ext === 'xml' || ext === 'xsd' || ext === 'ssd' || ext === 'svg') return 'xml';
+    if (ext === 'html' || ext === 'htm') return 'html';
     if (ext === 'cpp' || ext === 'hpp' || ext === 'c' || ext === 'h') return 'cpp';
     if (ext === 'json') return 'json';
-    if (ext === 'sh' || ext === 'bash') return 'bash';
+    if (ext === 'sh' || ext === 'bash') return 'shell';
     if (ext === 'md' || ext === 'markdown') return 'markdown';
     if (ext === 'csv') return 'csv';
     if (ext === 'py') return 'python';
@@ -237,10 +144,10 @@ export const FilePreview = ({
       start.includes('<modeldescription') ||
       start.includes('<systemstructure')
     )
-      return 'markup';
-    if (start.startsWith('<!doctype html') || start.includes('<html')) return 'markup';
+      return 'xml';
+    if (start.startsWith('<!doctype html') || start.includes('<html')) return 'html';
 
-    return 'text';
+    return 'plaintext';
   };
 
   if (isStaticImage || isPdf) {
@@ -395,6 +302,7 @@ export const FilePreview = ({
           overflowY: viewMode === 'render' && canToggle ? 'auto' : 'hidden',
           display: 'flex',
           flexDirection: 'column',
+          minHeight: 0,
         }}
       >
         {viewMode === 'render' && canToggle ? (
@@ -439,61 +347,30 @@ export const FilePreview = ({
             if (language === 'csv') {
               return <RainbowCsvHighlighter content={content} isDark={isDark} theme={theme} />;
             }
+
             return (
-              <SyntaxHighlighter
-                language={language}
-                style={syntaxStyle}
-                showLineNumbers={true}
-                lineNumberStyle={{
-                  minWidth: '40px',
-                  paddingLeft: '15px',
-                  paddingRight: '10px',
-                  textAlign: 'right',
-                  color: isDark ? '#858585' : '#999999',
-                  userSelect: 'none',
-                  position: 'sticky',
-                  left: 0,
-                  backgroundColor: theme.surface,
-                  zIndex: 1,
-                }}
-                CodeTag="div"
-                codeTagProps={{
-                  style: {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    minWidth: '100%',
-                    flex: 1,
-                    minHeight: 0,
-                    height: '100%',
-                  },
-                }}
-                customStyle={{
-                  margin: 0,
-                  padding: '15px 0',
-                  fontSize: '0.9em',
-                  backgroundColor: 'transparent',
-                  flex: 1,
-                  lineHeight: '1.5em',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  minHeight: 0,
-                  height: '100%',
-                }}
-                renderer={memoizedVirtualizedRenderer}
-                wrapLines={true}
-                lineProps={{
-                  style: {
-                    display: 'flex',
-                    minWidth: '100%',
-                    paddingRight: '15px',
-                    boxSizing: 'border-box',
-                    height: itemHeight,
-                  },
-                }}
-              >
-                {content}
-              </SyntaxHighlighter>
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <Editor
+                  height="100%"
+                  language={language}
+                  theme={isDark ? 'vs-dark' : 'light'}
+                  value={content}
+                  options={{
+                    readOnly: true,
+                    renderWhitespace: 'all',
+                    fontSize: 13,
+                    lineHeight: 21,
+                    minimap: { enabled: true },
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    contextmenu: false,
+                    wordWrap: 'off',
+                    scrollBeyondLastColumn: 2,
+                    fontFamily: 'monospace',
+                    lineNumbersMinChars: 3,
+                  }}
+                />
+              </div>
             );
           })()
         )}

@@ -4,7 +4,17 @@ import remarkGfm from 'remark-gfm';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Theme } from '../types';
-import { whitespaceRenderer, stripTextShadow } from './FilePreview';
+
+// Local utility to strip textShadow from Prism styles to fix "ghosting"
+const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
+  const newStyle: { [key: string]: React.CSSProperties } = {};
+  for (const key in style) {
+    if (Object.prototype.hasOwnProperty.call(style, key)) {
+      newStyle[key] = { ...style[key], textShadow: 'none' };
+    }
+  }
+  return newStyle;
+};
 
 export const MarkdownContent = ({
   content,
@@ -15,8 +25,6 @@ export const MarkdownContent = ({
   theme: Theme;
   isDark: boolean;
 }) => {
-  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(), []);
-
   const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
 
   return (
@@ -66,7 +74,6 @@ export const MarkdownContent = ({
                 style={isBnf ? {} : syntaxStyle}
                 language={isBnf ? 'text' : match[1]}
                 PreTag="div"
-                renderer={memoizedWhitespaceRenderer}
                 wrapLines={true}
                 customStyle={{
                   margin: 0,
