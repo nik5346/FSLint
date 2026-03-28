@@ -1,10 +1,12 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <set>
 #include <string>
+#include <vector>
 
-enum class BinaryFormat
+enum class BinaryFormat : std::uint8_t
 {
     UNKNOWN,
     ELF,
@@ -12,11 +14,17 @@ enum class BinaryFormat
     MACHO
 };
 
+struct ArchInfo
+{
+    int bitness = 0; // 32 or 64
+    std::string architecture;
+};
+
 struct BinaryInfo
 {
     BinaryFormat format = BinaryFormat::UNKNOWN;
-    int bitness = 0; // 32 or 64
-    std::string architecture;
+    bool isSharedLibrary = false;
+    std::vector<ArchInfo> architectures;
     std::set<std::string> exports;
 };
 

@@ -111,6 +111,12 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     TestResult format_test{
                         std::format("Binary Format: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
 
+                    if (!info.isSharedLibrary && info.format != BinaryFormat::UNKNOWN)
+                    {
+                        format_test.status = TestStatus::FAIL;
+                        format_test.messages.push_back("Binary is not a shared library (DLL/SO/DYLIB).");
+                    }
+
                     if (platform.starts_with("win"))
                     {
                         if (info.format != BinaryFormat::PE)
@@ -123,27 +129,26 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                                                                                   : "unknown")));
                         }
 
-                        if (info.architecture != "x86" && info.architecture != "x86_64")
+                        bool arch_match = false;
+                        for (const auto& arch : info.architectures)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
-                                std::format("Platform '{}' requires x86 or x86_64 architecture, but found {}.",
-                                            platform, info.architecture));
+                            if (arch.architecture == "x86" || arch.architecture == "x86_64")
+                            {
+                                if ((platform.ends_with("32") && arch.bitness == 32) ||
+                                    (platform.ends_with("64") && arch.bitness == 64))
+                                {
+                                    arch_match = true;
+                                    break;
+                                }
+                            }
                         }
 
-                        if (platform.ends_with("32") && info.bitness != 32)
+                        if (!arch_match && !info.architectures.empty())
                         {
                             format_test.status = TestStatus::FAIL;
                             format_test.messages.push_back(
-                                std::format("Platform 'win32' requires a 32-bit binary, but found {}-bit.",
-                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
-                        }
-                        else if (platform.ends_with("64") && info.bitness != 64)
-                        {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
-                                std::format("Platform 'win64' requires a 64-bit binary, but found {}-bit.",
-                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                                std::format("Binary does not contain a {} architecture matching platform '{}'.",
+                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
                         }
                     }
                     else if (platform.starts_with("linux"))
@@ -158,27 +163,26 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                                                                                   : "unknown")));
                         }
 
-                        if (info.architecture != "x86" && info.architecture != "x86_64")
+                        bool arch_match = false;
+                        for (const auto& arch : info.architectures)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
-                                std::format("Platform '{}' requires x86 or x86_64 architecture, but found {}.",
-                                            platform, info.architecture));
+                            if (arch.architecture == "x86" || arch.architecture == "x86_64")
+                            {
+                                if ((platform.ends_with("32") && arch.bitness == 32) ||
+                                    (platform.ends_with("64") && arch.bitness == 64))
+                                {
+                                    arch_match = true;
+                                    break;
+                                }
+                            }
                         }
 
-                        if (platform.ends_with("32") && info.bitness != 32)
+                        if (!arch_match && !info.architectures.empty())
                         {
                             format_test.status = TestStatus::FAIL;
                             format_test.messages.push_back(
-                                std::format("Platform 'linux32' requires a 32-bit binary, but found {}-bit.",
-                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
-                        }
-                        else if (platform.ends_with("64") && info.bitness != 64)
-                        {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
-                                std::format("Platform 'linux64' requires a 64-bit binary, but found {}-bit.",
-                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                                std::format("Binary does not contain a {} architecture matching platform '{}'.",
+                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
                         }
                     }
                     else if (platform.starts_with("darwin"))
@@ -193,27 +197,26 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                                                                                 : "unknown")));
                         }
 
-                        if (info.architecture != "x86" && info.architecture != "x86_64")
+                        bool arch_match = false;
+                        for (const auto& arch : info.architectures)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
-                                std::format("Platform '{}' requires x86 or x86_64 architecture, but found {}.",
-                                            platform, info.architecture));
+                            if (arch.architecture == "x86" || arch.architecture == "x86_64")
+                            {
+                                if ((platform.ends_with("32") && arch.bitness == 32) ||
+                                    (platform.ends_with("64") && arch.bitness == 64))
+                                {
+                                    arch_match = true;
+                                    break;
+                                }
+                            }
                         }
 
-                        if (platform.ends_with("32") && info.bitness != 32)
+                        if (!arch_match && !info.architectures.empty())
                         {
                             format_test.status = TestStatus::FAIL;
                             format_test.messages.push_back(
-                                std::format("Platform 'darwin32' requires a 32-bit binary, but found {}-bit.",
-                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
-                        }
-                        else if (platform.ends_with("64") && info.bitness != 64)
-                        {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
-                                std::format("Platform 'darwin64' requires a 64-bit binary, but found {}-bit.",
-                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                                std::format("Binary does not contain a {} architecture matching platform '{}'.",
+                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
                         }
                     }
                     else if (platform.find('-') != std::string::npos) // FMI 3.0 platform tuples
@@ -235,37 +238,23 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                             format_test.messages.push_back("Binary format is not Mach-O (macOS).");
                         }
 
-                        // Robust architecture check: ensure the architecture is an exact component
-                        // (e.g., 'x86' should not match 'x86_64-windows').
-                        if (platform.find(info.architecture + "-") != 0)
+                        bool arch_match = false;
+                        for (const auto& arch : info.architectures)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
-                                std::format("Platform tuple '{}' does not match binary architecture '{}'.", platform,
-                                            info.architecture));
+                            // Robust architecture check: ensure the architecture is an exact component
+                            // (e.g., 'x86' should not match 'x86_64-windows').
+                            if (platform.find(arch.architecture + "-") == 0)
+                            {
+                                arch_match = true;
+                                break;
+                            }
                         }
 
-                        if (platform.starts_with("x86_64") || platform.starts_with("aarch64") ||
-                            platform.starts_with("riscv64") || platform.starts_with("ppc64"))
+                        if (!arch_match && !info.architectures.empty())
                         {
-                            if (info.bitness != 64)
-                            {
-                                format_test.status = TestStatus::FAIL;
-                                format_test.messages.push_back(
-                                    std::format("64-bit platform requires a 64-bit binary, but found {}-bit.",
-                                                info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
-                            }
-                        }
-                        else if (platform.starts_with("x86") || platform.starts_with("aarch32") ||
-                                 platform.starts_with("riscv32") || platform.starts_with("ppc32"))
-                        {
-                            if (info.bitness != 32)
-                            {
-                                format_test.status = TestStatus::FAIL;
-                                format_test.messages.push_back(
-                                    std::format("32-bit platform requires a 32-bit binary, but found {}-bit.",
-                                                info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
-                            }
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(std::format(
+                                "Binary does not contain an architecture matching platform tuple '{}'.", platform));
                         }
                     }
 

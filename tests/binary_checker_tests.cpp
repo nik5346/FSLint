@@ -48,7 +48,9 @@ TEST_CASE("Binary Parser ELF", "[binary][elf]")
 
     auto info = BinaryParser::parse(temp_bin);
     CHECK(info.format == BinaryFormat::ELF);
-    CHECK(info.bitness == 64);
+    REQUIRE(info.architectures.size() == 1);
+    CHECK(info.architectures[0].bitness == 64);
+    CHECK(info.isSharedLibrary);
     CHECK(info.exports.contains("fmi2Instantiate"));
     fs::remove(temp_bin);
 }
@@ -70,7 +72,9 @@ TEST_CASE("Binary Parser PE", "[binary][pe]")
 
     auto info = BinaryParser::parse(temp_bin);
     CHECK(info.format == BinaryFormat::PE);
-    CHECK(info.bitness == 64);
+    REQUIRE(info.architectures.size() == 1);
+    CHECK(info.architectures[0].bitness == 64);
+    CHECK(info.isSharedLibrary);
     CHECK(info.exports.contains("fmi2Instantiate"));
     fs::remove(temp_bin);
 }
@@ -92,7 +96,9 @@ TEST_CASE("Binary Parser Mach-O", "[binary][macho]")
 
     auto info = BinaryParser::parse(temp_bin);
     CHECK(info.format == BinaryFormat::MACHO);
-    CHECK(info.bitness == 64);
+    REQUIRE(info.architectures.size() == 1);
+    CHECK(info.architectures[0].bitness == 64);
+    CHECK(info.isSharedLibrary);
     CHECK(info.exports.contains("fmi2Instantiate"));
     fs::remove(temp_bin);
 }
@@ -246,9 +252,54 @@ TEST_CASE("Binary Bitness Mismatch Failure", "[binary][checker][bitness]")
     checker.validate(temp_path, cert);
 
     CHECK(has_fail(cert));
-    CHECK(has_error_with_text(cert, "Platform 'linux32' requires a 32-bit binary, but found 64-bit."));
+    CHECK(has_error_with_text(cert, "Binary does not contain a 32-bit x86 architecture matching platform 'linux32'."));
 
     // Cleanup
+    fs::remove_all(temp_path);
+}
+
+TEST_CASE("Shared Library Check Failure", "[binary][checker][shared]")
+{
+    // Create a temporary test dir
+    fs::path temp_path = "tests/binary_shared_fail_test";
+    fs::create_directories(temp_path);
+
+    fs::copy_file("tests/data/fmi2/pass/dist_binaries_only/modelDescription.xml", temp_path / "modelDescription.xml",
+                  fs::copy_options::overwrite_existing);
+
+    fs::path binaries_dir = temp_path / "binaries" / "linux64";
+    fs::create_directories(binaries_dir);
+
+    // Create a dummy non-shared library ELF file.
+    // ELF Header for 64-bit, little endian, ET_EXEC (executable) instead of ET_DYN.
+    std::vector<uint8_t> elf_header = {
+        0x7f, 'E',  'L',  'F',  2,    1,    1,    0,    0, 0, 0, 0, 0, 0, 0, 0, // e_ident
+        2,    0,                                                            // e_type = ET_EXEC
+        62,   0,                                                            // e_machine = EM_X86_64
+        1,    0,    0,    0,                                                // e_version
+        0,    0,    0,    0,    0,    0,    0,    0,                        // e_entry
+        0,    0,    0,    0,    0,    0,    0,    0,                        // e_phoff
+        0,    0,    0,    0,    0,    0,    0,    0,                        // e_shoff
+        0,    0,    0,    0,                                                // e_flags
+        64,   0,                                                            // e_ehsize
+        56,   0,                                                            // e_phentsize
+        0,    0,                                                            // e_phnum
+        64,   0,                                                            // e_shentsize
+        0,    0,                                                            // e_shnum
+        0,    0                                                             // e_shstrndx
+    };
+
+    std::ofstream outfile(binaries_dir / "test.so", std::ios::binary);
+    outfile.write(reinterpret_cast<const char*>(elf_header.data()), static_cast<std::streamsize>(elf_header.size()));
+    outfile.close();
+
+    Fmi2BinaryChecker checker;
+    Certificate cert;
+    checker.validate(temp_path, cert);
+
+    CHECK(has_fail(cert));
+    CHECK(has_error_with_text(cert, "Binary is not a shared library (DLL/SO/DYLIB)."));
+
     fs::remove_all(temp_path);
 }
 

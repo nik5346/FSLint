@@ -50,6 +50,15 @@ static constexpr uint32_t swap32(uint32_t x)
     return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | (x >> 24);
 }
 
+static inline uint8_t ELF64_ST_BIND(uint8_t i)
+{
+    return i >> 4;
+}
+static inline uint8_t ELF32_ST_BIND(uint8_t i)
+{
+    return i >> 4;
+}
+
 // --- ELF Parsing Structures ---
 #pragma pack(push, 1)
 struct Elf64_Ehdr
@@ -415,15 +424,6 @@ struct fat_arch
 };
 #pragma pack(pop)
 
-static inline uint8_t ELF64_ST_BIND(uint8_t i)
-{
-    return i >> 4;
-}
-static inline uint8_t ELF32_ST_BIND(uint8_t i)
-{
-    return i >> 4;
-}
-
 template <typename T>
 static bool readFromFile(std::ifstream& f, std::streamoff offset, T& dest)
 {
@@ -508,23 +508,19 @@ static std::string peMachineToString(uint16_t machine)
 static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, const std::string& prefix,
                      std::set<std::string>& exports)
 {
-    f.seekg(start_off + curr_off);
-    uint64_t terminalSize = readUleb128(f);
+    f.seekg(static_cast<std::streamoff>(start_off + curr_off));
+    const uint64_t terminalSize = readUleb128(f);
     if (terminalSize != 0)
     {
-        // This is an export.
-        // FMI symbols usually start with underscore in Mach-O
         if (prefix.starts_with('_'))
             exports.insert(prefix.substr(1));
         else
             exports.insert(prefix);
     }
 
-    // Skip terminal data
-    const uint32_t after_terminal_size_pos = static_cast<uint32_t>(f.tellg());
-    f.seekg(after_terminal_size_pos + static_cast<uint32_t>(terminalSize));
+    const uint32_t children_pos = static_cast<uint32_t>(f.tellg()) + static_cast<uint32_t>(terminalSize);
+    f.seekg(static_cast<std::streamoff>(children_pos));
 
-    // Read child count
     uint8_t childCount = 0;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     if (!f.read(reinterpret_cast<char*>(&childCount), 1))
@@ -539,7 +535,7 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, co
         const uint64_t childOffset = readUleb128(f);
         const uint32_t next_child_info_pos = static_cast<uint32_t>(f.tellg());
         walkTrie(f, start_off, static_cast<uint32_t>(childOffset), prefix + edgeLabel, exports);
-        f.seekg(next_child_info_pos);
+        f.seekg(static_cast<std::streamoff>(next_child_info_pos));
     }
 }
 
@@ -547,17 +543,21 @@ static BinaryInfo parseElf64(std::ifstream& f)
 {
     BinaryInfo info;
     info.format = BinaryFormat::ELF;
-    info.bitness = 64;
 
     Elf64_Ehdr ehdr{};
     if (!readFromFile(f, 0, ehdr))
         return info;
 
-    info.architecture = elfMachineToString(ehdr.e_machine);
-    if (ehdr.e_machine == EM_RISCV)
-        info.architecture = "riscv64";
+    info.isSharedLibrary = (ehdr.e_type == 3 /* ET_DYN */);
 
-    // Find PT_DYNAMIC
+    ArchInfo arch;
+    arch.bitness = 64;
+    arch.architecture = elfMachineToString(ehdr.e_machine);
+    if (ehdr.e_machine == EM_RISCV)
+        arch.architecture = "riscv64";
+
+    info.architectures.push_back(arch);
+
     Elf64_Phdr phdr{};
     bool found_dynamic = false;
     for (int i = 0; i < ehdr.e_phnum; ++i)
@@ -578,7 +578,6 @@ static BinaryInfo parseElf64(std::ifstream& f)
     if (!found_dynamic)
         return info;
 
-    // Read Dynamic entries
     std::vector<Elf64_Dyn> dyns;
     Elf64_Dyn dyn{};
     f.seekg(static_cast<std::streamoff>(phdr.p_offset));
@@ -616,8 +615,6 @@ static BinaryInfo parseElf64(std::ifstream& f)
         }
     }
 
-    // In a shared object, DT_SYMTAB etc. might contain virtual addresses.
-    // We need to map these back to file offsets using program headers.
     auto va_to_off = [&](uint64_t va) -> uint64_t
     {
         if (va == 0)
@@ -644,14 +641,12 @@ static BinaryInfo parseElf64(std::ifstream& f)
     uint32_t nsyms = 0;
     if (hash_off != 0)
     {
-        // Read nchain from DT_HASH
         uint32_t nbucket = 0;
         if (readFromFile(f, static_cast<std::streamoff>(hash_off), nbucket))
             readFromFile(f, static_cast<std::streamoff>(hash_off + 4), nsyms);
     }
     else if (gnu_hash_off != 0)
     {
-        // DT_GNU_HASH is harder, but we can find the number of symbols by looking at the buckets and chains.
         uint32_t nbuckets = 0, symoffset = 0, bloom_size = 0, bloom_shift = 0;
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off), nbuckets);
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 4), symoffset);
@@ -670,7 +665,6 @@ static BinaryInfo parseElf64(std::ifstream& f)
 
         if (max_idx > 0)
         {
-            // Iterate through the chains until we find the last one (bit 0 of chain entry is 1)
             bool done = false;
             uint32_t curr_idx = max_idx;
             while (!done)
@@ -697,7 +691,6 @@ static BinaryInfo parseElf64(std::ifstream& f)
 
     if (nsyms == 0)
     {
-        // Fallback: use section headers if available
         for (int i = 0; i < ehdr.e_shnum; ++i)
         {
             Elf64_Shdr shdr{};
@@ -708,7 +701,6 @@ static BinaryInfo parseElf64(std::ifstream& f)
                 {
                     nsyms = static_cast<uint32_t>(shdr.sh_size / shdr.sh_entsize);
                     symtab_off = shdr.sh_offset;
-                    // Get strtab too
                     Elf64_Shdr str_shdr{};
                     if (readFromFile(f,
                                      static_cast<std::streamoff>(ehdr.e_shoff + static_cast<uint64_t>(shdr.sh_link) *
@@ -757,11 +749,13 @@ static BinaryInfo parseMachO(std::ifstream& f, uint32_t base_off)
     const bool is_64 = (magic == 0xFEEDFACF || magic == 0xCFFAEDFE);
     const bool swap = (magic == 0xCEFAEDFE || magic == 0xCFFAEDFE);
 
-    info.bitness = is_64 ? 64 : 32;
+    ArchInfo arch;
+    arch.bitness = is_64 ? 64 : 32;
 
     uint32_t ncmds = 0;
     uint32_t header_size = 0;
     int32_t cputype = 0;
+    uint32_t filetype = 0;
 
     if (is_64)
     {
@@ -769,6 +763,7 @@ static BinaryInfo parseMachO(std::ifstream& f, uint32_t base_off)
         readFromFile(f, base_off, h);
         ncmds = swap ? swap32(h.ncmds) : h.ncmds;
         cputype = swap ? static_cast<int32_t>(swap32(static_cast<uint32_t>(h.cputype))) : h.cputype;
+        filetype = swap ? swap32(h.filetype) : h.filetype;
         header_size = sizeof(mach_header_64);
     }
     else
@@ -777,14 +772,17 @@ static BinaryInfo parseMachO(std::ifstream& f, uint32_t base_off)
         readFromFile(f, base_off, h);
         ncmds = swap ? swap32(h.ncmds) : h.ncmds;
         cputype = swap ? static_cast<int32_t>(swap32(static_cast<uint32_t>(h.cputype))) : h.cputype;
+        filetype = swap ? swap32(h.filetype) : h.filetype;
         header_size = sizeof(mach_header);
     }
 
-    info.architecture = machoCpuToString(cputype);
+    info.isSharedLibrary = (filetype == 0x6 /* MH_BUNDLE */ || filetype == 0x8 /* MH_DYLIB */);
+
+    arch.architecture = machoCpuToString(cputype);
+    info.architectures.push_back(arch);
 
     uint32_t curr_off = base_off + header_size;
-    uint32_t symoff = 0, nsyms = 0, stroff = 0;
-    uint32_t export_off = 0;
+    uint32_t export_off = 0, symoff = 0, nsyms = 0, stroff = 0;
 
     for (uint32_t i = 0; i < ncmds; ++i)
     {
@@ -866,17 +864,21 @@ static BinaryInfo parseElf32(std::ifstream& f)
 {
     BinaryInfo info;
     info.format = BinaryFormat::ELF;
-    info.bitness = 32;
 
     Elf32_Ehdr ehdr{};
     if (!readFromFile(f, 0, ehdr))
         return info;
 
-    info.architecture = elfMachineToString(ehdr.e_machine);
-    if (ehdr.e_machine == EM_RISCV)
-        info.architecture = "riscv32";
+    info.isSharedLibrary = (ehdr.e_type == 3 /* ET_DYN */);
 
-    // Find PT_DYNAMIC
+    ArchInfo arch;
+    arch.bitness = 32;
+    arch.architecture = elfMachineToString(ehdr.e_machine);
+    if (ehdr.e_machine == EM_RISCV)
+        arch.architecture = "riscv32";
+
+    info.architectures.push_back(arch);
+
     Elf32_Phdr phdr{};
     bool found_dynamic = false;
     for (int i = 0; i < ehdr.e_phnum; ++i)
@@ -897,7 +899,6 @@ static BinaryInfo parseElf32(std::ifstream& f)
     if (!found_dynamic)
         return info;
 
-    // Read Dynamic entries
     std::vector<Elf32_Dyn> dyns;
     Elf32_Dyn dyn{};
     f.seekg(static_cast<std::streamoff>(phdr.p_offset));
@@ -961,19 +962,19 @@ static BinaryInfo parseElf32(std::ifstream& f)
     {
         uint32_t nbucket = 0;
         if (readFromFile(f, static_cast<std::streamoff>(hash_off), nbucket))
-            readFromFile(f, static_cast<std::streamoff>(hash_off) + 4, nsyms);
+            readFromFile(f, static_cast<std::streamoff>(hash_off + 4), nsyms);
     }
     else if (gnu_hash_off != 0)
     {
         uint32_t nbuckets = 0, symoffset = 0, bloom_size = 0, bloom_shift = 0;
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off), nbuckets);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 4, symoffset);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 8, bloom_size);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 12, bloom_shift);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 4), symoffset);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 8), bloom_size);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 12), bloom_shift);
 
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
-        f.seekg(static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint32_t>(bloom_size) * 4));
+        f.seekg(static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint64_t>(bloom_size) * 4));
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets) * 4);
 
@@ -989,9 +990,10 @@ static BinaryInfo parseElf32(std::ifstream& f)
             {
                 uint32_t chain_val = 0;
                 if (readFromFile(f,
-                                 static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint32_t>(bloom_size) * 4 +
-                                                             static_cast<uint32_t>(nbuckets) * 4 +
-                                                             static_cast<uint32_t>(curr_idx - symoffset) * 4),
+                                 static_cast<std::streamoff>(gnu_hash_off) + 16 +
+                                     static_cast<std::streamoff>(static_cast<uint64_t>(bloom_size) * 4) +
+                                     static_cast<std::streamoff>(static_cast<uint64_t>(nbuckets) * 4) +
+                                     static_cast<std::streamoff>(static_cast<uint64_t>(curr_idx - symoffset) * 4),
                                  chain_val))
                 {
                     if (chain_val & 1)
@@ -1009,7 +1011,6 @@ static BinaryInfo parseElf32(std::ifstream& f)
 
     if (nsyms == 0)
     {
-        // Fallback: use section headers if available
         for (int i = 0; i < ehdr.e_shnum; ++i)
         {
             Elf32_Shdr shdr{};
@@ -1022,7 +1023,6 @@ static BinaryInfo parseElf32(std::ifstream& f)
                 {
                     nsyms = (shdr.sh_entsize > 0) ? static_cast<uint32_t>(shdr.sh_size / shdr.sh_entsize) : 0;
                     symtab_off = shdr.sh_offset;
-                    // Get strtab too
                     Elf32_Shdr str_shdr{};
                     if (readFromFile(f,
                                      static_cast<std::streamoff>(ehdr.e_shoff) +
@@ -1077,7 +1077,10 @@ static BinaryInfo parsePe(std::ifstream& f)
     if (!readFromFile(f, dos.e_lfanew + 4, file_hdr))
         return info;
 
-    info.architecture = peMachineToString(file_hdr.Machine);
+    info.isSharedLibrary = (file_hdr.Characteristics & 0x2000 /* IMAGE_FILE_DLL */);
+
+    ArchInfo arch;
+    arch.architecture = peMachineToString(file_hdr.Machine);
 
     const uint32_t optional_hdr_off = dos.e_lfanew + 4 + sizeof(IMAGE_FILE_HEADER);
     uint16_t magic = 0;
@@ -1087,7 +1090,7 @@ static BinaryInfo parsePe(std::ifstream& f)
     IMAGE_DATA_DIRECTORY export_dir_info = {0, 0};
     if (magic == 0x10B) // PE32
     {
-        info.bitness = 32;
+        arch.bitness = 32;
         IMAGE_OPTIONAL_HEADER32 opt{};
         if (readFromFile(f, optional_hdr_off, opt))
         {
@@ -1097,7 +1100,7 @@ static BinaryInfo parsePe(std::ifstream& f)
     }
     else if (magic == 0x20B) // PE32+
     {
-        info.bitness = 64;
+        arch.bitness = 64;
         IMAGE_OPTIONAL_HEADER64 opt{};
         if (readFromFile(f, optional_hdr_off, opt))
         {
@@ -1106,13 +1109,14 @@ static BinaryInfo parsePe(std::ifstream& f)
         }
     }
 
+    info.architectures.push_back(arch);
+
     if (export_dir_info.VirtualAddress == 0)
         return info;
 
-    // Find section containing export directory
     std::vector<IMAGE_SECTION_HEADER> sections(file_hdr.NumberOfSections);
     const uint32_t section_hdr_off = optional_hdr_off + file_hdr.SizeOfOptionalHeader;
-    f.seekg(section_hdr_off);
+    f.seekg(static_cast<std::streamoff>(section_hdr_off));
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     f.read(reinterpret_cast<char*>(sections.data()),
            static_cast<std::streamsize>(sections.size() * sizeof(IMAGE_SECTION_HEADER)));
@@ -1140,12 +1144,12 @@ static BinaryInfo parsePe(std::ifstream& f)
     for (uint32_t i = 0; i < export_dir.NumberOfNames; ++i)
     {
         uint32_t name_rva = 0;
-        if (readFromFile(f, names_off + i * 4, name_rva))
+        if (readFromFile(f, static_cast<std::streamoff>(names_off + i * 4), name_rva))
         {
             const uint32_t name_off = rva_to_off(name_rva);
             if (name_off != 0)
             {
-                f.seekg(name_off);
+                f.seekg(static_cast<std::streamoff>(name_off));
                 std::string name;
                 char c = 0;
                 while (f.get(c) && c != '\0')
@@ -1177,7 +1181,7 @@ BinaryInfo BinaryParser::parse(const std::filesystem::path& path)
         f.read(reinterpret_cast<char*>(ident.data()), static_cast<std::streamsize>(ident.size()));
         if (ident[EI_CLASS] == ELFCLASS64)
             return parseElf64(f);
-        else if (ident[EI_CLASS] == ELFCLASS32)
+        if (ident[EI_CLASS] == ELFCLASS32)
             return parseElf32(f);
     }
     else if ((magic & 0xFFFF) == 0x5A4D /* MZ */)
@@ -1194,15 +1198,20 @@ BinaryInfo BinaryParser::parse(const std::filesystem::path& path)
         readFromFile(f, 0, fh);
         const uint32_t nfat = (magic == 0xBEBAFECA) ? swap32(fh.nfat_arch) : fh.nfat_arch;
 
+        BinaryInfo combined;
+        combined.format = BinaryFormat::MACHO;
         for (uint32_t i = 0; i < nfat; ++i)
         {
             fat_arch fa{};
             readFromFile(f, static_cast<std::streamoff>(sizeof(fat_header) + i * sizeof(fat_arch)), fa);
             const uint32_t offset = (magic == 0xBEBAFECA) ? swap32(fa.offset) : fa.offset;
             auto res = parseMachO(f, offset);
-            if (!res.exports.empty())
-                return res;
+            combined.isSharedLibrary = res.isSharedLibrary; // Should be consistent
+            if (!res.architectures.empty())
+                combined.architectures.push_back(res.architectures[0]);
+            combined.exports.insert(res.exports.begin(), res.exports.end());
         }
+        return combined;
     }
 
     return {};
