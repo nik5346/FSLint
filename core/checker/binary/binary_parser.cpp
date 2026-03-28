@@ -508,7 +508,7 @@ static std::string peMachineToString(uint16_t machine)
 static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, const std::string& prefix,
                      std::set<std::string>& exports)
 {
-    f.seekg(static_cast<std::streamoff>(start_off + curr_off));
+    f.seekg(static_cast<std::streamoff>(start_off) + curr_off);
     const uint64_t terminalSize = readUleb128(f);
     if (terminalSize != 0)
     {
@@ -518,8 +518,8 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, co
             exports.insert(prefix);
     }
 
-    const uint32_t children_pos = static_cast<uint32_t>(f.tellg()) + static_cast<uint32_t>(terminalSize);
-    f.seekg(static_cast<std::streamoff>(children_pos));
+    const std::streamoff children_pos = f.tellg() + static_cast<std::streamoff>(terminalSize);
+    f.seekg(children_pos);
 
     uint8_t childCount = 0;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -643,15 +643,15 @@ static BinaryInfo parseElf64(std::ifstream& f)
     {
         uint32_t nbucket = 0;
         if (readFromFile(f, static_cast<std::streamoff>(hash_off), nbucket))
-            readFromFile(f, static_cast<std::streamoff>(hash_off + 4), nsyms);
+            readFromFile(f, static_cast<std::streamoff>(hash_off) + 4, nsyms);
     }
     else if (gnu_hash_off != 0)
     {
         uint32_t nbuckets = 0, symoffset = 0, bloom_size = 0, bloom_shift = 0;
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off), nbuckets);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 4), symoffset);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 8), bloom_size);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 12), bloom_shift);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 4, symoffset);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 8, bloom_size);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 12, bloom_shift);
 
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
@@ -827,21 +827,26 @@ static BinaryInfo parseMachO(std::ifstream& f, uint32_t base_off)
             if (is_64)
             {
                 nlist_64 nl{};
-                readFromFile(f, static_cast<std::streamoff>(base_off + symoff + i * sizeof(nlist_64)), nl);
+                readFromFile(f,
+                             static_cast<std::streamoff>(base_off) + symoff +
+                                 static_cast<std::streamoff>(i) * sizeof(nlist_64),
+                             nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
             }
             else
             {
                 nlist nl{};
-                readFromFile(f, static_cast<std::streamoff>(base_off + symoff + i * sizeof(nlist)), nl);
+                readFromFile(
+                    f, static_cast<std::streamoff>(base_off) + symoff + static_cast<std::streamoff>(i) * sizeof(nlist),
+                    nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
             }
 
             if ((type & 0x01) /* N_EXT */ && (type & 0x0e) != 0 /* not undefined */)
             {
-                f.seekg(base_off + stroff + strx);
+                f.seekg(static_cast<std::streamoff>(base_off) + stroff + strx);
                 std::string name;
                 char c = 0;
                 while (f.get(c) && c != '\0')
@@ -962,15 +967,15 @@ static BinaryInfo parseElf32(std::ifstream& f)
     {
         uint32_t nbucket = 0;
         if (readFromFile(f, static_cast<std::streamoff>(hash_off), nbucket))
-            readFromFile(f, static_cast<std::streamoff>(hash_off + 4), nsyms);
+            readFromFile(f, static_cast<std::streamoff>(hash_off) + 4, nsyms);
     }
     else if (gnu_hash_off != 0)
     {
         uint32_t nbuckets = 0, symoffset = 0, bloom_size = 0, bloom_shift = 0;
         readFromFile(f, static_cast<std::streamoff>(gnu_hash_off), nbuckets);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 4), symoffset);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 8), bloom_size);
-        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off + 12), bloom_shift);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 4, symoffset);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 8, bloom_size);
+        readFromFile(f, static_cast<std::streamoff>(gnu_hash_off) + 12, bloom_shift);
 
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
@@ -1144,7 +1149,7 @@ static BinaryInfo parsePe(std::ifstream& f)
     for (uint32_t i = 0; i < export_dir.NumberOfNames; ++i)
     {
         uint32_t name_rva = 0;
-        if (readFromFile(f, static_cast<std::streamoff>(names_off + i * 4), name_rva))
+        if (readFromFile(f, static_cast<std::streamoff>(names_off) + static_cast<std::streamoff>(i) * 4, name_rva))
         {
             const uint32_t name_off = rva_to_off(name_rva);
             if (name_off != 0)
@@ -1203,7 +1208,9 @@ BinaryInfo BinaryParser::parse(const std::filesystem::path& path)
         for (uint32_t i = 0; i < nfat; ++i)
         {
             fat_arch fa{};
-            readFromFile(f, static_cast<std::streamoff>(sizeof(fat_header) + i * sizeof(fat_arch)), fa);
+            readFromFile(
+                f, static_cast<std::streamoff>(sizeof(fat_header)) + static_cast<std::streamoff>(i) * sizeof(fat_arch),
+                fa);
             const uint32_t offset = (magic == 0xBEBAFECA) ? swap32(fa.offset) : fa.offset;
             auto res = parseMachO(f, offset);
             combined.isSharedLibrary = res.isSharedLibrary; // Should be consistent
