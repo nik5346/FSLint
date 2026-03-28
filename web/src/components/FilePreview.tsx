@@ -463,6 +463,8 @@ export const FilePreview = ({
                     flexDirection: 'column',
                     minWidth: '100%',
                     flex: 1,
+                    minHeight: 0,
+                    height: '100%',
                   },
                 }}
                 customStyle={{
@@ -475,6 +477,8 @@ export const FilePreview = ({
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
+                  minHeight: 0,
+                  height: '100%',
                 }}
                 renderer={memoizedVirtualizedRenderer}
                 wrapLines={true}

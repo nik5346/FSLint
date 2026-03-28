@@ -29,6 +29,8 @@ export const RainbowCsvHighlighter = ({
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
       }}
     >
       <VirtualList

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import React, { useState, useLayoutEffect, useRef, ReactNode } from 'react';
 
 interface VirtualListProps<T> {
   items: T[];
@@ -19,7 +19,7 @@ export function VirtualList<T>({
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -29,11 +29,17 @@ export function VirtualList<T>({
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setContainerHeight(entry.contentRect.height);
+        if (entry.contentRect.height > 0) {
+          setContainerHeight(entry.contentRect.height);
+        }
       }
     });
 
-    setContainerHeight(container.clientHeight);
+    const initialHeight = container.clientHeight;
+    if (initialHeight > 0) {
+      setContainerHeight(initialHeight);
+    }
+
     container.addEventListener('scroll', handleScroll, { passive: true });
     resizeObserver.observe(container);
 
@@ -76,6 +82,7 @@ export function VirtualList<T>({
         ...containerStyle,
         position: 'relative',
         overflow: 'auto',
+        height: '100%',
       }}
     >
       <div
