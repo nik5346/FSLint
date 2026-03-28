@@ -250,9 +250,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         if (std::filesystem::exists(binaries_path))
         {
-            static const std::set<std::string> fmi3_architectures = {"aarch32", "aarch64", "riscv32", "riscv64",
-                                                                     "x86",     "x86_64",  "ppc32",   "ppc64"};
-            static const std::set<std::string> fmi3_systems = {"darwin", "linux", "windows"};
+            std::set<std::string> unique_model_ids;
+            for (const auto& [interface, model_id] : model_identifiers)
+                unique_model_ids.insert(model_id);
 
             for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
             {
@@ -273,50 +273,55 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         const std::string arch = match[1].str();
                         const std::string sys = match[2].str();
 
+                        static const std::set<std::string> fmi3_architectures = {
+                            "aarch32", "aarch64", "riscv32", "riscv64", "x86", "x86_64", "ppc32", "ppc64"};
                         if (!fmi3_architectures.contains(arch))
                         {
                             if (test.status != TestStatus::FAIL)
                                 test.status = TestStatus::WARNING;
-                            test.messages.push_back(
-                                std::format("Architecture '{}' in platform tuple '{}' is not one of the standardized "
-                                            "FMI 3.0 values (aarch32, aarch64, riscv32, riscv64, x86, x86_64, "
-                                            "ppc32, ppc64).",
-                                            arch, tuple));
+                            test.messages.push_back(std::format(
+                                "Architecture '{}' in platform tuple '{}' is not one of the standardized FMI 3.0 "
+                                "architectures (aarch32, aarch64, riscv32, riscv64, x86, x86_64, ppc32, ppc64).",
+                                arch, tuple));
                         }
 
+                        static const std::set<std::string> fmi3_systems = {"darwin", "linux", "windows"};
                         if (!fmi3_systems.contains(sys))
                         {
                             if (test.status != TestStatus::FAIL)
                                 test.status = TestStatus::WARNING;
-                            test.messages.push_back(
-                                std::format("Operating system '{}' in platform tuple '{}' is not one of the "
-                                            "standardized FMI 3.0 values (darwin, linux, windows).",
-                                            sys, tuple));
+                            test.messages.push_back(std::format(
+                                "Operating system '{}' in platform tuple '{}' is not one of the standardized "
+                                "FMI 3.0 systems (darwin, linux, windows).",
+                                sys, tuple));
                         }
+                    }
 
-                        if (match[4].matched) // ABI present
+                    if (match[4].matched) // ABI present
+                    {
+                        static_library_detected = true;
+                        const std::string abi = match[4].str();
+                        const std::regex abi_regex("^[a-z][a-z0-9_]*$");
+                        if (!std::regex_match(abi, abi_regex))
                         {
-                            static_library_detected = true;
-                            const std::string abi = match[4].str();
-                            const std::regex abi_regex("^[a-z][a-z0-9_]*$");
-                            if (!std::regex_match(abi, abi_regex))
-                            {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back(std::format(
-                                    "ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
-                                    "letter and contain only lowercase letters, digits, or underscores).",
-                                    abi, tuple));
-                            }
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(std::format(
+                                "ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
+                                "letter and contain only lowercase letters, digits, or underscores).",
+                                abi, tuple));
                         }
                     }
 
                     // Check for modelIdentifier.<ext>
-                    bool found_model_id = false;
-                    for (const auto& [interface, model_id] : model_identifiers)
+                    for (const auto& model_id : unique_model_ids)
                     {
+                        bool found_model_id = false;
                         for (const std::string_view ext : {".dll", ".so", ".dylib", ".lib", ".a"})
                         {
-                            if (std::filesystem::exists(entry.path() / (model_id + std::string(ext))))
+                            // Check direct binary (e.g. binaries/x64-windows/model.dll)
+                            // or subdirectory (e.g. binaries/x64-windows/model/model.dll)
+                            if (std::filesystem::exists(entry.path() / (model_id + std::string(ext))) ||
+                                std::filesystem::exists(entry.path() / model_id / (model_id + std::string(ext))))
                             {
                                 found_model_id = true;
                                 has_binaries = true;
@@ -325,15 +330,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                                 break;
                             }
                         }
-                        if (found_model_id)
-                            break;
-                    }
-                    if (!found_model_id && !model_identifiers.empty())
-                    {
-                        if (test.status != TestStatus::FAIL)
-                            test.status = TestStatus::WARNING;
-                        test.messages.push_back(std::format(
-                            "Platform directory '{}' does not contain a binary matching any modelIdentifier.", tuple));
+
+                        if (!found_model_id)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(
+                                std::format("Platform directory '{}' does not contain a binary matching "
+                                            "modelIdentifier '{}'.",
+                                            tuple, model_id));
+                        }
                     }
                 }
             }

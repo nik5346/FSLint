@@ -7,7 +7,6 @@
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/xmlstring.h>
-#include <libxml/xpath.h>
 
 #include <filesystem>
 #include <map>
@@ -48,54 +47,76 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     std::set<std::string> listed_sources_in_md;
     bool needs_execution_tool = false;
 
-    static const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
-    xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-    if (xpath_context)
+    xmlNodePtr root = xmlDocGetRootElement(doc);
+    if (root)
     {
-        for (const auto& elem : interface_elements)
+        // FMI 1.0 extraction
+        auto model_id_attr = getXmlAttribute(root, "modelIdentifier");
+        if (model_id_attr)
         {
-            const std::string xpath = "//" + elem;
-            xmlXPathObjectPtr xpath_obj =
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
-            if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
+            // By default ME in FMI 1.0
+            model_identifiers["ModelExchange"] = *model_id_attr;
+        }
+
+        for (xmlNodePtr node = root->children; node; node = node->next)
+        {
+            if (node->type != XML_ELEMENT_NODE)
+                continue;
+
+            const xmlChar* name = node->name;
+            if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) ||
+                xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ModelExchange")) ||
+                xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")))
             {
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                auto node = xpath_obj->nodesetval->nodeTab[0];
                 auto model_id = getXmlAttribute(node, "modelIdentifier");
                 if (model_id)
-                    model_identifiers[elem] = *model_id;
+                {
+                    model_identifiers[reinterpret_cast<const char*>(name)] = *model_id;
 
-                if (elem != "ScheduledExecution")
+                    // If we found CoSimulation in FMI 1.0, move the model identifier there
+                    if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) && model_id_attr)
+                    {
+                        model_identifiers.erase("ModelExchange");
+                        model_identifiers["CoSimulation"] = *model_id_attr;
+                    }
+                }
+
+                if (!xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")))
                 {
                     auto needs_exec = getXmlAttribute(node, "needsExecutionTool");
                     if (needs_exec == "true")
                         needs_execution_tool = true;
                 }
+
+                // Check for SourceFiles inside interface (FMI 2.0)
+                for (xmlNodePtr child = node->children; child; child = child->next)
+                {
+                    if (child->type == XML_ELEMENT_NODE &&
+                        xmlStrEqual(child->name, reinterpret_cast<const xmlChar*>("SourceFiles")))
+                    {
+                        for (xmlNodePtr file_node = child->children; file_node; file_node = file_node->next)
+                        {
+                            if (file_node->type == XML_ELEMENT_NODE &&
+                                xmlStrEqual(file_node->name, reinterpret_cast<const xmlChar*>("File")))
+                            {
+                                auto name_opt = getXmlAttribute(file_node, "name");
+                                if (name_opt)
+                                    listed_sources_in_md.insert(*name_opt);
+                            }
+                        }
+                    }
+                }
             }
-            if (xpath_obj)
-                xmlXPathFreeObject(xpath_obj);
-        }
-
-        xmlXPathObjectPtr sources_xpath = xmlXPathEvalExpression(
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            reinterpret_cast<const xmlChar*>("//*[local-name()='SourceFiles']/*[local-name()='File']"), xpath_context);
-
-        if (sources_xpath && sources_xpath->nodesetval)
-        {
-            for (int i = 0; i < sources_xpath->nodesetval->nodeNr; ++i)
+            else if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("Implementation")))
             {
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                auto node = sources_xpath->nodesetval->nodeTab[i];
-                auto name_opt = getXmlAttribute(node, "name");
-                if (name_opt)
-                    listed_sources_in_md.insert(*name_opt);
+                // In FMI 1.0 CS, Implementation exists but modelIdentifier is still on the root
+                if (model_id_attr)
+                {
+                    model_identifiers.erase("ModelExchange");
+                    model_identifiers["CoSimulation"] = *model_id_attr;
+                }
             }
         }
-        if (sources_xpath)
-            xmlXPathFreeObject(sources_xpath);
-
-        xmlXPathFreeContext(xpath_context);
     }
     xmlFreeDoc(doc);
 

@@ -172,26 +172,38 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         bool has_binaries = false;
         if (std::filesystem::exists(path / "binaries"))
         {
+            std::set<std::string> unique_model_ids;
+            for (const auto& [interface, model_id] : model_identifiers)
+                unique_model_ids.insert(model_id);
+
             for (const auto& entry : std::filesystem::directory_iterator(path / "binaries"))
             {
                 if (entry.is_directory())
                 {
-                    for (const auto& [interface, model_id] : model_identifiers)
+                    const std::string platform = file_utils::pathToUtf8(entry.path().filename());
+                    for (const auto& model_id : unique_model_ids)
                     {
+                        bool found_model_id = false;
                         for (const auto& ext : {".dll", ".so", ".dylib"})
                         {
                             if (std::filesystem::exists(entry.path() / (model_id + ext)))
                             {
+                                found_model_id = true;
                                 has_binaries = true;
                                 break;
                             }
                         }
-                        if (has_binaries)
-                            break;
+
+                        if (!found_model_id)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(
+                                std::format("Platform directory '{}' does not contain a binary matching "
+                                            "modelIdentifier '{}'.",
+                                            platform, model_id));
+                        }
                     }
                 }
-                if (has_binaries)
-                    break;
             }
         }
 

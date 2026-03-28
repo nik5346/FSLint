@@ -138,36 +138,49 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         if (std::filesystem::exists(path / "binaries"))
         {
-            static const std::set<std::string> fmi2_platforms = {"win32",   "win64",    "linux32",
-                                                                 "linux64", "darwin32", "darwin64"};
+            std::set<std::string> unique_model_ids;
+            for (const auto& [interface, model_id] : model_identifiers)
+                unique_model_ids.insert(model_id);
 
             for (const auto& entry : std::filesystem::directory_iterator(path / "binaries"))
             {
                 if (entry.is_directory())
                 {
                     const std::string platform = file_utils::pathToUtf8(entry.path().filename());
+
+                    static const std::set<std::string> fmi2_platforms = {"win32",   "win64",    "linux32",
+                                                                         "linux64", "darwin32", "darwin64"};
                     if (!fmi2_platforms.contains(platform))
                     {
                         if (test.status != TestStatus::FAIL)
                             test.status = TestStatus::WARNING;
                         test.messages.push_back(
-                            std::format("Platform directory '{}' is not one of the standardized FMI 2.0 values "
-                                        "(win32, win64, linux32, linux64, darwin32, darwin64).",
+                            std::format("Platform directory '{}' is not one of the standardized FMI 2.0 platform "
+                                        "names (win32, win64, linux32, linux64, darwin32, darwin64).",
                                         platform));
                     }
 
-                    for (const auto& [interface, model_id] : model_identifiers)
+                    for (const auto& model_id : unique_model_ids)
                     {
+                        bool found_model_id = false;
                         for (const auto& ext : {".dll", ".so", ".dylib", ".lib", ".a"})
                         {
                             if (std::filesystem::exists(entry.path() / (model_id + ext)))
                             {
+                                found_model_id = true;
                                 has_binaries = true;
                                 break;
                             }
                         }
-                        if (has_binaries)
-                            break;
+
+                        if (!found_model_id)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(
+                                std::format("Platform directory '{}' does not contain a binary matching "
+                                            "modelIdentifier '{}'.",
+                                            platform, model_id));
+                        }
                     }
                 }
             }
