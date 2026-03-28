@@ -116,6 +116,24 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 - **Nested Models**: FMUs and SSPs located in the `resources/` directory are automatically discovered and validated recursively.
 
+### Binary Exports
+
+The binary file **must** be a shared library (dynamic library). Its format, extension, and architecture **must** match the platform identifier (the directory name under `binaries/`):
+
+- **Windows**:
+  - Format: **PE** (Portable Executable).
+  - Extension: `.dll`.
+  - Matching: Must match the bitness/architecture of the identifier (e.g., `win64` or `x86_64-windows` requires a 64-bit x86 binary).
+- **Linux**:
+  - Format: **ELF** (Executable and Linkable Format).
+  - Extension: `.so`.
+  - Matching: Must match the bitness/architecture of the identifier (e.g., `linux64` or `x86_64-linux` requires a 64-bit x86 binary).
+- **macOS**:
+  - Format: **Mach-O**.
+  - Extension: `.dylib`.
+  - Matching: Must match the bitness/architecture of the identifier (e.g., `darwin64` or `x86_64-darwin` requires a 64-bit x86 binary).
+  - **Multi-architecture (Fat) Binaries**: For Fat binaries, at least one contained architecture **must** match the platform identifier.
+
 ---
 
 ## FMI 1.0 Rules
@@ -149,11 +167,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - All variables in an alias set **should** have the same `variability`.
 
 ### Binary Exports
-
-- **Binary Format Consistency**:
-  - The binary format **must** match the platform (PE for Windows, ELF for Linux, Mach-O for macOS).
-  - The binary **must** be a shared library (DLL, shared object, or dynamic library).
-  - The architecture and bitness **must** match the platform directory (e.g., `win64` requires a 64-bit x86_64 PE binary).
 - **Function Prefixing**: All exported functions must be prefixed with `<modelIdentifier>_`.
 - **Mandatory Functions (CS)**:
   `fmiGetTypesPlatform`, `fmiGetVersion`, `fmiInstantiateSlave`, `fmiInitializeSlave`, `fmiTerminateSlave`, `fmiResetSlave`, `fmiFreeSlaveInstance`, `fmiSetDebugLogging`, `fmiSetReal`, `fmiSetInteger`, `fmiSetBoolean`, `fmiSetString`, `fmiSetRealInputDerivatives`, `fmiGetReal`, `fmiGetInteger`, `fmiGetBoolean`, `fmiGetString`, `fmiGetRealOutputDerivatives`, `fmiDoStep`, `fmiCancelStep`, `fmiGetStatus`, `fmiGetRealStatus`, `fmiGetIntegerStatus`, `fmiGetBooleanStatus`, `fmiGetStringStatus`.
@@ -223,10 +236,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Binary Exports
 
-- **Binary Format Consistency**:
-  - The binary format **must** match the platform (PE for Windows, ELF for Linux, Mach-O for macOS).
-  - The binary **must** be a shared library (DLL, shared object, or dynamic library).
-  - The architecture and bitness **must** match the platform directory (e.g., `win64` requires a 64-bit x86_64 PE binary).
 - **Mandatory Functions**:
   `fmi2GetTypesPlatform`, `fmi2GetVersion`, `fmi2SetDebugLogging`, `fmi2Instantiate`, `fmi2FreeInstance`, `fmi2SetupExperiment`, `fmi2EnterInitializationMode`, `fmi2ExitInitializationMode`, `fmi2Terminate`, `fmi2Reset`, `fmi2GetReal`, `fmi2GetInteger`, `fmi2GetBoolean`, `fmi2GetString`, `fmi2SetReal`, `fmi2SetInteger`, `fmi2SetBoolean`, `fmi2SetString`, `fmi2GetFMUstate`, `fmi2SetFMUstate`, `fmi2FreeFMUstate`, `fmi2SerializedFMUstateSize`, `fmi2SerializeFMUstate`, `fmi2DeSerializeFMUstate`, `fmi2GetDirectionalDerivative`, `fmi2EnterEventMode`, `fmi2NewDiscreteStates`, `fmi2EnterContinuousTimeMode`, `fmi2CompletedIntegratorStep`, `fmi2SetTime`, `fmi2SetContinuousStates`, `fmi2GetDerivatives`, `fmi2GetEventIndicators`, `fmi2GetContinuousStates`, `fmi2GetNominalsOfContinuousStates`, `fmi2SetRealInputDerivatives`, `fmi2GetRealOutputDerivatives`, `fmi2DoStep`, `fmi2CancelStep`, `fmi2GetStatus`, `fmi2GetRealStatus`, `fmi2GetIntegerStatus`, `fmi2GetBooleanStatus`, `fmi2GetStringStatus`.
 
@@ -302,11 +311,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Stream/Flow Constraints**: Only one inflow/outflow allowed when a stream variable is present in a terminal.
 
 ### Binary Exports
-
-- **Binary Format Consistency**:
-  - The binary format **must** match the platform (PE for Windows, ELF for Linux, Mach-O for macOS).
-  - The binary **must** be a shared library (DLL, shared object, or dynamic library/bundle).
-  - The architecture and bitness **must** match the platform tuple (e.g., `x86_64-windows` requires a 64-bit x86_64 PE binary). For multi-architecture (Fat) binaries, at least one architecture **must** match the platform tuple.
 - **Mandatory Functions**:
   `fmi3GetVersion`, `fmi3SetDebugLogging`, `fmi3InstantiateModelExchange`, `fmi3InstantiateCoSimulation`, `fmi3InstantiateScheduledExecution`, `fmi3FreeInstance`, `fmi3EnterInitializationMode`, `fmi3ExitInitializationMode`, `fmi3EnterEventMode`, `fmi3Terminate`, `fmi3Reset`, `fmi3GetFloat32`, `fmi3GetFloat64`, `fmi3GetInt8`, `fmi3GetUInt8`, `fmi3GetInt16`, `fmi3GetUInt16`, `fmi3GetInt32`, `fmi3GetUInt32`, `fmi3GetInt64`, `fmi3GetUInt64`, `fmi3GetBoolean`, `fmi3GetString`, `fmi3GetBinary`, `fmi3GetClock`, `fmi3SetFloat32`, `fmi3SetFloat64`, `fmi3SetInt8`, `fmi3SetUInt8`, `fmi3SetInt16`, `fmi3SetUInt16`, `fmi3SetInt32`, `fmi3SetUInt32`, `fmi3SetInt64`, `fmi3SetUInt64`, `fmi3SetBoolean`, `fmi3SetString`, `fmi3SetBinary`, `fmi3SetClock`, `fmi3GetNumberOfVariableDependencies`, `fmi3GetVariableDependencies`, `fmi3GetFMUState`, `fmi3SetFMUState`, `fmi3FreeFMUState`, `fmi3SerializedFMUStateSize`, `fmi3SerializeFMUState`, `fmi3DeserializeFMUState`, `fmi3GetDirectionalDerivative`, `fmi3GetAdjointDerivative`, `fmi3EnterConfigurationMode`, `fmi3ExitConfigurationMode`, `fmi3GetIntervalDecimal`, `fmi3GetIntervalFraction`, `fmi3GetShiftDecimal`, `fmi3GetShiftFraction`, `fmi3SetIntervalDecimal`, `fmi3SetIntervalFraction`, `fmi3SetShiftDecimal`, `fmi3SetShiftFraction`, `fmi3EvaluateDiscreteStates`, `fmi3UpdateDiscreteStates`, `fmi3EnterContinuousTimeMode`, `fmi3CompletedIntegratorStep`, `fmi3SetTime`, `fmi3SetContinuousStates`, `fmi3GetContinuousStateDerivatives`, `fmi3GetEventIndicators`, `fmi3GetContinuousStates`, `fmi3GetNominalsOfContinuousStates`, `fmi3GetNumberOfEventIndicators`, `fmi3GetNumberOfContinuousStates`, `fmi3EnterStepMode`, `fmi3GetOutputDerivatives`, `fmi3DoStep`, `fmi3ActivateModelPartition`.
 
