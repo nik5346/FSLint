@@ -13,3 +13,9 @@ declare module 'react-syntax-highlighter/dist/esm/languages/prism/yaml' {
   const yaml: any;
   export default yaml;
 }
+
+declare module 'react-hex-editor' {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const HexEditor: any;
+  export default HexEditor;
+}

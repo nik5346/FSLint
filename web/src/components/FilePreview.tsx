@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
+import HexEditor from 'react-hex-editor';
 import { FileNode, Theme, FSLintModule } from '../types';
 
 import { MarkdownContent } from './MarkdownContent';
@@ -48,8 +49,33 @@ export const FilePreview = ({
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [viewMode, setViewMode] = useState<'render' | 'code'>('render');
+  const [viewMode, setViewMode] = useState<'render' | 'code' | 'hex'>('render');
   const [monaco, setMonaco] = useState<Monaco | null>(null);
+
+  const ext = selectedFile?.split('.').pop()?.toLowerCase();
+  const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
+  const isSvg = ext === 'svg';
+  const isPdf = ext === 'pdf';
+  const isHtml = ext === 'html' || ext === 'htm';
+  const isMarkdown = ext === 'md';
+
+  const isBinaryResult = node?.isBinary ?? false;
+
+  const canRender = isStaticImage || isSvg || isPdf || isHtml || isMarkdown;
+  const canCode = !isBinaryResult || isSvg || isHtml || isMarkdown;
+
+  const [lastSelectedFile, setLastSelectedFile] = useState<string | null>(null);
+
+  if (selectedFile !== lastSelectedFile) {
+    setLastSelectedFile(selectedFile);
+    if (canRender) {
+      setViewMode('render');
+    } else if (isBinaryResult) {
+      setViewMode('hex');
+    } else {
+      setViewMode('code');
+    }
+  }
 
   useEffect(() => {
     let url: string | null = null;
@@ -83,36 +109,29 @@ export const FilePreview = ({
     };
   }, [selectedFile, module]);
 
-  const ext = selectedFile?.split('.').pop()?.toLowerCase();
-  const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
-  const isSvg = ext === 'svg';
-  const isPdf = ext === 'pdf';
-  const isHtml = ext === 'html' || ext === 'htm';
-  const isMarkdown = ext === 'md';
-  const canToggle = isSvg || isHtml || isMarkdown;
-
-  const isBinaryResult = node?.isBinary ?? false;
-
   const data = useMemo(() => {
     if (!selectedFile || !module) return null;
-    if (isBinaryResult && !isStaticImage && !isPdf) return null;
     try {
       return module.FS.readFile(selectedFile) as Uint8Array;
     } catch (e) {
       console.error('Failed to read file:', e);
       return null;
     }
-  }, [selectedFile, module, isBinaryResult, isStaticImage, isPdf]);
+  }, [selectedFile, module]);
 
   const content = useMemo(() => {
-    if (!data || (isBinaryResult && (isStaticImage || isPdf))) return '';
+    if (!data) return '';
+    if (viewMode === 'hex') return '';
+    // If it's a known binary format that we render (image, pdf), don't try to decode as text unless we are in code mode
+    if (isBinaryResult && (isStaticImage || isPdf) && viewMode === 'render') return '';
     return decodeText(data);
-  }, [data, isBinaryResult, isStaticImage, isPdf]);
+  }, [data, isBinaryResult, isStaticImage, isPdf, viewMode]);
 
   useEffect(() => {
     if (!monaco) return;
 
-    if (!monaco.languages.getLanguages().some((l) => l.id === 'csv')) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!monaco.languages.getLanguages().some((l: any) => l.id === 'csv')) {
       monaco.languages.register({ id: 'csv' });
     }
 
@@ -202,40 +221,19 @@ export const FilePreview = ({
     });
   }, [monaco, content, selectedFile]);
 
-  if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
-    return (
-      <div
-        style={{
-          padding: '40px',
-          textAlign: 'center',
-          color: theme.muted,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-        }}
-      >
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-          <polyline points="13 2 13 9 20 9"></polyline>
-        </svg>
-        <span>Binary file cannot be displayed</span>
-      </div>
-    );
-  }
-
   if (!selectedFile || !module) return null;
 
   const handleCopy = () => {
+    if (viewMode === 'hex' && data) {
+      const hex = Array.from(data)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join(' ');
+      navigator.clipboard.writeText(hex).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+      return;
+    }
     navigator.clipboard.writeText(content).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -320,55 +318,85 @@ export const FilePreview = ({
           gap: '4px',
         }}
       >
-        {canToggle && (
+        <div
+          style={{
+            display: 'flex',
+            backgroundColor: theme.buttonHoverBg,
+            borderRadius: '6px',
+            padding: '2px',
+          }}
+        >
+          {canRender && (
+            <button
+              onClick={() => setViewMode('render')}
+              title="Show Preview"
+              className="copy-btn"
+              style={{
+                padding: '4px 8px',
+                color: theme.text,
+                backgroundColor: viewMode === 'render' ? theme.surface : 'transparent',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                opacity: viewMode === 'render' ? 1 : 0.6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: viewMode === 'render' ? 'bold' : 'normal',
+                transition: 'background-color 0.15s, opacity 0.15s',
+              }}
+            >
+              Render
+            </button>
+          )}
+          {canCode && (
+            <button
+              onClick={() => setViewMode('code')}
+              title="Show Code"
+              className="copy-btn"
+              style={{
+                padding: '4px 8px',
+                color: theme.text,
+                backgroundColor: viewMode === 'code' ? theme.surface : 'transparent',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                opacity: viewMode === 'code' ? 1 : 0.6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: viewMode === 'code' ? 'bold' : 'normal',
+                transition: 'background-color 0.15s, opacity 0.15s',
+              }}
+            >
+              Code
+            </button>
+          )}
           <button
-            onClick={() => setViewMode(viewMode === 'render' ? 'code' : 'render')}
-            title={viewMode === 'render' ? 'Show Code' : 'Show Preview'}
+            onClick={() => setViewMode('hex')}
+            title="Show Hex"
             className="copy-btn"
             style={{
-              padding: '5px',
+              padding: '4px 8px',
               color: theme.text,
+              backgroundColor: viewMode === 'hex' ? theme.surface : 'transparent',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '4px',
               cursor: 'pointer',
-              opacity: 0.6,
+              opacity: viewMode === 'hex' ? 1 : 0.6,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              fontSize: '11px',
+              fontWeight: viewMode === 'hex' ? 'bold' : 'normal',
               transition: 'background-color 0.15s, opacity 0.15s',
             }}
           >
-            {viewMode === 'render' ? (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="16 18 22 12 16 6"></polyline>
-                <polyline points="8 6 2 12 8 18"></polyline>
-              </svg>
-            ) : (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            )}
+            Hex
           </button>
-        )}
+        </div>
         <button
           onClick={handleCopy}
           title={copied ? 'Copied!' : 'Copy to clipboard'}
@@ -420,13 +448,13 @@ export const FilePreview = ({
       <div
         style={{
           flex: 1,
-          overflowY: viewMode === 'render' && canToggle ? 'auto' : 'hidden',
+          overflowY: viewMode === 'render' && canRender ? 'auto' : 'hidden',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
         }}
       >
-        {viewMode === 'render' && canToggle ? (
+        {viewMode === 'render' && canRender ? (
           <div
             style={{
               flex: 1,
@@ -458,6 +486,52 @@ export const FilePreview = ({
                   flex: 1,
                   border: 'none',
                   backgroundColor: '#fff',
+                }}
+              />
+            )}
+          </div>
+        ) : viewMode === 'hex' ? (
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              backgroundColor: isDark ? '#2a2a2a' : '#ffffff',
+              color: theme.text,
+            }}
+          >
+            {data && (
+              <HexEditor
+                data={data}
+                height="100%"
+                columns={0x10}
+                readOnly
+                showAscii
+                showRowLabels
+                theme={{
+                  colorBackground: isDark ? '#2a2a2a' : '#ffffff',
+                  colorBackgroundColumnEven: isDark ? '#2a2a2a' : '#ffffff',
+                  colorBackgroundColumnOdd: isDark ? '#2f2f2f' : '#f6f8fa',
+                  colorBackgroundEven: isDark ? '#2a2a2a' : '#ffffff',
+                  colorBackgroundOdd: isDark ? '#2f2f2f' : '#f6f8fa',
+                  colorBackgroundRowEven: isDark ? '#2a2a2a' : '#ffffff',
+                  colorBackgroundRowOdd: isDark ? '#2f2f2f' : '#f6f8fa',
+                  colorText: theme.text,
+                  colorTextColumnEven: theme.text,
+                  colorTextColumnOdd: theme.text,
+                  colorTextEven: theme.text,
+                  colorTextOdd: theme.text,
+                  colorTextRowEven: theme.text,
+                  colorTextRowOdd: theme.text,
+                  colorTextLabel: theme.muted,
+                  colorTextLabelCurrent: theme.text,
+                  colorBackgroundLabel: isDark ? '#2a2a2a' : '#ffffff',
+                  colorBackgroundLabelCurrent: isDark ? '#2a2a2a' : '#ffffff',
+                  colorBackgroundSelection: '#007bff',
+                  colorTextSelection: '#ffffff',
+                  colorBackgroundSelectionCursor: '#005cc5',
+                  colorTextSelectionCursor: '#ffffff',
+                  colorScrollbackThumb: theme.border,
+                  colorScrollbackTrack: isDark ? '#1a1a1a' : '#f6f8fa',
                 }}
               />
             )}
