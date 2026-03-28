@@ -1,9 +1,37 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import { FileNode, Theme, FSLintModule } from '../types';
 
 import { MarkdownContent } from './MarkdownContent';
 import { decodeText } from '../utils/file';
+
+const detectSeparator = (text: string) => {
+  const candidates = [',', ';', '\t', '|'];
+  const lines = text.split('\n').slice(0, 20);
+
+  if (lines.length === 0) return ',';
+
+  let bestSeparator = ',';
+  let maxScore = -1;
+
+  for (const sep of candidates) {
+    const counts = lines.map((line) => line.split(sep).length - 1);
+    const average = counts.reduce((a, b) => a + b, 0) / counts.length;
+
+    if (average === 0) continue;
+
+    // Consistency: how much do the counts vary from the average?
+    const variance = counts.reduce((a, b) => a + Math.pow(b - average, 2), 0) / counts.length;
+    const score = average / (variance + 1); // Higher average, lower variance is better
+
+    if (score > maxScore) {
+      maxScore = score;
+      bestSeparator = sep;
+    }
+  }
+
+  return bestSeparator;
+};
 
 export const FilePreview = ({
   selectedFile,
@@ -21,6 +49,7 @@ export const FilePreview = ({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<'render' | 'code'>('render');
+  const [monaco, setMonaco] = useState<Monaco | null>(null);
 
   useEffect(() => {
     let url: string | null = null;
@@ -80,7 +109,9 @@ export const FilePreview = ({
     return decodeText(data);
   }, [data, isBinaryResult, isStaticImage, isPdf]);
 
-  const handleBeforeMount = useCallback((monaco: Monaco) => {
+  useEffect(() => {
+    if (!monaco) return;
+
     if (!monaco.languages.getLanguages().some((l) => l.id === 'csv')) {
       monaco.languages.register({ id: 'csv' });
     }
@@ -130,19 +161,27 @@ export const FilePreview = ({
       },
     });
 
+    const isCsv = selectedFile?.toLowerCase().endsWith('.csv');
+    if (!isCsv) return;
+
+    const separator = detectSeparator(content);
+    const escapedSeparator = separator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
     monaco.languages.setMonarchTokensProvider('csv', {
       tokenizer: {
-        root: [
-          [/^/, { token: '', next: '@column0' }], // Start of line
-        ],
+        root: [[/^/, { token: '', next: '@column0' }]],
         // Generate rules for each column (up to 10 for rainbow effect)
         ...Object.fromEntries(
           Array.from({ length: 10 }).map((_, i) => [
             `column${i}`,
             [
+              ...(i > 0 ? [[/^/, { token: '', next: '@column0' }]] : []), // Reset to first column at start of line, but NOT in column0 to avoid infinite loops
               [/"/, { token: `csv-col-${i}`, next: `@quotedColumn${i}` }], // Start of quoted field
-              [/[^,"]+/, `csv-col-${i}`], // Unquoted field content
-              [/,/, { token: 'delimiter', next: i < 9 ? `@column${i + 1}` : '@column0' }], // Delimiter
+              [new RegExp(`[^${escapedSeparator}"]+`), `csv-col-${i}`], // Unquoted field content
+              [
+                new RegExp(escapedSeparator),
+                { token: 'delimiter', next: i < 9 ? `@column${i + 1}` : '@column0' },
+              ], // Delimiter
               [/$/, { token: '', next: '@root' }], // End of line
             ],
           ]),
@@ -152,6 +191,7 @@ export const FilePreview = ({
           Array.from({ length: 10 }).map((_, i) => [
             `quotedColumn${i}`,
             [
+              [/^/, { token: '', next: '@column0' }], // Reset at start of line
               [/""/, `csv-col-${i}`], // Escaped quote
               [/"/, { token: `csv-col-${i}`, next: `@column${i}` }], // End of quoted field
               [/[^"]+/, `csv-col-${i}`], // Quoted field content
@@ -160,7 +200,7 @@ export const FilePreview = ({
         ),
       },
     });
-  }, []);
+  }, [monaco, content, selectedFile]);
 
   if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
     return (
@@ -432,7 +472,7 @@ export const FilePreview = ({
                   height="100%"
                   language={language}
                   theme={isDark ? 'fslint-dark' : 'fslint-light'}
-                  beforeMount={handleBeforeMount}
+                  onMount={(editor, monaco) => setMonaco(monaco)}
                   value={content}
                   options={{
                     readOnly: true,
