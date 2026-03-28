@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import { HexViewer } from './HexViewer';
 import { FileNode, Theme, FSLintModule } from '../types';
@@ -127,9 +127,7 @@ export const FilePreview = ({
     return decodeText(data);
   }, [data, isBinaryResult, isStaticImage, isPdf, viewMode]);
 
-  useEffect(() => {
-    if (!monaco) return;
-
+  const handleBeforeMount = useCallback((monaco: Monaco) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!monaco.languages.getLanguages().some((l: any) => l.id === 'csv')) {
       monaco.languages.register({ id: 'csv' });
@@ -179,6 +177,10 @@ export const FilePreview = ({
         'editor.foreground': '#111418', // matches theme.text in App.tsx when isDark=false
       },
     });
+  }, []);
+
+  useEffect(() => {
+    if (!monaco) return;
 
     const isCsv = selectedFile?.toLowerCase().endsWith('.csv');
     if (!isCsv) return;
@@ -472,6 +474,7 @@ export const FilePreview = ({
                   height="100%"
                   language={language}
                   theme={isDark ? 'fslint-dark' : 'fslint-light'}
+                  beforeMount={handleBeforeMount}
                   onMount={(editor, monaco) => setMonaco(monaco)}
                   value={content}
                   options={{
