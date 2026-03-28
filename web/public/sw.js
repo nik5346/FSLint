@@ -1,5 +1,3 @@
-const FMU_CONTENTS_PREFIX = '/fmu-contents';
-
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
@@ -10,18 +8,21 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  const scopePath = new URL(self.registration.scope).pathname;
+  const fmuPrefix = scopePath + 'fmu-contents';
 
-  if (url.pathname.startsWith(FMU_CONTENTS_PREFIX)) {
+  if (url.pathname.startsWith(fmuPrefix)) {
     event.respondWith(
       (async () => {
         const allClients = await self.clients.matchAll({ type: 'window' });
-        const client = allClients.find((c) => !c.url.includes(FMU_CONTENTS_PREFIX));
+        // The main client is the one that DOES NOT contain 'fmu-contents' in its URL
+        const client = allClients.find((c) => !c.url.includes('fmu-contents'));
 
         if (!client) {
           return new Response('Main client not found', { status: 404 });
         }
 
-        const filePath = decodeURIComponent(url.pathname.substring(FMU_CONTENTS_PREFIX.length));
+        const filePath = decodeURIComponent(url.pathname.substring(fmuPrefix.length));
 
         return new Promise((resolve) => {
           const messageChannel = new MessageChannel();
