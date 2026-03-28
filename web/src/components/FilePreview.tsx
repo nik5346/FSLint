@@ -133,8 +133,24 @@ export const FilePreview = ({
       monaco.languages.register({ id: 'csv' });
     }
 
-    const darkColors = ['#ff5555', '#50fa7b', '#f1fa8c', '#bd93f9', '#ff79c6', '#8be9fd', '#ffb86c'];
-    const lightColors = ['#e45649', '#50a14f', '#c18401', '#4078f2', '#a626a4', '#0184bc', '#986801'];
+    const darkColors = [
+      '#ff5555',
+      '#50fa7b',
+      '#f1fa8c',
+      '#bd93f9',
+      '#ff79c6',
+      '#8be9fd',
+      '#ffb86c',
+    ];
+    const lightColors = [
+      '#e45649',
+      '#50a14f',
+      '#c18401',
+      '#4078f2',
+      '#a626a4',
+      '#0184bc',
+      '#986801',
+    ];
 
     monaco.editor.defineTheme('fslint-dark', {
       base: 'vs-dark',
