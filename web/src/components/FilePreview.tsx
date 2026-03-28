@@ -395,7 +395,7 @@ export const FilePreview = ({
               <MarkdownContent content={content} theme={theme} isDark={isDark} />
             ) : (
               <iframe
-                src={`/fmu-contents${selectedFile}`}
+                src={`fmu-contents${selectedFile}`}
                 title="Preview"
                 style={{
                   width: '100%',
