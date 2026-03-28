@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
-import Editor from '@monaco-editor/react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import Editor, { Monaco } from '@monaco-editor/react';
 import { FileNode, Theme, FSLintModule } from '../types';
 
-import { RainbowCsvHighlighter } from './RainbowCsvHighlighter';
 import { MarkdownContent } from './MarkdownContent';
 import { decodeText } from '../utils/file';
 
@@ -80,6 +79,88 @@ export const FilePreview = ({
     if (!data || (isBinaryResult && (isStaticImage || isPdf))) return '';
     return decodeText(data);
   }, [data, isBinaryResult, isStaticImage, isPdf]);
+
+  const handleBeforeMount = useCallback((monaco: Monaco) => {
+    if (!monaco.languages.getLanguages().some((l) => l.id === 'csv')) {
+      monaco.languages.register({ id: 'csv' });
+    }
+
+    const darkColors = [
+      '#ff5555',
+      '#50fa7b',
+      '#f1fa8c',
+      '#bd93f9',
+      '#ff79c6',
+      '#8be9fd',
+      '#ffb86c',
+    ];
+    const lightColors = [
+      '#e45649',
+      '#50a14f',
+      '#c18401',
+      '#4078f2',
+      '#a626a4',
+      '#0184bc',
+      '#986801',
+    ];
+
+    monaco.editor.defineTheme('fslint-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: Array.from({ length: 10 }).map((_, i) => ({
+        token: `csv-col-${i}`,
+        foreground: darkColors[i % darkColors.length],
+      })),
+      colors: {
+        'editor.background': '#2a2a2a', // matches theme.surface in App.tsx when isDark=true
+        'editor.foreground': '#f0f0f0', // matches theme.text in App.tsx when isDark=true
+      },
+    });
+
+    monaco.editor.defineTheme('fslint-light', {
+      base: 'vs',
+      inherit: true,
+      rules: Array.from({ length: 10 }).map((_, i) => ({
+        token: `csv-col-${i}`,
+        foreground: lightColors[i % lightColors.length],
+      })),
+      colors: {
+        'editor.background': '#ffffff', // matches theme.surface in App.tsx when isDark=false
+        'editor.foreground': '#111418', // matches theme.text in App.tsx when isDark=false
+      },
+    });
+
+    monaco.languages.setMonarchTokensProvider('csv', {
+      tokenizer: {
+        root: [
+          [/^/, { token: '', next: '@column0' }], // Start of line
+        ],
+        // Generate rules for each column (up to 10 for rainbow effect)
+        ...Object.fromEntries(
+          Array.from({ length: 10 }).map((_, i) => [
+            `column${i}`,
+            [
+              [/"/, { token: `csv-col-${i}`, next: `@quotedColumn${i}` }], // Start of quoted field
+              [/[^,"]+/, `csv-col-${i}`], // Unquoted field content
+              [/,/, { token: 'delimiter', next: i < 9 ? `@column${i + 1}` : '@column0' }], // Delimiter
+              [/$/, { token: '', next: '@root' }], // End of line
+            ],
+          ]),
+        ),
+        // Quoted field states
+        ...Object.fromEntries(
+          Array.from({ length: 10 }).map((_, i) => [
+            `quotedColumn${i}`,
+            [
+              [/""/, `csv-col-${i}`], // Escaped quote
+              [/"/, { token: `csv-col-${i}`, next: `@column${i}` }], // End of quoted field
+              [/[^"]+/, `csv-col-${i}`], // Quoted field content
+            ],
+          ]),
+        ),
+      },
+    });
+  }, []);
 
   if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
     return (
@@ -344,16 +425,14 @@ export const FilePreview = ({
         ) : (
           (() => {
             const language = getLanguage(selectedFile, content);
-            if (language === 'csv') {
-              return <RainbowCsvHighlighter content={content} isDark={isDark} theme={theme} />;
-            }
 
             return (
               <div style={{ flex: 1, minHeight: 0 }}>
                 <Editor
                   height="100%"
                   language={language}
-                  theme={isDark ? 'vs-dark' : 'light'}
+                  theme={isDark ? 'fslint-dark' : 'fslint-light'}
+                  beforeMount={handleBeforeMount}
                   value={content}
                   options={{
                     readOnly: true,
