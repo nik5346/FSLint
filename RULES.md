@@ -55,9 +55,12 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - **Must** be a valid date in the past (not after the current system time).
 - **Model Version Format**: The `version` attribute of the model. Semantic versioning (`MAJOR.MINOR.PATCH`) is **recommended**.
 - **Copyright Notice**:
+  - **Should** be provided if the `author` attribute is missing or empty.
   - **Should** begin with ©, "Copyright", or "Copr.".
   - **Should** include the year of publication and the copyright holder name.
-- **Traceability Attributes**: The `license`, `author`, and `generationTool` attributes **should** be present and non-empty.
+- **Traceability Attributes**:
+  - The `author` attribute **should** be present and non-empty if the `copyright` attribute is missing or empty.
+  - The `license` and `generationTool` attributes **should** be present and non-empty.
 - **Model Identifier Format**:
   - **Must** be a valid C identifier (starts with letter/underscore, followed by alphanumerics/underscores).
   - **Should** be under 64 characters; the absolute maximum is 200 characters (**must** not exceed).
