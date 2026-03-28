@@ -402,7 +402,8 @@ export const FilePreview = ({
               justifyContent: isHtml || isMarkdown ? 'flex-start' : 'center',
               padding: isHtml || isPdf ? '0' : '20px',
               backgroundColor: 'transparent',
-              minHeight: isHtml || isPdf || isStaticImage ? '100%' : '200px',
+              minHeight: isHtml || isPdf || isStaticImage || isSvg ? '100%' : '200px',
+              boxSizing: 'border-box',
             }}
           >
             {isStaticImage ? (
