@@ -131,34 +131,34 @@ export const FilePreview = ({
     });
 
     monaco.languages.setMonarchTokensProvider('csv', {
-        tokenizer: {
-          root: [
-            [/^/, { token: '', next: '@column0' }], // Start of line
-          ],
-          // Generate rules for each column (up to 10 for rainbow effect)
-          ...Object.fromEntries(
-            Array.from({ length: 10 }).map((_, i) => [
-              `column${i}`,
-              [
-                [/"/, { token: `csv-col-${i}`, next: `@quotedColumn${i}` }], // Start of quoted field
-                [/[^,"]+/, `csv-col-${i}`], // Unquoted field content
-                [/,/, { token: 'delimiter', next: i < 9 ? `@column${i + 1}` : '@column0' }], // Delimiter
-                [/$/, { token: '', next: '@root' }], // End of line
-              ],
-            ]),
-          ),
-          // Quoted field states
-          ...Object.fromEntries(
-            Array.from({ length: 10 }).map((_, i) => [
-              `quotedColumn${i}`,
-              [
-                [/""/, `csv-col-${i}`], // Escaped quote
-                [/"/, { token: `csv-col-${i}`, next: `@column${i}` }], // End of quoted field
-                [/[^"]+/, `csv-col-${i}`], // Quoted field content
-              ],
-            ]),
-          ),
-        },
+      tokenizer: {
+        root: [
+          [/^/, { token: '', next: '@column0' }], // Start of line
+        ],
+        // Generate rules for each column (up to 10 for rainbow effect)
+        ...Object.fromEntries(
+          Array.from({ length: 10 }).map((_, i) => [
+            `column${i}`,
+            [
+              [/"/, { token: `csv-col-${i}`, next: `@quotedColumn${i}` }], // Start of quoted field
+              [/[^,"]+/, `csv-col-${i}`], // Unquoted field content
+              [/,/, { token: 'delimiter', next: i < 9 ? `@column${i + 1}` : '@column0' }], // Delimiter
+              [/$/, { token: '', next: '@root' }], // End of line
+            ],
+          ]),
+        ),
+        // Quoted field states
+        ...Object.fromEntries(
+          Array.from({ length: 10 }).map((_, i) => [
+            `quotedColumn${i}`,
+            [
+              [/""/, `csv-col-${i}`], // Escaped quote
+              [/"/, { token: `csv-col-${i}`, next: `@column${i}` }], // End of quoted field
+              [/[^"]+/, `csv-col-${i}`], // Quoted field content
+            ],
+          ]),
+        ),
+      },
     });
   }, []);
 
