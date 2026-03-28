@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import { HexViewer } from './HexViewer';
 import { FileNode, Theme, FSLintModule } from '../types';
@@ -127,32 +127,14 @@ export const FilePreview = ({
     return decodeText(data);
   }, [data, isBinaryResult, isStaticImage, isPdf, viewMode]);
 
-  useEffect(() => {
-    if (!monaco) return;
-
+  const handleBeforeMount = useCallback((monaco: Monaco) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!monaco.languages.getLanguages().some((l: any) => l.id === 'csv')) {
       monaco.languages.register({ id: 'csv' });
     }
 
-    const darkColors = [
-      '#ff5555',
-      '#50fa7b',
-      '#f1fa8c',
-      '#bd93f9',
-      '#ff79c6',
-      '#8be9fd',
-      '#ffb86c',
-    ];
-    const lightColors = [
-      '#e45649',
-      '#50a14f',
-      '#c18401',
-      '#4078f2',
-      '#a626a4',
-      '#0184bc',
-      '#986801',
-    ];
+    const darkColors = ['#ff5555', '#50fa7b', '#f1fa8c', '#bd93f9', '#ff79c6', '#8be9fd', '#ffb86c'];
+    const lightColors = ['#e45649', '#50a14f', '#c18401', '#4078f2', '#a626a4', '#0184bc', '#986801'];
 
     monaco.editor.defineTheme('fslint-dark', {
       base: 'vs-dark',
@@ -179,6 +161,10 @@ export const FilePreview = ({
         'editor.foreground': '#111418', // matches theme.text in App.tsx when isDark=false
       },
     });
+  }, []);
+
+  useEffect(() => {
+    if (!monaco) return;
 
     const isCsv = selectedFile?.toLowerCase().endsWith('.csv');
     if (!isCsv) return;
@@ -471,6 +457,7 @@ export const FilePreview = ({
                   height="100%"
                   language={language}
                   theme={isDark ? 'fslint-dark' : 'fslint-light'}
+                  beforeMount={handleBeforeMount}
                   onMount={(editor, monaco) => setMonaco(monaco)}
                   value={content}
                   options={{
