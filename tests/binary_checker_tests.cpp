@@ -273,20 +273,20 @@ TEST_CASE("Shared Library Check Failure", "[binary][checker][shared]")
     // Create a dummy non-shared library ELF file.
     // ELF Header for 64-bit, little endian, ET_EXEC (executable) instead of ET_DYN.
     std::vector<uint8_t> elf_header = {
-        0x7f, 'E',  'L',  'F',  2,    1,    1,    0,    0, 0, 0, 0, 0, 0, 0, 0, // e_ident
-        2,    0,                                                            // e_type = ET_EXEC
-        62,   0,                                                            // e_machine = EM_X86_64
-        1,    0,    0,    0,                                                // e_version
-        0,    0,    0,    0,    0,    0,    0,    0,                        // e_entry
-        0,    0,    0,    0,    0,    0,    0,    0,                        // e_phoff
-        0,    0,    0,    0,    0,    0,    0,    0,                        // e_shoff
-        0,    0,    0,    0,                                                // e_flags
-        64,   0,                                                            // e_ehsize
-        56,   0,                                                            // e_phentsize
-        0,    0,                                                            // e_phnum
-        64,   0,                                                            // e_shentsize
-        0,    0,                                                            // e_shnum
-        0,    0                                                             // e_shstrndx
+        0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // e_ident
+        2,    0,                                                 // e_type = ET_EXEC
+        62,   0,                                                 // e_machine = EM_X86_64
+        1,    0,   0,   0,                                       // e_version
+        0,    0,   0,   0,   0, 0, 0, 0,                         // e_entry
+        0,    0,   0,   0,   0, 0, 0, 0,                         // e_phoff
+        0,    0,   0,   0,   0, 0, 0, 0,                         // e_shoff
+        0,    0,   0,   0,                                       // e_flags
+        64,   0,                                                 // e_ehsize
+        56,   0,                                                 // e_phentsize
+        0,    0,                                                 // e_phnum
+        64,   0,                                                 // e_shentsize
+        0,    0,                                                 // e_shnum
+        0,    0                                                  // e_shstrndx
     };
 
     std::ofstream outfile(binaries_dir / "test.so", std::ios::binary);
