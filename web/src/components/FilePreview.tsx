@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
+import { HexViewer } from './HexViewer';
 import { FileNode, Theme, FSLintModule } from '../types';
 
 import { MarkdownContent } from './MarkdownContent';
@@ -48,8 +49,33 @@ export const FilePreview = ({
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [viewMode, setViewMode] = useState<'render' | 'code'>('render');
+  const [viewMode, setViewMode] = useState<'render' | 'code' | 'hex'>('render');
   const [monaco, setMonaco] = useState<Monaco | null>(null);
+
+  const ext = selectedFile?.split('.').pop()?.toLowerCase();
+  const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
+  const isSvg = ext === 'svg';
+  const isPdf = ext === 'pdf';
+  const isHtml = ext === 'html' || ext === 'htm';
+  const isMarkdown = ext === 'md';
+
+  const isBinaryResult = node?.isBinary ?? false;
+
+  const canRender = isStaticImage || isSvg || isPdf || isHtml || isMarkdown;
+  const canHex = isBinaryResult;
+
+  const [lastSelectedFile, setLastSelectedFile] = useState<string | null>(null);
+
+  if (selectedFile !== lastSelectedFile) {
+    setLastSelectedFile(selectedFile);
+    if (canRender) {
+      setViewMode('render');
+    } else if (canHex) {
+      setViewMode('hex');
+    } else {
+      setViewMode('code');
+    }
+  }
 
   useEffect(() => {
     let url: string | null = null;
@@ -83,36 +109,29 @@ export const FilePreview = ({
     };
   }, [selectedFile, module]);
 
-  const ext = selectedFile?.split('.').pop()?.toLowerCase();
-  const isStaticImage = ext === 'png' || ext === 'jpg' || ext === 'jpeg';
-  const isSvg = ext === 'svg';
-  const isPdf = ext === 'pdf';
-  const isHtml = ext === 'html' || ext === 'htm';
-  const isMarkdown = ext === 'md';
-  const canToggle = isSvg || isHtml || isMarkdown;
-
-  const isBinaryResult = node?.isBinary ?? false;
-
   const data = useMemo(() => {
     if (!selectedFile || !module) return null;
-    if (isBinaryResult && !isStaticImage && !isPdf) return null;
     try {
       return module.FS.readFile(selectedFile) as Uint8Array;
     } catch (e) {
       console.error('Failed to read file:', e);
       return null;
     }
-  }, [selectedFile, module, isBinaryResult, isStaticImage, isPdf]);
+  }, [selectedFile, module]);
 
   const content = useMemo(() => {
-    if (!data || (isBinaryResult && (isStaticImage || isPdf))) return '';
+    if (!data) return '';
+    if (viewMode === 'hex') return '';
+    // If it's a known binary format that we render (image, pdf), don't try to decode as text unless we are in code mode
+    if (isBinaryResult && (isStaticImage || isPdf) && viewMode === 'render') return '';
     return decodeText(data);
-  }, [data, isBinaryResult, isStaticImage, isPdf]);
+  }, [data, isBinaryResult, isStaticImage, isPdf, viewMode]);
 
   useEffect(() => {
     if (!monaco) return;
 
-    if (!monaco.languages.getLanguages().some((l) => l.id === 'csv')) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!monaco.languages.getLanguages().some((l: any) => l.id === 'csv')) {
       monaco.languages.register({ id: 'csv' });
     }
 
@@ -202,40 +221,24 @@ export const FilePreview = ({
     });
   }, [monaco, content, selectedFile]);
 
-  if (isBinaryResult && !isStaticImage && !isSvg && !isPdf) {
-    return (
-      <div
-        style={{
-          padding: '40px',
-          textAlign: 'center',
-          color: theme.muted,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-        }}
-      >
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-          <polyline points="13 2 13 9 20 9"></polyline>
-        </svg>
-        <span>Binary file cannot be displayed</span>
-      </div>
-    );
-  }
-
   if (!selectedFile || !module) return null;
 
   const handleCopy = () => {
+    if (viewMode === 'hex' && data) {
+      // Safety limit for large files to avoid hanging the UI
+      const limit = 1024 * 1024; // 1MB
+      const slice = data.length > limit ? data.slice(0, limit) : data;
+      const hex = Array.from(slice)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join(' ');
+      const textToCopy = data.length > limit ? `${hex}\n... (truncated, file too large)` : hex;
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+      return;
+    }
     navigator.clipboard.writeText(content).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -271,43 +274,6 @@ export const FilePreview = ({
     return 'plaintext';
   };
 
-  if (isStaticImage || isPdf) {
-    return (
-      <div
-        style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}
-      >
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: isStaticImage ? '20px' : '0',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          {imageUrl ? (
-            isStaticImage ? (
-              <img
-                src={imageUrl}
-                alt={selectedFile}
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              />
-            ) : (
-              <iframe
-                src={imageUrl}
-                title="PDF Preview"
-                style={{ width: '100%', height: '100%', border: 'none' }}
-              />
-            )
-          ) : (
-            <div style={{ color: '#ff5555' }}>Failed to load {isStaticImage ? 'image' : 'PDF'}</div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div
@@ -320,10 +286,12 @@ export const FilePreview = ({
           gap: '4px',
         }}
       >
-        {canToggle && (
+        {canRender && (
           <button
-            onClick={() => setViewMode(viewMode === 'render' ? 'code' : 'render')}
-            title={viewMode === 'render' ? 'Show Code' : 'Show Preview'}
+            onClick={() =>
+              setViewMode(viewMode === 'render' ? (canHex ? 'hex' : 'code') : 'render')
+            }
+            title={viewMode === 'render' ? (canHex ? 'Show Hex' : 'Show Code') : 'Show Preview'}
             className="copy-btn"
             style={{
               padding: '5px',
@@ -420,24 +388,34 @@ export const FilePreview = ({
       <div
         style={{
           flex: 1,
-          overflowY: viewMode === 'render' && canToggle ? 'auto' : 'hidden',
+          overflowY: viewMode === 'render' && canRender ? 'auto' : 'hidden',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
         }}
       >
-        {viewMode === 'render' && canToggle ? (
+        {viewMode === 'render' && canRender ? (
           <div
             style={{
               flex: 1,
               display: 'flex',
               justifyContent: isHtml || isMarkdown ? 'flex-start' : 'center',
-              padding: isHtml ? '0' : '20px',
+              padding: isHtml || isPdf ? '0' : '20px',
               backgroundColor: 'transparent',
-              minHeight: isHtml ? '100%' : '200px',
+              minHeight: isHtml || isPdf || isStaticImage ? '100%' : '200px',
             }}
           >
-            {isSvg ? (
+            {isStaticImage ? (
+              imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={selectedFile}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              ) : (
+                <div style={{ color: '#ff5555' }}>Failed to load Image</div>
+              )
+            ) : isSvg ? (
               imageUrl ? (
                 <img
                   src={imageUrl}
@@ -446,6 +424,16 @@ export const FilePreview = ({
                 />
               ) : (
                 <div style={{ color: '#ff5555' }}>Failed to load SVG</div>
+              )
+            ) : isPdf ? (
+              imageUrl ? (
+                <iframe
+                  src={imageUrl}
+                  title="PDF Preview"
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+              ) : (
+                <div style={{ color: '#ff5555' }}>Failed to load PDF</div>
               )
             ) : isMarkdown ? (
               <MarkdownContent content={content} theme={theme} isDark={isDark} />
@@ -461,6 +449,17 @@ export const FilePreview = ({
                 }}
               />
             )}
+          </div>
+        ) : viewMode === 'hex' ? (
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              backgroundColor: isDark ? '#2a2a2a' : '#ffffff',
+              color: theme.text,
+            }}
+          >
+            {data && <HexViewer data={data} theme={theme} isDark={isDark} />}
           </div>
         ) : (
           (() => {
