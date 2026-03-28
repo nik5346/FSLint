@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useRef, ReactNode } from 'react';
+import React, { useState, useLayoutEffect, useRef, ReactNode, useMemo } from 'react';
 
 interface VirtualListProps<T> {
   items: T[];
@@ -13,7 +13,7 @@ export function VirtualList<T>({
   itemHeight,
   renderItem,
   containerStyle,
-  overscan = 10,
+  overscan = 40,
 }: VirtualListProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -50,30 +50,38 @@ export function VirtualList<T>({
   }, []);
 
   const totalHeight = items.length * itemHeight;
-  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-  const endIndex = Math.min(
-    items.length - 1,
-    Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan,
-  );
 
-  const visibleItems = [];
-  for (let i = startIndex; i <= endIndex; i++) {
-    visibleItems.push(
-      <div
-        key={i}
-        style={{
-          position: 'absolute',
-          top: i * itemHeight,
-          left: 0,
-          minWidth: '100%',
-          width: 'fit-content',
-          height: itemHeight,
-        }}
-      >
-        {renderItem(items[i], i)}
-      </div>,
+  const visibleIndices = useMemo(() => {
+    const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+    const endIndex = Math.min(
+      items.length - 1,
+      Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan,
     );
-  }
+    return { startIndex, endIndex };
+  }, [scrollTop, containerHeight, itemHeight, items.length, overscan]);
+
+  const visibleItems = useMemo(() => {
+    const { startIndex, endIndex } = visibleIndices;
+    const itemsToRender = [];
+    for (let i = startIndex; i <= endIndex; i++) {
+      itemsToRender.push(
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            top: i * itemHeight,
+            left: 0,
+            minWidth: '100%',
+            width: 'fit-content',
+            height: itemHeight,
+          }}
+        >
+          {renderItem(items[i], i)}
+        </div>,
+      );
+    }
+    return itemsToRender;
+  }, [visibleIndices, itemHeight, items, renderItem]);
 
   return (
     <div
@@ -83,6 +91,7 @@ export function VirtualList<T>({
         position: 'relative',
         overflow: 'auto',
         height: '100%',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <div
@@ -91,6 +100,7 @@ export function VirtualList<T>({
           minWidth: '100%',
           width: 'fit-content',
           position: 'relative',
+          willChange: 'transform',
         }}
       >
         {visibleItems}
