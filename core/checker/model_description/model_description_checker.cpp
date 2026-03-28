@@ -129,11 +129,25 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
                 summary.platforms.push_back(file_utils::pathToUtf8(entry.path().filename()));
     }
 
-    const bool has_sources = std::filesystem::exists(path / "sources");
+    // Detect if this is a source code FMU
+    const bool has_sources_dir = std::filesystem::exists(path / "sources");
+    const bool has_build_description = std::filesystem::exists(path / "buildDescription.xml") ||
+                                       std::filesystem::exists(path / "sources/buildDescription.xml");
+
+    bool has_source_files_in_md = false;
+    xmlXPathObjectPtr sources_xpath = getXPathNodes(doc, "//SourceFiles/File");
+    if (sources_xpath)
+    {
+        if (sources_xpath->nodesetval && sources_xpath->nodesetval->nodeNr > 0)
+            has_source_files_in_md = true;
+        xmlXPathFreeObject(sources_xpath);
+    }
+
     const bool has_binaries = !summary.platforms.empty();
 
-    if (has_sources)
+    if (has_sources_dir || has_build_description || has_source_files_in_md)
         summary.fmuTypes.push_back("Source code");
+
     if (has_binaries)
         summary.fmuTypes.push_back("Binary");
 
