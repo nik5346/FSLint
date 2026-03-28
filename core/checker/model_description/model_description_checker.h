@@ -207,9 +207,9 @@ class ModelDescriptionCheckerBase : public Checker
     void checkModelName(const std::optional<std::string>& model_name, Certificate& cert) const;
     virtual void checkGuid(const std::optional<std::string>& guid, Certificate& cert) const = 0;
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert) const;
-    void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert) const;
+    void checkCopyright(const std::optional<std::string>& copyright, Certificate& cert, bool mandatory = true) const;
     void checkLicense(const std::optional<std::string>& license, Certificate& cert) const;
-    void checkAuthor(const std::optional<std::string>& author, Certificate& cert) const;
+    void checkAuthor(const std::optional<std::string>& author, Certificate& cert, bool mandatory = true) const;
     void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert) const;
     void checkLogCategories(xmlDocPtr doc, Certificate& cert) const;
     virtual void checkAnnotations(xmlDocPtr doc, Certificate& cert) const = 0;

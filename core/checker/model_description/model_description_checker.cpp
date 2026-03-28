@@ -64,9 +64,13 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkGuid(metadata.guid, cert);
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
     checkModelVersion(metadata.modelVersion, cert);
-    checkCopyright(metadata.copyright, cert);
+
+    const bool has_author = metadata.author.has_value() && !metadata.author->empty();
+    const bool has_copyright = metadata.copyright.has_value() && !metadata.copyright->empty();
+
+    checkCopyright(metadata.copyright, cert, !has_author);
     checkLicense(metadata.license, cert);
-    checkAuthor(metadata.author, cert);
+    checkAuthor(metadata.author, cert, !has_copyright);
     checkGenerationTool(metadata.generationTool, cert);
     checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
 
@@ -532,19 +536,26 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string>& copyright, Certificate& cert) const
+void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string>& copyright, Certificate& cert,
+                                                 bool mandatory) const
 {
     TestResult test{"Copyright", TestStatus::PASS, {}};
 
     if (!copyright.has_value())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Providing a copyright notice is recommended.");
+        if (mandatory)
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Providing a copyright notice is recommended.");
+        }
     }
     else if (copyright->empty())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("The 'copyright' attribute is empty.");
+        if (mandatory)
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("The 'copyright' attribute is empty.");
+        }
     }
     else
     {
@@ -627,19 +638,26 @@ void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>&
     cert.printTestResult(test);
 }
 
-void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& author, Certificate& cert) const
+void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& author, Certificate& cert,
+                                              bool mandatory) const
 {
     TestResult test{"Author", TestStatus::PASS, {}};
 
     if (!author.has_value())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Providing the author name is recommended.");
+        if (mandatory)
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Providing the author name is recommended.");
+        }
     }
     else if (author->empty())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("The 'author' attribute is empty.");
+        if (mandatory)
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("The 'author' attribute is empty.");
+        }
     }
 
     cert.printTestResult(test);
