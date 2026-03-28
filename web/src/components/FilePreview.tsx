@@ -62,7 +62,6 @@ export const FilePreview = ({
   const isBinaryResult = node?.isBinary ?? false;
 
   const canRender = isStaticImage || isSvg || isPdf || isHtml || isMarkdown;
-  const canCode = !isBinaryResult;
   const canHex = isBinaryResult;
 
   const [lastSelectedFile, setLastSelectedFile] = useState<string | null>(null);
@@ -276,42 +275,6 @@ export const FilePreview = ({
     return 'plaintext';
   };
 
-  if (isStaticImage || isPdf) {
-    return (
-      <div
-        style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}
-      >
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: isStaticImage ? '20px' : '0',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          {imageUrl ? (
-            isStaticImage ? (
-              <img
-                src={imageUrl}
-                alt={selectedFile}
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              />
-            ) : (
-              <iframe
-                src={imageUrl}
-                title="PDF Preview"
-                style={{ width: '100%', height: '100%', border: 'none' }}
-              />
-            )
-          ) : (
-            <div style={{ color: '#ff5555' }}>Failed to load {isStaticImage ? 'image' : 'PDF'}</div>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -325,87 +288,57 @@ export const FilePreview = ({
           gap: '4px',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            backgroundColor: theme.buttonHoverBg,
-            borderRadius: '6px',
-            padding: '2px',
-          }}
-        >
-          {canRender && (
-            <button
-              onClick={() => setViewMode('render')}
-              title="Show Preview"
-              className="copy-btn"
-              style={{
-                padding: '4px 8px',
-                color: theme.text,
-                backgroundColor: viewMode === 'render' ? theme.surface : 'transparent',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                opacity: viewMode === 'render' ? 1 : 0.6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '11px',
-                fontWeight: viewMode === 'render' ? 'bold' : 'normal',
-                transition: 'background-color 0.15s, opacity 0.15s',
-              }}
-            >
-              Render
-            </button>
-          )}
-          {canCode && (
-            <button
-              onClick={() => setViewMode('code')}
-              title="Show Code"
-              className="copy-btn"
-              style={{
-                padding: '4px 8px',
-                color: theme.text,
-                backgroundColor: viewMode === 'code' ? theme.surface : 'transparent',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                opacity: viewMode === 'code' ? 1 : 0.6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '11px',
-                fontWeight: viewMode === 'code' ? 'bold' : 'normal',
-                transition: 'background-color 0.15s, opacity 0.15s',
-              }}
-            >
-              Code
-            </button>
-          )}
-          {canHex && (
-            <button
-              onClick={() => setViewMode('hex')}
-              title="Show Hex"
-              className="copy-btn"
-              style={{
-                padding: '4px 8px',
-                color: theme.text,
-                backgroundColor: viewMode === 'hex' ? theme.surface : 'transparent',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                opacity: viewMode === 'hex' ? 1 : 0.6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '11px',
-                fontWeight: viewMode === 'hex' ? 'bold' : 'normal',
-                transition: 'background-color 0.15s, opacity 0.15s',
-              }}
-            >
-              Hex
-            </button>
-          )}
-        </div>
+        {canRender && (
+          <button
+            onClick={() =>
+              setViewMode(viewMode === 'render' ? (canHex ? 'hex' : 'code') : 'render')
+            }
+            title={viewMode === 'render' ? (canHex ? 'Show Hex' : 'Show Code') : 'Show Preview'}
+            className="copy-btn"
+            style={{
+              padding: '5px',
+              color: theme.text,
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              opacity: 0.6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background-color 0.15s, opacity 0.15s',
+            }}
+          >
+            {viewMode === 'render' ? (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+            ) : (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            )}
+          </button>
+        )}
         <button
           onClick={handleCopy}
           title={copied ? 'Copied!' : 'Copy to clipboard'}
@@ -469,12 +402,22 @@ export const FilePreview = ({
               flex: 1,
               display: 'flex',
               justifyContent: isHtml || isMarkdown ? 'flex-start' : 'center',
-              padding: isHtml ? '0' : '20px',
+              padding: isHtml || isPdf ? '0' : '20px',
               backgroundColor: 'transparent',
-              minHeight: isHtml ? '100%' : '200px',
+              minHeight: isHtml || isPdf || isStaticImage ? '100%' : '200px',
             }}
           >
-            {isSvg ? (
+            {isStaticImage ? (
+              imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={selectedFile}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              ) : (
+                <div style={{ color: '#ff5555' }}>Failed to load Image</div>
+              )
+            ) : isSvg ? (
               imageUrl ? (
                 <img
                   src={imageUrl}
@@ -483,6 +426,16 @@ export const FilePreview = ({
                 />
               ) : (
                 <div style={{ color: '#ff5555' }}>Failed to load SVG</div>
+              )
+            ) : isPdf ? (
+              imageUrl ? (
+                <iframe
+                  src={imageUrl}
+                  title="PDF Preview"
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+              ) : (
+                <div style={{ color: '#ff5555' }}>Failed to load PDF</div>
               )
             ) : isMarkdown ? (
               <MarkdownContent content={content} theme={theme} isDark={isDark} />
