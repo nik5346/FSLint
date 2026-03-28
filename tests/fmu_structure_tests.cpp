@@ -98,7 +98,8 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
     SECTION("Model Identifier Mismatch")
     {
         Certificate cert;
-        Fmi1DirectoryChecker mismatch_checker("WrongName.fmu");
+        Fmi1DirectoryChecker mismatch_checker;
+        mismatch_checker.setOriginalPath("WrongName.fmu");
         mismatch_checker.validate("tests/data/fmi1/pass/TestME", cert);
         CHECK(has_fail(cert));
         CHECK(has_error_with_text(cert, "must match the FMU filename 'WrongName'"));
@@ -128,7 +129,8 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                                     const std::string& original_path = "Test.fmu")
         {
             Certificate cert;
-            Fmi1DirectoryChecker warn_checker(original_path);
+            Fmi1DirectoryChecker warn_checker;
+            warn_checker.setOriginalPath(original_path);
             warn_checker.validate(path, cert);
             INFO("Checking path: " << file_utils::pathToUtf8(path));
             if (!has_warning_with_text(cert, expected_warning))
@@ -183,7 +185,8 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         fs::copy_file("tests/data/fmi1/pass/TestME/modelDescription.xml", temp_dir / "modelDescription.xml",
                       fs::copy_options::overwrite_existing);
 
-        Fmi1DirectoryChecker effectively_empty_checker("TestME.fmu");
+        Fmi1DirectoryChecker effectively_empty_checker;
+        effectively_empty_checker.setOriginalPath("TestME.fmu");
         {
             const std::string ds_store = ".DS_Store";
             std::ofstream(temp_dir / "resources" / ds_store).close();

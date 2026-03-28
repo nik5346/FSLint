@@ -35,6 +35,11 @@ std::string getFileTreeJson(const std::filesystem::path& root);
 std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesystem::path& path);
 
 /**
+ * Returns the total size of a file or the recursive size of a directory.
+ */
+uint64_t getTotalSize(const std::filesystem::path& path);
+
+/**
  * Low-level helper to serialize a file node to a RapidJSON Value.
  * node and allocator are expected to be rapidjson::Value* and rapidjson::Document::AllocatorType*.
  */

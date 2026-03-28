@@ -162,6 +162,41 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
                           std::filesystem::exists(path / "terminalsAndIcons/icon.svg");
     }
 
+    // Detect source language if it's a source code FMU
+    if (has_sources_dir && std::filesystem::is_directory(path / "sources"))
+    {
+        bool has_c = false;
+        bool has_cpp = false;
+
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(path / "sources"))
+        {
+            if (entry.is_regular_file())
+            {
+                std::string ext = file_utils::pathToUtf8(entry.path().extension());
+                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+                if (ext == ".c")
+                    has_c = true;
+                else if (ext == ".cpp" || ext == ".cc" || ext == ".cxx")
+                    has_cpp = true;
+            }
+        }
+
+        if (has_c && has_cpp)
+            summary.sourceLanguage = "C and C++";
+        else if (has_c)
+            summary.sourceLanguage = "C";
+        else if (has_cpp)
+            summary.sourceLanguage = "C++";
+    }
+
+    // Calculate total size
+    const auto& original_path = getOriginalPath();
+    if (!original_path.empty() && std::filesystem::exists(original_path))
+        summary.totalSize = file_utils::getTotalSize(original_path);
+    else
+        summary.totalSize = file_utils::getTotalSize(path);
+
     // Detect layered standards (simple heuristic based on annotations)
     xmlXPathObjectPtr annotations_xpath = getXPathNodes(doc, "//VendorAnnotations/Tool");
     if (annotations_xpath && annotations_xpath->nodesetval)

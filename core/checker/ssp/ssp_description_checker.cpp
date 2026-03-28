@@ -1,6 +1,7 @@
 #include "ssp_description_checker.h"
 
 #include "certificate.h"
+#include "file_utils.h"
 #include "xml_utils.h"
 
 #include <libxml/parser.h>
@@ -59,6 +60,13 @@ void SspDescriptionChecker::validate(const std::filesystem::path& path, Certific
 
     // SSP has no top-level icon
     summary.hasIcon = false;
+
+    // Calculate total size
+    const auto& original_path = getOriginalPath();
+    if (!original_path.empty() && std::filesystem::exists(original_path))
+        summary.totalSize = file_utils::getTotalSize(original_path);
+    else
+        summary.totalSize = file_utils::getTotalSize(path);
 
     cert.setSummary(summary);
 

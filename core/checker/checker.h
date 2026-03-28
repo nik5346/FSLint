@@ -17,4 +17,18 @@ class Checker
     Checker& operator=(Checker&&) = delete;
 
     virtual void validate(const std::filesystem::path& path, Certificate& cert) const = 0;
+
+    void setOriginalPath(const std::filesystem::path& path)
+    {
+        _original_path = path;
+    }
+
+  protected:
+    const std::filesystem::path& getOriginalPath() const
+    {
+        return _original_path;
+    }
+
+  private:
+    std::filesystem::path _original_path;
 };

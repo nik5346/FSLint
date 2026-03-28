@@ -4,7 +4,6 @@
 #include "model_info.h"
 
 #include "checker.h"
-#include "model_description_checker.h"
 
 #include "fmi1_schema_checker.h"
 #include "fmi2_schema_checker.h"
@@ -134,6 +133,9 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
 
     checkers.push_back(std::make_unique<ResourcesChecker>());
 
+    for (auto& checker : checkers)
+        checker->setOriginalPath(info.original_path);
+
     return checkers;
 }
 
@@ -160,20 +162,16 @@ std::unique_ptr<Checker> CheckerFactory::createSchemaChecker(const ModelInfo& in
 
 std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const ModelInfo& info)
 {
-    std::unique_ptr<ModelDescriptionCheckerBase> checker;
     switch (info.standard)
     {
     case ModelStandard::FMI1_ME:
         [[fallthrough]];
     case ModelStandard::FMI1_CS:
-        checker = std::make_unique<Fmi1ModelDescriptionChecker>();
-        break;
+        return std::make_unique<Fmi1ModelDescriptionChecker>();
     case ModelStandard::FMI2:
-        checker = std::make_unique<Fmi2ModelDescriptionChecker>();
-        break;
+        return std::make_unique<Fmi2ModelDescriptionChecker>();
     case ModelStandard::FMI3:
-        checker = std::make_unique<Fmi3ModelDescriptionChecker>();
-        break;
+        return std::make_unique<Fmi3ModelDescriptionChecker>();
     case ModelStandard::SSP1:
         [[fallthrough]];
     case ModelStandard::SSP2:
@@ -181,11 +179,6 @@ std::unique_ptr<Checker> CheckerFactory::createModelDescriptionChecker(const Mod
     default:
         return nullptr;
     }
-
-    if (checker)
-        checker->setOriginalPath(info.original_path);
-
-    return checker;
 }
 
 std::unique_ptr<Checker> CheckerFactory::createTerminalsAndIconsChecker(const ModelInfo& info)
@@ -237,7 +230,7 @@ std::unique_ptr<Checker> CheckerFactory::createDirectoryChecker(const ModelInfo&
     case ModelStandard::FMI1_ME:
         [[fallthrough]];
     case ModelStandard::FMI1_CS:
-        return std::make_unique<Fmi1DirectoryChecker>(info.original_path);
+        return std::make_unique<Fmi1DirectoryChecker>();
     case ModelStandard::FMI2:
         return std::make_unique<Fmi2DirectoryChecker>();
     case ModelStandard::FMI3:
