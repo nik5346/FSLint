@@ -1,0 +1,93 @@
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
+
+interface VirtualListProps<T> {
+  items: T[];
+  itemHeight: number;
+  renderItem: (item: T, index: number) => ReactNode;
+  containerStyle?: React.CSSProperties;
+  overscan?: number;
+}
+
+export function VirtualList<T>({
+  items,
+  itemHeight,
+  renderItem,
+  containerStyle,
+  overscan = 10,
+}: VirtualListProps<T>) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      setScrollTop(container.scrollTop);
+    };
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerHeight(entry.contentRect.height);
+      }
+    });
+
+    setContainerHeight(container.clientHeight);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    resizeObserver.observe(container);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  const totalHeight = items.length * itemHeight;
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+  const endIndex = Math.min(
+    items.length - 1,
+    Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan,
+  );
+
+  const visibleItems = [];
+  for (let i = startIndex; i <= endIndex; i++) {
+    visibleItems.push(
+      <div
+        key={i}
+        style={{
+          position: 'absolute',
+          top: i * itemHeight,
+          left: 0,
+          minWidth: '100%',
+          width: 'fit-content',
+          height: itemHeight,
+        }}
+      >
+        {renderItem(items[i], i)}
+      </div>,
+    );
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        ...containerStyle,
+        position: 'relative',
+        overflow: 'auto',
+      }}
+    >
+      <div
+        style={{
+          height: totalHeight,
+          minWidth: '100%',
+          width: 'fit-content',
+          position: 'relative',
+        }}
+      >
+        {visibleItems}
+      </div>
+    </div>
+  );
+}

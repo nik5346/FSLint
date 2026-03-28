@@ -1,4 +1,5 @@
 import { Theme } from '../types';
+import { VirtualList } from './VirtualList';
 
 export const RainbowCsvHighlighter = ({
   content,
@@ -14,6 +15,8 @@ export const RainbowCsvHighlighter = ({
     ? ['#ff5555', '#50fa7b', '#f1fa8c', '#bd93f9', '#ff79c6', '#8be9fd', '#ffb86c']
     : ['#e45649', '#50a14f', '#c18401', '#4078f2', '#a626a4', '#0184bc', '#986801'];
 
+  const itemHeight = 21; // Match 1.5em line-height for 0.9em font-size
+
   return (
     <div
       style={{
@@ -23,21 +26,26 @@ export const RainbowCsvHighlighter = ({
         fontFamily: 'monospace',
         lineHeight: '1.5em',
         flex: 1,
-        overflow: 'auto',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      <div style={{ display: 'inline-block', minWidth: '100%' }}>
-        {lines.map((line, lineIdx) => {
+      <VirtualList
+        items={lines}
+        itemHeight={itemHeight}
+        containerStyle={{ flex: 1 }}
+        renderItem={(line, lineIdx) => {
           // Simple CSV split, doesn't handle escaped commas but good for "rainbow" effect
           const cells = line.split(',');
           return (
             <div
-              key={lineIdx}
               style={{
                 display: 'flex',
                 minWidth: '100%',
                 paddingRight: '15px',
                 boxSizing: 'border-box',
+                height: itemHeight,
               }}
             >
               <div
@@ -91,8 +99,8 @@ export const RainbowCsvHighlighter = ({
               </div>
             </div>
           );
-        })}
-      </div>
+        }}
+      />
     </div>
   );
 };

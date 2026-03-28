@@ -3,6 +3,7 @@ import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FileNode, Theme, FSLintModule } from '../types';
 import { createElement } from 'react-syntax-highlighter';
+import { VirtualList } from './VirtualList';
 
 // Utility to strip textShadow from Prism styles to fix "ghosting"
 export const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
@@ -15,43 +16,43 @@ export const stripTextShadow = (style: { [key: string]: React.CSSProperties }) =
   return newStyle;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformNode = (node: any): any => {
+  if (!node) return node;
+  if (node.type === 'text' && typeof node.value === 'string') {
+    const parts = node.value.split(/([ \t]+)/);
+    if (parts.length === 1 && !/^[ \t]+$/.test(parts[0])) return node;
+
+    return {
+      type: 'element',
+      tagName: 'span',
+      properties: { className: [] },
+      children: parts.flatMap((part: string) => {
+        if (/^[ \t]+$/.test(part)) {
+          return part.split('').map((char) => ({
+            type: 'element',
+            tagName: 'span',
+            properties: {
+              className: ['whitespace-marker'],
+              'data-marker': char === '\t' ? '→' : '·',
+              'data-marker-type': char === '\t' ? 'tab' : 'space',
+            },
+            children: [{ type: 'text', value: char }],
+          }));
+        }
+        return [{ type: 'text', value: part }];
+      }),
+    };
+  }
+  if (node.children) {
+    return { ...node, children: node.children.map(transformNode) };
+  }
+  return node;
+};
+
 export const whitespaceRenderer = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return ({ rows, stylesheet, useInlineStyles }: any): any => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const transformNode = (node: any): any => {
-      if (!node) return node;
-      if (node.type === 'text' && typeof node.value === 'string') {
-        const parts = node.value.split(/([ \t]+)/);
-        if (parts.length === 1 && !/^[ \t]+$/.test(parts[0])) return node;
-
-        return {
-          type: 'element',
-          tagName: 'span',
-          properties: { className: [] },
-          children: parts.flatMap((part: string) => {
-            if (/^[ \t]+$/.test(part)) {
-              return part.split('').map((char) => ({
-                type: 'element',
-                tagName: 'span',
-                properties: {
-                  className: ['whitespace-marker'],
-                  'data-marker': char === '\t' ? '→' : '·',
-                  'data-marker-type': char === '\t' ? 'tab' : 'space',
-                },
-                children: [{ type: 'text', value: char }],
-              }));
-            }
-            return [{ type: 'text', value: part }];
-          }),
-        };
-      }
-      if (node.children) {
-        return { ...node, children: node.children.map(transformNode) };
-      }
-      return node;
-    };
-
+  const Renderer = ({ rows, stylesheet, useInlineStyles }: any): any => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return rows.map((node: any, i: number) =>
       createElement({
@@ -62,6 +63,31 @@ export const whitespaceRenderer = () => {
       }),
     );
   };
+  Renderer.displayName = 'WhitespaceRenderer';
+  return Renderer;
+};
+
+export const virtualizedRenderer = (itemHeight: number) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Renderer = ({ rows, stylesheet, useInlineStyles }: any): any => {
+    return (
+      <VirtualList
+        items={rows}
+        itemHeight={itemHeight}
+        containerStyle={{ flex: 1 }}
+        renderItem={(node, i) =>
+          createElement({
+            node: transformNode(node),
+            stylesheet,
+            useInlineStyles,
+            key: `code-segment-${i}`,
+          })
+        }
+      />
+    );
+  };
+  Renderer.displayName = 'VirtualizedRenderer';
+  return Renderer;
 };
 
 import { RainbowCsvHighlighter } from './RainbowCsvHighlighter';
@@ -143,7 +169,8 @@ export const FilePreview = ({
     return decodeText(data);
   }, [data, isBinaryResult, isStaticImage, isPdf]);
 
-  const memoizedWhitespaceRenderer = useMemo(() => whitespaceRenderer(), []);
+  const itemHeight = 21; // Match 1.5em line-height for 0.9em font-size
+  const memoizedVirtualizedRenderer = useMemo(() => virtualizedRenderer(itemHeight), []);
 
   const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
 
@@ -429,7 +456,15 @@ export const FilePreview = ({
                   backgroundColor: theme.surface,
                   zIndex: 1,
                 }}
-                codeTagProps={{ style: { display: 'inline-block', minWidth: '100%' } }}
+                CodeTag="div"
+                codeTagProps={{
+                  style: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minWidth: '100%',
+                    flex: 1,
+                  },
+                }}
                 customStyle={{
                   margin: 0,
                   padding: '15px 0',
@@ -437,9 +472,11 @@ export const FilePreview = ({
                   backgroundColor: 'transparent',
                   flex: 1,
                   lineHeight: '1.5em',
-                  overflow: 'auto',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
-                renderer={memoizedWhitespaceRenderer}
+                renderer={memoizedVirtualizedRenderer}
                 wrapLines={true}
                 lineProps={{
                   style: {
@@ -447,6 +484,7 @@ export const FilePreview = ({
                     minWidth: '100%',
                     paddingRight: '15px',
                     boxSizing: 'border-box',
+                    height: itemHeight,
                   },
                 }}
               >
