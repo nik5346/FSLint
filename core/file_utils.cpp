@@ -163,4 +163,29 @@ std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesys
 
     return std::make_pair(width, height);
 }
+
+uint64_t getTotalSize(const std::filesystem::path& path)
+{
+    std::error_code ec;
+    if (!std::filesystem::exists(path, ec))
+        return 0;
+
+    if (std::filesystem::is_regular_file(path, ec))
+        return std::filesystem::file_size(path, ec);
+
+    if (std::filesystem::is_directory(path, ec))
+    {
+        uint64_t total = 0;
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(path, ec))
+        {
+            if (ec)
+                break;
+            if (entry.is_regular_file(ec))
+                total += entry.file_size(ec);
+        }
+        return total;
+    }
+
+    return 0;
+}
 } // namespace file_utils

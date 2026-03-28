@@ -19,7 +19,7 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
 {
     cert.printSubsectionHeader("DIRECTORY STRUCTURE");
 
-    const auto& original_path = m_original_path;
+    const auto& original_path = getOriginalPath();
     const std::string stem =
         original_path.empty() ? file_utils::pathToUtf8(path.stem()) : file_utils::pathToUtf8(original_path.stem());
 

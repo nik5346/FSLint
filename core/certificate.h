@@ -3,6 +3,7 @@
 #include "checker.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -46,6 +47,8 @@ struct ModelSummary
     std::vector<std::string> layeredStandards;
     bool hasIcon = false;
     std::vector<std::string> fmuTypes; // "Binary" and/or "Source code"
+    std::string sourceLanguage;
+    uint64_t totalSize = 0;
 };
 
 class Certificate

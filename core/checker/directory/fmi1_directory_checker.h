@@ -13,10 +13,7 @@
 class Fmi1DirectoryChecker : public DirectoryChecker
 {
   public:
-    Fmi1DirectoryChecker(std::filesystem::path original_path = "")
-        : m_original_path(std::move(original_path))
-    {
-    }
+    Fmi1DirectoryChecker() = default;
     void validate(const std::filesystem::path& path, Certificate& cert) const override;
 
   protected:
@@ -25,6 +22,4 @@ class Fmi1DirectoryChecker : public DirectoryChecker
                                       const std::set<std::string>& listed_sources_in_md,
                                       bool needs_execution_tool) const override;
 
-  private:
-    std::filesystem::path m_original_path;
 };

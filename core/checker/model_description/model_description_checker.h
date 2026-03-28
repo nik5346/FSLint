@@ -180,11 +180,6 @@ class ModelDescriptionCheckerBase : public Checker
         }
     }
 
-    void setOriginalPath(const std::filesystem::path& path)
-    {
-        _original_path = path;
-    }
-
   protected:
     // Each derived class implements version-specific validation
     virtual void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
@@ -196,11 +191,6 @@ class ModelDescriptionCheckerBase : public Checker
     const std::filesystem::path& getFmuRootPath() const
     {
         return _fmu_root_path;
-    }
-
-    const std::filesystem::path& getOriginalPath() const
-    {
-        return _original_path;
     }
 
     virtual std::string getFmiVersion() const = 0;
@@ -292,7 +282,6 @@ class ModelDescriptionCheckerBase : public Checker
 
   private:
     mutable std::filesystem::path _fmu_root_path;
-    mutable std::filesystem::path _original_path;
     mutable std::set<std::string> _used_type_definitions;
     mutable std::set<std::string> _used_units;
 };

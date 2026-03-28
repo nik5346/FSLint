@@ -87,6 +87,14 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     };
   }, [summary.hasIcon, module, result.file_tree]);
 
+  const formatSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const infoItems: { label: string; value: string; mono?: boolean }[] = [
     { label: 'Model Name', value: summary.modelName },
     {
@@ -99,6 +107,8 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     { label: 'License', value: summary.license },
     { label: 'Generation Tool', value: summary.generationTool },
     { label: 'Generation Date', value: summary.generationDateAndTime },
+    { label: 'Source Language', value: summary.sourceLanguage },
+    { label: 'Total Size', value: summary.totalSize ? formatSize(summary.totalSize) : '' },
   ].filter((item) => item.value);
 
   return (

@@ -60,6 +60,8 @@ export interface ModelSummary {
   layeredStandards: string[];
   hasIcon: boolean;
   fmuTypes: string[];
+  sourceLanguage: string;
+  totalSize: number;
 }
 
 export interface TestResult {
