@@ -62,7 +62,8 @@ export const FilePreview = ({
   const isBinaryResult = node?.isBinary ?? false;
 
   const canRender = isStaticImage || isSvg || isPdf || isHtml || isMarkdown;
-  const canCode = !isBinaryResult || isSvg || isHtml || isMarkdown;
+  const canCode = !isBinaryResult;
+  const canHex = isBinaryResult;
 
   const [lastSelectedFile, setLastSelectedFile] = useState<string | null>(null);
 
@@ -70,7 +71,7 @@ export const FilePreview = ({
     setLastSelectedFile(selectedFile);
     if (canRender) {
       setViewMode('render');
-    } else if (isBinaryResult) {
+    } else if (canHex) {
       setViewMode('hex');
     } else {
       setViewMode('code');
@@ -380,28 +381,30 @@ export const FilePreview = ({
               Code
             </button>
           )}
-          <button
-            onClick={() => setViewMode('hex')}
-            title="Show Hex"
-            className="copy-btn"
-            style={{
-              padding: '4px 8px',
-              color: theme.text,
-              backgroundColor: viewMode === 'hex' ? theme.surface : 'transparent',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              opacity: viewMode === 'hex' ? 1 : 0.6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '11px',
-              fontWeight: viewMode === 'hex' ? 'bold' : 'normal',
-              transition: 'background-color 0.15s, opacity 0.15s',
-            }}
-          >
-            Hex
-          </button>
+          {canHex && (
+            <button
+              onClick={() => setViewMode('hex')}
+              title="Show Hex"
+              className="copy-btn"
+              style={{
+                padding: '4px 8px',
+                color: theme.text,
+                backgroundColor: viewMode === 'hex' ? theme.surface : 'transparent',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                opacity: viewMode === 'hex' ? 1 : 0.6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: viewMode === 'hex' ? 'bold' : 'normal',
+                transition: 'background-color 0.15s, opacity 0.15s',
+              }}
+            >
+              Hex
+            </button>
+          )}
         </div>
         <button
           onClick={handleCopy}
