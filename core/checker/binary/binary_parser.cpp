@@ -165,14 +165,14 @@ struct Elf64_Shdr
 {
     uint32_t sh_name;
     uint32_t sh_type;
-    uint64_t sh_flags;
-    uint64_t sh_addr;
-    uint64_t sh_offset;
-    uint64_t sh_size;
+    uint32_t sh_flags;
+    uint32_t sh_addr;
+    uint32_t sh_offset;
+    uint32_t sh_size;
     uint32_t sh_link;
     uint32_t sh_info;
-    uint64_t sh_addralign;
-    uint64_t sh_entsize;
+    uint32_t sh_addralign;
+    uint32_t sh_entsize;
 };
 
 struct Elf32_Shdr
@@ -828,8 +828,8 @@ static BinaryInfo parseMachO(std::ifstream& f, uint32_t base_off)
             {
                 nlist_64 nl{};
                 readFromFile(f,
-                             static_cast<std::streamoff>(base_off) + symoff +
-                                 static_cast<std::streamoff>(i) * sizeof(nlist_64),
+                             static_cast<std::streamoff>(base_off) + static_cast<std::streamoff>(symoff) +
+                                 static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(nlist_64)),
                              nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
@@ -837,9 +837,10 @@ static BinaryInfo parseMachO(std::ifstream& f, uint32_t base_off)
             else
             {
                 nlist nl{};
-                readFromFile(
-                    f, static_cast<std::streamoff>(base_off) + symoff + static_cast<std::streamoff>(i) * sizeof(nlist),
-                    nl);
+                readFromFile(f,
+                             static_cast<std::streamoff>(base_off) + static_cast<std::streamoff>(symoff) +
+                                 static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(nlist)),
+                             nl);
                 strx = swap ? swap32(nl.n_strx) : nl.n_strx;
                 type = nl.n_type;
             }
@@ -1208,9 +1209,10 @@ BinaryInfo BinaryParser::parse(const std::filesystem::path& path)
         for (uint32_t i = 0; i < nfat; ++i)
         {
             fat_arch fa{};
-            readFromFile(
-                f, static_cast<std::streamoff>(sizeof(fat_header)) + static_cast<std::streamoff>(i) * sizeof(fat_arch),
-                fa);
+            readFromFile(f,
+                         static_cast<std::streamoff>(sizeof(fat_header)) +
+                             static_cast<std::streamoff>(i) * static_cast<std::streamoff>(sizeof(fat_arch)),
+                         fa);
             const uint32_t offset = (magic == 0xBEBAFECA) ? swap32(fa.offset) : fa.offset;
             auto res = parseMachO(f, offset);
             combined.isSharedLibrary = res.isSharedLibrary; // Should be consistent
