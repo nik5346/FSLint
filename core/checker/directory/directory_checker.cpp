@@ -7,7 +7,6 @@
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/xmlstring.h>
-#include <libxml/xpath.h>
 
 #include <filesystem>
 #include <map>
