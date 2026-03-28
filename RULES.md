@@ -118,12 +118,21 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 ### Binary Exports
 
-- **Binary Format Consistency**:
-  - The binary **must** be a shared library (DLL, shared object, or dynamic library).
-  - The binary format and extension **must** match the operating system: **PE** (`.dll`) for Windows, **ELF** (`.so`) for Linux, and **Mach-O** (`.dylib`) for macOS.
-- **Platform Matching**:
-  - The CPU architecture and bitness of the binary **must** match the requirements implied by the platform identifier (the directory name under `binaries/`). For example, `win64` requires a 64-bit x86 binary, while `x86_64-windows` requires a 64-bit x86_64 binary.
-  - **Fat Binaries (macOS only)**: For multi-architecture (Fat) binaries, at least one contained architecture **must** match the platform identifier.
+The binary file **must** be a shared library (dynamic library). Its format, extension, and architecture **must** match the platform identifier (the directory name under `binaries/`):
+
+- **Windows**:
+  - Format: **PE** (Portable Executable).
+  - Extension: `.dll`.
+  - Matching: Must match the bitness/architecture of the identifier (e.g., `win64` or `x86_64-windows` requires a 64-bit x86 binary).
+- **Linux**:
+  - Format: **ELF** (Executable and Linkable Format).
+  - Extension: `.so`.
+  - Matching: Must match the bitness/architecture of the identifier (e.g., `linux64` or `x86_64-linux` requires a 64-bit x86 binary).
+- **macOS**:
+  - Format: **Mach-O**.
+  - Extension: `.dylib`.
+  - Matching: Must match the bitness/architecture of the identifier (e.g., `darwin64` or `x86_64-darwin` requires a 64-bit x86 binary).
+  - **Multi-architecture (Fat) Binaries**: For Fat binaries, at least one contained architecture **must** match the platform identifier.
 
 ---
 
