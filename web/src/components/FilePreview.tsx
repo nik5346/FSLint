@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
-import HexEditor from 'react-hex-editor';
+import { HexViewer } from './HexViewer';
 import { FileNode, Theme, FSLintModule } from '../types';
 
 import { MarkdownContent } from './MarkdownContent';
@@ -225,10 +225,16 @@ export const FilePreview = ({
 
   const handleCopy = () => {
     if (viewMode === 'hex' && data) {
-      const hex = Array.from(data)
+      // Safety limit for large files to avoid hanging the UI
+      const limit = 1024 * 1024; // 1MB
+      const slice = data.length > limit ? data.slice(0, limit) : data;
+      const hex = Array.from(slice)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join(' ');
-      navigator.clipboard.writeText(hex).then(() => {
+      const textToCopy =
+        data.length > limit ? `${hex}\n... (truncated, file too large)` : hex;
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       });
@@ -499,42 +505,7 @@ export const FilePreview = ({
               color: theme.text,
             }}
           >
-            {data && (
-              <HexEditor
-                data={data}
-                height="100%"
-                columns={0x10}
-                readOnly
-                showAscii
-                showRowLabels
-                theme={{
-                  colorBackground: isDark ? '#2a2a2a' : '#ffffff',
-                  colorBackgroundColumnEven: isDark ? '#2a2a2a' : '#ffffff',
-                  colorBackgroundColumnOdd: isDark ? '#2f2f2f' : '#f6f8fa',
-                  colorBackgroundEven: isDark ? '#2a2a2a' : '#ffffff',
-                  colorBackgroundOdd: isDark ? '#2f2f2f' : '#f6f8fa',
-                  colorBackgroundRowEven: isDark ? '#2a2a2a' : '#ffffff',
-                  colorBackgroundRowOdd: isDark ? '#2f2f2f' : '#f6f8fa',
-                  colorText: theme.text,
-                  colorTextColumnEven: theme.text,
-                  colorTextColumnOdd: theme.text,
-                  colorTextEven: theme.text,
-                  colorTextOdd: theme.text,
-                  colorTextRowEven: theme.text,
-                  colorTextRowOdd: theme.text,
-                  colorTextLabel: theme.muted,
-                  colorTextLabelCurrent: theme.text,
-                  colorBackgroundLabel: isDark ? '#2a2a2a' : '#ffffff',
-                  colorBackgroundLabelCurrent: isDark ? '#2a2a2a' : '#ffffff',
-                  colorBackgroundSelection: '#007bff',
-                  colorTextSelection: '#ffffff',
-                  colorBackgroundSelectionCursor: '#005cc5',
-                  colorTextSelectionCursor: '#ffffff',
-                  colorScrollbackThumb: theme.border,
-                  colorScrollbackTrack: isDark ? '#1a1a1a' : '#f6f8fa',
-                }}
-              />
-            )}
+            {data && <HexViewer data={data} theme={theme} isDark={isDark} />}
           </div>
         ) : (
           (() => {
