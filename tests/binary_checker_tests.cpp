@@ -46,8 +46,12 @@ TEST_CASE("Binary Parser ELF", "[binary][elf]")
         outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
     }
 
-    auto exports = BinaryParser::getExports(temp_bin);
-    CHECK(exports.contains("fmi2Instantiate"));
+    auto info = BinaryParser::parse(temp_bin);
+    CHECK(info.format == BinaryFormat::ELF);
+    REQUIRE(info.architectures.size() == 1);
+    CHECK(info.architectures[0].bitness == 64);
+    CHECK(info.isSharedLibrary);
+    CHECK(info.exports.contains("fmi2Instantiate"));
     fs::remove(temp_bin);
 }
 
@@ -66,8 +70,12 @@ TEST_CASE("Binary Parser PE", "[binary][pe]")
         outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
     }
 
-    auto exports = BinaryParser::getExports(temp_bin);
-    CHECK(exports.contains("fmi2Instantiate"));
+    auto info = BinaryParser::parse(temp_bin);
+    CHECK(info.format == BinaryFormat::PE);
+    REQUIRE(info.architectures.size() == 1);
+    CHECK(info.architectures[0].bitness == 64);
+    CHECK(info.isSharedLibrary);
+    CHECK(info.exports.contains("fmi2Instantiate"));
     fs::remove(temp_bin);
 }
 
@@ -86,8 +94,12 @@ TEST_CASE("Binary Parser Mach-O", "[binary][macho]")
         outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
     }
 
-    auto exports = BinaryParser::getExports(temp_bin);
-    CHECK(exports.contains("fmi2Instantiate"));
+    auto info = BinaryParser::parse(temp_bin);
+    CHECK(info.format == BinaryFormat::MACHO);
+    REQUIRE(info.architectures.size() == 1);
+    CHECK(info.architectures[0].bitness == 64);
+    CHECK(info.isSharedLibrary);
+    CHECK(info.exports.contains("fmi2Instantiate"));
     fs::remove(temp_bin);
 }
 
@@ -165,6 +177,129 @@ TEST_CASE("Binary Checker Validation Failure", "[binary][checker]")
     CHECK(has_error_with_text(cert, "Mandatory function 'fmi2GetVersion' is not exported."));
 
     // Cleanup
+    fs::remove_all(temp_path);
+}
+
+TEST_CASE("Binary Format Mismatch Failure", "[binary][checker][format]")
+{
+    if (!reference_fmus_available())
+        SKIP("Reference FMUs not available");
+
+    // Create a temporary test dir
+    fs::path temp_path = "tests/binary_format_fail_test";
+    fs::create_directories(temp_path);
+
+    // Copy modelDescription.xml from a FMI 2.0 pass case
+    fs::copy_file("tests/data/fmi2/pass/dist_binaries_only/modelDescription.xml", temp_path / "modelDescription.xml",
+                  fs::copy_options::overwrite_existing);
+
+    // Create binaries dir for Windows, but put an ELF (Linux) binary there.
+    fs::path binaries_dir = temp_path / "binaries" / "win64";
+    fs::create_directories(binaries_dir);
+
+    {
+        Zipper zipper;
+        REQUIRE(zipper.open("tests/reference_fmus/2.0/BouncingBall.fmu"));
+        std::vector<uint8_t> content;
+        // Extract Linux binary
+        REQUIRE(zipper.extractFile("binaries/linux64/BouncingBall.so", content));
+        // Save it as test.dll in win64 folder
+        std::ofstream outfile(binaries_dir / "test.dll", std::ios::binary);
+        outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
+    }
+
+    Fmi2BinaryChecker checker;
+    Certificate cert;
+    checker.validate(temp_path, cert);
+
+    CHECK(has_fail(cert));
+    CHECK(has_error_with_text(cert, "Binary format is not PE (Windows), found ELF"));
+
+    // Cleanup
+    fs::remove_all(temp_path);
+}
+
+TEST_CASE("Binary Bitness Mismatch Failure", "[binary][checker][bitness]")
+{
+    if (!reference_fmus_available())
+        SKIP("Reference FMUs not available");
+
+    // Create a temporary test dir
+    fs::path temp_path = "tests/binary_bitness_fail_test";
+    fs::create_directories(temp_path);
+
+    // Copy modelDescription.xml from a FMI 2.0 pass case
+    fs::copy_file("tests/data/fmi2/pass/dist_binaries_only/modelDescription.xml", temp_path / "modelDescription.xml",
+                  fs::copy_options::overwrite_existing);
+
+    // Create binaries dir for 32-bit Linux, but put a 64-bit ELF binary there.
+    fs::path binaries_dir = temp_path / "binaries" / "linux32";
+    fs::create_directories(binaries_dir);
+
+    {
+        Zipper zipper;
+        REQUIRE(zipper.open("tests/reference_fmus/2.0/BouncingBall.fmu"));
+        std::vector<uint8_t> content;
+        // Extract 64-bit Linux binary
+        REQUIRE(zipper.extractFile("binaries/linux64/BouncingBall.so", content));
+        // Save it in linux32 folder
+        std::ofstream outfile(binaries_dir / "test.so", std::ios::binary);
+        outfile.write(reinterpret_cast<const char*>(content.data()), static_cast<std::streamsize>(content.size()));
+    }
+
+    Fmi2BinaryChecker checker;
+    Certificate cert;
+    checker.validate(temp_path, cert);
+
+    CHECK(has_fail(cert));
+    CHECK(has_error_with_text(cert, "Binary does not contain a 32-bit x86 architecture matching platform 'linux32'."));
+
+    // Cleanup
+    fs::remove_all(temp_path);
+}
+
+TEST_CASE("Shared Library Check Failure", "[binary][checker][shared]")
+{
+    // Create a temporary test dir
+    fs::path temp_path = "tests/binary_shared_fail_test";
+    fs::create_directories(temp_path);
+
+    fs::copy_file("tests/data/fmi2/pass/dist_binaries_only/modelDescription.xml", temp_path / "modelDescription.xml",
+                  fs::copy_options::overwrite_existing);
+
+    fs::path binaries_dir = temp_path / "binaries" / "linux64";
+    fs::create_directories(binaries_dir);
+
+    // Create a dummy non-shared library ELF file.
+    // ELF Header for 64-bit, little endian, ET_EXEC (executable) instead of ET_DYN.
+    std::vector<uint8_t> elf_header = {
+        0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // e_ident
+        2,    0,                                                 // e_type = ET_EXEC
+        62,   0,                                                 // e_machine = EM_X86_64
+        1,    0,   0,   0,                                       // e_version
+        0,    0,   0,   0,   0, 0, 0, 0,                         // e_entry
+        0,    0,   0,   0,   0, 0, 0, 0,                         // e_phoff
+        0,    0,   0,   0,   0, 0, 0, 0,                         // e_shoff
+        0,    0,   0,   0,                                       // e_flags
+        64,   0,                                                 // e_ehsize
+        56,   0,                                                 // e_phentsize
+        0,    0,                                                 // e_phnum
+        64,   0,                                                 // e_shentsize
+        0,    0,                                                 // e_shnum
+        0,    0                                                  // e_shstrndx
+    };
+
+    std::ofstream outfile(binaries_dir / "test.so", std::ios::binary);
+    outfile.write(reinterpret_cast<const char*>(elf_header.data()), static_cast<std::streamsize>(elf_header.size()));
+    outfile.close();
+
+    Fmi2BinaryChecker checker;
+    Certificate cert;
+    checker.validate(temp_path, cert);
+
+    CHECK(has_fail(cert));
+    CHECK(has_error_with_text(cert, "Binary is not a shared library (DLL/SO/DYLIB)."));
+
     fs::remove_all(temp_path);
 }
 

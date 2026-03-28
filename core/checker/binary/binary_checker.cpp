@@ -68,7 +68,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     {
         if (!header_printed)
         {
-            cert.printSubsectionHeader("FMU BINARY EXPORTS");
+            cert.printSubsectionHeader("FMU BINARY CHECKS");
             header_printed = true;
         }
     };
@@ -91,20 +91,174 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                 if (std::filesystem::exists(binary_file))
                 {
                     ensure_header();
-                    TestResult test{
+                    const BinaryInfo info = BinaryParser::parse(binary_file);
+
+                    // 1. Exported Functions Check
+                    TestResult export_test{
                         std::format("Exported Functions: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
-                    const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
 
                     for (const auto& func : expected_functions)
                     {
-                        if (!actual_exports.contains(func))
+                        if (!info.exports.contains(func))
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Mandatory function '" + func + "' is not exported.");
+                            export_test.status = TestStatus::FAIL;
+                            export_test.messages.push_back("Mandatory function '" + func + "' is not exported.");
+                        }
+                    }
+                    cert.printTestResult(export_test);
+
+                    // 2. Binary Format, Bitness, and Architecture Check
+                    TestResult format_test{
+                        std::format("Binary Format: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
+
+                    if (!info.isSharedLibrary && info.format != BinaryFormat::UNKNOWN)
+                    {
+                        format_test.status = TestStatus::FAIL;
+                        format_test.messages.push_back("Binary is not a shared library (DLL/SO/DYLIB).");
+                    }
+
+                    if (platform.starts_with("win"))
+                    {
+                        if (info.format != BinaryFormat::PE)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Binary format is not PE (Windows), found {}",
+                                            (info.format == BinaryFormat::ELF     ? "ELF"
+                                             : info.format == BinaryFormat::MACHO ? "Mach-O"
+                                                                                  : "unknown")));
+                        }
+
+                        bool arch_match = false;
+                        for (const auto& arch : info.architectures)
+                        {
+                            if (arch.architecture == "x86" || arch.architecture == "x86_64")
+                            {
+                                if ((platform.ends_with("32") && arch.bitness == 32) ||
+                                    (platform.ends_with("64") && arch.bitness == 64))
+                                {
+                                    arch_match = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!arch_match && !info.architectures.empty())
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Binary does not contain a {} architecture matching platform '{}'.",
+                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                        }
+                    }
+                    else if (platform.starts_with("linux"))
+                    {
+                        if (info.format != BinaryFormat::ELF)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Binary format is not ELF (Linux), found {}",
+                                            (info.format == BinaryFormat::PE      ? "PE"
+                                             : info.format == BinaryFormat::MACHO ? "Mach-O"
+                                                                                  : "unknown")));
+                        }
+
+                        bool arch_match = false;
+                        for (const auto& arch : info.architectures)
+                        {
+                            if (arch.architecture == "x86" || arch.architecture == "x86_64")
+                            {
+                                if ((platform.ends_with("32") && arch.bitness == 32) ||
+                                    (platform.ends_with("64") && arch.bitness == 64))
+                                {
+                                    arch_match = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!arch_match && !info.architectures.empty())
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Binary does not contain a {} architecture matching platform '{}'.",
+                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                        }
+                    }
+                    else if (platform.starts_with("darwin"))
+                    {
+                        if (info.format != BinaryFormat::MACHO)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Binary format is not Mach-O (macOS), found {}",
+                                            (info.format == BinaryFormat::PE    ? "PE"
+                                             : info.format == BinaryFormat::ELF ? "ELF"
+                                                                                : "unknown")));
+                        }
+
+                        bool arch_match = false;
+                        for (const auto& arch : info.architectures)
+                        {
+                            if (arch.architecture == "x86" || arch.architecture == "x86_64")
+                            {
+                                if ((platform.ends_with("32") && arch.bitness == 32) ||
+                                    (platform.ends_with("64") && arch.bitness == 64))
+                                {
+                                    arch_match = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!arch_match && !info.architectures.empty())
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Binary does not contain a {} architecture matching platform '{}'.",
+                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                        }
+                    }
+                    else if (platform.find('-') != std::string::npos) // FMI 3.0 platform tuples
+                    {
+                        // x86_64-windows, aarch64-linux, etc.
+                        if (platform.find("windows") != std::string::npos && info.format != BinaryFormat::PE)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back("Binary format is not PE (Windows).");
+                        }
+                        else if (platform.find("linux") != std::string::npos && info.format != BinaryFormat::ELF)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back("Binary format is not ELF (Linux).");
+                        }
+                        else if (platform.find("darwin") != std::string::npos && info.format != BinaryFormat::MACHO)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back("Binary format is not Mach-O (macOS).");
+                        }
+
+                        bool arch_match = false;
+                        for (const auto& arch : info.architectures)
+                        {
+                            // Robust architecture check: ensure the architecture is an exact component
+                            // (e.g., 'x86' should not match 'x86_64-windows').
+                            if (platform.find(arch.architecture + "-") == 0)
+                            {
+                                arch_match = true;
+                                break;
+                            }
+                        }
+
+                        if (!arch_match && !info.architectures.empty())
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(std::format(
+                                "Binary does not contain an architecture matching platform tuple '{}'.", platform));
                         }
                     }
 
-                    cert.printTestResult(test);
+                    cert.printTestResult(format_test);
                 }
             }
         }
