@@ -9,11 +9,52 @@
 #include <string>
 #include <vector>
 
+enum ElfConstants : uint32_t
+{
+    PT_LOAD = 1,
+    PT_DYNAMIC = 2,
+    DT_NULL = 0,
+    DT_SYMTAB = 6,
+    DT_STRTAB = 5,
+    DT_HASH = 4,
+    DT_GNU_HASH = 0x6ffffef5,
+    SHT_DYNSYM = 11,
+    SHN_UNDEF = 0,
+    STB_LOCAL = 0,
+    EI_NIDENT = 16,
+    EI_CLASS = 4,
+    ELFCLASS32 = 1,
+    ELFCLASS64 = 2,
+    ELFMAG0 = 0x7f,
+
+    EM_386 = 3,
+    EM_PPC = 20,
+    EM_PPC64 = 21,
+    EM_X86_64 = 62,
+    EM_AARCH64 = 183,
+    EM_RISCV = 243
+};
+
+enum PeConstants : uint16_t
+{
+    IMAGE_FILE_MACHINE_I386 = 0x014c,
+    IMAGE_FILE_MACHINE_ARM = 0x01c0,
+    IMAGE_FILE_MACHINE_THUMB = 0x01c2,
+    IMAGE_FILE_MACHINE_ARMNT = 0x01c4,
+    IMAGE_FILE_MACHINE_AMD64 = 0x8664,
+    IMAGE_FILE_MACHINE_ARM64 = 0xaa64
+};
+
+static constexpr uint32_t swap32(uint32_t x)
+{
+    return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | (x >> 24);
+}
+
 // --- ELF Parsing Structures ---
 #pragma pack(push, 1)
 struct Elf64_Ehdr
 {
-    std::array<unsigned char, 16> e_ident;
+    std::array<unsigned char, EI_NIDENT> e_ident;
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
@@ -31,7 +72,7 @@ struct Elf64_Ehdr
 
 struct Elf32_Ehdr
 {
-    std::array<unsigned char, 16> e_ident;
+    std::array<unsigned char, EI_NIDENT> e_ident;
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
@@ -129,35 +170,250 @@ struct Elf32_Shdr
 {
     uint32_t sh_name;
     uint32_t sh_type;
-    uint32_t sh_flags;
-    uint32_t sh_addr;
-    uint32_t sh_offset;
-    uint32_t sh_size;
+    uint64_t sh_flags;
+    uint64_t sh_addr;
+    uint64_t sh_offset;
+    uint64_t sh_size;
     uint32_t sh_link;
     uint32_t sh_info;
-    uint32_t sh_addralign;
-    uint32_t sh_entsize;
+    uint64_t sh_addralign;
+    uint64_t sh_entsize;
+};
+
+struct IMAGE_DOS_HEADER
+{
+    uint16_t e_magic;
+    uint16_t e_cblp;
+    uint16_t e_cp;
+    uint16_t e_crlc;
+    uint16_t e_cparhdr;
+    uint16_t e_minalloc;
+    uint16_t e_maxalloc;
+    uint16_t e_ss;
+    uint16_t e_sp;
+    uint16_t e_csum;
+    uint16_t e_ip;
+    uint16_t e_cs;
+    uint16_t e_lfarlc;
+    uint16_t e_ovno;
+    std::array<uint16_t, 4> e_res;
+    uint16_t e_oemid;
+    uint16_t e_oeminfo;
+    std::array<uint16_t, 10> e_res2;
+    uint32_t e_lfanew;
+};
+
+struct IMAGE_FILE_HEADER
+{
+    uint16_t Machine;
+    uint16_t NumberOfSections;
+    uint32_t TimeDateStamp;
+    uint32_t PointerToSymbolTable;
+    uint32_t NumberOfSymbols;
+    uint16_t SizeOfOptionalHeader;
+    uint16_t Characteristics;
+};
+
+struct IMAGE_DATA_DIRECTORY
+{
+    uint32_t VirtualAddress;
+    uint32_t Size;
+};
+
+struct IMAGE_OPTIONAL_HEADER32
+{
+    uint16_t Magic;
+    uint8_t MajorLinkerVersion;
+    uint8_t MinorLinkerVersion;
+    uint32_t SizeOfCode;
+    uint32_t SizeOfInitializedData;
+    uint32_t SizeOfUninitializedData;
+    uint32_t AddressOfEntryPoint;
+    uint32_t BaseOfCode;
+    uint32_t BaseOfData;
+    uint32_t ImageBase;
+    uint32_t SectionAlignment;
+    uint32_t FileAlignment;
+    uint16_t MajorOperatingSystemVersion;
+    uint16_t MinorOperatingSystemVersion;
+    uint16_t MajorImageVersion;
+    uint16_t MinorImageVersion;
+    uint16_t MajorSubsystemVersion;
+    uint16_t MinorSubsystemVersion;
+    uint32_t Win32VersionValue;
+    uint32_t SizeOfImage;
+    uint32_t SizeOfHeaders;
+    uint32_t CheckSum;
+    uint16_t Subsystem;
+    uint16_t DllCharacteristics;
+    uint32_t SizeOfStackReserve;
+    uint32_t SizeOfStackCommit;
+    uint32_t SizeOfHeapReserve;
+    uint32_t SizeOfHeapCommit;
+    uint32_t LoaderFlags;
+    uint32_t NumberOfRvaAndSizes;
+    std::array<IMAGE_DATA_DIRECTORY, 16> DataDirectory;
+};
+
+struct IMAGE_OPTIONAL_HEADER64
+{
+    uint16_t Magic;
+    uint8_t MajorLinkerVersion;
+    uint8_t MinorLinkerVersion;
+    uint32_t SizeOfCode;
+    uint32_t SizeOfInitializedData;
+    uint32_t SizeOfUninitializedData;
+    uint32_t AddressOfEntryPoint;
+    uint32_t BaseOfCode;
+    uint64_t ImageBase;
+    uint32_t SectionAlignment;
+    uint32_t FileAlignment;
+    uint16_t MajorOperatingSystemVersion;
+    uint16_t MinorOperatingSystemVersion;
+    uint16_t MajorImageVersion;
+    uint16_t MinorImageVersion;
+    uint16_t MajorSubsystemVersion;
+    uint16_t MinorSubsystemVersion;
+    uint32_t Win32VersionValue;
+    uint32_t SizeOfImage;
+    uint32_t SizeOfHeaders;
+    uint32_t CheckSum;
+    uint16_t Subsystem;
+    uint16_t DllCharacteristics;
+    uint64_t SizeOfStackReserve;
+    uint64_t SizeOfStackCommit;
+    uint64_t SizeOfHeapReserve;
+    uint64_t SizeOfHeapCommit;
+    uint32_t LoaderFlags;
+    uint32_t NumberOfRvaAndSizes;
+    std::array<IMAGE_DATA_DIRECTORY, 16> DataDirectory;
+};
+
+struct IMAGE_SECTION_HEADER
+{
+    std::array<uint8_t, 8> Name;
+    uint32_t VirtualSize;
+    uint32_t VirtualAddress;
+    uint32_t SizeOfRawData;
+    uint32_t PointerToRawData;
+    uint32_t PointerToRelocations;
+    uint32_t PointerToLinenumbers;
+    uint16_t NumberOfRelocations;
+    uint16_t NumberOfLinenumbers;
+    uint32_t Characteristics;
+};
+
+struct IMAGE_EXPORT_DIRECTORY
+{
+    uint32_t Characteristics;
+    uint32_t TimeDateStamp;
+    uint16_t MajorVersion;
+    uint16_t MinorVersion;
+    uint32_t Name;
+    uint32_t Base;
+    uint32_t NumberOfFunctions;
+    uint32_t NumberOfNames;
+    uint32_t AddressOfFunctions;
+    uint32_t AddressOfNames;
+    uint32_t AddressOfNameOrdinals;
+};
+
+struct mach_header_64
+{
+    uint32_t magic;
+    int32_t cputype;
+    int32_t cpusubtype;
+    uint32_t filetype;
+    uint32_t ncmds;
+    uint32_t sizeofcmds;
+    uint32_t flags;
+    uint32_t reserved;
+};
+
+struct mach_header
+{
+    uint32_t magic;
+    int32_t cputype;
+    int32_t cpusubtype;
+    uint32_t filetype;
+    uint32_t ncmds;
+    uint32_t sizeofcmds;
+    uint32_t flags;
+};
+
+struct load_command
+{
+    uint32_t cmd;
+    uint32_t cmdsize;
+};
+
+struct symtab_command
+{
+    uint32_t cmd;
+    uint32_t cmdsize;
+    uint32_t symoff;
+    uint32_t nsyms;
+    uint32_t stroff;
+    uint32_t strsize;
+};
+
+struct dyld_info_command
+{
+    uint32_t cmd;
+    uint32_t cmdsize;
+    uint32_t rebase_off;
+    uint32_t rebase_size;
+    uint32_t bind_off;
+    uint32_t bind_size;
+    uint32_t weak_bind_off;
+    uint32_t weak_bind_size;
+    uint32_t lazy_bind_off;
+    uint32_t lazy_bind_size;
+    uint32_t export_off;
+    uint32_t export_size;
+};
+
+struct linkedit_data_command
+{
+    uint32_t cmd;
+    uint32_t cmdsize;
+    uint32_t dataoff;
+    uint32_t datasize;
+};
+
+struct nlist_64
+{
+    uint32_t n_strx;
+    uint8_t n_type;
+    uint8_t n_sect;
+    uint16_t n_desc;
+    uint64_t n_value;
+};
+
+struct nlist
+{
+    uint32_t n_strx;
+    uint8_t n_type;
+    uint8_t n_sect;
+    uint16_t n_desc;
+    uint32_t n_value;
+};
+
+struct fat_header
+{
+    uint32_t magic;
+    uint32_t nfat_arch;
+};
+
+struct fat_arch
+{
+    int32_t cputype;
+    int32_t cpusubtype;
+    uint32_t offset;
+    uint32_t size;
+    uint32_t align;
 };
 #pragma pack(pop)
-
-enum ElfConstants : uint32_t
-{
-    PT_LOAD = 1,
-    PT_DYNAMIC = 2,
-    DT_NULL = 0,
-    DT_SYMTAB = 6,
-    DT_STRTAB = 5,
-    DT_HASH = 4,
-    DT_GNU_HASH = 0x6ffffef5,
-    SHT_DYNSYM = 11,
-    SHN_UNDEF = 0,
-    STB_LOCAL = 0,
-    EI_NIDENT = 16,
-    EI_CLASS = 4,
-    ELFCLASS32 = 1,
-    ELFCLASS64 = 2,
-    ELFMAG0 = 0x7f
-};
 
 static inline uint8_t ELF64_ST_BIND(uint8_t i)
 {
@@ -176,12 +432,147 @@ static bool readFromFile(std::ifstream& f, std::streamoff offset, T& dest)
     return !!f.read(reinterpret_cast<char*>(&dest), sizeof(T));
 }
 
-static std::set<std::string> parseElf64(std::ifstream& f)
+static uint64_t readUleb128(std::ifstream& f)
 {
-    std::set<std::string> exports;
+    uint64_t result = 0;
+    int shift = 0;
+    while (true)
+    {
+        uint8_t byte = 0;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        if (!f.read(reinterpret_cast<char*>(&byte), 1))
+            break;
+        result |= static_cast<uint64_t>(byte & 0x7f) << shift;
+        if (!(byte & 0x80))
+            break;
+        shift += 7;
+    }
+    return result;
+}
+
+static std::string elfMachineToString(uint16_t machine)
+{
+    switch (machine)
+    {
+    case EM_386:
+        return "x86";
+    case EM_X86_64:
+        return "x86_64";
+    case EM_AARCH64:
+        return "aarch64";
+    case EM_RISCV:
+        return "riscv"; // Can be riscv32 or riscv64, usually distinguished by ELF class
+    case EM_PPC:
+        return "ppc32";
+    case EM_PPC64:
+        return "ppc64";
+    default:
+        return "unknown";
+    }
+}
+
+static std::string machoCpuToString(int32_t cputype)
+{
+    switch (cputype & ~0x01000000 /* CPU_ARCH_MASK */)
+    {
+    case 7: // CPU_TYPE_X86
+        return (cputype & 0x01000000) ? "x86_64" : "x86";
+    case 12: // CPU_TYPE_ARM
+        return (cputype & 0x01000000) ? "aarch64" : "aarch32";
+    case 18: // CPU_TYPE_POWERPC
+        return (cputype & 0x01000000) ? "ppc64" : "ppc32";
+    default:
+        return "unknown";
+    }
+}
+
+static std::string peMachineToString(uint16_t machine)
+{
+    switch (machine)
+    {
+    case IMAGE_FILE_MACHINE_I386:
+        return "x86";
+    case IMAGE_FILE_MACHINE_AMD64:
+        return "x86_64";
+    case IMAGE_FILE_MACHINE_ARM:
+    case IMAGE_FILE_MACHINE_THUMB:
+    case IMAGE_FILE_MACHINE_ARMNT:
+        return "aarch32";
+    case IMAGE_FILE_MACHINE_ARM64:
+        return "aarch64";
+    default:
+        return "unknown";
+    }
+}
+
+static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, const std::string& prefix,
+                     std::set<std::string>& exports)
+{
+    f.seekg(start_off + curr_off);
+    uint64_t terminalSize = readUleb128(f);
+    if (terminalSize != 0)
+    {
+        // This is an export.
+        // FMI symbols usually start with underscore in Mach-O
+        if (prefix.starts_with('_'))
+            exports.insert(prefix.substr(1));
+        else
+            exports.insert(prefix);
+    }
+
+    // Skip terminal data
+    f.seekg(static_cast<std::streamoff>(start_off + curr_off + 1 + terminalSize)); // Rough estimate of ULEB size as 1
+
+    // Need to correctly find children
+    f.seekg(start_off + curr_off);
+    terminalSize = readUleb128(f);
+    f.seekg(static_cast<std::streamoff>(start_off + curr_off + (terminalSize > 0 ? (1 + terminalSize) : 1)));
+
+    // Actually we should save the position after terminalSize
+    f.seekg(start_off + curr_off);
+    uint8_t b = 0;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    f.read(reinterpret_cast<char*>(&b), 1);
+    uint64_t tSize = b;
+    if (b & 0x80)
+    {
+        f.seekg(start_off + curr_off);
+        tSize = readUleb128(f);
+    }
+    const uint32_t children_pos = static_cast<uint32_t>(f.tellg()) + static_cast<uint32_t>(tSize);
+
+    f.seekg(children_pos);
+    uint8_t childCount = 0;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    if (!f.read(reinterpret_cast<char*>(&childCount), 1))
+        return;
+
+    for (uint8_t i = 0; i < childCount; ++i)
+    {
+        std::string edgeLabel;
+        char c = 0;
+        while (f.get(c) && c != '\0')
+            edgeLabel += c;
+        const uint64_t childOffset = readUleb128(f);
+        const uint32_t next_pos = static_cast<uint32_t>(f.tellg());
+        walkTrie(f, start_off, static_cast<uint32_t>(childOffset), prefix + edgeLabel, exports);
+        f.seekg(next_pos);
+    }
+}
+
+static BinaryInfo parseElf64(std::ifstream& f)
+{
+    BinaryInfo info;
+    info.format = BinaryFormat::ELF;
+    info.bitness = 64;
+
     Elf64_Ehdr ehdr{};
     if (!readFromFile(f, 0, ehdr))
-        return {};
+        return info;
+
+    info.architecture = elfMachineToString(ehdr.e_machine);
+    if (ehdr.e_machine == EM_RISCV)
+        info.architecture = "riscv64";
 
     // Find PT_DYNAMIC
     Elf64_Phdr phdr{};
@@ -202,7 +593,7 @@ static std::set<std::string> parseElf64(std::ifstream& f)
     }
 
     if (!found_dynamic)
-        return {};
+        return info;
 
     // Read Dynamic entries
     std::vector<Elf64_Dyn> dyns;
@@ -214,8 +605,8 @@ static std::set<std::string> parseElf64(std::ifstream& f)
 
     uint64_t symtab_off = 0;
     uint64_t strtab_off = 0;
-    uint64_t hash_off = 0;
     uint64_t gnu_hash_off = 0;
+    uint64_t hash_off = 0;
 
     for (const auto& d : dyns)
     {
@@ -363,210 +754,38 @@ static std::set<std::string> parseElf64(std::ifstream& f)
                 while (f.get(c) && c != '\0')
                     name += c;
                 if (!name.empty())
-                    exports.insert(name);
+                    info.exports.insert(name);
             }
         }
     }
 
-    return exports;
+    return info;
 }
 
-// --- Mach-O Parsing Structures ---
-#pragma pack(push, 1)
-struct mach_header_64
+static BinaryInfo parseMachO(std::ifstream& f, uint32_t base_off)
 {
-    uint32_t magic;
-    int32_t cputype;
-    int32_t cpusubtype;
-    uint32_t filetype;
-    uint32_t ncmds;
-    uint32_t sizeofcmds;
-    uint32_t flags;
-    uint32_t reserved;
-};
+    BinaryInfo info;
+    info.format = BinaryFormat::MACHO;
 
-struct mach_header
-{
-    uint32_t magic;
-    int32_t cputype;
-    int32_t cpusubtype;
-    uint32_t filetype;
-    uint32_t ncmds;
-    uint32_t sizeofcmds;
-    uint32_t flags;
-};
-
-struct load_command
-{
-    uint32_t cmd;
-    uint32_t cmdsize;
-};
-
-struct symtab_command
-{
-    uint32_t cmd;
-    uint32_t cmdsize;
-    uint32_t symoff;
-    uint32_t nsyms;
-    uint32_t stroff;
-    uint32_t strsize;
-};
-
-struct dyld_info_command
-{
-    uint32_t cmd;
-    uint32_t cmdsize;
-    uint32_t rebase_off;
-    uint32_t rebase_size;
-    uint32_t bind_off;
-    uint32_t bind_size;
-    uint32_t weak_bind_off;
-    uint32_t weak_bind_size;
-    uint32_t lazy_bind_off;
-    uint32_t lazy_bind_size;
-    uint32_t export_off;
-    uint32_t export_size;
-};
-
-struct linkedit_data_command
-{
-    uint32_t cmd;
-    uint32_t cmdsize;
-    uint32_t dataoff;
-    uint32_t datasize;
-};
-
-struct nlist_64
-{
-    uint32_t n_strx;
-    uint8_t n_type;
-    uint8_t n_sect;
-    uint16_t n_desc;
-    uint64_t n_value;
-};
-
-struct nlist
-{
-    uint32_t n_strx;
-    uint8_t n_type;
-    uint8_t n_sect;
-    uint16_t n_desc;
-    uint32_t n_value;
-};
-
-struct fat_header
-{
-    uint32_t magic;
-    uint32_t nfat_arch;
-};
-
-struct fat_arch
-{
-    int32_t cputype;
-    int32_t cpusubtype;
-    uint32_t offset;
-    uint32_t size;
-    uint32_t align;
-};
-#pragma pack(pop)
-
-static uint64_t readUleb128(std::ifstream& f)
-{
-    uint64_t result = 0;
-    int shift = 0;
-    while (true)
-    {
-        uint8_t byte = 0;
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        if (!f.read(reinterpret_cast<char*>(&byte), 1))
-            break;
-        result |= static_cast<uint64_t>(byte & 0x7f) << shift;
-        if (!(byte & 0x80))
-            break;
-        shift += 7;
-    }
-    return result;
-}
-
-static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, const std::string& prefix,
-                     std::set<std::string>& exports)
-{
-    f.seekg(start_off + curr_off);
-    uint64_t terminalSize = readUleb128(f);
-    if (terminalSize != 0)
-    {
-        // This is an export.
-        // FMI symbols usually start with underscore in Mach-O
-        if (prefix.starts_with('_'))
-            exports.insert(prefix.substr(1));
-        else
-            exports.insert(prefix);
-    }
-
-    // Skip terminal data
-    f.seekg(static_cast<std::streamoff>(start_off + curr_off + 1 + terminalSize)); // Rough estimate of ULEB size as 1
-
-    // Need to correctly find children
-    f.seekg(start_off + curr_off);
-    terminalSize = readUleb128(f);
-    f.seekg(static_cast<std::streamoff>(start_off + curr_off + (terminalSize > 0 ? (1 + terminalSize) : 1)));
-
-    // Actually we should save the position after terminalSize
-    // Let's do it properly
-    f.seekg(start_off + curr_off);
-    uint8_t b = 0;
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    f.read(reinterpret_cast<char*>(&b), 1);
-    uint64_t tSize = b;
-    if (b & 0x80)
-    {
-        f.seekg(start_off + curr_off);
-        tSize = readUleb128(f);
-    }
-    const uint32_t children_pos = static_cast<uint32_t>(f.tellg()) + static_cast<uint32_t>(tSize);
-
-    f.seekg(children_pos);
-    uint8_t childCount = 0;
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    if (!f.read(reinterpret_cast<char*>(&childCount), 1))
-        return;
-
-    for (uint8_t i = 0; i < childCount; ++i)
-    {
-        std::string edgeLabel;
-        char c = 0;
-        while (f.get(c) && c != '\0')
-            edgeLabel += c;
-        const uint64_t childOffset = readUleb128(f);
-        const uint32_t next_pos = static_cast<uint32_t>(f.tellg());
-        walkTrie(f, start_off, static_cast<uint32_t>(childOffset), prefix + edgeLabel, exports);
-        f.seekg(next_pos);
-    }
-}
-
-static constexpr uint32_t swap32(uint32_t x)
-{
-    return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | (x >> 24);
-}
-
-static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
-{
-    std::set<std::string> exports;
     uint32_t magic = 0;
     if (!readFromFile(f, base_off, magic))
-        return {};
+        return info;
 
     const bool is_64 = (magic == 0xFEEDFACF || magic == 0xCFFAEDFE);
     const bool swap = (magic == 0xCEFAEDFE || magic == 0xCFFAEDFE);
 
+    info.bitness = is_64 ? 64 : 32;
+
     uint32_t ncmds = 0;
     uint32_t header_size = 0;
+    int32_t cputype = 0;
 
     if (is_64)
     {
         mach_header_64 h{};
         readFromFile(f, base_off, h);
         ncmds = swap ? swap32(h.ncmds) : h.ncmds;
+        cputype = swap ? static_cast<int32_t>(swap32(static_cast<uint32_t>(h.cputype))) : h.cputype;
         header_size = sizeof(mach_header_64);
     }
     else
@@ -574,8 +793,11 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
         mach_header h{};
         readFromFile(f, base_off, h);
         ncmds = swap ? swap32(h.ncmds) : h.ncmds;
+        cputype = swap ? static_cast<int32_t>(swap32(static_cast<uint32_t>(h.cputype))) : h.cputype;
         header_size = sizeof(mach_header);
     }
+
+    info.architecture = machoCpuToString(cputype);
 
     uint32_t curr_off = base_off + header_size;
     uint32_t symoff = 0, nsyms = 0, stroff = 0;
@@ -613,7 +835,7 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
 
     if (export_off != 0)
     {
-        walkTrie(f, base_off + export_off, 0, "", exports);
+        walkTrie(f, base_off + export_off, 0, "", info.exports);
     }
     else if (symoff != 0)
     {
@@ -646,23 +868,30 @@ static std::set<std::string> parseMachO(std::ifstream& f, uint32_t base_off)
                 if (!name.empty())
                 {
                     if (name.starts_with('_'))
-                        exports.insert(name.substr(1));
+                        info.exports.insert(name.substr(1));
                     else
-                        exports.insert(name);
+                        info.exports.insert(name);
                 }
             }
         }
     }
 
-    return exports;
+    return info;
 }
 
-static std::set<std::string> parseElf32(std::ifstream& f)
+static BinaryInfo parseElf32(std::ifstream& f)
 {
-    std::set<std::string> exports;
+    BinaryInfo info;
+    info.format = BinaryFormat::ELF;
+    info.bitness = 32;
+
     Elf32_Ehdr ehdr{};
     if (!readFromFile(f, 0, ehdr))
-        return {};
+        return info;
+
+    info.architecture = elfMachineToString(ehdr.e_machine);
+    if (ehdr.e_machine == EM_RISCV)
+        info.architecture = "riscv32";
 
     // Find PT_DYNAMIC
     Elf32_Phdr phdr{};
@@ -683,7 +912,7 @@ static std::set<std::string> parseElf32(std::ifstream& f)
     }
 
     if (!found_dynamic)
-        return {};
+        return info;
 
     // Read Dynamic entries
     std::vector<Elf32_Dyn> dyns;
@@ -841,209 +1070,42 @@ static std::set<std::string> parseElf32(std::ifstream& f)
                 while (f.get(c) && c != '\0')
                     name += c;
                 if (!name.empty())
-                    exports.insert(name);
+                    info.exports.insert(name);
             }
         }
     }
 
-    return exports;
+    return info;
 }
 
-// --- PE Parsing Structures ---
-#pragma pack(push, 1)
-struct IMAGE_DOS_HEADER
+static BinaryInfo parsePe(std::ifstream& f)
 {
-    uint16_t e_magic;
-    uint16_t e_cblp;
-    uint16_t e_cp;
-    uint16_t e_crlc;
-    uint16_t e_cparhdr;
-    uint16_t e_minalloc;
-    uint16_t e_maxalloc;
-    uint16_t e_ss;
-    uint16_t e_sp;
-    uint16_t e_csum;
-    uint16_t e_ip;
-    uint16_t e_cs;
-    uint16_t e_lfarlc;
-    uint16_t e_ovno;
-    std::array<uint16_t, 4> e_res;
-    uint16_t e_oemid;
-    uint16_t e_oeminfo;
-    std::array<uint16_t, 10> e_res2;
-    uint32_t e_lfanew;
-};
+    BinaryInfo info;
+    info.format = BinaryFormat::PE;
 
-struct IMAGE_FILE_HEADER
-{
-    uint16_t Machine;
-    uint16_t NumberOfSections;
-    uint32_t TimeDateStamp;
-    uint32_t PointerToSymbolTable;
-    uint32_t NumberOfSymbols;
-    uint16_t SizeOfOptionalHeader;
-    uint16_t Characteristics;
-};
-
-struct IMAGE_DATA_DIRECTORY
-{
-    uint32_t VirtualAddress;
-    uint32_t Size;
-};
-
-struct IMAGE_OPTIONAL_HEADER32
-{
-    uint16_t Magic;
-    uint8_t MajorLinkerVersion;
-    uint8_t MinorLinkerVersion;
-    uint32_t SizeOfCode;
-    uint32_t SizeOfInitializedData;
-    uint32_t SizeOfUninitializedData;
-    uint32_t AddressOfEntryPoint;
-    uint32_t BaseOfCode;
-    uint32_t BaseOfData;
-    uint32_t ImageBase;
-    uint32_t SectionAlignment;
-    uint32_t FileAlignment;
-    uint16_t MajorOperatingSystemVersion;
-    uint16_t MinorOperatingSystemVersion;
-    uint16_t MajorImageVersion;
-    uint16_t MinorImageVersion;
-    uint16_t MajorSubsystemVersion;
-    uint16_t MinorSubsystemVersion;
-    uint32_t Win32VersionValue;
-    uint32_t SizeOfImage;
-    uint32_t SizeOfHeaders;
-    uint32_t CheckSum;
-    uint16_t Subsystem;
-    uint16_t DllCharacteristics;
-    uint32_t SizeOfStackReserve;
-    uint32_t SizeOfStackCommit;
-    uint32_t SizeOfHeapReserve;
-    uint32_t SizeOfHeapCommit;
-    uint32_t LoaderFlags;
-    uint32_t NumberOfRvaAndSizes;
-    std::array<IMAGE_DATA_DIRECTORY, 16> DataDirectory;
-};
-
-struct IMAGE_OPTIONAL_HEADER64
-{
-    uint16_t Magic;
-    uint8_t MajorLinkerVersion;
-    uint8_t MinorLinkerVersion;
-    uint32_t SizeOfCode;
-    uint32_t SizeOfInitializedData;
-    uint32_t SizeOfUninitializedData;
-    uint32_t AddressOfEntryPoint;
-    uint32_t BaseOfCode;
-    uint64_t ImageBase;
-    uint32_t SectionAlignment;
-    uint32_t FileAlignment;
-    uint16_t MajorOperatingSystemVersion;
-    uint16_t MinorOperatingSystemVersion;
-    uint16_t MajorImageVersion;
-    uint16_t MinorImageVersion;
-    uint16_t MajorSubsystemVersion;
-    uint16_t MinorSubsystemVersion;
-    uint32_t Win32VersionValue;
-    uint32_t SizeOfImage;
-    uint32_t SizeOfHeaders;
-    uint32_t CheckSum;
-    uint16_t Subsystem;
-    uint16_t DllCharacteristics;
-    uint64_t SizeOfStackReserve;
-    uint64_t SizeOfStackCommit;
-    uint64_t ImageBaseHigh; // Wait, actually it's uint64_t ImageBase; the fields are different
-};
-
-// Redefining IMAGE_OPTIONAL_HEADER64 properly
-struct IMAGE_OPTIONAL_HEADER64_REAL
-{
-    uint16_t Magic;
-    uint8_t MajorLinkerVersion;
-    uint8_t MinorLinkerVersion;
-    uint32_t SizeOfCode;
-    uint32_t SizeOfInitializedData;
-    uint32_t SizeOfUninitializedData;
-    uint32_t AddressOfEntryPoint;
-    uint32_t BaseOfCode;
-    uint64_t ImageBase;
-    uint32_t SectionAlignment;
-    uint32_t FileAlignment;
-    uint16_t MajorOperatingSystemVersion;
-    uint16_t MinorOperatingSystemVersion;
-    uint16_t MajorImageVersion;
-    uint16_t MinorImageVersion;
-    uint16_t MajorSubsystemVersion;
-    uint16_t MinorSubsystemVersion;
-    uint32_t Win32VersionValue;
-    uint32_t SizeOfImage;
-    uint32_t SizeOfHeaders;
-    uint32_t CheckSum;
-    uint16_t Subsystem;
-    uint16_t DllCharacteristics;
-    uint64_t SizeOfStackReserve;
-    uint64_t SizeOfStackCommit;
-    uint64_t SizeOfHeapReserve;
-    uint64_t SizeOfHeapCommit;
-    uint32_t LoaderFlags;
-    uint32_t NumberOfRvaAndSizes;
-    std::array<IMAGE_DATA_DIRECTORY, 16> DataDirectory;
-};
-
-struct IMAGE_SECTION_HEADER
-{
-    std::array<uint8_t, 8> Name;
-    uint32_t VirtualSize;
-    uint32_t VirtualAddress;
-    uint32_t SizeOfRawData;
-    uint32_t PointerToRawData;
-    uint32_t PointerToRelocations;
-    uint32_t PointerToLinenumbers;
-    uint16_t NumberOfRelocations;
-    uint16_t NumberOfLinenumbers;
-    uint32_t Characteristics;
-};
-
-struct IMAGE_EXPORT_DIRECTORY
-{
-    uint32_t Characteristics;
-    uint32_t TimeDateStamp;
-    uint16_t MajorVersion;
-    uint16_t MinorVersion;
-    uint32_t Name;
-    uint32_t Base;
-    uint32_t NumberOfFunctions;
-    uint32_t NumberOfNames;
-    uint32_t AddressOfFunctions;
-    uint32_t AddressOfNames;
-    uint32_t AddressOfNameOrdinals;
-};
-#pragma pack(pop)
-
-static std::set<std::string> parsePe(std::ifstream& f)
-{
-    std::set<std::string> exports;
     IMAGE_DOS_HEADER dos{};
     if (!readFromFile(f, 0, dos) || dos.e_magic != 0x5A4D)
-        return {};
+        return info;
 
     uint32_t pe_sig = 0;
     if (!readFromFile(f, dos.e_lfanew, pe_sig) || pe_sig != 0x00004550)
-        return {};
+        return info;
 
     IMAGE_FILE_HEADER file_hdr{};
     if (!readFromFile(f, dos.e_lfanew + 4, file_hdr))
-        return {};
+        return info;
+
+    info.architecture = peMachineToString(file_hdr.Machine);
 
     const uint32_t optional_hdr_off = dos.e_lfanew + 4 + sizeof(IMAGE_FILE_HEADER);
     uint16_t magic = 0;
     if (!readFromFile(f, optional_hdr_off, magic))
-        return {};
+        return info;
 
     IMAGE_DATA_DIRECTORY export_dir_info = {0, 0};
     if (magic == 0x10B) // PE32
     {
+        info.bitness = 32;
         IMAGE_OPTIONAL_HEADER32 opt{};
         if (readFromFile(f, optional_hdr_off, opt))
         {
@@ -1053,7 +1115,8 @@ static std::set<std::string> parsePe(std::ifstream& f)
     }
     else if (magic == 0x20B) // PE32+
     {
-        IMAGE_OPTIONAL_HEADER64_REAL opt{};
+        info.bitness = 64;
+        IMAGE_OPTIONAL_HEADER64 opt{};
         if (readFromFile(f, optional_hdr_off, opt))
         {
             if (opt.NumberOfRvaAndSizes > 0)
@@ -1062,7 +1125,7 @@ static std::set<std::string> parsePe(std::ifstream& f)
     }
 
     if (export_dir_info.VirtualAddress == 0)
-        return {};
+        return info;
 
     // Find section containing export directory
     std::vector<IMAGE_SECTION_HEADER> sections(file_hdr.NumberOfSections);
@@ -1082,15 +1145,15 @@ static std::set<std::string> parsePe(std::ifstream& f)
 
     const uint32_t export_dir_off = rva_to_off(export_dir_info.VirtualAddress);
     if (export_dir_off == 0)
-        return {};
+        return info;
 
     IMAGE_EXPORT_DIRECTORY export_dir{};
     if (!readFromFile(f, export_dir_off, export_dir))
-        return {};
+        return info;
 
     const uint32_t names_off = rva_to_off(export_dir.AddressOfNames);
     if (names_off == 0)
-        return {};
+        return info;
 
     for (uint32_t i = 0; i < export_dir.NumberOfNames; ++i)
     {
@@ -1106,15 +1169,15 @@ static std::set<std::string> parsePe(std::ifstream& f)
                 while (f.get(c) && c != '\0')
                     name += c;
                 if (!name.empty())
-                    exports.insert(name);
+                    info.exports.insert(name);
             }
         }
     }
 
-    return exports;
+    return info;
 }
 
-std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path)
+BinaryInfo BinaryParser::parse(const std::filesystem::path& path)
 {
     std::ifstream f(path, std::ios::binary);
     if (!f)
@@ -1156,10 +1219,15 @@ std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path
             const uint32_t offset = (magic == 0xBEBAFECA) ? swap32(fa.offset) : fa.offset;
             // For FMUs, we just take the first architecture that we can parse
             auto res = parseMachO(f, offset);
-            if (!res.empty())
+            if (!res.exports.empty())
                 return res;
         }
     }
 
     return {};
+}
+
+std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path)
+{
+    return parse(path).exports;
 }

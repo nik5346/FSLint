@@ -17,7 +17,7 @@
 
 void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
-    cert.printSubsectionHeader("BINARY EXPORTS");
+    cert.printSubsectionHeader("FMU BINARY CHECKS");
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
@@ -129,20 +129,122 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
                 auto binary_file = platform_entry.path() / (model_id + ext);
                 if (std::filesystem::exists(binary_file))
                 {
-                    TestResult test{
+                    const BinaryInfo info = BinaryParser::parse(binary_file);
+
+                    // 1. Exported Functions Check
+                    TestResult export_test{
                         std::format("Exported Functions: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
-                    const std::set<std::string> actual_exports = BinaryParser::getExports(binary_file);
 
                     for (const auto& func : base_functions)
                     {
                         const std::string prefixed_func = std::format("{}_{}", model_id, func);
-                        if (!actual_exports.contains(prefixed_func))
+                        if (!info.exports.contains(prefixed_func))
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Mandatory function '" + prefixed_func + "' is not exported.");
+                            export_test.status = TestStatus::FAIL;
+                            export_test.messages.push_back("Mandatory function '" + prefixed_func + "' is not exported.");
                         }
                     }
-                    cert.printTestResult(test);
+                    cert.printTestResult(export_test);
+
+                    // 2. Binary Format, Bitness, and Architecture Check
+                    TestResult format_test{
+                        std::format("Binary Format: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
+
+                    if (platform.starts_with("win"))
+                    {
+                        if (info.format != BinaryFormat::PE)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back("Binary format is not PE (Windows).");
+                        }
+
+                        if (info.architecture != "x86" && info.architecture != "x86_64")
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform '{}' requires x86 or x86_64 architecture, but found {}.",
+                                            platform, info.architecture));
+                        }
+
+                        if (platform.ends_with("32") && info.bitness != 32)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform 'win32' requires a 32-bit binary, but found {}-bit.",
+                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                        }
+                        else if (platform.ends_with("64") && info.bitness != 64)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform 'win64' requires a 64-bit binary, but found {}-bit.",
+                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                        }
+                    }
+                    else if (platform.starts_with("linux"))
+                    {
+                        if (info.format != BinaryFormat::ELF)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back("Binary format is not ELF (Linux).");
+                        }
+
+                        if (info.architecture != "x86" && info.architecture != "x86_64")
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform '{}' requires x86 or x86_64 architecture, but found {}.",
+                                            platform, info.architecture));
+                        }
+
+                        if (platform.ends_with("32") && info.bitness != 32)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform 'linux32' requires a 32-bit binary, but found {}-bit.",
+                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                        }
+                        else if (platform.ends_with("64") && info.bitness != 64)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform 'linux64' requires a 64-bit binary, but found {}-bit.",
+                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                        }
+                    }
+                    else if (platform.starts_with("darwin"))
+                    {
+                        if (info.format != BinaryFormat::MACHO)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back("Binary format is not Mach-O (macOS).");
+                        }
+
+                        if (info.architecture != "x86" && info.architecture != "x86_64")
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform '{}' requires x86 or x86_64 architecture, but found {}.",
+                                            platform, info.architecture));
+                        }
+
+                        if (platform.ends_with("32") && info.bitness != 32)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform 'darwin32' requires a 32-bit binary, but found {}-bit.",
+                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                        }
+                        else if (platform.ends_with("64") && info.bitness != 64)
+                        {
+                            format_test.status = TestStatus::FAIL;
+                            format_test.messages.push_back(
+                                std::format("Platform 'darwin64' requires a 64-bit binary, but found {}-bit.",
+                                            info.bitness == 0 ? "unknown" : std::to_string(info.bitness)));
+                        }
+                    }
+
+                    cert.printTestResult(format_test);
                 }
             }
         }
