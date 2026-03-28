@@ -119,11 +119,11 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Binary Exports
 
 - **Binary Format Consistency**:
-  - **Windows**: The binary **must** be a **PE** shared library (`.dll`). The architecture and bitness **must** match the platform directory or tuple (e.g., `win64` or `x86_64-windows` requires a 64-bit x86_64 binary).
-  - **Linux**: The binary **must** be an **ELF** shared object (`.so`). The architecture and bitness **must** match the platform directory or tuple (e.g., `linux64` or `x86_64-linux` requires a 64-bit x86_64 binary).
-  - **macOS**: The binary **must** be a **Mach-O** dynamic library or bundle (`.dylib`).
-    - The architecture and bitness **must** match the platform directory or tuple.
-    - For multi-architecture (Fat) binaries, at least one contained architecture **must** match the platform directory or tuple.
+  - The binary **must** be a shared library (DLL, shared object, or dynamic library).
+  - The binary format and extension **must** match the operating system: **PE** (`.dll`) for Windows, **ELF** (`.so`) for Linux, and **Mach-O** (`.dylib`) for macOS.
+- **Platform Matching**:
+  - The CPU architecture and bitness of the binary **must** match the requirements implied by the platform identifier (the directory name under `binaries/`). For example, `win64` requires a 64-bit x86 binary, while `x86_64-windows` requires a 64-bit x86_64 binary.
+  - **Fat Binaries (macOS only)**: For multi-architecture (Fat) binaries, at least one contained architecture **must** match the platform identifier.
 
 ---
 
