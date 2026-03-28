@@ -61,16 +61,6 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                 }
             }
         }
-        if (has_fail(cert))
-        {
-            for (const auto& r : cert.getResults())
-                if (r.status == TestStatus::FAIL)
-                {
-                    std::cout << "FAIL: " << r.test_name << std::endl;
-                    for (const auto& m : r.messages)
-                        std::cout << "  - " << m << std::endl;
-                }
-        }
         CHECK_FALSE(has_fail(cert));
     };
 
@@ -235,13 +225,15 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (has_fail(cert))
         {
-            for (const auto& r : cert.getResults())
-                if (r.status == TestStatus::FAIL)
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
                 {
-                    std::cout << "FAIL: " << r.test_name << std::endl;
-                    for (const auto& m : r.messages)
-                        std::cout << "  - " << m << std::endl;
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
                 }
+            }
         }
         CHECK_FALSE(has_fail(cert));
     };
@@ -357,13 +349,15 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (has_fail(cert))
         {
-            for (const auto& r : cert.getResults())
-                if (r.status == TestStatus::FAIL)
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
                 {
-                    std::cout << "FAIL: " << r.test_name << std::endl;
-                    for (const auto& m : r.messages)
-                        std::cout << "  - " << m << std::endl;
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
                 }
+            }
         }
         CHECK_FALSE(has_fail(cert));
     };
@@ -455,13 +449,15 @@ TEST_CASE("Build Description Validation", "[build_description]")
         INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (has_fail(cert))
         {
-            for (const auto& r : cert.getResults())
-                if (r.status == TestStatus::FAIL)
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
                 {
-                    std::cout << "FAIL: " << r.test_name << std::endl;
-                    for (const auto& m : r.messages)
-                        std::cout << "  - " << m << std::endl;
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
                 }
+            }
         }
         CHECK_FALSE(has_fail(cert));
     };
@@ -557,13 +553,15 @@ TEST_CASE("FMI 2.0 Build Description Validation", "[build_description][fmi2]")
         INFO("Checking path: " << file_utils::pathToUtf8(path));
         if (has_fail(cert))
         {
-            for (const auto& r : cert.getResults())
-                if (r.status == TestStatus::FAIL)
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
                 {
-                    std::cout << "FAIL: " << r.test_name << std::endl;
-                    for (const auto& m : r.messages)
-                        std::cout << "  - " << m << std::endl;
+                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
                 }
+            }
         }
         CHECK_FALSE(has_fail(cert));
     };

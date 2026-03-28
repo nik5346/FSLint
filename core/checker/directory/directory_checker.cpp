@@ -50,6 +50,14 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     xmlNodePtr root = xmlDocGetRootElement(doc);
     if (root)
     {
+        // FMI 1.0 extraction
+        auto model_id_attr = getXmlAttribute(root, "modelIdentifier");
+        if (model_id_attr)
+        {
+            // By default ME in FMI 1.0
+            model_identifiers["ModelExchange"] = *model_id_attr;
+        }
+
         for (xmlNodePtr node = root->children; node; node = node->next)
         {
             if (node->type != XML_ELEMENT_NODE)
@@ -62,7 +70,16 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
             {
                 auto model_id = getXmlAttribute(node, "modelIdentifier");
                 if (model_id)
+                {
                     model_identifiers[reinterpret_cast<const char*>(name)] = *model_id;
+
+                    // If we found CoSimulation in FMI 1.0, move the model identifier there
+                    if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) && model_id_attr)
+                    {
+                        model_identifiers.erase("ModelExchange");
+                        model_identifiers["CoSimulation"] = *model_id_attr;
+                    }
+                }
 
                 if (!xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")))
                 {
@@ -88,6 +105,15 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                             }
                         }
                     }
+                }
+            }
+            else if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("Implementation")))
+            {
+                // In FMI 1.0 CS, Implementation exists but modelIdentifier is still on the root
+                if (model_id_attr)
+                {
+                    model_identifiers.erase("ModelExchange");
+                    model_identifiers["CoSimulation"] = *model_id_attr;
                 }
             }
         }
