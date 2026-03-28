@@ -231,8 +231,7 @@ export const FilePreview = ({
       const hex = Array.from(slice)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join(' ');
-      const textToCopy =
-        data.length > limit ? `${hex}\n... (truncated, file too large)` : hex;
+      const textToCopy = data.length > limit ? `${hex}\n... (truncated, file too large)` : hex;
 
       navigator.clipboard.writeText(textToCopy).then(() => {
         setCopied(true);
@@ -274,7 +273,6 @@ export const FilePreview = ({
 
     return 'plaintext';
   };
-
 
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
