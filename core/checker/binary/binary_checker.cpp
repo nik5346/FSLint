@@ -235,8 +235,9 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                             format_test.messages.push_back("Binary format is not Mach-O (macOS).");
                         }
 
-                        // Check architecture match for FMI 3.0 platform tuples
-                        if (!platform.starts_with(info.architecture))
+                        // Robust architecture check: ensure the architecture is an exact component
+                        // (e.g., 'x86' should not match 'x86_64-windows').
+                        if (platform.find(info.architecture + "-") != 0)
                         {
                             format_test.status = TestStatus::FAIL;
                             format_test.messages.push_back(

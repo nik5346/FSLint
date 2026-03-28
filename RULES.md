@@ -239,6 +239,15 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **FMI 2.0.4 Compatibility**: Source-only FMUs **should** provide both `<SourceFiles>` in `modelDescription.xml` and a `buildDescription.xml` for maximum compatibility.
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 2.0 headers: `fmi2Functions.h`, `fmi2FunctionTypes.h`, `fmi2TypesPlatform.h`.
 
+### Build Description
+
+- **fmiVersion Check**: `buildDescription.xml` **must** have `fmiVersion="3.0"`. This attribute is fixed to "3.0" for FMI 2.0 FMUs because the feature was backported from FMI 3.0.
+- **Source/Include Validation**: All listed `SourceFile` and `IncludeDirectory` entries **must** exist in `sources/` and **must not** contain `..` traversal.
+- **Attribute Validation**: The `language` and `compiler` attributes **should** be from the suggested sets:
+  - `language`: `C89`, `C90`, `C99`, `C11`, `C17`, `C18`, `C23`, `C++98`, `C++03`, `C++11`, `C++14`, `C++17`, `C++20`, `C++23`, `C++26`.
+  - `compiler`: `gcc`, `clang`, `msvc`.
+- **Model Identifier Match**: `modelIdentifier` in `BuildConfiguration` must match an identifier from `modelDescription.xml`.
+
 ---
 
 ## FMI 3.0 Rules
@@ -306,8 +315,8 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 - **Build Description**: If the `sources/` directory exists, `sources/buildDescription.xml` **must** be present.
 - **Platform Tuples**:
   - Platform directories **should** follow the `<arch>-<sys>[-<abi>]` format.
-  - Architecture **<arch>** should be one of: `aarch32`, `aarch64`, `riscv32`, `riscv64`, `x86`, `x86_64`, `ppc32`, `ppc64`.
-  - Operating system **<sys>** should be one of: `darwin`, `linux`, `windows`.
+  - Architecture `<arch>` should be one of: `aarch32`, `aarch64`, `riscv32`, `riscv64`, `x86`, `x86_64`, `ppc32`, `ppc64`.
+  - Operating system `<sys>` should be one of: `darwin`, `linux`, `windows`.
 - **Static Linking**: If static libraries are present, `documentation/staticLinking.{txt|html}` **must** be present.
 - **Extra Directory**: Subdirectories in `extra/` **should** use reverse domain name notation (e.g., `com.example`).
 - **Standard Headers**: The `sources/` directory **should not** include standard FMI 3.0 headers: `fmi3Functions.h`, `fmi3FunctionTypes.h`, `fmi3PlatformTypes.h`.

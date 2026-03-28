@@ -170,14 +170,14 @@ struct Elf32_Shdr
 {
     uint32_t sh_name;
     uint32_t sh_type;
-    uint64_t sh_flags;
-    uint64_t sh_addr;
-    uint64_t sh_offset;
-    uint64_t sh_size;
+    uint32_t sh_flags;
+    uint32_t sh_addr;
+    uint32_t sh_offset;
+    uint32_t sh_size;
     uint32_t sh_link;
     uint32_t sh_info;
-    uint64_t sh_addralign;
-    uint64_t sh_entsize;
+    uint32_t sh_addralign;
+    uint32_t sh_entsize;
 };
 
 struct IMAGE_DOS_HEADER
@@ -521,27 +521,10 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, co
     }
 
     // Skip terminal data
-    f.seekg(static_cast<std::streamoff>(start_off + curr_off + 1 + terminalSize)); // Rough estimate of ULEB size as 1
+    const uint32_t after_terminal_size_pos = static_cast<uint32_t>(f.tellg());
+    f.seekg(after_terminal_size_pos + static_cast<uint32_t>(terminalSize));
 
-    // Need to correctly find children
-    f.seekg(start_off + curr_off);
-    terminalSize = readUleb128(f);
-    f.seekg(static_cast<std::streamoff>(start_off + curr_off + (terminalSize > 0 ? (1 + terminalSize) : 1)));
-
-    // Actually we should save the position after terminalSize
-    f.seekg(start_off + curr_off);
-    uint8_t b = 0;
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    f.read(reinterpret_cast<char*>(&b), 1);
-    uint64_t tSize = b;
-    if (b & 0x80)
-    {
-        f.seekg(start_off + curr_off);
-        tSize = readUleb128(f);
-    }
-    const uint32_t children_pos = static_cast<uint32_t>(f.tellg()) + static_cast<uint32_t>(tSize);
-
-    f.seekg(children_pos);
+    // Read child count
     uint8_t childCount = 0;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     if (!f.read(reinterpret_cast<char*>(&childCount), 1))
@@ -554,9 +537,9 @@ static void walkTrie(std::ifstream& f, uint32_t start_off, uint32_t curr_off, co
         while (f.get(c) && c != '\0')
             edgeLabel += c;
         const uint64_t childOffset = readUleb128(f);
-        const uint32_t next_pos = static_cast<uint32_t>(f.tellg());
+        const uint32_t next_child_info_pos = static_cast<uint32_t>(f.tellg());
         walkTrie(f, start_off, static_cast<uint32_t>(childOffset), prefix + edgeLabel, exports);
-        f.seekg(next_pos);
+        f.seekg(next_child_info_pos);
     }
 }
 
@@ -990,7 +973,7 @@ static BinaryInfo parseElf32(std::ifstream& f)
 
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
-        f.seekg(static_cast<std::streamoff>(gnu_hash_off) + 16 + static_cast<std::streamoff>(bloom_size) * 4);
+        f.seekg(static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint32_t>(bloom_size) * 4));
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets) * 4);
 
@@ -1006,10 +989,9 @@ static BinaryInfo parseElf32(std::ifstream& f)
             {
                 uint32_t chain_val = 0;
                 if (readFromFile(f,
-                                 static_cast<std::streamoff>(gnu_hash_off) + 16 +
-                                     static_cast<std::streamoff>(bloom_size) * 4 +
-                                     static_cast<std::streamoff>(nbuckets) * 4 +
-                                     static_cast<std::streamoff>(curr_idx - symoffset) * 4,
+                                 static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint32_t>(bloom_size) * 4 +
+                                                             static_cast<uint32_t>(nbuckets) * 4 +
+                                                             static_cast<uint32_t>(curr_idx - symoffset) * 4),
                                  chain_val))
                 {
                     if (chain_val & 1)
@@ -1217,7 +1199,6 @@ BinaryInfo BinaryParser::parse(const std::filesystem::path& path)
             fat_arch fa{};
             readFromFile(f, static_cast<std::streamoff>(sizeof(fat_header) + i * sizeof(fat_arch)), fa);
             const uint32_t offset = (magic == 0xBEBAFECA) ? swap32(fa.offset) : fa.offset;
-            // For FMUs, we just take the first architecture that we can parse
             auto res = parseMachO(f, offset);
             if (!res.exports.empty())
                 return res;
