@@ -139,9 +139,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     if (sources_xpath)
     {
         if (sources_xpath->nodesetval && sources_xpath->nodesetval->nodeNr > 0)
-        {
             has_source_files_in_md = true;
-        }
         xmlXPathFreeObject(sources_xpath);
     }
 

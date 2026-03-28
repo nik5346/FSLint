@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f000}">
-    <CoSimulation modelIdentifier="Test">
-        <SourceFiles>
-            <File name="Test.c"/>
-        </SourceFiles>
-    </CoSimulation>
-    <ModelVariables>
-        <ScalarVariable name="x" valueReference="1" causality="output">
-            <Real/>
-        </ScalarVariable>
-    </ModelVariables>
-    <ModelStructure>
-        <Outputs>
-            <Unknown index="1"/>
-        </Outputs>
-    </ModelStructure>
+  <CoSimulation modelIdentifier="Test">
+    <SourceFiles>
+      <File name="Test.c" />
+    </SourceFiles>
+  </CoSimulation>
+  <ModelVariables>
+    <ScalarVariable name="x" valueReference="1" causality="output">
+      <Real />
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="1" />
+    </Outputs>
+  </ModelStructure>
 </fmiModelDescription>
