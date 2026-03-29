@@ -342,28 +342,36 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         if (settable_vars.size() > 1)
         {
             test.status = TestStatus::FAIL;
-            std::string msg = "Alias set for " + key.first + " with VR " + std::to_string(key.second) +
-                              " contains multiple variables that can be set with fmi2SetXXX: ";
+            std::string vars;
             for (size_t i = 0; i < settable_vars.size(); ++i)
-                msg += (i > 0 ? ", " : "") + settable_vars[i]->name;
-            msg += ".";
-            test.messages.push_back(msg);
+                vars += (i > 0 ? ", " : "") + std::format("\"{}\"", settable_vars[i]->name);
+
+            test.messages.push_back(std::format(
+                "All variables in an alias set (VR {}) must have at most one variable that can be set with "
+                "fmi2SetXXX. Found: {}.",
+                key.second, vars));
         }
 
         // Rule 2: At most one variable of the same alias set of variables with variability != "constant" can have a
         // start attribute
         if (has_non_constant)
         {
-            const size_t non_constant_start_count =
-                std::count_if(alias_set.begin(), alias_set.end(),
-                              [](const Variable* v) { return v->variability != "constant" && v->start.has_value(); });
+            std::vector<const Variable*> non_constant_with_start;
+            for (const auto* v : alias_set)
+                if (v->variability != "constant" && v->start.has_value())
+                    non_constant_with_start.push_back(v);
 
-            if (non_constant_start_count > 1)
+            if (non_constant_with_start.size() > 1)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Alias set for " + key.first + " with VR " + std::to_string(key.second) +
-                                        " has multiple variables with a start attribute. At most one variable in an "
-                                        "alias set (where at least one is not constant) can have a start attribute.");
+                std::string vars;
+                for (size_t i = 0; i < non_constant_with_start.size(); ++i)
+                    vars += (i > 0 ? ", " : "") + std::format("\"{}\"", non_constant_with_start[i]->name);
+
+                test.messages.push_back(std::format(
+                    "All variables in an alias set (VR {}) must have at most one non-constant variable with a start "
+                    "attribute. Found: {}.",
+                    key.second, vars));
             }
         }
 
@@ -376,10 +384,10 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                 if (var->variability != "constant")
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Variable \"" + var->name + "\" (variability=\"" + var->variability +
-                                            "\") is aliased to constant variable \"" + first_constant->name +
-                                            "\" (VR " + std::to_string(key.second) +
-                                            "). Constants can only be aliased to other constants.");
+                    test.messages.push_back(std::format(
+                        "All variables in an alias set (VR {}) must have the same variability. Variable \"{}\" is "
+                        "{} but \"{}\" is constant. Constants can only be aliased to other constants.",
+                        key.second, var->name, var->variability, first_constant->name));
                 }
                 else
                 {
@@ -387,45 +395,29 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                     if (var->start != first_constant->start)
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back(
-                            "Aliased constant variables \"" + var->name + "\" and \"" + first_constant->name +
-                            "\" have different start values ('" + var->start.value_or("") + "' vs '" +
-                            first_constant->start.value_or("") + "') (VR " + std::to_string(key.second) + ").");
+                        test.messages.push_back(std::format(
+                            "All variables in an alias set (VR {}) must have the same start values if they are "
+                            "constant. Variable \"{}\" has start=\"{}\" but \"{}\" has start=\"{}\".",
+                            key.second, var->name, var->start.value_or("(none)"), first_constant->name,
+                            first_constant->start.value_or("(none)")));
                     }
                 }
             }
         }
 
         // Rule 4: All variables in the same alias set must have the same unit
-        const Variable* first_with_unit = nullptr;
-        for (const auto* var : alias_set)
+        const Variable* first_var = alias_set[0];
+        for (size_t i = 1; i < alias_set.size(); ++i)
         {
-            if (var->unit.has_value())
+            const Variable* var = alias_set[i];
+            if (var->unit != first_var->unit)
             {
-                if (!first_with_unit)
-                    first_with_unit = var;
-                else if (var->unit != first_with_unit->unit)
-                {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("All variables in an alias set (VR " + std::to_string(key.second) +
-                                            ") must have the same unit. Variable \"" + var->name + "\" has unit \"" +
-                                            *var->unit + "\" but \"" + first_with_unit->name + "\" has unit \"" +
-                                            *first_with_unit->unit + "\".");
-                }
-            }
-        }
-        if (first_with_unit)
-        {
-            for (const auto* var : alias_set)
-            {
-                if (!var->unit.has_value())
-                {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("All variables in an alias set (VR " + std::to_string(key.second) +
-                                            ") must have the same unit. Variable \"" + var->name +
-                                            "\" has no unit but \"" + first_with_unit->name + "\" has unit \"" +
-                                            *first_with_unit->unit + "\".");
-                }
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(
+                    std::format("All variables in an alias set (VR {}) must have the same unit. Variable \"{}\" has "
+                                "unit \"{}\" but \"{}\" has unit \"{}\".",
+                                key.second, var->name, var->unit.value_or("(none)"), first_var->name,
+                                first_var->unit.value_or("(none)")));
             }
         }
     }

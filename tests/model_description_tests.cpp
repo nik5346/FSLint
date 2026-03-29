@@ -50,15 +50,15 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
 
     SECTION("Aliases")
     {
-        validate_fail("alias_inconsistent_unit", "Variables sharing VR 1 must have the same unit");
-        validate_fail("alias_inconsistent_type", "Variables sharing VR 1 must have the same type");
-        validate_fail("alias_inconsistent_start", "must have equivalent start values");
-        validate_fail("alias_inconsistent_start_negated", "must have equivalent start values");
+        validate_fail("alias_inconsistent_unit", "All variables in an alias set (VR 1) must have the same unit");
+        validate_fail("alias_inconsistent_type", "All variables in an alias set (VR 1) must have the same type");
+        validate_fail("alias_inconsistent_start", "All variables in an alias set (VR 1) must have equivalent start values");
+        validate_fail("alias_inconsistent_start_negated", "All variables in an alias set (VR 1) must have equivalent start values");
         validate_fail("alias_negated_boolean", "alias=\"negatedAlias\" but is of type Boolean");
         validate_fail("alias_multiple_noalias",
-                      "Multiple variables sharing VR 1 (base type Real) are marked as base variables");
-        validate_fail("alias_no_noalias", "No base variable (noAlias) found for VR 1");
-        validate_fail("alias_inconsistent_variability_constant", "contains both constant and non-constant variables");
+                      "All variables in an alias set (VR 1) must have exactly one base variable (noAlias)");
+        validate_fail("alias_no_noalias", "All variables in an alias set (VR 1) must have exactly one base variable (noAlias)");
+        validate_fail("alias_inconsistent_variability_constant", "All variables in an alias set (VR 1) must have the same variability");
     }
 
     SECTION("Implementation")
@@ -183,7 +183,7 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         checker.validate("tests/data/fmi1/warn/alias_inconsistent_variability", cert);
         // This test case now passes the main alias check but still has a warning about variability consistency
         // which is what we want to test.
-        CHECK(has_warning_with_text(cert, "have different variabilities"));
+        CHECK(has_warning_with_text(cert, "All variables in an alias set (VR 1) should have the same variability"));
     }
 }
 
@@ -391,9 +391,9 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
     SECTION("Aliases")
     {
-        validate_fail("alias_conflicting_start", "At most one variable in an alias set");
-        validate_fail("alias_inconsistent_unit", "All variables in an alias set");
-        validate_fail("alias_constant_conflicting_start", "have different start values");
+        validate_fail("alias_conflicting_start", "All variables in an alias set (VR 0) must have at most one non-constant variable with a start attribute");
+        validate_fail("alias_inconsistent_unit", "All variables in an alias set (VR 0) must have the same unit");
+        validate_fail("alias_constant_conflicting_start", "All variables in an alias set (VR 1) must have the same start values if they are constant");
     }
 
     SECTION("References")
@@ -639,7 +639,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Aliases")
     {
-        validate_fail("alias_multiple_non_local", "multiple variables with causality other than 'local'");
+        validate_fail("alias_multiple_non_local", "All variables in an alias set (VR 0) must have at most one variable with causality other than 'local'");
     }
 
     SECTION("References")

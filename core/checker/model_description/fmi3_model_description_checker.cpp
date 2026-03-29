@@ -661,52 +661,58 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             if (var->type != first->type)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same type. \"" +
-                                        var->name + "\" is " + var->type + " but \"" + first->name + "\" is " +
-                                        first->type + ".");
+                test.messages.push_back(
+                    std::format("All variables in an alias set (VR {}) must have the same type. Variable \"{}\" is {} "
+                                "but \"{}\" is {}.",
+                                vr, var->name, var->type, first->name, first->type));
             }
 
             // 2. Same unit and displayUnit
             if (var->unit != first->unit)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variables sharing VR " + std::to_string(vr) + " must have the same unit. \"" +
-                                        var->name + "\" has unit \"" + var->unit.value_or("(none)") + "\" but \"" +
-                                        first->name + "\" has unit \"" + first->unit.value_or("(none)") + "\".");
+                test.messages.push_back(
+                    std::format("All variables in an alias set (VR {}) must have the same unit. Variable \"{}\" has "
+                                "unit \"{}\" but \"{}\" has unit \"{}\".",
+                                vr, var->name, var->unit.value_or("(none)"), first->name,
+                                first->unit.value_or("(none)")));
             }
             if (var->display_unit != first->display_unit)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
-                                        " must have the same displayUnit. \"" + var->name + "\" has displayUnit \"" +
-                                        var->display_unit.value_or("(none)") + "\" but \"" + first->name +
-                                        "\" has displayUnit \"" + first->display_unit.value_or("(none)") + "\".");
+                test.messages.push_back(std::format("All variables in an alias set (VR {}) must have the same "
+                                                    "displayUnit. Variable \"{}\" has displayUnit \"{}\" but \"{}\" "
+                                                    "has displayUnit \"{}\".",
+                                                    vr, var->name, var->display_unit.value_or("(none)"), first->name,
+                                                    first->display_unit.value_or("(none)")));
             }
 
             // 3. Same relativeQuantity
             if (var->relative_quantity != first->relative_quantity)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
-                                        " must have the same relativeQuantity attribute.");
+                test.messages.push_back(
+                    std::format("All variables in an alias set (VR {}) must have the same relativeQuantity attribute. "
+                                "Variable \"{}\" differs from \"{}\".",
+                                vr, var->name, first->name));
             }
 
             // 4. Same variability
             if (var->variability != first->variability)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    "Variables sharing VR " + std::to_string(vr) + " must have the same variability. \"" + var->name +
-                    "\" is " + var->variability + " but \"" + first->name + "\" is " + first->variability + ".");
+                test.messages.push_back(std::format("All variables in an alias set (VR {}) must have the same "
+                                                    "variability. Variable \"{}\" is {} but \"{}\" is {}.",
+                                                    vr, var->name, var->variability, first->name, first->variability));
             }
 
             // 5. Same dimensions
             if (!compareDimensions(*var, *first))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Variables sharing VR " + std::to_string(vr) +
-                                        " must have the same dimensions. Variable \"" + var->name +
-                                        "\" dimensions do not match \"" + first->name + "\".");
+                test.messages.push_back(std::format("All variables in an alias set (VR {}) must have the same "
+                                                    "dimensions. Variable \"{}\" dimensions do not match \"{}\".",
+                                                    vr, var->name, first->name));
             }
         }
 
@@ -719,13 +725,14 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         if (non_local.size() > 1)
         {
             test.status = TestStatus::FAIL;
-            std::string msg = "Alias set for VR " + std::to_string(vr) +
-                              " has multiple variables with causality other than 'local': ";
+            std::string vars;
             for (size_t i = 0; i < non_local.size(); ++i)
-                msg += (i > 0 ? ", " : "") + non_local[i]->name;
-            msg +=
-                ". At most one variable in an alias set can be non-local (parameter, input, output, or independent).";
-            test.messages.push_back(msg);
+                vars += (i > 0 ? ", " : "") + std::format("\"{}\"", non_local[i]->name);
+
+            test.messages.push_back(std::format(
+                "All variables in an alias set (VR {}) must have at most one variable with causality other than "
+                "'local'. Found: {}.",
+                vr, vars));
         }
 
         // 6. Constant variables: must have identical start values if they are aliased
@@ -736,10 +743,10 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                 if (var->start != first->start)
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Aliased constant variables \"" + var->name + "\" and \"" + first->name +
-                                            "\" (sharing VR " + std::to_string(vr) +
-                                            ") have different start values ('" + var->start.value_or("") + "' vs '" +
-                                            first->start.value_or("") + "').");
+                    test.messages.push_back(std::format(
+                        "All variables in an alias set (VR {}) must have the same start values if they are "
+                        "constant. Variable \"{}\" has start=\"{}\" but \"{}\" has start=\"{}\".",
+                        vr, var->name, var->start.value_or("(none)"), first->name, first->start.value_or("(none)")));
                 }
             }
         }
@@ -753,13 +760,14 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         if (non_constant_with_start.size() > 1)
         {
             test.status = TestStatus::FAIL;
-            std::string msg = "Alias set for VR " + std::to_string(vr) +
-                              " has multiple non-constant variables with a start attribute: ";
+            std::string vars;
             for (size_t i = 0; i < non_constant_with_start.size(); ++i)
-                msg += (i > 0 ? ", " : "") + non_constant_with_start[i]->name;
-            msg += ". At most one variable in an alias set (where at least one is not constant) can have a start "
-                   "attribute.";
-            test.messages.push_back(msg);
+                vars += (i > 0 ? ", " : "") + std::format("\"{}\"", non_constant_with_start[i]->name);
+
+            test.messages.push_back(std::format(
+                "All variables in an alias set (VR {}) must have at most one non-constant variable with a start "
+                "attribute. Found: {}.",
+                vr, vars));
         }
     }
 
