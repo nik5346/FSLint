@@ -763,24 +763,53 @@ void Fmi2ModelDescriptionChecker::checkMinMaxStartValues(const std::vector<Varia
 void Fmi2ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                       Certificate& cert) const
 {
-    validateOutputs(doc, variables, cert);
-    validateDerivatives(doc, variables, cert);
-    validateInitialUnknowns(doc, variables, cert);
+    // Group variables by base type and valueReference to identify alias sets
+    auto get_base_type = [](const std::string& type) -> std::string
+    {
+        if (type == "Integer" || type == "Enumeration")
+            return "Integer/Enumeration";
+        return type;
+    };
+
+    std::map<std::pair<std::string, uint32_t>, uint32_t> alias_set_to_base_index;
+    std::map<uint32_t, uint32_t> index_to_base_index;
+
+    for (const auto& var : variables)
+    {
+        if (var.value_reference.has_value())
+        {
+            auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
+            if (alias_set_to_base_index.find(key) == alias_set_to_base_index.end())
+            {
+                alias_set_to_base_index[key] = var.index;
+            }
+            index_to_base_index[var.index] = alias_set_to_base_index[key];
+        }
+        else
+        {
+            index_to_base_index[var.index] = var.index;
+        }
+    }
+
+    validateOutputs(doc, variables, index_to_base_index, cert);
+    validateDerivatives(doc, variables, index_to_base_index, cert);
+    validateInitialUnknowns(doc, variables, index_to_base_index, cert);
 }
 
 void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                  const std::map<uint32_t, uint32_t>& index_to_base_index,
                                                   Certificate& cert) const
 {
     TestResult test{"ModelStructure Outputs", TestStatus::PASS, {}};
 
     // Get expected outputs (all variables with causality="output")
-    std::set<std::string> expected_outputs;
+    std::set<uint32_t> expected_base_indices;
     for (const auto& var : variables)
         if (var.causality == "output")
-            expected_outputs.insert(var.name);
+            expected_base_indices.insert(index_to_base_index.at(var.index));
 
     // FMI2: Get actual outputs from ModelStructure/Outputs/Unknown (using index attribute)
-    std::set<std::string> actual_outputs;
+    std::set<uint32_t> actual_base_indices;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Outputs/Unknown");
 
     if (xpath_obj && xpath_obj->nodesetval)
@@ -800,6 +829,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
+                        uint32_t base_index = index_to_base_index.at(var.index);
+
                         if (var.causality != "output")
                         {
                             test.status = TestStatus::FAIL;
@@ -809,14 +840,23 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                                     "causality=\"output\".");
                         }
 
-                        if (actual_outputs.contains(var.name))
+                        if (var.index != base_index)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(std::format(
+                                "Variable \"{}\" (line {}) is listed in ModelStructure/Outputs but is an alias. "
+                                "Only the base variable \"{}\" (index {}) should be listed.",
+                                var.name, var.sourceline, variables[base_index - 1].name, base_index));
+                        }
+
+                        if (actual_base_indices.contains(base_index))
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Variable \"" + var.name +
-                                                    "\" is listed multiple times in "
+                                                    "\" (or an alias) is listed multiple times in "
                                                     "ModelStructure/Outputs.");
                         }
-                        actual_outputs.insert(var.name);
+                        actual_base_indices.insert(base_index);
 
                         // Check dependencies ordering and dependenciesKind consistency
                         auto deps_str = getXmlAttribute(node, "dependencies");
@@ -893,19 +933,14 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
         xmlXPathFreeObject(xpath_obj);
     }
 
-    if (expected_outputs != actual_outputs)
+    if (expected_base_indices != actual_base_indices)
     {
         test.status = TestStatus::FAIL;
         std::vector<std::string> missing;
-        std::vector<std::string> extra;
 
-        for (const auto& name : expected_outputs)
-            if (!actual_outputs.contains(name))
-                missing.push_back(name);
-
-        for (const auto& name : actual_outputs)
-            if (!expected_outputs.contains(name))
-                extra.push_back(name);
+        for (uint32_t base_index : expected_base_indices)
+            if (!actual_base_indices.contains(base_index))
+                missing.push_back(variables[base_index - 1].name);
 
         if (!missing.empty())
         {
@@ -917,35 +952,32 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
             test.messages.push_back(msg);
         }
 
-        if (!extra.empty())
-        {
-            std::string msg = "The following variables in ModelStructure/Outputs do not have causality=\"output\": ";
-            for (size_t i = 0; i < extra.size(); ++i)
-                msg += (i > 0 ? ", " : "") + extra[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
         test.messages.push_back(
-            "ModelStructure/Outputs must have exactly one entry for each variable with causality=\"output\".");
+            "ModelStructure/Outputs must have exactly one entry for each variable with causality=\"output\". "
+            "Alias variables should not be listed.");
     }
 
     cert.printTestResult(test);
 }
 
 void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                      const std::map<uint32_t, uint32_t>& index_to_base_index,
                                                       Certificate& cert) const
 {
     TestResult test{"ModelStructure Derivatives", TestStatus::PASS, {}};
 
-    // Build map of variables that have derivatives
-    std::set<std::string> expected_derivatives;
+    // Build set of expected derivative base indices
+    std::set<uint32_t> expected_base_indices;
     for (const auto& var : variables)
+    {
         if (var.derivative_of.has_value())
-            expected_derivatives.insert(var.name);
+        {
+            expected_base_indices.insert(index_to_base_index.at(var.index));
+        }
+    }
 
     // FMI2: Check Derivatives entries (using index attribute)
-    std::set<std::string> actual_derivatives;
+    std::set<uint32_t> actual_base_indices;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Derivatives/Unknown");
 
     if (xpath_obj && xpath_obj->nodesetval)
@@ -964,8 +996,9 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
+                        uint32_t base_index = index_to_base_index.at(var.index);
 
-                        if (!expected_derivatives.contains(var.name))
+                        if (!expected_base_indices.contains(base_index))
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Variable \"" + var.name + "\" (line " +
@@ -973,14 +1006,23 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                                     std::to_string(i + 1) + " must have the \"derivative\" attribute.");
                         }
 
-                        if (actual_derivatives.contains(var.name))
+                        if (var.index != base_index)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(std::format(
+                                "Variable \"{}\" (line {}) is listed in ModelStructure/Derivatives but is an alias. "
+                                "Only the base variable \"{}\" (index {}) should be listed.",
+                                var.name, var.sourceline, variables[base_index - 1].name, base_index));
+                        }
+
+                        if (actual_base_indices.contains(base_index))
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Variable \"" + var.name +
-                                                    "\" is listed multiple times in "
+                                                    "\" (or an alias) is listed multiple times in "
                                                     "ModelStructure/Derivatives.");
                         }
-                        actual_derivatives.insert(var.name);
+                        actual_base_indices.insert(base_index);
 
                         // Check dependencies ordering and dependenciesKind consistency
                         auto deps_str = getXmlAttribute(node, "dependencies");
@@ -1057,19 +1099,18 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
         xmlXPathFreeObject(xpath_obj);
     }
 
-    if (expected_derivatives != actual_derivatives)
+    if (expected_base_indices != actual_base_indices)
     {
         test.status = TestStatus::FAIL;
         std::vector<std::string> missing;
-        std::vector<std::string> extra;
 
-        for (const auto& name : expected_derivatives)
-            if (!actual_derivatives.contains(name))
-                missing.push_back(name);
-
-        for (const auto& name : actual_derivatives)
-            if (!expected_derivatives.contains(name))
-                extra.push_back(name);
+        for (uint32_t base_index : expected_base_indices)
+        {
+            if (!actual_base_indices.contains(base_index))
+            {
+                missing.push_back(variables[base_index - 1].name);
+            }
+        }
 
         if (!missing.empty())
         {
@@ -1081,31 +1122,19 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
             test.messages.push_back(msg);
         }
 
-        if (!extra.empty())
-        {
-            std::string msg =
-                "The following variables in ModelStructure/Derivatives do not have a \"derivative\" attribute: ";
-            for (size_t i = 0; i < extra.size(); ++i)
-                msg += (i > 0 ? ", " : "") + extra[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
         test.messages.push_back(
-            "ModelStructure/Derivatives must have exactly one entry for each variable that has a \"derivative\" "
-            "attribute.");
+            "ModelStructure/Derivatives must have exactly one entry for each independent state derivative. "
+            "Alias variables should not be listed.");
     }
 
     cert.printTestResult(test);
 }
 
 void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                          const std::map<uint32_t, uint32_t>& index_to_base_index,
                                                           Certificate& cert) const
 {
     TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
-
-    // Build expected set of initial unknowns (FMI2 spec)
-    std::set<std::string> expected;
 
     // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
     std::set<uint32_t> state_indices;
@@ -1113,26 +1142,52 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         if (var.derivative_of.has_value())
             state_indices.insert(*var.derivative_of);
 
+    // Group info by alias set
+    std::map<uint32_t, bool> base_index_to_is_potentially_unknown;
+    std::map<uint32_t, bool> base_index_to_is_pinned;
+
     for (const auto& var : variables)
     {
-        // (1) Outputs with initial="approx" or "calculated"
+        uint32_t base_index = index_to_base_index.at(var.index);
+
+        // A variable is "potentially unknown" if:
+        // (1) causality = "output" and (initial="approx" or "calculated")
+        // (2) causality = "calculatedParameter"
+        // (3) all continuous-time states and all state derivatives with initial="approx" or "calculated"
+        bool is_unknown_candidate = false;
         if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated"))
-            expected.insert(var.name);
+            is_unknown_candidate = true;
+        else if (var.causality == "calculatedParameter")
+            is_unknown_candidate = true;
+        else if ((state_indices.contains(var.index) || var.derivative_of.has_value()) &&
+                 (var.initial == "approx" || var.initial == "calculated"))
+            is_unknown_candidate = true;
 
-        // (2) Calculated parameters
-        if (var.causality == "calculatedParameter")
-            expected.insert(var.name);
+        if (is_unknown_candidate)
+            base_index_to_is_potentially_unknown[base_index] = true;
 
-        // (3) States and their derivatives with initial="approx" or "calculated"
-        if ((state_indices.contains(var.index) || var.derivative_of.has_value()) &&
-            (var.initial == "approx" || var.initial == "calculated"))
+        // A variable is "pinned" if its value is fixed at initialization
+        bool is_pinned = false;
+        if (var.causality == "parameter" || var.causality == "input" || var.causality == "independent" ||
+            var.initial == "exact")
+            is_pinned = true;
+
+        if (is_pinned)
+            base_index_to_is_pinned[base_index] = true;
+    }
+
+    // Build expected set of initial unknown base indices
+    std::set<uint32_t> expected_base_indices;
+    for (const auto& [base_index, is_potential] : base_index_to_is_potentially_unknown)
+    {
+        if (is_potential && !base_index_to_is_pinned[base_index])
         {
-            expected.insert(var.name);
+            expected_base_indices.insert(base_index);
         }
     }
 
     // FMI2: Get actual initial unknowns (using index attribute)
-    std::set<std::string> actual;
+    std::set<uint32_t> actual_base_indices;
     std::vector<size_t> actual_indices;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/InitialUnknowns/Unknown");
 
@@ -1152,7 +1207,26 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
-                        actual.insert(var.name);
+                        uint32_t base_index = index_to_base_index.at(var.index);
+
+                        if (var.index != base_index)
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back(std::format(
+                                "Variable \"{}\" (line {}) is listed in ModelStructure/InitialUnknowns but is an "
+                                "alias. Only the base variable \"{}\" (index {}) should be listed.",
+                                var.name, var.sourceline, variables[base_index - 1].name, base_index));
+                        }
+
+                        if (actual_base_indices.contains(base_index))
+                        {
+                            test.status = TestStatus::FAIL;
+                            test.messages.push_back("Variable \"" + var.name +
+                                                    "\" (or an alias) is listed multiple times in "
+                                                    "ModelStructure/InitialUnknowns.");
+                        }
+
+                        actual_base_indices.insert(base_index);
                         actual_indices.push_back(index);
 
                         // Check dependencies ordering and dependenciesKind consistency
@@ -1242,25 +1316,26 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         }
     }
 
-    if (expected != actual)
+    if (expected_base_indices != actual_base_indices)
     {
         test.status = TestStatus::FAIL;
 
         std::string expected_str;
-        for (const auto& name : expected)
-            expected_str += name + ", ";
+        for (uint32_t base_index : expected_base_indices)
+            expected_str += variables[base_index - 1].name + ", ";
         if (!expected_str.empty())
             expected_str = expected_str.substr(0, expected_str.length() - 2);
 
         std::string actual_str;
-        for (const auto& name : actual)
-            actual_str += name + ", ";
+        for (uint32_t base_index : actual_base_indices)
+            actual_str += variables[base_index - 1].name + ", ";
         if (!actual_str.empty())
             actual_str = actual_str.substr(0, actual_str.length() - 2);
 
         test.messages.push_back("ModelStructure/InitialUnknowns does not contain the expected set of variables. "
                                 "Expected { " +
                                 expected_str + " } but was { " + actual_str + " }.");
+        test.messages.push_back("Note: Initial unknowns should only list the base variable of each alias set.");
     }
 
     cert.printTestResult(test);

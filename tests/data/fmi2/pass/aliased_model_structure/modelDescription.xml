@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+  fmiVersion="2.0"
+  modelName="AliasedModelStructure"
+  guid="{12345678-1234-1234-1234-123456789012}"
+  generationTool="Handmade">
+  <ModelExchange modelIdentifier="AliasedModelStructure"/>
+  <ModelVariables>
+    <!-- Index 1 -->
+    <ScalarVariable name="x" valueReference="1" causality="local" variability="continuous" initial="exact">
+      <Real start="1.0"/>
+    </ScalarVariable>
+    <!-- Index 2 -->
+    <ScalarVariable name="der(x)" valueReference="2" causality="local" variability="continuous">
+      <Real derivative="1"/>
+    </ScalarVariable>
+    <!-- Index 3: Alias of x -->
+    <ScalarVariable name="x_alias" valueReference="1" causality="local" variability="continuous">
+      <Real/>
+    </ScalarVariable>
+    <!-- Index 4: Alias of der(x) -->
+    <ScalarVariable name="der_x_alias" valueReference="2" causality="local" variability="continuous">
+      <Real derivative="3"/>
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Derivatives>
+      <Unknown index="2"/>
+    </Derivatives>
+    <InitialUnknowns>
+      <Unknown index="2"/>
+    </InitialUnknowns>
+  </ModelStructure>
+</fmiModelDescription>

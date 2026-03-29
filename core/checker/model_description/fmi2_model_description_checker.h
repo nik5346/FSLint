@@ -75,9 +75,12 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
 
     // FMI2-specific model structure checks
     void checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
-    void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
-    void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
-    void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
+    void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables,
+                         const std::map<uint32_t, uint32_t>& index_to_base_index, Certificate& cert) const;
+    void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables,
+                             const std::map<uint32_t, uint32_t>& index_to_base_index, Certificate& cert) const;
+    void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                 const std::map<uint32_t, uint32_t>& index_to_base_index, Certificate& cert) const;
 
     void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkAliases(const std::vector<Variable>& variables, Certificate& cert) const;

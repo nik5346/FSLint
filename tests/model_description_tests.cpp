@@ -527,6 +527,13 @@ TEST_CASE("FMI 2.0 Model Description Passing Cases", "[fmi2][pass]")
         checker.validate("tests/data/fmi2/pass/structured_naming", cert);
         CHECK_FALSE(has_fail(cert));
     }
+
+    SECTION("Aliased ModelStructure")
+    {
+        Fmi2ModelDescriptionChecker checker;
+        checker.validate("tests/data/fmi2/pass/aliased_model_structure", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
 }
 
 TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
