@@ -877,19 +877,19 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             if (var->type != first->type)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    std::format("Variables sharing VR {} must have the same type. \"{}\" is {} but \"{}\" is {}.", vr,
-                                var->name, var->type, first->name, first->type));
+                test.messages.push_back(std::format("All variables in an alias set (VR {}) must have the same type. "
+                                                    "Variable \"{}\" is {} but \"{}\" is {}.",
+                                                    vr, var->name, var->type, first->name, first->type));
             }
 
             // 2. If Real, same unit
             if (base_type == "Real" && var->unit != first->unit)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(std::format("Variables sharing VR {} must have the same unit. \"{}\" has unit "
-                                                    "\"{}\" but \"{}\" has unit \"{}\".",
-                                                    vr, var->name, var->unit.value_or("(none)"), first->name,
-                                                    first->unit.value_or("(none)")));
+                test.messages.push_back(std::format(
+                    "All variables in an alias set (VR {}) must have the same unit. Variable \"{}\" has "
+                    "unit \"{}\" but \"{}\" has unit \"{}\".",
+                    vr, var->name, var->unit.value_or("(none)"), first->name, first->unit.value_or("(none)")));
             }
 
             // 3. Equivalent start values
@@ -952,10 +952,10 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                                 msg2 += "negated, ";
                             msg2 += std::format("start=\"{}\")", *first_with_start->start);
 
-                            test.messages.push_back(
-                                std::format("Variables sharing VR {} must have equivalent start values. {} and {} are "
-                                            "inconsistent.",
-                                            vr, msg1, msg2));
+                            test.messages.push_back(std::format(
+                                "All variables in an alias set (VR {}) must have equivalent start values. {} and {} "
+                                "are inconsistent.",
+                                vr, msg1, msg2));
                         }
                     }
                 }
@@ -965,35 +965,45 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         if (no_alias_count > 1)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back(std::format(
-                "Multiple variables sharing VR {} (base type {}) are marked as base variables (noAlias). There must be "
-                "exactly one base variable per alias set.",
-                vr, base_type));
+            test.messages.push_back(
+                std::format("All variables in an alias set (VR {}) must have exactly one base variable (noAlias). "
+                            "Multiple base variables found.",
+                            vr));
         }
         else if (no_alias_count == 0)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back(std::format(
-                "No base variable (noAlias) found for VR {} (base type {}). Every alias set must have exactly one base "
-                "variable.",
-                vr, base_type));
+                "All variables in an alias set (VR {}) must have exactly one base variable (noAlias). No base variable "
+                "found.",
+                vr));
         }
 
         if (constant_var && non_constant_var)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back(std::format(
-                "Alias set for VR {} (base type {}) contains both constant and non-constant variables (\"{}\" and "
-                "\"{}\"). Constants can only be aliased to other constants.",
-                vr, base_type, constant_var->name, non_constant_var->name));
+                "All variables in an alias set (VR {}) must have the same variability. Variable \"{}\" is constant "
+                "but \"{}\" is {}. Constants can only be aliased to other constants.",
+                vr, constant_var->name, non_constant_var->name, non_constant_var->variability));
         }
         else if (variability_mismatch)
         {
+            const Variable* mismatch = nullptr;
+            for (const auto* var : alias_set)
+            {
+                if (var->variability != first->variability)
+                {
+                    mismatch = var;
+                    break;
+                }
+            }
+
             variability_consistency_test.status = TestStatus::WARNING;
-            variability_consistency_test.messages.push_back(std::format(
-                "Variables in alias set VR {} (base type {}) have different variabilities. It is recommended that "
-                "aliased variables have the same variability.",
-                vr, base_type));
+            variability_consistency_test.messages.push_back(
+                std::format("All variables in an alias set (VR {}) should have the same variability. Variable \"{}\" "
+                            "is {} but \"{}\" is {}.",
+                            vr, first->name, first->variability, mismatch->name, mismatch->variability));
         }
     }
 
