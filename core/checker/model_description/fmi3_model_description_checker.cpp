@@ -671,11 +671,10 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             if (var->unit != first->unit)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    std::format("All variables in an alias set (VR {}) must have the same unit. Variable \"{}\" has "
-                                "unit \"{}\" but \"{}\" has unit \"{}\".",
-                                vr, var->name, var->unit.value_or("(none)"), first->name,
-                                first->unit.value_or("(none)")));
+                test.messages.push_back(std::format(
+                    "All variables in an alias set (VR {}) must have the same unit. Variable \"{}\" has "
+                    "unit \"{}\" but \"{}\" has unit \"{}\".",
+                    vr, var->name, var->unit.value_or("(none)"), first->name, first->unit.value_or("(none)")));
             }
             if (var->display_unit != first->display_unit)
             {

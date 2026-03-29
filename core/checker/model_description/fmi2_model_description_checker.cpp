@@ -346,10 +346,10 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             for (size_t i = 0; i < settable_vars.size(); ++i)
                 vars += (i > 0 ? ", " : "") + std::format("\"{}\"", settable_vars[i]->name);
 
-            test.messages.push_back(std::format(
-                "All variables in an alias set (VR {}) must have at most one variable that can be set with "
-                "fmi2SetXXX. Found: {}.",
-                key.second, vars));
+            test.messages.push_back(
+                std::format("All variables in an alias set (VR {}) must have at most one variable that can be set with "
+                            "fmi2SetXXX. Found: {}.",
+                            key.second, vars));
         }
 
         // Rule 2: At most one variable of the same alias set of variables with variability != "constant" can have a
