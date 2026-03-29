@@ -32,64 +32,75 @@
 #include <string>
 #include <string_view>
 
+/// @brief ISO 8601 parsing library.
 namespace iso8601
 {
 
 // ─── Result types ────────────────────────────────────────────────
 
+/// @brief Timezone information.
 struct Timezone
 {
-    bool utc = false;      // true  → Z
-    bool local = false;    // true  → no tz suffix
-    int offsetMinutes = 0; // e.g. +05:30 → +330, -08:00 → -480
+    bool utc = false;      ///< True if Z.
+    bool local = false;    ///< True if no suffix.
+    int offsetMinutes = 0; ///< Offset in minutes.
 };
 
+/// @brief Parsed date and time components.
 struct DateTime
 {
-    int year = 0;
-    // Calendar date (-1 = field absent)
-    int month = -1; // 1–12
-    int day = -1;   // 1–31
-    // Week-based date (-1 = field absent)
-    int week = -1;    // 1–53
-    int weekday = -1; // 1 (Mon) – 7 (Sun)
-    // Ordinal date (-1 = field absent)
-    int yearDay = -1; // 1–366
-    // Time (-1 = field absent)
-    int hour = -1;
-    int minute = -1;
-    int second = -1;
-    double subSecond = 0.0; // fractional seconds [0, 1)
-    Timezone tz;
+    int year = 0;           ///< Year.
+    int month = -1;         ///< 1-12.
+    int day = -1;           ///< 1-31.
+    int week = -1;          ///< 1-53.
+    int weekday = -1;       ///< 1-7.
+    int yearDay = -1;       ///< 1-366.
+    int hour = -1;          ///< 0-23.
+    int minute = -1;        ///< 0-59.
+    int second = -1;        ///< 0-60.
+    double subSecond = 0.0; ///< Fractional seconds.
+    Timezone tz;            ///< Timezone.
 };
 
 // ─── Internal parser ─────────────────────────────────────────────
 
-// Non-owning cursor over the input string
+/// @brief Non-owning cursor over input string.
 class Cursor
 {
   public:
+    /// @brief Constructor.
+    /// @param sv Input string view.
     explicit Cursor(std::string_view sv) noexcept
         : _p(sv.data())
         , _e(sv.data() + sv.size())
     {
     }
 
+    /// @brief Checks if at end.
+    /// @return True if at end.
     [[nodiscard]] bool atEnd() const noexcept
     {
         return _p >= _e;
     }
 
+    /// @brief Peeks at next character.
+    /// @param n Offset.
+    /// @return Character or null.
     [[nodiscard]] char peek(int n = 0) const noexcept
     {
         return (_p + n < _e) ? _p[n] : '\0';
     }
 
+    /// @brief Gets next character.
+    /// @return Character.
     char get() noexcept
     {
         return *_p++;
     }
 
+    /// @brief Consumes character if it matches.
+    /// @param c Character to match.
+    /// @return True if matched.
     bool eat(char c) noexcept
     {
         if (_p < _e && *_p == c)
@@ -100,16 +111,22 @@ class Cursor
         return false;
     }
 
+    /// @brief Gets remaining character count.
+    /// @return Count.
     [[nodiscard]] int remaining() const noexcept
     {
         return static_cast<int>(_e - _p);
     }
 
+    /// @brief Gets pointer to current data.
+    /// @return Pointer.
     [[nodiscard]] const char* data() const noexcept
     {
         return _p;
     }
 
+    /// @brief Skips characters.
+    /// @param n Count.
     void skip(int n) noexcept
     {
         _p += n;
@@ -120,12 +137,19 @@ class Cursor
     const char* _e; // one past end
 };
 
+/// @brief Checks if digit.
+/// @param c Character.
+/// @return True if digit.
 [[nodiscard]] inline bool isDigit(char c) noexcept
 {
     return c >= '0' && c <= '9';
 }
 
-// Consume exactly n decimal digits → out.  Does NOT advance on failure.
+/// @brief Consumes n digits.
+/// @param c Cursor.
+/// @param n Count.
+/// @param out Output integer.
+/// @return True if success.
 [[nodiscard]] inline bool takeDigits(Cursor& c, int n, int& out) noexcept
 {
     if (c.remaining() < n)
@@ -140,7 +164,9 @@ class Cursor
     return true;
 }
 
-// Count consecutive digits from current position (no advance)
+/// @brief Counts consecutive digits.
+/// @param c Cursor.
+/// @return Count.
 [[nodiscard]] inline int countDigits(const Cursor& c) noexcept
 {
     int n = 0;
@@ -149,7 +175,10 @@ class Cursor
     return n;
 }
 
-// ── Timezone: Z | +hh[:mm] | -hh[:mm] | (empty) ─────────────────
+/// @brief Parses timezone.
+/// @param c Cursor.
+/// @param tz Output timezone.
+/// @return True if success.
 [[nodiscard]] inline bool parseTimezone(Cursor& c, Timezone& tz) noexcept
 {
     if (c.atEnd())
@@ -181,7 +210,9 @@ class Cursor
     return false; // unexpected character
 }
 
-// ── Fractional seconds after the decimal point ───────────────────
+/// @brief Parses fractional seconds.
+/// @param c Cursor.
+/// @param dt Output DateTime.
 inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
 {
     const char* fs = c.data();
@@ -202,8 +233,10 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
     }
 }
 
-// ── Time: HH  HH:MM  HH:MM:SS  HH:MM:SS.fff
-//          HH  HHMM   HHMMSS    HHMMSS.fff    ──────────────────────
+/// @brief Parses time component.
+/// @param c Cursor.
+/// @param dt Output DateTime.
+/// @return True if success.
 [[nodiscard]] inline bool parseTime(Cursor& c, DateTime& dt) noexcept
 {
     int hh = 0;
@@ -256,20 +289,10 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
     return true;
 }
 
-// ── Date ─────────────────────────────────────────────────────────
-//
-// Strategy: peek ahead WITHOUT consuming to determine which variant
-// we have, then consume exactly that many characters.
-//
-// After YYYY we may see:
-//   (nothing / T / tz-char)   → year only
-//   '-W'                      → extended week
-//   'W'                       → basic week
-//   '-' then 3 digits         → extended ordinal YYYY-DDD
-//   '-' then 2 digits + '-'   → extended calendar YYYY-MM-DD
-//   '-' then 2 digits + end   → extended year-month YYYY-MM
-//   4+ digits                 → basic YYYYMMDD (8) or YYYYDDD (7) or YYYYMM (6)
-
+/// @brief Parses date component.
+/// @param c Cursor.
+/// @param dt Output DateTime.
+/// @return True if success.
 [[nodiscard]] inline bool parseDate(Cursor& c, DateTime& dt) noexcept
 {
     int yr = 0;
@@ -394,8 +417,9 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
 
 // ─── Public API ──────────────────────────────────────────────────
 
-/// Parse an ISO 8601 date, time, or date-time string.
-/// Returns std::nullopt on any error or trailing garbage.
+/// @brief Parse an ISO 8601 date, time, or date-time string.
+/// @param sv Input string.
+/// @return Optional DateTime.
 [[nodiscard]] inline std::optional<DateTime> parse(std::string_view sv) noexcept
 {
     if (sv.empty())
@@ -430,7 +454,9 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
     return dt;
 }
 
-/// Returns true if the string is a valid ISO 8601 date/datetime/time.
+/// @brief Returns true if the string is a valid ISO 8601 date/datetime/time.
+/// @param sv Input string.
+/// @return True if valid.
 [[nodiscard]] inline bool isValid(std::string_view sv) noexcept
 {
     return parse(sv).has_value();

@@ -3,9 +3,15 @@
 #include <cstddef>
 #include <string_view>
 
+/// @brief Recursive descent parser for FMI structured variable names.
+///
+/// Validates variable names against the BNF grammar defined in the FMI specification.
 class StructuredNameParser
 {
   public:
+    /// @brief Validates if a name follows the structured naming convention.
+    /// @param name The name to validate.
+    /// @return True if valid.
     static bool isValid(std::string_view name)
     {
         if (name.empty())

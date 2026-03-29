@@ -6,13 +6,24 @@
 #include <filesystem>
 #include <vector>
 
+/// @brief Validator for FMU/SSP ZIP archives.
 class ArchiveChecker : public Checker
 {
   public:
+    /// @brief Validates the archive at the given path.
+    /// @param fmu_path The path to the ZIP archive.
+    /// @param cert The certificate to record results.
     void validate(const std::filesystem::path& fmu_path, Certificate& cert) const override;
 
   public:
+    /// @brief Checks the Language Encoding Flag (Bit 11) for all ZIP entries.
+    /// @param entries The list of ZIP file entries.
+    /// @param cert The certificate to record results.
     void checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& entries, Certificate& cert) const;
+
+    /// @brief Checks the character format of file paths within the archive.
+    /// @param entries The list of ZIP file entries.
+    /// @param cert The certificate to record results.
     void checkPathFormat(const std::vector<ZipFileEntry>& entries, Certificate& cert) const;
 
   private:

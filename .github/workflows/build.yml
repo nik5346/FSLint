@@ -17,8 +17,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: Install Ninja
-        run: python -m pip install ninja
+      - name: Install Ninja and Doxygen
+        run: |
+          python -m pip install ninja
+          sudo apt-get update
+          sudo apt-get install -y doxygen
       - name: Check Encodings
         run: python scripts/check_encodings.py
       - name: Configure CMake
@@ -27,6 +30,8 @@ jobs:
         run: cmake --build build --target format-xml-check
       - name: Clang-Format Check
         run: cmake --build build --target clang-format-check
+      - name: Doxygen Check
+        run: cmake --build build --target doxygen-check
       - name: Clang-Tidy
         run: cmake --build build --target clang-tidy
 
