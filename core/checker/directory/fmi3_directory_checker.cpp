@@ -19,13 +19,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     {
         TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
 
-        static const std::set<std::string> fmi3_standard_entries = {"modelDescription.xml",
-                                                                    "documentation",
-                                                                    "terminalsAndIcons",
-                                                                    "sources",
-                                                                    "binaries",
-                                                                    "resources",
-                                                                    "extra"};
+        static const std::set<std::string> fmi3_standard_entries = {
+            "modelDescription.xml", "documentation", "terminalsAndIcons", "sources", "binaries", "resources", "extra"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {

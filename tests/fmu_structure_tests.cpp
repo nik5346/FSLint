@@ -468,7 +468,8 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         // Since it's an unknown directory in documentation, it's not explicitly warned about in the same way
         // as root entries unless we add logic for it. But currently the test expects it to be warned.
         // Actually, Fmi3DirectoryChecker doesn't check for unknown entries in documentation/.
-        // I will update the test to check for the recommendation instead since documentation/licenses/ is still missing.
+        // I will update the test to check for the recommendation instead since documentation/licenses/ is still
+        // missing.
         validate_warning("tests/data/fmi3/warn/singular_license", "Providing a license is recommended");
     }
 
