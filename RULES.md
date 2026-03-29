@@ -110,7 +110,8 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
   - If the `documentation/` directory exists, the standard entry point **must** be present (`_main.html` for FMI 1.0, `index.html` for FMI 2.0 and later).
 - **Licenses**:
-  - If a `licenses/` directory exists, it **must** contain a standard entry point (`license.txt` or `license.html`).
+  - Providing license information is **recommended**; a warning is issued if the `documentation/licenses/` directory is missing.
+  - If the `documentation/licenses/` directory exists, the standard entry point **must** be present (`license.txt` or `license.html` for FMI 1.0 and 2.0; `license.spdx`, `license.txt`, or `license.html` for FMI 3.0).
 - **Distribution**:
   - The FMU **must** contain at least one implementation (a binary for at least one platform or source code).
   - Every platform directory in `binaries/` **must** contain a binary for each `modelIdentifier` defined in `modelDescription.xml`.
@@ -251,7 +252,6 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
   - If the `documentation/` directory exists, the standard entry point `index.html` **must** be present.
 - **External Dependencies**: If `needsExecutionTool="true"`, `documentation/externalDependencies.{txt|html}` **must** be present.
-- **Licenses**: If a `licenses/` directory exists, it **must** contain a standard entry point (`license.txt` or `license.html`).
 - **Source Files Consistency**:
   - Typical source files (extensions: `.c`, `.cc`, `.cpp`, `.cxx`, `.C`, `.c++`) in `sources/` **should** be listed in `modelDescription.xml` `<SourceFiles>`.
   - `SourceFiles/File` entries **must** point to existing files in `sources/`.

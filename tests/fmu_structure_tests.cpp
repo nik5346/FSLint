@@ -31,43 +31,26 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
 {
     Fmi1DirectoryChecker checker;
 
-    auto validate_pass = [&](const fs::path& path, const std::string& original_path = "")
+    SECTION("Passing Cases")
     {
         Certificate cert;
-        if (fs::is_regular_file(path))
-        {
-            ModelChecker mc;
-            cert = mc.validate(path, true);
-        }
-        else if (!original_path.empty())
-        {
-            ModelChecker mc;
-            cert = mc.validate(path, true);
-        }
-        else
-        {
-            checker.validate(path, cert);
-        }
-        INFO("Checking path: " << file_utils::pathToUtf8(path));
-        if (has_fail(cert))
+        Fmi1DirectoryChecker pass_checker;
+        pass_checker.setOriginalPath("TestME.fmu");
+        pass_checker.validate("tests/data/fmi1/pass/clean_me", cert);
+        if (has_warning(cert))
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.status == TestStatus::WARNING)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
+                    std::cout << "WARN in FMI 1.0 clean_me: " << res.test_name << std::endl;
                     for (const auto& msg : res.messages)
-                        UNSCOPED_INFO("    - " << msg);
+                        std::cout << "  - " << msg << std::endl;
                 }
             }
         }
         CHECK_FALSE(has_fail(cert));
-    };
-
-    SECTION("Passing Cases")
-    {
-        validate_pass("tests/data/fmi1/pass/TestME");
-        validate_pass("tests/data/fmi1/pass/TestCS");
+        CHECK_FALSE(has_warning(cert));
 
         if (reference_fmus_available())
         {
@@ -77,14 +60,15 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                 ModelChecker mc;
                 cert = mc.validate(path, true);
                 INFO("Checking path: " << file_utils::pathToUtf8(path));
-                // Reference FMUs for FMI 1.0 are missing _main.html and model.png
+                // Reference FMUs for FMI 1.0 are missing _main.html, model.png and documentation/licenses/
                 // We check that there are no FAILs other than the expected ones if any
                 for (const auto& res : cert.getResults())
                 {
                     if (res.status == TestStatus::FAIL)
                     {
                         for (const auto& msg : res.messages)
-                            if (msg.find("_main.html") == std::string::npos)
+                            if (msg.find("_main.html") == std::string::npos &&
+                                msg.find("documentation/licenses") == std::string::npos)
                                 FAIL("Unexpected failure in reference FMU " << file_utils::pathToUtf8(path) << ": "
                                                                             << msg);
                     }
@@ -156,20 +140,6 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
             CHECK(has_error_with_text(cert, "The documentation entry point 'documentation/_main.html' is missing."));
         }
 
-        // Fix effectively empty tests by adding dummy sources
-        fs::create_directories("tests/data/fmi1/effectively_empty/sources");
-        std::ofstream("tests/data/fmi1/effectively_empty/sources/test.c").close();
-
-        // Add dummy source for these warning cases to avoid failure in "Binaries and Sources"
-        fs::create_directories("tests/data/directory/warn/missing_doc_entry/sources");
-        std::ofstream("tests/data/directory/warn/missing_doc_entry/sources/test.c").close();
-        fs::create_directories("tests/data/fmi1/warn/fmi_headers_in_sources/sources");
-        std::ofstream("tests/data/fmi1/warn/fmi_headers_in_sources/sources/test.c").close();
-        fs::create_directories("tests/data/fmi1/warn/unknown_root_entry/sources");
-        std::ofstream("tests/data/fmi1/warn/unknown_root_entry/sources/test.c").close();
-        fs::create_directories("tests/data/fmi1/warn/empty_resources/sources");
-        std::ofstream("tests/data/fmi1/warn/empty_resources/sources/test.c").close();
-
         validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended.");
         validate_warning("tests/data/fmi1/warn/fmi_headers_in_sources",
                          "Standard FMI header file 'fmiFunctions.h' found in 'sources/' directory");
@@ -180,32 +150,16 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
 
     SECTION("Effectively Empty (Hidden Files)")
     {
-        const fs::path temp_dir = "tests/data/fmi1/effectively_empty";
-        fs::create_directories(temp_dir / "resources");
-        fs::copy_file("tests/data/fmi1/pass/TestME/modelDescription.xml", temp_dir / "modelDescription.xml",
-                      fs::copy_options::overwrite_existing);
-
         Fmi1DirectoryChecker effectively_empty_checker;
         effectively_empty_checker.setOriginalPath("TestME.fmu");
-        {
-            const std::string ds_store = ".DS_Store";
-            std::ofstream(temp_dir / "resources" / ds_store).close();
-            Certificate cert;
-            effectively_empty_checker.validate(temp_dir, cert);
-            CHECK(has_warning_with_text(cert, "Standard directory 'resources' is empty."));
-            fs::remove(temp_dir / "resources" / ds_store);
-        }
 
-        {
-            const std::string thumbs_db = "Thumbs.db";
-            std::ofstream(temp_dir / "resources" / thumbs_db).close();
-            Certificate cert;
-            effectively_empty_checker.validate(temp_dir, cert);
-            CHECK(has_warning_with_text(cert, "Standard directory 'resources' is empty."));
-            fs::remove(temp_dir / "resources" / thumbs_db);
-        }
+        Certificate cert;
+        effectively_empty_checker.validate("tests/data/fmi1/effectively_empty_ds_store", cert);
+        CHECK(has_warning_with_text(cert, "Standard directory 'resources' is empty."));
 
-        fs::remove_all(temp_dir);
+        Certificate cert2;
+        effectively_empty_checker.validate("tests/data/fmi1/effectively_empty_thumbs_db", cert2);
+        CHECK(has_warning_with_text(cert2, "Standard directory 'resources' is empty."));
     }
 }
 
@@ -239,6 +193,48 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
             }
         }
         CHECK_FALSE(has_fail(cert));
+    };
+
+    auto validate_clean_pass = [&](const fs::path& path)
+    {
+        Certificate cert;
+        if (fs::is_regular_file(path))
+        {
+            ModelChecker mc;
+            cert = mc.validate(path, true);
+        }
+        else
+        {
+            checker.validate(path, cert);
+        }
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
+        if (has_fail(cert) || has_warning(cert))
+        {
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL || res.status == TestStatus::WARNING)
+                {
+                    std::string status_str = (res.status == TestStatus::FAIL ? "FAIL" : "WARN");
+                    UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
+                }
+            }
+        }
+        if (has_warning(cert))
+        {
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::WARNING)
+                {
+                    std::cout << "WARN in " << file_utils::pathToUtf8(path) << ": " << res.test_name << std::endl;
+                    for (const auto& msg : res.messages)
+                        std::cout << "  - " << msg << std::endl;
+                }
+            }
+        }
+        CHECK_FALSE(has_fail(cert));
+        CHECK_FALSE(has_warning(cert));
     };
 
     auto validate_fail = [&](const std::string& path, const std::string& expected_error)
@@ -291,7 +287,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_fail("tests/data/fmi2/warn/empty_documentation",
                       "The documentation entry point 'documentation/index.html' is missing.");
         validate_fail("tests/data/fmi2/warn/missing_license_txt",
-                      "The license entry point (e.g. 'licenses/license.txt') is missing.");
+                      "Standard directory 'documentation/licenses' is empty.");
         validate_fail("tests/data/fmi2/fail/undeclared_sources",
                       "Source code FMU contains a 'sources/' directory, but no <SourceFiles> are listed in "
                       "'modelDescription.xml'.");
@@ -320,7 +316,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
 
     SECTION("Passing Cases")
     {
-        validate_pass("tests/data/fmi2/pass/dist_both");
+        validate_clean_pass("tests/data/fmi2/pass/clean_dist_both");
         if (reference_fmus_available())
             validate_pass("tests/reference_fmus/2.0/BouncingBall.fmu");
     }
@@ -363,6 +359,36 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
             }
         }
         CHECK_FALSE(has_fail(cert));
+    };
+
+    auto validate_clean_pass = [&](const fs::path& path)
+    {
+        Certificate cert;
+        if (fs::is_regular_file(path))
+        {
+            ModelChecker mc;
+            cert = mc.validate(path, true);
+        }
+        else
+        {
+            checker.validate(path, cert);
+        }
+        INFO("Checking path: " << file_utils::pathToUtf8(path));
+        if (has_fail(cert) || has_warning(cert))
+        {
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL || res.status == TestStatus::WARNING)
+                {
+                    std::string status_str = (res.status == TestStatus::FAIL ? "FAIL" : "WARN");
+                    UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("    - " << msg);
+                }
+            }
+        }
+        CHECK_FALSE(has_fail(cert));
+        CHECK_FALSE(has_warning(cert));
     };
 
     auto validate_fail = [&](const fs::path& path, const std::string& expected_error)
@@ -411,7 +437,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     {
         validate_fail("tests/data/fmi3/fail/no_impl", "FMU must contain at least one implementation");
         validate_fail("tests/data/fmi3/fail/missing_diagram_png", "diagram.png is missing");
-        validate_fail("tests/data/fmi3/fail/missing_license", "The license entry point");
+        validate_fail("tests/data/fmi3/fail/missing_license", "Standard directory 'documentation/licenses' is empty.");
         validate_fail("tests/data/fmi3/fail/missing_ext_deps", "externalDependencies");
         validate_fail("tests/data/fmi3/fail/missing_icon_png", "fallback");
         validate_fail("tests/data/fmi3/warn/missing_index_html",
@@ -436,6 +462,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
 
     SECTION("Passing Cases")
     {
+        validate_clean_pass("tests/data/fmi3/pass/clean_BouncingBall");
         if (reference_fmus_available())
             validate_pass("tests/reference_fmus/3.0/BouncingBall.fmu");
     }

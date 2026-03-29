@@ -20,8 +20,8 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     cert.printSubsectionHeader("DIRECTORY STRUCTURE");
 
     const auto& original_path = getOriginalPath();
-    const std::string stem =
-        original_path.empty() ? file_utils::pathToUtf8(path.stem()) : file_utils::pathToUtf8(original_path.stem());
+    const std::string stem = original_path.empty() ? file_utils::pathToUtf8(path.filename().stem())
+                                                   : file_utils::pathToUtf8(original_path.filename().stem());
 
     auto model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
@@ -119,7 +119,37 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 2. model.png Existence
+    // 2. Licenses
+    {
+        TestResult test{"Licenses", TestStatus::PASS, {}};
+        auto licenses_path = path / "documentation" / "licenses";
+
+        if (std::filesystem::exists(licenses_path))
+        {
+            if (!std::filesystem::exists(licenses_path / "license.txt") &&
+                !std::filesystem::exists(licenses_path / "license.html"))
+            {
+                test.status = TestStatus::FAIL;
+                if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
+                {
+                    test.messages.push_back("Standard directory 'documentation/licenses' is empty.");
+                }
+                else
+                {
+                    test.messages.push_back(
+                        "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
+                }
+            }
+        }
+        else
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
+        }
+        cert.printTestResult(test);
+    }
+
+    // 3. model.png Existence
     {
         TestResult test{"model.png Existence", TestStatus::PASS, {}};
         auto png_path = path / "model.png";
@@ -146,7 +176,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 3. Documentation
+    // 4. Documentation
     {
         TestResult test{"Documentation", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
@@ -166,7 +196,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 4. Distribution (Binaries and Sources)
+    // 5. Distribution (Binaries and Sources)
     {
         TestResult test{"Binaries and Sources", TestStatus::PASS, {}};
         bool has_binaries = false;
@@ -219,7 +249,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 5. Standard Headers
+    // 6. Standard Headers
     static const std::set<std::string> fmi1_headers = {"fmiFunctions.h", "fmiModelFunctions.h", "fmiModelTypes.h",
                                                        "fmiPlatformTypes.h"};
     checkStandardHeaders(path, cert, fmi1_headers);

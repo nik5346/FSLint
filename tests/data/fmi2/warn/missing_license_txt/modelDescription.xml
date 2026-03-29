@@ -1,8 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="2.0" modelName="test" guid="{1}">
+<?xml version="1.0" encoding="utf-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="test" guid="123">
   <CoSimulation modelIdentifier="test" />
-  <ModelVariables />
-  <ModelStructure>
-    <InitialUnknowns />
-  </ModelStructure>
 </fmiModelDescription>

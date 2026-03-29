@@ -19,16 +19,9 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     {
         TestResult test{"FMU Root Entries", TestStatus::PASS, {}};
 
-        static const std::set<std::string> fmi2_standard_entries = {"modelDescription.xml",
-                                                                    "model.png",
-                                                                    "documentation",
-                                                                    "licenses",
-                                                                    "sources",
-                                                                    "binaries",
-                                                                    "resources",
-                                                                    "extra",
-                                                                    "terminalsAndIcons",
-                                                                    "buildDescription.xml"};
+        static const std::set<std::string> fmi2_standard_entries = {
+            "modelDescription.xml", "model.png",           "documentation", "sources", "binaries", "resources", "extra",
+            "terminalsAndIcons",    "buildDescription.xml"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
@@ -76,19 +69,10 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         cert.printTestResult(test);
     }
 
-    // 3. Documentation and Licenses
+    // 3. Documentation
     {
-        TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
+        TestResult test{"Documentation", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
-
-        auto licenses_sub_path = doc_path / "licenses";
-        if (std::filesystem::exists(licenses_sub_path) && std::filesystem::is_directory(licenses_sub_path) &&
-            isEffectivelyEmpty(licenses_sub_path))
-        {
-            const TestResult empty_test{
-                "Empty Subdirectory", TestStatus::WARNING, {"Standard directory 'documentation/licenses' is empty."}};
-            cert.printTestResult(empty_test);
-        }
 
         if (std::filesystem::exists(doc_path))
         {
@@ -115,21 +99,40 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                                         "'documentation/externalDependencies.{txt|html}' is missing.");
             }
         }
+        cert.printTestResult(test);
+    }
 
-        auto licenses_path = path / "licenses";
+    // 4. Licenses
+    {
+        TestResult test{"Licenses", TestStatus::PASS, {}};
+        auto licenses_path = path / "documentation" / "licenses";
+
         if (std::filesystem::exists(licenses_path))
         {
             if (!std::filesystem::exists(licenses_path / "license.txt") &&
                 !std::filesystem::exists(licenses_path / "license.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("The license entry point (e.g. 'licenses/license.txt') is missing.");
+                if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
+                {
+                    test.messages.push_back("Standard directory 'documentation/licenses' is empty.");
+                }
+                else
+                {
+                    test.messages.push_back(
+                        "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
+                }
             }
+        }
+        else
+        {
+            test.status = TestStatus::WARNING;
+            test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
         }
         cert.printTestResult(test);
     }
 
-    // 4. Distribution (Binaries and Sources)
+    // 5. Distribution (Binaries and Sources)
     bool has_binaries = false;
     bool has_build_description = false;
     auto sources_path = path / "sources";
@@ -200,7 +203,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         cert.printTestResult(test);
     }
 
-    // 5. Source Files Consistency
+    // 6. Source Files Consistency
     {
         TestResult test{"Source Files Consistency", TestStatus::PASS, {}};
         const bool has_physical_sources = std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path);
@@ -243,7 +246,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         cert.printTestResult(test);
     }
 
-    // 6. 2.0.4 Compatibility
+    // 7. 2.0.4 Compatibility
     {
         const bool has_build_description_anywhere = has_build_description;
         const bool has_physical_sources = std::filesystem::exists(sources_path) && !isEffectivelyEmpty(sources_path);
@@ -269,7 +272,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         }
     }
 
-    // 7. Standard Headers
+    // 8. Standard Headers
     static const std::set<std::string> fmi2_headers = {"fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"};
     checkStandardHeaders(path, cert, fmi2_headers);
 }
