@@ -1,5 +1,9 @@
 <div align="center">
   <img width="400" src="./images/banner.svg" alt="FSLint">
+
+  <p>
+    <a href="https://nik5346.github.io/FSLint/"><strong>🚀 Try FSLint Online</strong></a>
+  </p>
 </div>
 
 FSLint is a comprehensive linting and validation tool for Functional Mock-up Units (FMUs) and System Structure and Parameterization (SSP) files. It ensures that your models comply with the [FMI](https://fmi-standard.org/) (1.0, 2.0, 3.0) and [SSP](https://ssp-standard.org/) (1.0, 2.0) standards, checking for both structural correctness and semantic validity.
@@ -32,7 +36,9 @@ After building, the `FSLint-cli` executable will be located in the `build/` dire
 
 ### Web Interface
 
-FSLint can also be built as a WebAssembly-powered web application:
+A hosted version of FSLint is available at **[nik5346.github.io/FSLint](https://nik5346.github.io/FSLint/)**.
+
+Alternatively, it can be built locally as a WebAssembly-powered web application:
 
 ```bash
 # Requires Emscripten and Node.js
