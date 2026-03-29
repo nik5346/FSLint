@@ -147,9 +147,7 @@ void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& 
         else if (!has_non_ascii && bit11_set)
         {
             if (test.status != TestStatus::FAIL)
-            {
                 test.status = TestStatus::WARNING;
-            }
             test.messages.push_back("Language encoding flag (bit 11) is set for '" + entry.filename +
                                     "' but it only contains ASCII characters (for maximum portability, keeping this "
                                     "bit at 0 is recommended).");

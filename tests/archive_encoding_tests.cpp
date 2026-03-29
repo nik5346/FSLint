@@ -1,7 +1,7 @@
 #include "archive_checker.h"
 #include "certificate.h"
-#include "zipper.h"
 #include "test_helpers.h"
+#include "zipper.h"
 #include <catch2/catch_test_macros.hpp>
 #include <vector>
 
