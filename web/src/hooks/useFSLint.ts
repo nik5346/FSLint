@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { FSLintModule, FileNode, ValidationResult } from '../types';
 import { CollectedItems, resolveCaseInsensitive, mimeMap } from '../utils/file';
 
+/**
+ * Custom hook for interacting with the FSLint WASM module.
+ * @returns {Object} An object containing the FSLint state and processing functions.
+ */
 export const useFSLint = () => {
   const [module, setModule] = useState<FSLintModule | null>(null);
   const [output, setOutput] = useState<string>('');
@@ -12,6 +16,10 @@ export const useFSLint = () => {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
   useEffect(() => {
+    /**
+     * Handles incoming messages from the service worker.
+     * @param {MessageEvent} event - The message event.
+     */
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'GET_FMU_FILE' && module) {
         const filePath = event.data.path;
@@ -45,11 +53,29 @@ export const useFSLint = () => {
     const script = document.createElement('script');
     script.src = 'FSLint-cli-wasm.js';
     script.async = true;
+
+    /**
+     * Initializes the WASM module when the script is loaded.
+     */
     script.onload = async () => {
       try {
         const mod = await window.createFSLintModule({
+          /**
+           * Callback for standard output.
+           * @param {string} text - The text to print.
+           */
           print: (text: string) => setOutput((prev) => prev + text + '\n'),
+          /**
+           * Callback for error output.
+           * @param {string} text - The text to print.
+           */
           printErr: (text: string) => setOutput((prev) => prev + 'Error: ' + text + '\n'),
+          /**
+           * Locates the WASM file for Emscripten.
+           * @param {string} path - The path to the file.
+           * @param {string} prefix - The path prefix.
+           * @returns {string} The resolved file path.
+           */
           locateFile: (path: string, prefix: string) => {
             if (path.endsWith('.wasm')) return prefix + 'FSLint-cli-wasm.wasm';
             return prefix + path;
@@ -65,6 +91,10 @@ export const useFSLint = () => {
     document.body.appendChild(script);
   }, []);
 
+  /**
+   * Recursively unlinks (deletes) a path from the virtual FS.
+   * @param {string} path - The path to delete.
+   */
   const recursiveUnlink = useCallback(
     (path: string) => {
       if (!module) return;
@@ -88,6 +118,10 @@ export const useFSLint = () => {
     [module],
   );
 
+  /**
+   * Equivalent to `mkdir -p` in the virtual FS.
+   * @param {string} fullPath - The path to create.
+   */
   const mkdirP = useCallback(
     (fullPath: string) => {
       if (!module) return;
@@ -101,12 +135,20 @@ export const useFSLint = () => {
             throw new Error(`Path ${current} exists but is not a directory`);
           }
         } catch (e) {
-          const err = e as { errno?: number; name?: string };
+          const err = e as {
+            /** The error number. */
+            errno?: number;
+            /** The error name. */
+            name?: string;
+          };
           if (err.errno === 2 || err.name === 'ErrnoError') {
             try {
               module.FS.mkdir(current);
             } catch (me) {
-              const mkdirErr = me as { errno?: number };
+              const mkdirErr = me as {
+                /** The error number. */
+                errno?: number;
+              };
               if (mkdirErr.errno !== 17) throw me;
             }
           } else {
@@ -118,6 +160,11 @@ export const useFSLint = () => {
     [module],
   );
 
+  /**
+   * Processes the collected files and runs the FSLint validation.
+   * @param {CollectedItems | File[]} items - The items to validate.
+   * @returns {Promise<void>} A promise that resolves when processing is complete.
+   */
   const processItems = useCallback(
     async (items: CollectedItems | File[]) => {
       if (!module || isProcessing) return;

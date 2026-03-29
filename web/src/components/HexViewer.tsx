@@ -1,12 +1,23 @@
 import { useMemo, useState, useRef, useLayoutEffect } from 'react';
 import { Theme } from '../types';
 
+/**
+ * Properties for the HexViewer component.
+ */
 interface HexViewerProps {
+  /** The binary data to display. */
   data: Uint8Array;
+  /** The current theme object. */
   theme: Theme;
+  /** Whether dark mode is active. */
   isDark: boolean;
 }
 
+/**
+ * A virtualized hex viewer component for displaying binary data.
+ * @param {HexViewerProps} props - Component properties.
+ * @returns {JSX.Element} The rendered HexViewer component.
+ */
 export const HexViewer = ({ data, theme, isDark }: HexViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -18,6 +29,9 @@ export const HexViewer = ({ data, theme, isDark }: HexViewerProps) => {
   const totalHeight = totalRows * rowHeight;
 
   useLayoutEffect(() => {
+    /**
+     * Updates the container height state from the DOM element.
+     */
     const updateHeight = () => {
       if (containerRef.current) {
         setContainerHeight(containerRef.current.clientHeight);
@@ -30,6 +44,10 @@ export const HexViewer = ({ data, theme, isDark }: HexViewerProps) => {
     return () => observer.disconnect();
   }, []);
 
+  /**
+   * Updates the scroll top state on scroll events.
+   * @param {React.UIEvent<HTMLDivElement>} e - The scroll event.
+   */
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setScrollTop(e.currentTarget.scrollTop);
   };
@@ -52,8 +70,23 @@ export const HexViewer = ({ data, theme, isDark }: HexViewerProps) => {
     return rows;
   }, [scrollTop, containerHeight, data, totalRows]);
 
+  /**
+   * Formats a byte offset into an 8-character hex string.
+   * @param {number} offset - The byte offset.
+   * @returns {string} The formatted hex offset.
+   */
   const formatOffset = (offset: number) => offset.toString(16).padStart(8, '0').toUpperCase();
+  /**
+   * Formats a byte into a 2-character hex string.
+   * @param {number} byte - The byte value.
+   * @returns {string} The formatted hex byte.
+   */
   const formatHex = (byte: number) => byte.toString(16).padStart(2, '0').toUpperCase();
+  /**
+   * Returns the ASCII representation of a byte, or a dot if it's not printable.
+   * @param {number} byte - The byte value.
+   * @returns {string} The ASCII character or '.'.
+   */
   const formatAscii = (byte: number) =>
     byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : '.';
 

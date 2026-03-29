@@ -1,13 +1,41 @@
 import { useEffect, useRef } from 'react';
 import { Theme } from '../types';
 
+/**
+ * Component displaying a table of contents outline for the validation rules.
+ * @param {Object} props - Component properties.
+ * @param {Array<{ level: number; text: string; line: number }>} props.headers - List of headers to display.
+ * @param {Theme} props.theme - The current theme object.
+ * @param {number} [props.activeLine] - The currently active (scrolled to) line number.
+ * @returns {JSX.Element} The rendered RulesOutline component.
+ */
 export const RulesOutline = ({
   headers,
   theme,
   activeLine,
 }: {
-  headers: { level: number; text: string; line: number }[];
+  /**
+   *
+   */
+  headers: {
+    /**
+     *
+     */
+    level: number; /**
+     *
+     */
+    text: string; /**
+     *
+     */
+    line: number;
+  }[];
+  /**
+   *
+   */
   theme: Theme;
+  /**
+   *
+   */
   activeLine?: number;
 }) => {
   const activeRef = useRef<HTMLDivElement>(null);
