@@ -60,7 +60,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
   - **Should** include the year of publication and the copyright holder name.
 - **Traceability Attributes**:
   - The `author` attribute **should** be present and non-empty if the `copyright` attribute is missing or empty.
-  - The `license` and `generationTool` attributes **should** be present and non-empty.
+  - The `license` and `generationTool` attributes **should** be present and non-empty. For manually created FMUs, it is recommended to set `generationTool` to "Handmade".
 - **Model Identifier Format**:
   - **Must** be a valid C identifier (starts with letter/underscore, followed by alphanumerics/underscores).
   - **Should** be under 64 characters; the absolute maximum is 200 characters (**must** not exceed).
