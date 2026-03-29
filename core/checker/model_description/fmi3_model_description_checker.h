@@ -12,13 +12,23 @@
 #include <string>
 #include <vector>
 
+/// @brief Semantic validator for FMI 3.0.
 class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
 {
   protected:
+    /// @brief Performs FMI 3.0 specific checks.
+    /// @param doc XML document.
+    /// @param variables Extracted variables.
+    /// @param type_definitions Map of types.
+    /// @param units Map of units.
+    /// @param cert Certificate to record results.
     void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
                                       const std::map<std::string, TypeDefinition>& type_definitions,
                                       const std::map<std::string, UnitDefinition>& units,
                                       Certificate& cert) const override;
+
+    /// @brief Gets FMI version.
+    /// @return "3.0".
     std::string getFmiVersion() const override
     {
         return "3.0";

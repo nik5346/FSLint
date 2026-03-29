@@ -201,6 +201,26 @@ else()
 endif()
 
 # ============================================================================
+# Doxygen Integration
+# ============================================================================
+find_program(DOXYGEN_EXECUTABLE NAMES "doxygen")
+
+if(DOXYGEN_EXECUTABLE)
+    add_custom_target(doxygen-check
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_SOURCE_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Checking Doxygen documentation"
+        VERBATIM
+    )
+else()
+    add_custom_target(doxygen-check
+        COMMAND ${CMAKE_COMMAND} -E echo "Error: Doxygen not found"
+        COMMAND ${CMAKE_COMMAND} -E false
+    )
+endif()
+
+# ============================================================================
 # Fetch ZLIB (includes minizip in contrib/)
 # ============================================================================
 FetchContent_Declare(

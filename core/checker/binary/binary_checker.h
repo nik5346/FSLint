@@ -9,12 +9,23 @@
 #include <string>
 #include <vector>
 
+/// @brief Base class for validating C symbols in FMI shared libraries.
 class BinaryChecker : public Checker
 {
   public:
+    /// @brief Validates binaries within an extracted FMU directory.
+    /// @param path The path to the FMU root directory.
+    /// @param cert The certificate to record results.
     void validate(const std::filesystem::path& path, Certificate& cert) const override;
 
   protected:
+    /// @brief Gets the list of mandatory C functions.
+    /// @return A vector of function names.
     virtual std::vector<std::string> getExpectedFunctions() const = 0;
+
+    /// @brief Extracts a string attribute from an XML node.
+    /// @param node XML node.
+    /// @param attr_name Name of the attribute.
+    /// @return Attribute value or std::nullopt.
     static std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name);
 };
