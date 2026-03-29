@@ -5,7 +5,11 @@ import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Theme } from '../types';
 
-// Local utility to strip textShadow from Prism styles to fix "ghosting"
+/**
+ * Strips textShadow from Prism styles to fix "ghosting" effects.
+ * @param {Object} style - The original Prism style object.
+ * @returns {Object} The updated style object without text shadows.
+ */
 const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
   const newStyle: { [key: string]: React.CSSProperties } = {};
   for (const key in style) {
@@ -16,13 +20,30 @@ const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
   return newStyle;
 };
 
+/**
+ * Component for rendering Markdown content with syntax highlighting and anchor support.
+ * @param {Object} props - Component properties.
+ * @param {string} props.content - The Markdown content to render.
+ * @param {Theme} props.theme - The current theme object.
+ * @param {boolean} props.isDark - Whether dark mode is active.
+ * @returns {JSX.Element} The rendered MarkdownContent component.
+ */
 export const MarkdownContent = ({
   content,
   theme,
   isDark,
 }: {
+  /**
+   *
+   */
   content: string;
+  /**
+   *
+   */
   theme: Theme;
+  /**
+   *
+   */
   isDark: boolean;
 }) => {
   const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
@@ -42,30 +63,65 @@ export const MarkdownContent = ({
         remarkPlugins={[remarkGfm]}
         components={{
           /* eslint-disable @typescript-eslint/no-explicit-any */
+          /**
+           * Renders an H1 header with an ID for anchor links.
+           * @param {any} props - Component properties.
+           * @returns {JSX.Element} The rendered H1.
+           */
           h1: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
             return <h1 id={line ? `line-${line}` : undefined}>{children}</h1>;
           },
+          /**
+           * Renders an H2 header with an ID for anchor links.
+           * @param {any} props - Component properties.
+           * @returns {JSX.Element} The rendered H2.
+           */
           h2: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
             return <h2 id={line ? `line-${line}` : undefined}>{children}</h2>;
           },
+          /**
+           * Renders an H3 header with an ID for anchor links.
+           * @param {any} props - Component properties.
+           * @returns {JSX.Element} The rendered H3.
+           */
           h3: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
             return <h3 id={line ? `line-${line}` : undefined}>{children}</h3>;
           },
+          /**
+           * Renders an H4 header with an ID for anchor links.
+           * @param {any} props - Component properties.
+           * @returns {JSX.Element} The rendered H4.
+           */
           h4: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
             return <h4 id={line ? `line-${line}` : undefined}>{children}</h4>;
           },
+          /**
+           * Renders an H5 header with an ID for anchor links.
+           * @param {any} props - Component properties.
+           * @returns {JSX.Element} The rendered H5.
+           */
           h5: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
             return <h5 id={line ? `line-${line}` : undefined}>{children}</h5>;
           },
+          /**
+           * Renders an H6 header with an ID for anchor links.
+           * @param {any} props - Component properties.
+           * @returns {JSX.Element} The rendered H6.
+           */
           h6: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
             return <h6 id={line ? `line-${line}` : undefined}>{children}</h6>;
           },
+          /**
+           * Renders a code block with syntax highlighting.
+           * @param {any} props - Component properties.
+           * @returns {JSX.Element} The rendered code block.
+           */
           code({ inline, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || '');
             const isBnf = match && match[1] === 'bnf';

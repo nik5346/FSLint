@@ -1,6 +1,18 @@
+/**
+ * Extracts Markdown headers from a string.
+ * @param {string} text - The Markdown text to extract headers from.
+ * @returns {Array<{ level: number; text: string; line: number }>} An array of header objects.
+ */
 export const extractHeaders = (text: string) => {
   const lines = text.split('\n');
-  const headers: { level: number; text: string; line: number }[] = [];
+  const headers: {
+    /** The header level (1-6). */
+    level: number;
+    /** The header text. */
+    text: string;
+    /** The line number in the source text. */
+    line: number;
+  }[] = [];
   lines.forEach((line, index) => {
     const match = line.match(/^(#{1,6})\s+(.+)$/);
     if (match) {
@@ -14,11 +26,26 @@ export const extractHeaders = (text: string) => {
   return headers;
 };
 
+/**
+ * Represents a collection of files and directories.
+ */
 export interface CollectedItems {
+  /**
+   * The list of files.
+   */
   files: File[];
+  /**
+   * The list of directory paths.
+   */
   directories: string[];
 }
 
+/**
+ * Recursively gets all files from a FileSystemDirectoryHandle.
+ * @param {FileSystemDirectoryHandle} handle - The directory handle to read from.
+ * @param {string} [path=handle.name] - The current path within the directory.
+ * @returns {Promise<CollectedItems>} A promise that resolves to the collected items.
+ */
 export async function getFilesFromHandle(
   handle: FileSystemDirectoryHandle,
   path = handle.name,
@@ -41,6 +68,11 @@ export async function getFilesFromHandle(
   return result;
 }
 
+/**
+ * Recursively gets all files from a FileSystemEntry (used for drag and drop).
+ * @param {FileSystemEntry} entry - The entry to read from.
+ * @returns {Promise<CollectedItems>} A promise that resolves to the collected items.
+ */
 export async function getFilesFromEntry(entry: FileSystemEntry): Promise<CollectedItems> {
   if (entry.isFile) {
     return new Promise((resolve, reject) => {
@@ -62,6 +94,9 @@ export async function getFilesFromEntry(entry: FileSystemEntry): Promise<Collect
     const dirReader = (entry as FileSystemDirectoryEntry).createReader();
     const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
       const allEntries: FileSystemEntry[] = [];
+      /**
+       * Reads entries recursively using the directory reader.
+       */
       const readEntries = () => {
         dirReader.readEntries(
           (results) => {
@@ -88,6 +123,11 @@ export async function getFilesFromEntry(entry: FileSystemEntry): Promise<Collect
   return { files: [], directories: [] };
 }
 
+/**
+ * Decodes a Uint8Array into a string using UTF-8 or Windows-1252 fallbacks.
+ * @param {Uint8Array} data - The binary data to decode.
+ * @returns {string} The decoded string.
+ */
 export function decodeText(data: Uint8Array): string {
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(data);
@@ -100,6 +140,9 @@ export function decodeText(data: Uint8Array): string {
   }
 }
 
+/**
+ * Maps file extensions to MIME types.
+ */
 export const mimeMap: { [key: string]: string } = {
   svg: 'image/svg+xml',
   png: 'image/png',
@@ -119,7 +162,13 @@ export const mimeMap: { [key: string]: string } = {
   xsd: 'application/xml',
 };
 
-// Case-insensitive file resolution using Emscripten FS
+/**
+ * Performs a case-insensitive file resolution using Emscripten FS.
+ * @param {any} module - The Emscripten module.
+ * @param {string} base - The base directory.
+ * @param {string} rel - The relative path to resolve.
+ * @returns {string | null} The resolved path, or null if it cannot be resolved.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function resolveCaseInsensitive(module: any, base: string, rel: string): string | null {
   // Strip query parameters or hashes

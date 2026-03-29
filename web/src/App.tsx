@@ -49,6 +49,11 @@ SyntaxHighlighter.registerLanguage('ts', typescript);
 SyntaxHighlighter.registerLanguage('css', css);
 SyntaxHighlighter.registerLanguage('log', log);
 
+/**
+ * The main Application component.
+ * Manages the layout, tabs, theme, and file uploading/processing.
+ * @returns {JSX.Element} The rendered App component.
+ */
 function App() {
   const {
     module,
@@ -82,6 +87,10 @@ function App() {
 
   const fileMap = useMemo(() => {
     const map = new Map<string, FileNode>();
+    /**
+     * Recursively traverses the file tree and populates the map.
+     * @param {FileNode} node - The current node to traverse.
+     */
     const traverse = (node: FileNode) => {
       map.set(node.path, node);
       node.children?.forEach(traverse);
@@ -92,6 +101,9 @@ function App() {
 
   const rulesHeaders = useMemo(() => extractHeaders(rulesText), [rulesText]);
 
+  /**
+   * Updates the active rule line based on the scroll position of the rules container.
+   */
   const handleRulesScroll = useCallback(() => {
     if (!rulesScrollRef.current) return;
 
@@ -197,6 +209,10 @@ function App() {
   }, []);
 
   useEffect(() => {
+    /**
+     * Handles the mouse move event for resizing panels.
+     * @param {MouseEvent} e - The mouse move event.
+     */
     const handleMouseMove = (e: MouseEvent) => {
       if (isResizing) {
         const newWidth = e.clientX - 64 - 20;
@@ -210,6 +226,9 @@ function App() {
         }
       }
     };
+    /**
+     * Handles the mouse up event to stop resizing.
+     */
     const handleMouseUp = () => {
       setIsResizing(false);
       setIsResizingRules(false);
@@ -239,6 +258,10 @@ function App() {
     }
   }, [validationResult, fileTree]);
 
+  /**
+   * Handles file selection from the hidden input.
+   * @param {React.ChangeEvent<HTMLInputElement>} event - The change event.
+   */
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
@@ -249,6 +272,10 @@ function App() {
     event.target.value = '';
   };
 
+  /**
+   * Handles folder selection, using the directory picker API if available.
+   * @param {React.MouseEvent} event - The click event.
+   */
   const handleFolderSelect = async (event: React.MouseEvent) => {
     event.preventDefault();
     if (window.showDirectoryPicker) {
@@ -271,6 +298,10 @@ function App() {
     }
   };
 
+  /**
+   * Handles the drag enter event for the drop zone.
+   * @param {React.DragEvent<HTMLElement>} event - The drag event.
+   */
   const handleDragEnter = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
     dragCounter.current += 1;
@@ -279,6 +310,10 @@ function App() {
     }
   };
 
+  /**
+   * Handles the drag leave event for the drop zone.
+   * @param {React.DragEvent<HTMLElement>} event - The drag event.
+   */
   const handleDragLeave = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
     dragCounter.current -= 1;
@@ -287,6 +322,10 @@ function App() {
     }
   };
 
+  /**
+   * Handles the drop event for the drop zone.
+   * @param {React.DragEvent<HTMLElement>} event - The drop event.
+   */
   const onDrop = async (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
     dragCounter.current = 0;
@@ -311,6 +350,9 @@ function App() {
     }
   };
 
+  /**
+   * Copies the raw validation output to the clipboard.
+   */
   const handleCopy = () => {
     // eslint-disable-next-line no-control-regex
     const stripped = output.replace(/\x1b\[[0-9;]*m/g, '');
@@ -320,6 +362,11 @@ function App() {
     });
   };
 
+  /**
+   * Parses text with ANSI color codes into JSX elements.
+   * @param {string} text - The text containing ANSI codes.
+   * @returns {Array<string | JSX.Element | null>} An array of parsed elements.
+   */
   const parseAnsi = (text: string) => {
     // eslint-disable-next-line no-control-regex
     const parts = text.split(/(\x1b\[[0-9;]*m)/);
