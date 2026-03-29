@@ -217,8 +217,20 @@ bool Zipper::addFile(const std::string& internal_path, const std::vector<uint8_t
     // Determine compression method
     const int32_t method = (compression_level > 0) ? Z_DEFLATED : 0;
 
-    if (zipOpenNewFileInZip(zf, internal_path.c_str(), &zi, nullptr, 0, nullptr, 0, nullptr, method,
-                            compression_level) != ZIP_OK)
+    // Check if path contains non-ASCII characters
+    constexpr unsigned char MAX_ASCII_VALUE = 127;
+    const bool has_non_ascii = std::any_of(internal_path.begin(), internal_path.end(),
+                                           [](unsigned char c) { return c > MAX_ASCII_VALUE; });
+
+    // Set bit 11 (Language Encoding Flag) if path contains non-ASCII characters.
+    // Using zipOpenNewFileInZip4 to specify the language encoding flag.
+    // versionMadeBy = 20 (for ZIP 2.0)
+    constexpr uint16_t BIT11 = 0x800;
+    const uint16_t flag = has_non_ascii ? BIT11 : 0;
+
+    if (zipOpenNewFileInZip4(zf, internal_path.c_str(), &zi, nullptr, 0, nullptr, 0, nullptr, method,
+                             compression_level, 0, -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY, nullptr, 0, 20,
+                             flag) != ZIP_OK)
         return false;
 
     if (zipWriteInFileInZip(zf, data.data(), static_cast<uint32_t>(data.size())) != ZIP_OK)

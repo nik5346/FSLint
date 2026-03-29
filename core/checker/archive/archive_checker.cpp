@@ -130,14 +130,29 @@ void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& 
 {
     TestResult test{"Language Encoding Flag Check", TestStatus::PASS, {}};
     constexpr uint16_t LANGUAGE_ENCODING_BIT = 0x800; // Bit 11
+    constexpr unsigned char MAX_ASCII_VALUE = 127;
 
     for (const auto& entry : entries)
     {
-        if (entry.flags & LANGUAGE_ENCODING_BIT)
+        const bool bit11_set = (entry.flags & LANGUAGE_ENCODING_BIT) != 0;
+        const bool has_non_ascii = std::any_of(entry.filename.begin(), entry.filename.end(),
+                                               [](unsigned char c) { return c > MAX_ASCII_VALUE; });
+
+        if (has_non_ascii && !bit11_set)
         {
-            test.status = TestStatus::WARNING;
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Language encoding flag (bit 11) must be set for '" + entry.filename +
+                                    "' because it contains non-ASCII characters.");
+        }
+        else if (!has_non_ascii && bit11_set)
+        {
+            if (test.status != TestStatus::FAIL)
+            {
+                test.status = TestStatus::WARNING;
+            }
             test.messages.push_back("Language encoding flag (bit 11) is set for '" + entry.filename +
-                                    "' (for maximum portability, keeping this bit at 0 is recommended).");
+                                    "' but it only contains ASCII characters (for maximum portability, keeping this "
+                                    "bit at 0 is recommended).");
         }
     }
 
@@ -182,7 +197,10 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
         // Check for non-ASCII characters
         const bool has_non_ascii =
             std::any_of(path.begin(), path.end(), [](unsigned char c) { return c > MAX_ASCII_VALUE; });
-        if (has_non_ascii)
+        constexpr uint16_t LANGUAGE_ENCODING_BIT = 0x800; // Bit 11
+        const bool bit11_set = (entry.flags & LANGUAGE_ENCODING_BIT) != 0;
+
+        if (has_non_ascii && !bit11_set)
         {
             test.status = TestStatus::WARNING;
             test.messages.push_back("Non-ASCII characters in path '" + path +
