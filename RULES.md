@@ -34,7 +34,9 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
   - Non-ASCII characters in paths **should** be avoided.
   - Leading `./` or multiple consecutive slashes `//` **should** be avoided.
 - **Symbolic Links**: Symbolic links **must not** be used within the archive.
-- **Language Encoding Flag**: Bit 11 **should not** be set (UTF-8 recommended for paths, but keeping bit 11 at 0 is better for old tools).
+- **Language Encoding Flag**:
+  - Bit 11 **must** be set for every file whose filename in the archive contains non-ASCII characters (to indicate UTF-8 encoding).
+  - Bit 11 **should** be 0 for files whose filenames only contain ASCII characters (for maximum portability with old tools).
 - **Data Descriptor Consistency**: General purpose bit 3 (data descriptor) is only allowed with `deflate` compression.
 
 ## Common FMI Rules (All Versions)
