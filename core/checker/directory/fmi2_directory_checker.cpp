@@ -22,7 +22,6 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         static const std::set<std::string> fmi2_standard_entries = {"modelDescription.xml",
                                                                     "model.png",
                                                                     "documentation",
-                                                                    "licenses",
                                                                     "sources",
                                                                     "binaries",
                                                                     "resources",
@@ -80,15 +79,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     {
         TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
-
-        auto licenses_sub_path = doc_path / "licenses";
-        if (std::filesystem::exists(licenses_sub_path) && std::filesystem::is_directory(licenses_sub_path) &&
-            isEffectivelyEmpty(licenses_sub_path))
-        {
-            const TestResult empty_test{
-                "Empty Subdirectory", TestStatus::WARNING, {"Standard directory 'documentation/licenses' is empty."}};
-            cert.printTestResult(empty_test);
-        }
+        auto licenses_path = doc_path / "licenses";
 
         if (std::filesystem::exists(doc_path))
         {
@@ -116,15 +107,28 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             }
         }
 
-        auto licenses_path = path / "licenses";
         if (std::filesystem::exists(licenses_path))
         {
             if (!std::filesystem::exists(licenses_path / "license.txt") &&
                 !std::filesystem::exists(licenses_path / "license.html"))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("The license entry point (e.g. 'licenses/license.txt') is missing.");
+                if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
+                {
+                    test.messages.push_back("Standard directory 'documentation/licenses' is empty.");
+                }
+                else
+                {
+                    test.messages.push_back(
+                        "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
+                }
             }
+        }
+        else
+        {
+            if (test.status != TestStatus::FAIL)
+                test.status = TestStatus::WARNING;
+            test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
         }
         cert.printTestResult(test);
     }

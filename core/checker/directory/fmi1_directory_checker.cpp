@@ -146,10 +146,12 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 3. Documentation
+    // 3. Documentation and Licenses
     {
-        TestResult test{"Documentation", TestStatus::PASS, {}};
+        TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
+        auto licenses_path = doc_path / "licenses";
+
         if (std::filesystem::exists(doc_path))
         {
             if (!std::filesystem::exists(doc_path / "_main.html"))
@@ -162,6 +164,30 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         {
             test.status = TestStatus::WARNING;
             test.messages.push_back("Providing documentation is recommended.");
+        }
+
+        if (std::filesystem::exists(licenses_path))
+        {
+            if (!std::filesystem::exists(licenses_path / "license.txt") &&
+                !std::filesystem::exists(licenses_path / "license.html"))
+            {
+                test.status = TestStatus::FAIL;
+                if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
+                {
+                    test.messages.push_back("Standard directory 'documentation/licenses' is empty.");
+                }
+                else
+                {
+                    test.messages.push_back(
+                        "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
+                }
+            }
+        }
+        else
+        {
+            if (test.status != TestStatus::FAIL)
+                test.status = TestStatus::WARNING;
+            test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
         }
         cert.printTestResult(test);
     }

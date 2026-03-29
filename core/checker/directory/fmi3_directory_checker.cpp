@@ -25,8 +25,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                                                                     "sources",
                                                                     "binaries",
                                                                     "resources",
-                                                                    "extra",
-                                                                    "licenses"};
+                                                                    "extra"};
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
@@ -44,29 +43,23 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 test.messages.push_back("Standard directory '" + name + "' is empty.");
             }
         }
-        // Root-level licenses check
-        auto licenses_path = path / "licenses";
-        if (std::filesystem::exists(licenses_path))
-        {
-            if (!std::filesystem::exists(licenses_path / "license.spdx") &&
-                !std::filesystem::exists(licenses_path / "license.txt") &&
-                !std::filesystem::exists(licenses_path / "license.html"))
-            {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("The license entry point (e.g. 'licenses/license.txt') is missing.");
-            }
-        }
         cert.printTestResult(test);
     }
 
     // 2. Documentation Files
     {
-        TestResult test{"Documentation Files", TestStatus::PASS, {}};
+        TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
 
         // index.html check (recommended entry point)
         if (std::filesystem::exists(doc_path))
         {
+            if (isEffectivelyEmpty(doc_path))
+            {
+                test.status = TestStatus::WARNING;
+                test.messages.push_back("Standard directory 'documentation' is empty.");
+            }
+
             if (!std::filesystem::exists(doc_path / "index.html"))
             {
                 test.status = TestStatus::FAIL;
@@ -75,7 +68,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         }
         else
         {
-            test.status = TestStatus::WARNING;
+            if (test.status != TestStatus::FAIL)
+                test.status = TestStatus::WARNING;
             test.messages.push_back("Providing documentation is recommended.");
         }
 
@@ -118,32 +112,33 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     }
                 }
             }
+        }
 
-            // licenses directory check
-            for (const auto& entry_name : {"license", "licenses"})
+        // licenses directory check
+        auto licenses_path = doc_path / "licenses";
+        if (std::filesystem::exists(licenses_path))
+        {
+            if (!std::filesystem::exists(licenses_path / "license.spdx") &&
+                !std::filesystem::exists(licenses_path / "license.txt") &&
+                !std::filesystem::exists(licenses_path / "license.html"))
             {
-                auto licenses_path = doc_path / entry_name;
-                if (std::filesystem::exists(licenses_path))
+                test.status = TestStatus::FAIL;
+                if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
                 {
-                    if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
-                    {
-                        const TestResult empty_test{
-                            "Empty Subdirectory",
-                            TestStatus::WARNING,
-                            {"Standard directory 'documentation/" + std::string(entry_name) + "' is empty."}};
-                        cert.printTestResult(empty_test);
-                    }
-
-                    if (!std::filesystem::exists(licenses_path / "license.spdx") &&
-                        !std::filesystem::exists(licenses_path / "license.txt") &&
-                        !std::filesystem::exists(licenses_path / "license.html"))
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("The license entry point (e.g. 'documentation/" +
-                                                std::string(entry_name) + "/license.txt') is missing.");
-                    }
+                    test.messages.push_back("Standard directory 'documentation/licenses' is empty.");
+                }
+                else
+                {
+                    test.messages.push_back(
+                        "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
                 }
             }
+        }
+        else
+        {
+            if (test.status != TestStatus::FAIL)
+                test.status = TestStatus::WARNING;
+            test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
         }
         cert.printTestResult(test);
     }
