@@ -907,19 +907,14 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                     if (var.value_reference.has_value() && *var.value_reference == vr)
                     {
                         if (var.causality == "output")
-                            is_output = true;
-                        else
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
-                                                    std::to_string(var.sourceline) +
-                                                    ") listed in ModelStructure/Output but does not have "
-                                                    "causality=\"output\".");
+                            is_output = true;
+                            break;
                         }
                     }
                 }
 
-                if (!is_output && test.status != TestStatus::FAIL)
+                if (!is_output)
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("Value reference " + std::to_string(vr) +
@@ -1023,41 +1018,34 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
                 }
                 actual_vrs.insert(vr);
 
-                auto it = vr_to_var.find(vr);
-                if (it != vr_to_var.end())
+                bool found_valid = false;
+                for (const auto& var : variables)
                 {
-                    const Variable& var = *it->second;
-
-                    if (var.variability != "discrete")
+                    if (var.value_reference.has_value() && *var.value_reference == vr)
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Clocked state variable \"" + var.name + "\" (line " +
-                                                std::to_string(var.sourceline) +
-                                                ") must have variability=\"discrete\".");
+                        if (var.variability == "discrete" && var.clocks.has_value() && !var.clocks->empty() &&
+                            var.type != "Clock")
+                        {
+                            found_valid = true;
+                            break;
+                        }
                     }
+                }
 
-                    if (!var.clocks.has_value() || var.clocks->empty())
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Clocked state variable \"" + var.name + "\" (line " +
-                                                std::to_string(var.sourceline) +
-                                                ") must have the \"clocks\" attribute.");
-                    }
+                if (!found_valid)
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("Value reference " + std::to_string(vr) +
+                                            " listed in ModelStructure/ClockedState must correspond to a "
+                                            "discrete, clocked variable that is not of type Clock.");
+                }
 
-                    if (var.type == "Clock")
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Clocked state variable \"" + var.name + "\" (line " +
-                                                std::to_string(var.sourceline) + ") must not be of type Clock.");
-                    }
-
-                    auto prev_str = getXmlAttribute(node, "previous");
-                    if (!prev_str.has_value())
-                    {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("ModelStructure/ClockedState for variable \"" + var.name +
-                                                "\" must have the \"previous\" attribute.");
-                    }
+                auto prev_str = getXmlAttribute(node, "previous");
+                if (!prev_str.has_value())
+                {
+                    test.status = TestStatus::FAIL;
+                    test.messages.push_back("ModelStructure/ClockedState (VR " + std::to_string(vr) +
+                                            ") must have the \"previous\" attribute.");
                 }
             }
         }
@@ -1129,7 +1117,20 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                 }
                 actual_vrs.insert(vr);
 
-                if (!expected_vrs.contains(vr))
+                bool found_deriv = false;
+                for (const auto& var : variables)
+                {
+                    if (var.value_reference.has_value() && *var.value_reference == vr)
+                    {
+                        if (var.derivative_of.has_value())
+                        {
+                            found_deriv = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!found_deriv)
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("Value reference " + std::to_string(vr) +
@@ -1538,49 +1539,77 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 {
     TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
-    // Build expected set of initial unknown value references (FMI3 spec)
-    std::set<uint32_t> expected_vrs;
-    std::map<uint32_t, std::string> vr_to_name;
+    // Group info by alias set (valueReference + base type)
+    auto get_base_type = [](const std::string& type) -> std::string
+    {
+        if (type == "Float32" || type == "Float64")
+            return "Float";
+        if (type.find("Int") != std::string::npos || type == "Enumeration")
+            return "Integer/Enumeration";
+        return type;
+    };
+
+    // Identify state value references
+    std::set<uint32_t> state_vrs;
+    for (const auto& var : variables)
+        if (var.derivative_of.has_value())
+            state_vrs.insert(*var.derivative_of);
+
+    std::map<std::pair<std::string, uint32_t>, bool> alias_set_is_potentially_unknown;
+    std::map<std::pair<std::string, uint32_t>, bool> alias_set_is_pinned;
+    std::map<std::pair<std::string, uint32_t>, std::string> alias_set_base_name;
 
     for (const auto& var : variables)
     {
         if (!var.value_reference.has_value())
             continue;
 
-        bool is_required = false;
+        auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
+        if (alias_set_base_name.find(key) == alias_set_base_name.end())
+            alias_set_base_name[key] = var.name;
 
-        // Mandatory unknowns according to FMI 3.0 spec:
+        // Mandatory unknowns candidate according to FMI 3.0 spec:
         // (1) Outputs with initial="approx" or "calculated" (not clocked)
         // (2) Calculated parameters
         // (3) State derivatives with initial="approx" or "calculated"
+        // (4) States with initial="approx" or "calculated"
+        bool is_unknown_candidate = false;
         if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
              !var.clocks.has_value()) ||
             (var.causality == "calculatedParameter") ||
-            (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")))
+            (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")) ||
+            (state_vrs.contains(*var.value_reference) && (var.initial == "approx" || var.initial == "calculated")))
         {
-            is_required = true;
-        }
-        // (4) States with initial="approx" or "calculated"
-        // Identifying states: variables referenced by 'derivative' attribute of some other variable
-        else
-        {
-            for (const auto& other : variables)
-            {
-                if (other.derivative_of.has_value() && *other.derivative_of == *var.value_reference)
-                {
-                    if (var.initial == "approx" || var.initial == "calculated")
-                    {
-                        is_required = true;
-                        break;
-                    }
-                }
-            }
+            is_unknown_candidate = true;
         }
 
-        if (is_required)
+        if (is_unknown_candidate)
+            alias_set_is_potentially_unknown[key] = true;
+
+        // A variable is "pinned" if its value is fixed at initialization
+        bool is_pinned = false;
+        if (var.causality == "parameter" || var.causality == "structuralParameter" || var.causality == "input" ||
+            var.causality == "independent" || var.initial == "exact")
         {
-            expected_vrs.insert(*var.value_reference);
-            vr_to_name[*var.value_reference] = var.name;
+            is_pinned = true;
+        }
+
+        if (is_pinned)
+        {
+            alias_set_is_pinned[key] = true;
+        }
+    }
+
+    // Build expected set of initial unknown value references
+    std::set<uint32_t> expected_vrs;
+    std::map<uint32_t, std::string> vr_to_name;
+
+    for (const auto& [key, is_potential] : alias_set_is_potentially_unknown)
+    {
+        if (is_potential && !alias_set_is_pinned[key])
+        {
+            expected_vrs.insert(key.second);
+            vr_to_name[key.second] = alias_set_base_name[key];
         }
     }
 

@@ -796,6 +796,24 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
         CHECK_FALSE(has_fail(cert));
     }
 
+    SECTION("Aliased Initial Unknowns")
+    {
+        checker.validate("tests/data/fmi3/pass/aliased_initial_unknowns", cert);
+        if (has_fail(cert))
+        {
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
+                {
+                    UNSCOPED_INFO("FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("  - " << msg);
+                }
+            }
+        }
+        CHECK_FALSE(has_fail(cert));
+    }
+
     SECTION("FMI 3.0 Patch Version")
     {
         checker.validate("tests/data/fmi3/pass/fmi_version_patch", cert);
