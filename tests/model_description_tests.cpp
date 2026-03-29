@@ -161,7 +161,8 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         std::ofstream("tests/data/fmi1/pass/SpecialFloats/sources/test.c").close();
         validate_warning("warn/author_missing", "Providing the author name is recommended.");
         validate_warning("warn/author_empty", "The 'author' attribute is empty.");
-        validate_warning("warn/generation_tool_missing", "Providing the generation tool name is recommended.");
+        validate_warning("warn/generation_tool_missing",
+                         "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
         validate_warning("warn/license_missing", "Providing a license is recommended.");
         validate_warning("warn/copyright_missing", "Providing a copyright notice is recommended.");
         validate_warning("warn/model_version_missing", "Providing a model version is recommended.");
@@ -468,7 +469,8 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning("author_and_copyright_empty", "The 'author' attribute is empty.");
         validate_warning("author_and_copyright_empty", "The 'copyright' attribute is empty.");
 
-        validate_warning("generation_tool_missing", "Providing the generation tool name is recommended.");
+        validate_warning("generation_tool_missing",
+                         "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
         validate_warning("generation_tool_empty", "The 'generationTool' attribute is empty.");
         validate_warning("license_missing", "Providing a license is recommended.");
         validate_warning("license_empty", "The 'license' attribute is empty.");
@@ -726,7 +728,8 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("author_and_copyright_empty", "The 'author' attribute is empty.");
         validate_warning("author_and_copyright_empty", "The 'copyright' attribute is empty.");
 
-        validate_warning("metadata_missing", "Providing the generation tool name is recommended.");
+        validate_warning("metadata_missing",
+                         "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
         validate_warning("metadata_missing", "Providing a license is recommended.");
 
         validate_warning("model_version_missing", "Providing a model version is recommended.");

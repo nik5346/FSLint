@@ -670,7 +670,8 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
     if (!tool.has_value())
     {
         test.status = TestStatus::WARNING;
-        test.messages.push_back("Providing the generation tool name is recommended.");
+        test.messages.push_back(
+            "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
     }
     else if (tool->empty())
     {
