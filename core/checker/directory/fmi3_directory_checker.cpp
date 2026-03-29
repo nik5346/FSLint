@@ -41,9 +41,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         cert.printTestResult(test);
     }
 
-    // 2. Documentation Files
+    // 2. Documentation
     {
-        TestResult test{"Documentation and Licenses", TestStatus::PASS, {}};
+        TestResult test{"Documentation", TestStatus::PASS, {}};
         auto doc_path = path / "documentation";
 
         // index.html check (recommended entry point)
@@ -63,8 +63,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         }
         else
         {
-            if (test.status != TestStatus::FAIL)
-                test.status = TestStatus::WARNING;
+            test.status = TestStatus::WARNING;
             test.messages.push_back("Providing documentation is recommended.");
         }
 
@@ -108,9 +107,14 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 }
             }
         }
+        cert.printTestResult(test);
+    }
 
-        // licenses directory check
-        auto licenses_path = doc_path / "licenses";
+    // 3. Licenses
+    {
+        TestResult test{"Licenses", TestStatus::PASS, {}};
+        auto licenses_path = path / "documentation" / "licenses";
+
         if (std::filesystem::exists(licenses_path))
         {
             if (!std::filesystem::exists(licenses_path / "license.spdx") &&
@@ -131,8 +135,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         }
         else
         {
-            if (test.status != TestStatus::FAIL)
-                test.status = TestStatus::WARNING;
+            test.status = TestStatus::WARNING;
             test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
         }
         cert.printTestResult(test);
