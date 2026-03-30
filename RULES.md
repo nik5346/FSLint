@@ -214,7 +214,10 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - States **must** have `causality="local"` or `"output"` and `variability="continuous"`.
   - All **must** be of type `Real`.
 - **Model Structure**:
-  - `Outputs`, `Derivatives`, and `InitialUnknowns` **must** be complete (match all variables with respective causalities/attributes) and correctly ordered.
+  - `Outputs`, `Derivatives`, and `InitialUnknowns` **must** be complete and correctly ordered.
+  - **Aliasing**: Only the first variable in each alias set (the "base variable") should be listed in the model structure elements.
+  - **Completeness**: All output variables, state derivatives, and non-pinned initialization unknowns **must** be listed (as base variables).
+  - **InitialUnknowns**: Continuous-time states and derivatives that are "pinned" (e.g., via `initial="exact"`) are not required to be listed, though listing them is allowed.
   - Dependencies and `dependenciesKind` **must** be consistent in size.
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 - **Prohibited Special Floats**: Attributes of type `Real` **must not** contain `NaN` or `INF`. This applies to:
@@ -294,7 +297,8 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - Clock types **must** have consistent `intervalVariability` and interval attributes.
 - **Model Structure**:
   - `Output`, `ContinuousStateDerivative`, `ClockedState`, `InitialUnknown`, and `EventIndicator` elements **must** be complete and unique.
-  - Mandatory `InitialUnknowns` **must** be provided for non-clocked outputs, calculated parameters, and states/derivatives with `initial="approx"` or `"calculated"`.
+  - **Aliasing**: Only the base variable of each alias set should be listed.
+  - **Mandatory InitialUnknowns**: **Must** be provided for non-clocked outputs, calculated parameters, and states/derivatives with `initial="approx"` or `"calculated"` that are not pinned by initial conditions.
 - **Variable Dependencies**: `dependenciesKind` **must** be restricted to allowed types and is **not allowed** for `InitialUnknown`.
 
 ### Variable Consistency
