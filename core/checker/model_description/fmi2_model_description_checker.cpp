@@ -778,7 +778,7 @@ void Fmi2ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::
     {
         if (var.value_reference.has_value())
         {
-            auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
+            const auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
             if (alias_set_to_base_index.find(key) == alias_set_to_base_index.end())
                 alias_set_to_base_index[key] = var.index;
             index_to_base_index[var.index] = alias_set_to_base_index[key];

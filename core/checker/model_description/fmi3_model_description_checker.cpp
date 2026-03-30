@@ -1564,7 +1564,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         if (!var.value_reference.has_value())
             continue;
 
-        auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
+        const auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
         if (alias_set_base_name.find(key) == alias_set_base_name.end())
             alias_set_base_name[key] = var.name;
 
@@ -1671,7 +1671,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         if (!mandatory_vrs.contains(vr))
         {
             // Allowed if optional (pinned but included) or clocked
-            bool is_optional = optional_vrs.contains(vr);
+            const bool is_optional = optional_vrs.contains(vr);
             bool is_clocked = false;
             auto it = vr_to_variable.find(vr);
             if (it != vr_to_variable.end())
