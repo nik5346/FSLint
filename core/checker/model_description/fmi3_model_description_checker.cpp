@@ -640,14 +640,15 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 {
     TestResult test{"Alias Variables", TestStatus::PASS, {}};
 
-    // Group variables by valueReference
-    std::map<uint32_t, std::vector<const Variable*>> vr_to_vars;
+    // Group variables by type and valueReference
+    std::map<std::pair<std::string, uint32_t>, std::vector<const Variable*>> type_vr_to_vars;
     for (const auto& var : variables)
         if (var.value_reference.has_value())
-            vr_to_vars[*var.value_reference].push_back(&var);
+            type_vr_to_vars[{var.type, *var.value_reference}].push_back(&var);
 
-    for (const auto& [vr, alias_set] : vr_to_vars)
+    for (const auto& [key, alias_set] : type_vr_to_vars)
     {
+        const uint32_t vr = key.second;
         if (alias_set.size() <= 1)
             continue;
 
@@ -1539,14 +1540,11 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 {
     TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
-    // Group info by alias set (valueReference + base type)
-    auto get_base_type = [](const std::string& type) -> std::string
+    // Group info by alias set (valueReference + type)
+    // In FMI 3.0, different types (e.g., Float32 vs Float64) have separate valueReference spaces.
+    auto get_alias_key = [](const Variable& var) -> std::pair<std::string, uint32_t>
     {
-        if (type == "Float32" || type == "Float64")
-            return "Float";
-        if (type.find("Int") != std::string::npos || type == "Enumeration")
-            return "Integer/Enumeration";
-        return type;
+        return {var.type, var.value_reference.value_or(0)};
     };
 
     // Identify state value references
@@ -1564,7 +1562,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         if (!var.value_reference.has_value())
             continue;
 
-        const auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
+        const auto key = get_alias_key(var);
         if (alias_set_base_name.find(key) == alias_set_base_name.end())
             alias_set_base_name[key] = var.name;
 
@@ -1677,7 +1675,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             if (it != vr_to_variable.end())
             {
                 const auto& var_obj = *it->second;
-                if (var_obj.clocks.has_value() && !var_obj.clocks.value().empty())
+                if (var_obj.clocks && !var_obj.clocks->empty())
                     is_clocked = true;
             }
 

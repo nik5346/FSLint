@@ -857,8 +857,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         actual_base_indices.insert(base_index);
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
                         if (deps_str.has_value())
                         {
@@ -1019,8 +1019,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         actual_base_indices.insert(base_index);
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
                         if (deps_str.has_value())
                         {
@@ -1227,8 +1227,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         actual_indices.push_back(index);
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
                         if (deps_str.has_value())
                         {
