@@ -1543,9 +1543,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     // Group info by alias set (valueReference + type)
     // In FMI 3.0, different types (e.g., Float32 vs Float64) have separate valueReference spaces.
     auto get_alias_key = [](const Variable& var) -> std::pair<std::string, uint32_t>
-    {
-        return {var.type, var.value_reference.value_or(0)};
-    };
+    { return {var.type, var.value_reference.value_or(0)}; };
 
     // Identify state value references
     std::set<uint32_t> state_vrs;
