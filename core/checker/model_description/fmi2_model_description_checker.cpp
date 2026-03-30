@@ -820,14 +820,14 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
             if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
                     const size_t index = *index_opt;
                     // FMI2 uses 1-based indexing
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
-                        uint32_t base_index = index_to_base_index.at(var.index);
+                        const uint32_t base_index = index_to_base_index.at(var.index);
 
                         if (var.causality != "output")
                         {
@@ -863,7 +863,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -886,7 +886,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -936,7 +936,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
         test.status = TestStatus::FAIL;
         std::vector<std::string> missing;
 
-        for (uint32_t base_index : expected_base_indices)
+        for (const uint32_t base_index : expected_base_indices)
             if (!actual_base_indices.contains(base_index))
                 missing.push_back(variables[base_index - 1].name);
 
@@ -984,13 +984,13 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
             if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
                     const size_t index = *index_opt;
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
-                        uint32_t base_index = index_to_base_index.at(var.index);
+                        const uint32_t base_index = index_to_base_index.at(var.index);
 
                         if (!expected_base_indices.contains(base_index))
                         {
@@ -1025,7 +1025,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1048,7 +1048,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1098,7 +1098,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
         test.status = TestStatus::FAIL;
         std::vector<std::string> missing;
 
-        for (uint32_t base_index : expected_base_indices)
+        for (const uint32_t base_index : expected_base_indices)
             if (!actual_base_indices.contains(base_index))
                 missing.push_back(variables[base_index - 1].name);
 
@@ -1138,20 +1138,20 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     for (const auto& var : variables)
     {
-        uint32_t base_index = index_to_base_index.at(var.index);
+        const uint32_t base_index = index_to_base_index.at(var.index);
 
         // A variable is "potentially unknown" if:
         // (1) causality = "output" and (initial="approx" or "calculated")
         // (2) causality = "calculatedParameter"
         // (3) all continuous-time states and all state derivatives with initial="approx" or "calculated"
         bool is_unknown_candidate = false;
-        if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated"))
+        if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated")) ||
+            (var.causality == "calculatedParameter") ||
+            ((state_indices.contains(var.index) || var.derivative_of.has_value()) &&
+             (var.initial == "approx" || var.initial == "calculated")))
+        {
             is_unknown_candidate = true;
-        else if (var.causality == "calculatedParameter")
-            is_unknown_candidate = true;
-        else if ((state_indices.contains(var.index) || var.derivative_of.has_value()) &&
-                 (var.initial == "approx" || var.initial == "calculated"))
-            is_unknown_candidate = true;
+        }
 
         if (is_unknown_candidate)
             base_index_to_is_potentially_unknown[base_index] = true;
@@ -1166,11 +1166,22 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             base_index_to_is_pinned[base_index] = true;
     }
 
-    // Build expected set of initial unknown base indices
-    std::set<uint32_t> expected_base_indices;
+    // Build sets of mandatory and optional unknowns
+    // Mandatory: Outputs/CalculatedParameters/States/Derivatives that are NOT pinned
+    // Optional: Outputs/CalculatedParameters/States/Derivatives that ARE pinned (allowed for robustness)
+    std::set<uint32_t> mandatory_base_indices;
+    std::set<uint32_t> optional_base_indices;
+
     for (const auto& [base_index, is_potential] : base_index_to_is_potentially_unknown)
-        if (is_potential && !base_index_to_is_pinned[base_index])
-            expected_base_indices.insert(base_index);
+    {
+        if (is_potential)
+        {
+            if (base_index_to_is_pinned[base_index])
+                optional_base_indices.insert(base_index);
+            else
+                mandatory_base_indices.insert(base_index);
+        }
+    }
 
     // FMI2: Get actual initial unknowns (using index attribute)
     std::set<uint32_t> actual_base_indices;
@@ -1187,13 +1198,13 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
             if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
                     const size_t index = *index_opt;
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
-                        uint32_t base_index = index_to_base_index.at(var.index);
+                        const uint32_t base_index = index_to_base_index.at(var.index);
 
                         if (var.index != base_index)
                         {
@@ -1222,7 +1233,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1245,7 +1256,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1302,25 +1313,49 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         }
     }
 
-    if (expected_base_indices != actual_base_indices)
+    bool mismatch = false;
+    std::vector<std::string> missing_mandatory;
+    for (const uint32_t base_index : mandatory_base_indices)
+    {
+        if (!actual_base_indices.contains(base_index))
+        {
+            missing_mandatory.push_back(variables[base_index - 1].name + " (index " + std::to_string(base_index) + ")");
+            mismatch = true;
+        }
+    }
+
+    std::vector<std::string> extra_invalid;
+    for (const uint32_t base_index : actual_base_indices)
+    {
+        if (!mandatory_base_indices.contains(base_index) && !optional_base_indices.contains(base_index))
+        {
+            extra_invalid.push_back(variables[base_index - 1].name + " (index " + std::to_string(base_index) + ")");
+            mismatch = true;
+        }
+    }
+
+    if (mismatch)
     {
         test.status = TestStatus::FAIL;
 
-        std::string expected_str;
-        for (uint32_t base_index : expected_base_indices)
-            expected_str += variables[base_index - 1].name + ", ";
-        if (!expected_str.empty())
-            expected_str = expected_str.substr(0, expected_str.length() - 2);
+        if (!missing_mandatory.empty())
+        {
+            std::string msg = "The following mandatory variables are missing from ModelStructure/InitialUnknowns: ";
+            for (size_t i = 0; i < missing_mandatory.size(); ++i)
+                msg += (i > 0 ? ", " : "") + missing_mandatory[i];
+            msg += ".";
+            test.messages.push_back(msg);
+        }
 
-        std::string actual_str;
-        for (uint32_t base_index : actual_base_indices)
-            actual_str += variables[base_index - 1].name + ", ";
-        if (!actual_str.empty())
-            actual_str = actual_str.substr(0, actual_str.length() - 2);
-
-        test.messages.push_back("ModelStructure/InitialUnknowns does not contain the expected set of variables. "
-                                "Expected { " +
-                                expected_str + " } but was { " + actual_str + " }.");
+        if (!extra_invalid.empty())
+        {
+            std::string msg = "The following variables in ModelStructure/InitialUnknowns are not allowed (only "
+                              "mandatory unknowns and optional pinned derivatives/outputs are allowed): ";
+            for (size_t i = 0; i < extra_invalid.size(); ++i)
+                msg += (i > 0 ? ", " : "") + extra_invalid[i];
+            msg += ".";
+            test.messages.push_back(msg);
+        }
         test.messages.push_back("Note: Initial unknowns should only list the base variable of each alias set.");
     }
 

@@ -1598,16 +1598,22 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             alias_set_is_pinned[key] = true;
     }
 
-    // Build expected set of initial unknown value references
-    std::set<uint32_t> expected_vrs;
+    // Build sets of mandatory and optional unknowns
+    // Mandatory: (Outputs, etc.) that are NOT pinned
+    // Optional: (Outputs, etc.) that ARE pinned (allowed for robustness)
+    std::set<uint32_t> mandatory_vrs;
+    std::set<uint32_t> optional_vrs;
     std::map<uint32_t, std::string> vr_to_name;
 
     for (const auto& [key, is_potential] : alias_set_is_potentially_unknown)
     {
-        if (is_potential && !alias_set_is_pinned[key])
+        vr_to_name[key.second] = alias_set_base_name[key];
+        if (is_potential)
         {
-            expected_vrs.insert(key.second);
-            vr_to_name[key.second] = alias_set_base_name[key];
+            if (alias_set_is_pinned[key])
+                optional_vrs.insert(key.second);
+            else
+                mandatory_vrs.insert(key.second);
         }
     }
 
@@ -1650,7 +1656,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     bool mismatch = false;
     std::vector<std::string> missing_mandatory;
-    for (const uint32_t vr : expected_vrs)
+    for (const uint32_t vr : mandatory_vrs)
     {
         if (!actual_vrs.contains(vr))
         {
@@ -1662,9 +1668,10 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     std::vector<std::string> extra_invalid;
     for (const uint32_t vr : actual_vrs)
     {
-        if (!expected_vrs.contains(vr))
+        if (!mandatory_vrs.contains(vr))
         {
-            // It might be an optional clocked variable
+            // Allowed if optional (pinned but included) or clocked
+            bool is_optional = optional_vrs.contains(vr);
             bool is_clocked = false;
             auto it = vr_to_variable.find(vr);
             if (it != vr_to_variable.end())
@@ -1674,7 +1681,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                     is_clocked = true;
             }
 
-            if (!is_clocked)
+            if (!is_optional && !is_clocked)
             {
                 extra_invalid.push_back("VR " + std::to_string(vr));
                 mismatch = true;
