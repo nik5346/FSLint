@@ -683,8 +683,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
         validate_fail("structure_output_missing", "ModelStructure/Output must have exactly one entry");
         validate_fail("structure_output_duplicate", "is listed multiple times in ModelStructure/Output");
-        validate_fail("structure_output_extra",
-                      "listed in ModelStructure/Output but does not have causality=\"output\"");
+        validate_fail("structure_output_extra", "does not correspond to any output variable");
         validate_fail("structure_derivative_no_attr",
                       "listed in ModelStructure/ContinuousStateDerivative does not have the \"derivative\" attribute");
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");

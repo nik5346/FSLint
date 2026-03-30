@@ -1595,9 +1595,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         }
 
         if (is_pinned)
-        {
             alias_set_is_pinned[key] = true;
-        }
     }
 
     // Build expected set of initial unknown value references

@@ -780,9 +780,7 @@ void Fmi2ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::
         {
             auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
             if (alias_set_to_base_index.find(key) == alias_set_to_base_index.end())
-            {
                 alias_set_to_base_index[key] = var.index;
-            }
             index_to_base_index[var.index] = alias_set_to_base_index[key];
         }
         else
@@ -969,12 +967,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     // Build set of expected derivative base indices
     std::set<uint32_t> expected_base_indices;
     for (const auto& var : variables)
-    {
         if (var.derivative_of.has_value())
-        {
             expected_base_indices.insert(index_to_base_index.at(var.index));
-        }
-    }
 
     // FMI2: Check Derivatives entries (using index attribute)
     std::set<uint32_t> actual_base_indices;
@@ -1105,12 +1099,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
         std::vector<std::string> missing;
 
         for (uint32_t base_index : expected_base_indices)
-        {
             if (!actual_base_indices.contains(base_index))
-            {
                 missing.push_back(variables[base_index - 1].name);
-            }
-        }
 
         if (!missing.empty())
         {
@@ -1179,12 +1169,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     // Build expected set of initial unknown base indices
     std::set<uint32_t> expected_base_indices;
     for (const auto& [base_index, is_potential] : base_index_to_is_potentially_unknown)
-    {
         if (is_potential && !base_index_to_is_pinned[base_index])
-        {
             expected_base_indices.insert(base_index);
-        }
-    }
 
     // FMI2: Get actual initial unknowns (using index attribute)
     std::set<uint32_t> actual_base_indices;

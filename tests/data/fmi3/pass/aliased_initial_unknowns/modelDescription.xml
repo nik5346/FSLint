@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="AliasedInitialUnknowns" instantiationToken="{12345678-1234-1234-1234-123456789012}">
-  <ModelExchange modelIdentifier="AliasedInitialUnknowns"/>
+  <ModelExchange modelIdentifier="AliasedInitialUnknowns" />
   <ModelVariables>
-    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
-    <Float64 name="x" valueReference="1" causality="local" variability="continuous" initial="exact" start="1.0"/>
-    <Float64 name="der_x" valueReference="2" causality="local" variability="continuous" derivative="1" initial="exact" start="0.0"/>
-    <Float64 name="y" valueReference="3" causality="output" variability="continuous" initial="calculated"/>
-    <Float64 name="y_alias" valueReference="3" causality="local" variability="continuous" initial="exact" start="0.0"/>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+    <Float64 name="x" valueReference="1" causality="local" variability="continuous" initial="exact" start="1.0" />
+    <Float64 name="der_x" valueReference="2" causality="local" variability="continuous" derivative="1" initial="exact" start="0.0" />
+    <Float64 name="y" valueReference="3" causality="output" variability="continuous" initial="calculated" />
+    <Float64 name="y_alias" valueReference="3" causality="local" variability="continuous" initial="exact" start="0.0" />
   </ModelVariables>
   <ModelStructure>
-    <ContinuousStateDerivative valueReference="2"/>
-    <Output valueReference="3"/>
+    <ContinuousStateDerivative valueReference="2" />
+    <Output valueReference="3" />
   </ModelStructure>
 </fmiModelDescription>
