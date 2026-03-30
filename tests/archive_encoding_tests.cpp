@@ -13,7 +13,7 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("ASCII filename, Bit 11 not set (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"test.txt", 0, 20, 0, 0, 0, false, false});
+        entries.push_back({"test.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -24,7 +24,7 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("ASCII filename, Bit 11 set (WARNING)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"test.txt", 0, 20, BIT11, 0, 0, false, false});
+        entries.push_back({"test.txt", 0, 20, BIT11, 0, 0, 0, 0, 0, false, false});
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -36,7 +36,7 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("Non-ASCII filename, Bit 11 set (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, BIT11, 0, 0, false, false}); // Rocket emoji
+        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, BIT11, 0, 0, 0, 0, 0, false, false}); // Rocket emoji
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -47,7 +47,7 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("Non-ASCII filename, Bit 11 not set (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, false, false}); // Rocket emoji
+        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false}); // Rocket emoji
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -59,8 +59,8 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("Mixed filenames (FAIL + WARNING)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"ascii.txt", 0, 20, BIT11, 0, 0, false, false});
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, false, false});
+        entries.push_back({"ascii.txt", 0, 20, BIT11, 0, 0, 0, 0, 0, false, false});
+        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -80,7 +80,7 @@ TEST_CASE("Path Format Non-ASCII Warning Logic", "[archive][encoding]")
     {
         std::vector<ZipFileEntry> entries;
         // Using a filename with non-ASCII and no bit 11
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, false, false});
+        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
 
         Certificate cert;
         checker.checkPathFormat(entries, cert);
@@ -93,7 +93,7 @@ TEST_CASE("Path Format Non-ASCII Warning Logic", "[archive][encoding]")
     {
         std::vector<ZipFileEntry> entries;
         // Using a filename with non-ASCII and bit 11
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, BIT11, 0, 0, false, false});
+        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, BIT11, 0, 0, 0, 0, 0, false, false});
 
         Certificate cert;
         checker.checkPathFormat(entries, cert);

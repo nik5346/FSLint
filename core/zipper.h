@@ -14,6 +14,9 @@ struct ZipFileEntry
     uint16_t flags;              ///< General purpose bit flags.
     uint32_t compressed_size;    ///< Size in archive.
     uint32_t uncompressed_size;  ///< Original size.
+    uint32_t offset;             ///< Offset of the local file header.
+    uint16_t filename_length;    ///< Length of the filename.
+    uint16_t extra_field_length; ///< Length of the extra field.
     bool is_encrypted;           ///< True if encrypted.
     bool is_symlink;             ///< True if symbolic link.
 };
@@ -88,6 +91,14 @@ class Zipper
     /// @brief Gets the number of disks (spanning support).
     /// @return Disk count.
     int32_t getDiskCount() const;
+
+    /// @brief Gets the total number of entries reported in the EOCD.
+    /// @return Entry count, or -1 on error.
+    int32_t getReportedEntryCount() const;
+
+    /// @brief Gets the archive comment.
+    /// @return The comment string.
+    std::string getComment() const;
 
   private:
     void* _zip_file = nullptr;   // unzFile for reading
