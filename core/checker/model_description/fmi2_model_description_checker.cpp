@@ -456,11 +456,11 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.index = static_cast<uint32_t>(i + 1);
 
         const auto multi_set = getXmlAttribute(scalar_var_node, "canHandleMultipleSetPerTimeInstant");
-        if (multi_set.has_value())
+        if (const auto multi_set_val = getXmlAttribute(scalar_var_node, "canHandleMultipleSetPerTimeInstant"))
             var.can_handle_multiple_set = (multi_set.value() == "true");
 
         const auto vr = getXmlAttribute(scalar_var_node, "valueReference");
-        if (vr.has_value())
+        if (const auto vr_val = getXmlAttribute(scalar_var_node, "valueReference"))
             var.value_reference = parseNumber<uint32_t>(vr.value());
 
         // FMI2: The type element (Real, Integer, Boolean, String, Enumeration) is a child of ScalarVariable
@@ -481,7 +481,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 if (elem_name == "Real")
                 {
                     const auto rel_q = getXmlAttribute(child, "relativeQuantity");
-                    if (rel_q.has_value())
+                    if (const auto rel_q_val = getXmlAttribute(child, "relativeQuantity"))
                         var.relative_quantity = (rel_q.value() == "true");
                 }
                 var.start = getXmlAttribute(child, "start");
@@ -498,11 +498,11 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 if (elem_name == "Real")
                 {
                     const auto der = getXmlAttribute(child, "derivative");
-                    if (der.has_value())
+                    if (const auto der_val = getXmlAttribute(child, "derivative"))
                         var.derivative_of = parseNumber<uint32_t>(der.value());
 
                     const auto ri = getXmlAttribute(child, "reinit");
-                    if (ri.has_value())
+                    if (const auto ri_val = getXmlAttribute(child, "reinit"))
                         var.reinit = (ri.value() == "true");
                 }
 
@@ -883,11 +883,10 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             }
 
                             // Check dependenciesKind size and values
-                            if (deps_kind_str.has_value())
+                            if (const auto kinds_val = getXmlAttribute(node, "dependenciesKind"))
                             {
-                                const std::string& kinds_val = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(kinds_val);
+                                std::stringstream ss_kind(*kinds_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1047,11 +1046,10 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             }
 
                             // Check dependenciesKind size and values
-                            if (deps_kind_str.has_value())
+                            if (const auto kinds_val = getXmlAttribute(node, "dependenciesKind"))
                             {
-                                const std::string& kinds_val = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(kinds_val);
+                                std::stringstream ss_kind(*kinds_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1256,11 +1254,10 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             }
 
                             // Check dependenciesKind size and values
-                            if (deps_kind_str.has_value())
+                            if (const auto kinds_val = getXmlAttribute(node, "dependenciesKind"))
                             {
-                                const std::string& kinds_val = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(kinds_val);
+                                std::stringstream ss_kind(*kinds_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1407,7 +1404,7 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
                 if (elem_name == "Real")
                 {
                     const auto rel_q = getXmlAttribute(child, "relativeQuantity");
-                    if (rel_q.has_value())
+                    if (const auto rel_q_val = getXmlAttribute(child, "relativeQuantity"))
                         type_def.relative_quantity = (rel_q.value() == "true");
                 }
                 type_def.min = getXmlAttribute(child, "min");
@@ -1496,7 +1493,7 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
         const auto name_opt = getXmlAttribute(type_node, "name");
         const std::string name = name_opt.value_or("unnamed");
 
-        if (name_opt.has_value())
+        if (const auto name_val = getXmlAttribute(type_node, "name"))
         {
             if (seen_names.contains(name_opt.value()))
             {
@@ -1785,7 +1782,7 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
         const std::string name = name_opt.value_or("unnamed");
         std::set<std::string> unit_display_names;
 
-        if (name_opt.has_value())
+        if (const auto name_val = getXmlAttribute(unit_node, "name"))
         {
             if (seen_names.contains(name_opt.value()))
             {
@@ -1914,7 +1911,7 @@ void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certif
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             const auto name_opt = getXmlAttribute(node, "name");
-            if (name_opt.has_value())
+            if (const auto name_val = getXmlAttribute(node, "name"))
             {
                 auto file_path = getFmuRootPath() / "sources" / name_opt.value();
                 if (!std::filesystem::exists(file_path))
