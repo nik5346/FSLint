@@ -885,8 +885,9 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const std::string& kinds_val = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(deps_kind_str.value());
+                                std::stringstream ss_kind(kinds_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1048,8 +1049,9 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const std::string& kinds_val = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(deps_kind_str.value());
+                                std::stringstream ss_kind(kinds_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1256,8 +1258,9 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const std::string& kinds_val = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(deps_kind_str.value());
+                                std::stringstream ss_kind(kinds_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1767,8 +1770,12 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
     const auto checkSpecial = [&](const std::optional<std::string>& val, const std::string& attr_name,
                                   const std::string& context, size_t line)
     {
-        if (val.has_value() && isSpecialFloat(val.value()))
-            validateUnitSpecialFloat(test, val.value(), attr_name, context, line);
+        if (val.has_value())
+        {
+            const std::string& v = val.value();
+            if (isSpecialFloat(v))
+                validateUnitSpecialFloat(test, v, attr_name, context, line);
+        }
     };
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)
@@ -1868,9 +1875,9 @@ std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDe
             {
                 const auto base_factor = getXmlAttribute(child, "factor");
                 const auto base_offset = getXmlAttribute(child, "offset");
-                if (base_factor)
+                if (base_factor.has_value())
                     unit_def.factor = base_factor;
-                if (base_offset)
+                if (base_offset.has_value())
                     unit_def.offset = base_offset;
             }
             else if (elem_name == "DisplayUnit")
