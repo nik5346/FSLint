@@ -920,10 +920,10 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         else if (deps_kind_str.has_value())
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back(
-                                "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
-                                ") in ModelStructure/Outputs: If \"dependenciesKind\" is present, "
-                                "\"dependencies\" must be present.");
+                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
+                                                    std::to_string(node->line) +
+                                                    ") in ModelStructure/Outputs: If \"dependenciesKind\" is present, "
+                                                    "\"dependencies\" must be present.");
                         }
                     }
                 }
