@@ -1673,7 +1673,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             if (it != vr_to_variable.end())
             {
                 const auto& var_obj = *it->second;
-                if (var_obj.clocks && !var_obj.clocks->empty())
+                if (var_obj.clocks.has_value() && !var_obj.clocks.value().empty())
                     is_clocked = true;
             }
 
@@ -2051,7 +2051,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
             continue;
 
         // Parse the space-separated list of clock value references
-        std::stringstream ss(*var.clocks);
+        std::stringstream ss(var.clocks.value());
         std::string vr_str;
         std::vector<uint32_t> clock_refs;
 
