@@ -1,7 +1,6 @@
 #include "binary_parser.h"
 
 #include <array>
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
