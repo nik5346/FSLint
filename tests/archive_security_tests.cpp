@@ -3,9 +3,9 @@
 #include "test_helpers.h"
 #include "zipper.h"
 #include <catch2/catch_test_macros.hpp>
-#include <vector>
 #include <filesystem>
 #include <fstream>
+#include <vector>
 
 TEST_CASE("Zip Slip Detection", "[archive][security]")
 {
@@ -107,8 +107,10 @@ TEST_CASE("Zip Bomb Detection", "[archive][security]")
     {
         std::vector<ZipFileEntry> entries;
         // 11 files of 1 GB each = 11 GB total
-        for (int i = 0; i < 11; ++i) {
-            entries.push_back({"file" + std::to_string(i) + ".txt", 8, 20, 0, 100000000, 1000000000, 0, 0, 0, false, false});
+        for (int i = 0; i < 11; ++i)
+        {
+            entries.push_back(
+                {"file" + std::to_string(i) + ".txt", 8, 20, 0, 100000000, 1000000000, 0, 0, 0, false, false});
         }
 
         Certificate cert;

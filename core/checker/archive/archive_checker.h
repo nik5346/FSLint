@@ -57,7 +57,8 @@ class ArchiveChecker : public Checker
     /// @param handler The ZIP handler.
     /// @param entries The list of ZIP file entries.
     /// @param cert The certificate to record results.
-    void checkEntryCountSanity(const Zipper& handler, const std::vector<ZipFileEntry>& entries, Certificate& cert) const;
+    void checkEntryCountSanity(const Zipper& handler, const std::vector<ZipFileEntry>& entries,
+                               Certificate& cert) const;
 
     /// @brief Checks for extra field and comment integrity.
     /// @param handler The ZIP handler.

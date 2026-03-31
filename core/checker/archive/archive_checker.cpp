@@ -144,7 +144,7 @@ void ArchiveChecker::checkZipBomb(const std::vector<ZipFileEntry>& entries, Cert
     TestResult test{"Zip Bomb Check", TestStatus::PASS, {}};
 
     constexpr double MAX_RATIO = 100.0;
-    constexpr uint64_t MAX_SINGLE_SIZE = 1024ULL * 1024ULL * 1024ULL;       // 1 GB
+    constexpr uint64_t MAX_SINGLE_SIZE = 1024ULL * 1024ULL * 1024ULL;        // 1 GB
     constexpr uint64_t MAX_TOTAL_SIZE = 10ULL * 1024ULL * 1024ULL * 1024ULL; // 10 GB
 
     uint64_t total_uncompressed_size = 0;
