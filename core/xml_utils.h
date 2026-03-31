@@ -11,3 +11,8 @@ typedef struct _xmlDoc* xmlDocPtr;
 /// @param path XML file path.
 /// @return xmlDocPtr to document (caller must free).
 xmlDocPtr readXmlFile(const std::filesystem::path& path);
+
+/// @brief Checks if an XML document contains a DOCTYPE declaration.
+/// @param doc The XML document to check.
+/// @return True if a DOCTYPE is present.
+bool hasDoctype(xmlDocPtr doc);

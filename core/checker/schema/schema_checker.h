@@ -87,6 +87,13 @@ class SchemaCheckerBase : public Checker
     bool validateUtf8Encoding(const std::filesystem::path& xml_path, const std::string& validation_name,
                               Certificate& cert) const;
 
+    /// @brief Checks for XML security issues (e.g., XXE).
+    /// @param xml_path Path to the XML file.
+    /// @param validation_name User-friendly name for the test result.
+    /// @param cert Certificate to record results.
+    void checkXmlSecurity(const std::filesystem::path& xml_path, const std::string& validation_name,
+                          Certificate& cert) const;
+
     /// @brief Checks if a file contains valid UTF-8 data.
     /// @param file_path Path to the file.
     /// @return True if valid UTF-8.

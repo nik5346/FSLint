@@ -482,6 +482,31 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
     {
         const std::string& path = entry.filename;
 
+        // Check for control characters (U+0000–U+001F)
+        for (const unsigned char c : path)
+        {
+            if (c <= 0x1F)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Path '" + path + "' contains illegal control character (U+00" +
+                                        (c < 0x10 ? "0" : "") + std::format("{:X}", c) + ").");
+                break;
+            }
+        }
+
+        // Check for Windows-illegal characters (< > " | ? *)
+        // Note: ':' is checked separately as it indicates drive/device paths.
+        // Note: '/' and '\' are handled separately.
+        const std::string illegal_chars = "<>\"|?*";
+        for (const char c : illegal_chars)
+        {
+            if (path.find(c) != std::string::npos)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Path '" + path + "' contains illegal character '" + c + "'.");
+            }
+        }
+
         // Check for backslashes (wrong path separator)
         if (path.find('\\') != std::string::npos)
         {
