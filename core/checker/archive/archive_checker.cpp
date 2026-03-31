@@ -117,7 +117,7 @@ void ArchiveChecker::checkCompressionMethods(const std::vector<ZipFileEntry>& en
 
 void ArchiveChecker::checkZipSlip(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
-    TestResult test{"Zip Slip Check", TestStatus::PASS, {}};
+    TestResult test{"[SECURITY] Zip Slip Check", TestStatus::PASS, {}};
 
     for (const auto& entry : entries)
     {
@@ -142,7 +142,7 @@ void ArchiveChecker::checkZipSlip(const std::vector<ZipFileEntry>& entries, Cert
 
 void ArchiveChecker::checkZipBomb(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
-    TestResult test{"Zip Bomb Check", TestStatus::PASS, {}};
+    TestResult test{"[SECURITY] Zip Bomb Check", TestStatus::PASS, {}};
 
     constexpr double MAX_RATIO = 100.0;
     constexpr uint64_t MAX_SINGLE_SIZE = 1024ULL * 1024ULL * 1024ULL;        // 1 GB
@@ -187,7 +187,7 @@ void ArchiveChecker::checkZipBomb(const std::vector<ZipFileEntry>& entries, Cert
 
 void ArchiveChecker::checkDuplicateNames(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
-    TestResult test{"Duplicate Entry Names Check", TestStatus::PASS, {}};
+    TestResult test{"[SECURITY] Duplicate Entry Names Check", TestStatus::PASS, {}};
 
     std::vector<std::string> seen_names;
     std::vector<std::string> seen_names_lower;
@@ -231,7 +231,7 @@ void ArchiveChecker::checkDuplicateNames(const std::vector<ZipFileEntry>& entrie
 
 void ArchiveChecker::checkOverlappingEntries(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
-    TestResult test{"Overlapping File Entries Check", TestStatus::PASS, {}};
+    TestResult test{"[SECURITY] Overlapping File Entries Check", TestStatus::PASS, {}};
 
     struct Range
     {
@@ -269,7 +269,7 @@ void ArchiveChecker::checkOverlappingEntries(const std::vector<ZipFileEntry>& en
 void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::path& path,
                                                       const std::vector<ZipFileEntry>& entries, Certificate& cert) const
 {
-    TestResult test{"Central Directory Consistency Check", TestStatus::PASS, {}};
+    TestResult test{"[SECURITY] Central Directory Consistency Check", TestStatus::PASS, {}};
 
     std::ifstream file(path, std::ios::binary);
     if (!file)
@@ -359,7 +359,7 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
 void ArchiveChecker::checkEntryCountSanity(const Zipper& handler, const std::vector<ZipFileEntry>& entries,
                                            Certificate& cert) const
 {
-    TestResult test{"Total Entry Count Sanity Check", TestStatus::PASS, {}};
+    TestResult test{"[SECURITY] Total Entry Count Sanity Check", TestStatus::PASS, {}};
 
     const int32_t reported_count = handler.getReportedEntryCount();
     if (reported_count != static_cast<int32_t>(entries.size()))
@@ -376,7 +376,7 @@ void ArchiveChecker::checkEntryCountSanity(const Zipper& handler, const std::vec
 void ArchiveChecker::checkExtraFieldsAndComments(const Zipper& handler, const std::vector<ZipFileEntry>& entries,
                                                  Certificate& cert) const
 {
-    TestResult test{"Extra Field and Comment Integrity Check", TestStatus::PASS, {}};
+    TestResult test{"[SECURITY] Extra Field and Comment Integrity Check", TestStatus::PASS, {}};
 
     // Comment check
     const std::string comment = handler.getComment();

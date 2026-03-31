@@ -49,6 +49,7 @@ TEST_CASE("Zip Slip Detection", "[archive][security]")
         Certificate cert;
         checker.checkZipSlip(entries, cert);
         CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "[SECURITY] Zip Slip Check"));
         CHECK(has_error_with_text(cert, "path escapes archive root"));
     }
 
@@ -60,6 +61,7 @@ TEST_CASE("Zip Slip Detection", "[archive][security]")
         Certificate cert;
         checker.checkZipSlip(entries, cert);
         CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "[SECURITY] Zip Slip Check"));
         CHECK(has_error_with_text(cert, "path escapes archive root"));
     }
 }
@@ -88,6 +90,7 @@ TEST_CASE("Zip Bomb Detection", "[archive][security]")
         Certificate cert;
         checker.checkZipBomb(entries, cert);
         CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "[SECURITY] Zip Bomb Check"));
         CHECK(has_error_with_text(cert, "excessive compression ratio"));
     }
 
@@ -100,6 +103,7 @@ TEST_CASE("Zip Bomb Detection", "[archive][security]")
         Certificate cert;
         checker.checkZipBomb(entries, cert);
         CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "[SECURITY] Zip Bomb Check"));
         CHECK(has_error_with_text(cert, "uncompressed size exceeds 1 GB limit"));
     }
 
@@ -144,6 +148,7 @@ TEST_CASE("Duplicate and Case-Conflicting Names", "[archive][security]")
         Certificate cert;
         checker.checkDuplicateNames(entries, cert);
         CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "[SECURITY] Duplicate Entry Names Check"));
         CHECK(has_error_with_text(cert, "Duplicate entry name found"));
     }
 
@@ -156,6 +161,7 @@ TEST_CASE("Duplicate and Case-Conflicting Names", "[archive][security]")
         Certificate cert;
         checker.checkDuplicateNames(entries, cert);
         CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "[SECURITY] Duplicate Entry Names Check"));
         CHECK(has_error_with_text(cert, "Case-conflicting entry names found"));
     }
 }
@@ -188,6 +194,7 @@ TEST_CASE("Overlapping Entries", "[archive][security]")
         Certificate cert;
         checker.checkOverlappingEntries(entries, cert);
         CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "[SECURITY] Overlapping File Entries Check"));
         CHECK(has_error_with_text(cert, "Overlapping file entries"));
     }
 }
