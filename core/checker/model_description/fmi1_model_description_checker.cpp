@@ -696,13 +696,6 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
                 test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
                                         ") references an absolute external file path: '" + uri +
                                         "'. This is a security risk and affects portability.");
-
-                // On Windows, if it starts with /C:/, remove the leading / for std::filesystem
-                if (path_str.size() > 2 && path_str[0] == '/' && path_str[2] == ':')
-                    path_str.erase(0, 1);
-
-                if (!std::filesystem::exists(path_str))
-                    test.messages.push_back("The referenced file does not exist on this system.");
             }
         }
     }
