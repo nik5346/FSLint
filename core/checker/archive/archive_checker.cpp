@@ -5,6 +5,7 @@
 #include "zipper.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
