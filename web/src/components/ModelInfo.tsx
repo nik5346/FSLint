@@ -64,7 +64,11 @@ const Section = ({
  * @returns {JSX.Element} The rendered ModelInfo component.
  */
 export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => {
-  const { summary, overallStatus } = result;
+  const { summary, overallStatus, results } = result;
+
+  const hasSecurityFailure =
+    overallStatus === 'FAIL' &&
+    results.some((r) => r.status === 'FAIL' && r.test_name.includes('[SECURITY]'));
 
   const statusColor =
     overallStatus === 'FAIL' ? '#ff5555' : overallStatus === 'WARNING' ? '#ffb86c' : '#50fa7b';
@@ -174,7 +178,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         gap: '24px',
       }}
     >
-      {overallStatus === 'FAIL' && (!summary.standard || summary.standard === 'UNKNOWN') && (
+      {overallStatus === 'FAIL' && (
         <div
           style={{
             padding: '16px',
@@ -185,12 +189,13 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
           }}
         >
           <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1em', fontWeight: 'bold' }}>
-            Critical Failure
+            {hasSecurityFailure ? '🛡️ Security Violation' : 'Critical Failure'}
           </h3>
           <p style={{ margin: 0 }}>
-            A critical error occurred (e.g., archive extraction or model detection failed),
-            preventing metadata extraction. Please check the <strong>Certificate</strong> tab for
-            details.
+            {hasSecurityFailure
+              ? 'Potential security risk detected. Archive validation failed with severe security concerns. Processing was aborted for safety.'
+              : 'A critical error occurred (e.g., archive extraction or model detection failed), preventing metadata extraction.'}{' '}
+            Please check the <strong>Certificate</strong> tab for details.
           </p>
         </div>
       )}

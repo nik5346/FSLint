@@ -1,5 +1,6 @@
 #include "zipper.h"
 
+#include "ioapi.h"
 #include "unzip.h"
 #include "zip.h"
 
@@ -111,6 +112,28 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
         entry.flags = static_cast<uint16_t>(file_info.flag);
         entry.compressed_size = file_info.compressed_size;
         entry.uncompressed_size = file_info.uncompressed_size;
+
+        // unzGetOffset in minizip returns the offset in the central directory,
+        // not the offset of the local file header.
+        // We read it manually from the current central directory entry.
+        // Central directory entry structure (partial):
+        // 0-3: Signature (0x02014b50)
+        // ...
+        // 42-45: Relative offset of local header (4 bytes)
+        const ZPOS64_T pos_in_central_dir = unzGetOffset64(uf);
+        entry.offset = 0;
+
+        std::ifstream file(_zip_path, std::ios::binary);
+        if (file)
+        {
+            file.seekg(static_cast<std::streamoff>(pos_in_central_dir + 42), std::ios::beg);
+            uint32_t offset_le = 0;
+            if (file.read(reinterpret_cast<char*>(&offset_le), 4))
+                entry.offset = offset_le;
+        }
+
+        entry.filename_length = file_info.size_filename;
+        entry.extra_field_length = file_info.size_file_extra;
         entry.is_encrypted = (file_info.flag & 0x01) != 0;
 
         // Unix file attribute constants
@@ -344,4 +367,115 @@ int32_t Zipper::getDiskCount() const
     // Both should be the same for valid archives
     // Return the maximum of the two (disk numbers are 0-indexed, so add 1 for count)
     return static_cast<int32_t>(std::max(disk_number, disk_with_cd)) + 1;
+}
+
+int32_t Zipper::getReportedEntryCount() const
+{
+    if (_zip_path.empty())
+        return -1;
+
+    std::ifstream file(_zip_path, std::ios::binary);
+    if (!file)
+        return -1;
+
+    constexpr uint32_t EOCD_SIGNATURE = 0x06054b50;
+    constexpr size_t EOCD_MIN_SIZE = 22;
+    constexpr size_t EOCD_ENTRIES_ON_DISK_OFFSET = 8;
+    constexpr size_t EOCD_TOTAL_ENTRIES_OFFSET = 10;
+    constexpr size_t MAX_ZIP_COMMENT_SIZE = 65535;
+    constexpr size_t MAX_EOCD_SEARCH_SIZE = MAX_ZIP_COMMENT_SIZE + EOCD_MIN_SIZE;
+
+    file.seekg(0, std::ios::end);
+    auto file_size = file.tellg();
+    const size_t search_size = std::min<size_t>(MAX_EOCD_SEARCH_SIZE, static_cast<size_t>(file_size));
+
+    file.seekg(-static_cast<std::streamoff>(search_size), std::ios::end);
+    std::vector<uint8_t> search_buffer(search_size);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    file.read(reinterpret_cast<char*>(search_buffer.data()), static_cast<std::streamsize>(search_size));
+
+    auto readInteger = [](const uint8_t* buf, size_t offset) -> uint32_t
+    {
+        uint32_t value = 0;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::memcpy(&value, buf + offset, sizeof(uint32_t));
+        return value;
+    };
+
+    auto readInteger16 = [](const uint8_t* buf, size_t offset) -> uint16_t
+    {
+        uint16_t value = 0;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::memcpy(&value, buf + offset, sizeof(uint16_t));
+        return value;
+    };
+
+    for (size_t i = search_buffer.size() - EOCD_MIN_SIZE; i > 0; --i)
+    {
+        if (readInteger(search_buffer.data(), i) == EOCD_SIGNATURE)
+        {
+            const uint16_t entries_on_disk = readInteger16(search_buffer.data(), i + EOCD_ENTRIES_ON_DISK_OFFSET);
+            const uint16_t total_entries = readInteger16(search_buffer.data(), i + EOCD_TOTAL_ENTRIES_OFFSET);
+            return std::max(entries_on_disk, total_entries);
+        }
+    }
+
+    return -1;
+}
+
+std::string Zipper::getComment() const
+{
+    if (_zip_path.empty())
+        return "";
+
+    std::ifstream file(_zip_path, std::ios::binary);
+    if (!file)
+        return "";
+
+    constexpr uint32_t EOCD_SIGNATURE = 0x06054b50;
+    constexpr size_t EOCD_MIN_SIZE = 22;
+    constexpr size_t EOCD_COMMENT_LENGTH_OFFSET = 20;
+    constexpr size_t MAX_ZIP_COMMENT_SIZE = 65535;
+    constexpr size_t MAX_EOCD_SEARCH_SIZE = MAX_ZIP_COMMENT_SIZE + EOCD_MIN_SIZE;
+
+    file.seekg(0, std::ios::end);
+    auto file_size = file.tellg();
+    const size_t search_size = std::min<size_t>(MAX_EOCD_SEARCH_SIZE, static_cast<size_t>(file_size));
+
+    file.seekg(-static_cast<std::streamoff>(search_size), std::ios::end);
+    std::vector<uint8_t> search_buffer(search_size);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    file.read(reinterpret_cast<char*>(search_buffer.data()), static_cast<std::streamsize>(search_size));
+
+    auto readInteger = [](const uint8_t* buf, size_t offset) -> uint32_t
+    {
+        uint32_t value = 0;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::memcpy(&value, buf + offset, sizeof(uint32_t));
+        return value;
+    };
+
+    auto readInteger16 = [](const uint8_t* buf, size_t offset) -> uint16_t
+    {
+        uint16_t value = 0;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::memcpy(&value, buf + offset, sizeof(uint16_t));
+        return value;
+    };
+
+    for (size_t i = search_buffer.size() - EOCD_MIN_SIZE; i > 0; --i)
+    {
+        if (readInteger(search_buffer.data(), i) == EOCD_SIGNATURE)
+        {
+            const uint16_t comment_length = readInteger16(search_buffer.data(), i + EOCD_COMMENT_LENGTH_OFFSET);
+            if (comment_length > 0 && i + EOCD_MIN_SIZE + comment_length <= search_buffer.size())
+            {
+                return std::string(reinterpret_cast<const char*>(search_buffer.data() + i + EOCD_MIN_SIZE),
+                                   comment_length);
+            }
+            break;
+        }
+    }
+
+    return "";
 }

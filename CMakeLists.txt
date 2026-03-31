@@ -537,6 +537,7 @@ add_executable(FSLint-tests
     tests/utf8_tests.cpp
     tests/detection_tests.cpp
     tests/archive_encoding_tests.cpp
+    tests/archive_security_tests.cpp
 )
 
 target_link_libraries(FSLint-tests PRIVATE

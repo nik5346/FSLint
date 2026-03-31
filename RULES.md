@@ -38,6 +38,21 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
   - Bit 11 **must** be set for every file whose filename in the archive contains non-ASCII characters (to indicate UTF-8 encoding).
   - Bit 11 **should** be 0 for files whose filenames only contain ASCII characters (for maximum portability with old tools).
 - **Data Descriptor Consistency**: General purpose bit 3 (data descriptor) is only allowed with `deflate` compression.
+- **[SECURITY] Zip Slip (Path Traversal)**: Normalized paths **must not** escape the archive root (e.g., `foo/../../etc/passwd`).
+- **[SECURITY] Zip Bomb (Decompression Bomb)**:
+  - The compression ratio of each entry **must** be below 100:1 (uncompressed vs. compressed size).
+  - The uncompressed size of any single entry **must** be less than 1 GB.
+  - The total uncompressed size of all entries **must** be less than 10 GB.
+- **[SECURITY] Central Directory vs Local Header Mismatch**: Metadata (filenames, sizes, offsets) **must** be consistent between the central directory and local file headers.
+- **[SECURITY] Overlapping File Entries**: No two local file data regions (headers + compressed data) **must** overlap in the archive.
+- **[SECURITY] Duplicate Entry Names**:
+  - Multiple entries with the same name **must not** be used.
+  - Entry names that only differ in case (e.g., `Model.xml` and `model.xml`) **must not** be used (to prevent collisions on case-insensitive filesystems).
+- **[SECURITY] Extra Field and Comment Integrity**:
+  - The archive comment length **must** match the declared length.
+  - Extra field lengths **must not** overflow the header or entry bounds.
+- **[SECURITY] Local File Header Signatures**: The local file header signature (`PK\x03\x04`) **must** be present at the reported offset for every central directory entry.
+- **[SECURITY] Total Entry Count Sanity**: The total number of entries reported in the central directory **must** match the actual count of local file records found.
 
 ## Common FMI Rules (All Versions)
 

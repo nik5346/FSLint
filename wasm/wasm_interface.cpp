@@ -1,5 +1,3 @@
-#pragma once
-
 #include "file_utils.h"
 #include "model_checker.h"
 

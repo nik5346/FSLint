@@ -5,9 +5,11 @@
 #include "zipper.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -63,6 +65,15 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
     checkSymbolicLinks(entries, cert);
     checkGeneralPurposeBit3(entries, cert);
 
+    // New security-focused checks
+    checkZipSlip(entries, cert);
+    checkZipBomb(entries, cert);
+    checkDuplicateNames(entries, cert);
+    checkOverlappingEntries(entries, cert);
+    checkCentralDirectoryConsistency(fmu_path, entries, cert);
+    checkEntryCountSanity(handler, entries, cert);
+    checkExtraFieldsAndComments(handler, entries, cert);
+
     handler.close();
 
     cert.printSubsectionSummary(!cert.isFailed());
@@ -98,6 +109,293 @@ void ArchiveChecker::checkCompressionMethods(const std::vector<ZipFileEntry>& en
                                     "': " + std::to_string(entry.compression_method) + " (only " +
                                     std::to_string(COMPRESSION_STORE) + "=store and " +
                                     std::to_string(COMPRESSION_DEFLATE) + "=deflate allowed).");
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void ArchiveChecker::checkZipSlip(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
+{
+    TestResult test{"[SECURITY] Zip Slip Check", TestStatus::PASS, {}};
+
+    for (const auto& entry : entries)
+    {
+        // Lexically normalize the path to check for traversal.
+        // We use an imaginary base directory to verify that the path stays within it.
+        const std::filesystem::path entry_path(entry.filename);
+        const std::filesystem::path base("/base");
+        const std::filesystem::path normalized = (base / entry_path).lexically_normal();
+
+        // Check if the normalized path still starts with the base.
+        const auto [base_it, norm_it] = std::mismatch(base.begin(), base.end(), normalized.begin());
+
+        if (base_it != base.end())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Zip Slip detected in '" + entry.filename + "': path escapes archive root.");
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void ArchiveChecker::checkZipBomb(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
+{
+    TestResult test{"[SECURITY] Zip Bomb Check", TestStatus::PASS, {}};
+
+    constexpr double MAX_RATIO = 100.0;
+    constexpr uint64_t MAX_SINGLE_SIZE = 1024ULL * 1024ULL * 1024ULL;        // 1 GB
+    constexpr uint64_t MAX_TOTAL_SIZE = 10ULL * 1024ULL * 1024ULL * 1024ULL; // 10 GB
+
+    uint64_t total_uncompressed_size = 0;
+
+    for (const auto& entry : entries)
+    {
+        total_uncompressed_size += entry.uncompressed_size;
+
+        // Check single file size
+        if (entry.uncompressed_size > MAX_SINGLE_SIZE)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("File '" + entry.filename + "' uncompressed size exceeds 1 GB limit (" +
+                                    std::to_string(entry.uncompressed_size) + " bytes).");
+        }
+
+        // Check compression ratio
+        if (entry.compressed_size > 0)
+        {
+            const double ratio = static_cast<double>(entry.uncompressed_size) / entry.compressed_size;
+            if (ratio > MAX_RATIO)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("File '" + entry.filename + "' has excessive compression ratio (" +
+                                        std::to_string(ratio) + ":1). Potential zip bomb.");
+            }
+        }
+    }
+
+    if (total_uncompressed_size > MAX_TOTAL_SIZE)
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Total uncompressed size of archive exceeds 10 GB limit (" +
+                                std::to_string(total_uncompressed_size) + " bytes).");
+    }
+
+    cert.printTestResult(test);
+}
+
+void ArchiveChecker::checkDuplicateNames(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
+{
+    TestResult test{"[SECURITY] Duplicate Entry Names Check", TestStatus::PASS, {}};
+
+    std::vector<std::string> seen_names;
+    std::vector<std::string> seen_names_lower;
+
+    for (const auto& entry : entries)
+    {
+        // Exact duplicate
+        if (std::find(seen_names.begin(), seen_names.end(), entry.filename) != seen_names.end())
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Duplicate entry name found: '" + entry.filename + "'.");
+        }
+        else
+        {
+            seen_names.push_back(entry.filename);
+        }
+
+        // Case-insensitive duplicate
+        std::string lower_name = entry.filename;
+        std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(static_cast<int>(c))); });
+
+        if (std::find(seen_names_lower.begin(), seen_names_lower.end(), lower_name) != seen_names_lower.end())
+        {
+            // Only report if it's not an exact duplicate (already reported)
+            if (std::count(seen_names.begin(), seen_names.end(), entry.filename) == 1)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Case-conflicting entry names found: '" + entry.filename +
+                                        "' collides with another entry on case-insensitive filesystems.");
+            }
+        }
+        else
+        {
+            seen_names_lower.push_back(lower_name);
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void ArchiveChecker::checkOverlappingEntries(const std::vector<ZipFileEntry>& entries, Certificate& cert) const
+{
+    TestResult test{"[SECURITY] Overlapping File Entries Check", TestStatus::PASS, {}};
+
+    struct Range
+    {
+        uint32_t start;
+        uint32_t end;
+        std::string filename;
+    };
+
+    std::vector<Range> ranges;
+    for (const auto& entry : entries)
+    {
+        // Local File Header: 30 bytes fixed + filename + extra field
+        // Compressed Data: compressed_size
+        // We don't account for the Data Descriptor (optional) because we don't know its exact size/presence easily
+        // but checking Header + Data is a good baseline.
+        const uint32_t header_size = 30 + entry.filename_length + entry.extra_field_length;
+        const uint32_t range_start = entry.offset;
+        const uint32_t range_end = entry.offset + header_size + entry.compressed_size;
+
+        for (const auto& r : ranges)
+        {
+            if (range_start < r.end && range_end > r.start)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Overlapping file entries: '" + entry.filename + "' overlaps with '" +
+                                        r.filename + "'.");
+            }
+        }
+        ranges.push_back({range_start, range_end, entry.filename});
+    }
+
+    cert.printTestResult(test);
+}
+
+void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::path& path,
+                                                      const std::vector<ZipFileEntry>& entries, Certificate& cert) const
+{
+    TestResult test{"[SECURITY] Central Directory Consistency Check", TestStatus::PASS, {}};
+
+    std::ifstream file(path, std::ios::binary);
+    if (!file)
+        return;
+
+    for (const auto& entry : entries)
+    {
+        // Read Local File Header
+        file.seekg(entry.offset, std::ios::beg);
+
+        uint32_t signature = 0;
+        file.read(reinterpret_cast<char*>(&signature), sizeof(signature));
+
+        if (signature != 0x04034b50)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Invalid Local File Header signature at offset " + std::to_string(entry.offset) +
+                                    " for entry '" + entry.filename + "'.");
+            continue;
+        }
+
+        // Check filename in local header
+        file.seekg(entry.offset + 26, std::ios::beg);
+        uint16_t local_filename_len = 0;
+        uint16_t local_extra_len = 0;
+        file.read(reinterpret_cast<char*>(&local_filename_len), sizeof(local_filename_len));
+        file.read(reinterpret_cast<char*>(&local_extra_len), sizeof(local_extra_len));
+
+        if (local_filename_len != entry.filename_length)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Filename length mismatch for '" + entry.filename + "': Central Directory says " +
+                                    std::to_string(entry.filename_length) + " but Local Header says " +
+                                    std::to_string(local_filename_len) + ".");
+        }
+
+        std::string local_filename(local_filename_len, '\0');
+        file.read(local_filename.data(), local_filename_len);
+
+        if (local_filename != entry.filename)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Filename mismatch for '" + entry.filename + "': Central Directory says '" +
+                                    entry.filename + "' but Local Header says '" + local_filename + "'.");
+        }
+
+        if (local_extra_len != entry.extra_field_length)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Extra field length mismatch for '" + entry.filename +
+                                    "': Central Directory says " + std::to_string(entry.extra_field_length) +
+                                    " but Local Header says " + std::to_string(local_extra_len) + ".");
+        }
+
+        // Optional: Check uncompressed size, compressed size, etc.
+        // These are at offset 18 and 22 in LFH
+        file.seekg(entry.offset + 18, std::ios::beg);
+        uint32_t local_comp_size = 0;
+        uint32_t local_uncomp_size = 0;
+        file.read(reinterpret_cast<char*>(&local_comp_size), sizeof(local_comp_size));
+        file.read(reinterpret_cast<char*>(&local_uncomp_size), sizeof(local_uncomp_size));
+
+        // Note: If Bit 3 is set, these might be 0 in LFH and stored in Data Descriptor
+        constexpr uint16_t DATA_DESCRIPTOR_BIT = 0x08;
+        if (!(entry.flags & DATA_DESCRIPTOR_BIT))
+        {
+            if (local_comp_size != entry.compressed_size)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Compressed size mismatch for '" + entry.filename +
+                                        "': Central Directory says " + std::to_string(entry.compressed_size) +
+                                        " but Local Header says " + std::to_string(local_comp_size) + ".");
+            }
+            if (local_uncomp_size != entry.uncompressed_size)
+            {
+                test.status = TestStatus::FAIL;
+                test.messages.push_back("Uncompressed size mismatch for '" + entry.filename +
+                                        "': Central Directory says " + std::to_string(entry.uncompressed_size) +
+                                        " but Local Header says " + std::to_string(local_uncomp_size) + ".");
+            }
+        }
+    }
+
+    cert.printTestResult(test);
+}
+
+void ArchiveChecker::checkEntryCountSanity(const Zipper& handler, const std::vector<ZipFileEntry>& entries,
+                                           Certificate& cert) const
+{
+    TestResult test{"[SECURITY] Total Entry Count Sanity Check", TestStatus::PASS, {}};
+
+    const int32_t reported_count = handler.getReportedEntryCount();
+    if (reported_count != static_cast<int32_t>(entries.size()))
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("Total entry count mismatch: Central Directory reports " +
+                                std::to_string(reported_count) + " entries, but " + std::to_string(entries.size()) +
+                                " were found.");
+    }
+
+    cert.printTestResult(test);
+}
+
+void ArchiveChecker::checkExtraFieldsAndComments(const Zipper& handler, const std::vector<ZipFileEntry>& entries,
+                                                 Certificate& cert) const
+{
+    TestResult test{"[SECURITY] Extra Field and Comment Integrity Check", TestStatus::PASS, {}};
+
+    // Comment check
+    const std::string comment = handler.getComment();
+    // getComment() already validates that the actual bytes exist in the file.
+    // If we wanted to check for "oversized" but valid comments:
+    if (comment.size() > 2048) // Arbitrary limit for "sanity", though ZIP allows 64K
+    {
+        test.status = TestStatus::WARNING;
+        test.messages.push_back("Archive comment is unusually large (" + std::to_string(comment.size()) + " bytes).");
+    }
+
+    for (const auto& entry : entries)
+    {
+        // Sanity check for extra field length
+        if (entry.extra_field_length > 4096)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Extra field for '" + entry.filename + "' is suspiciously large (" +
+                                    std::to_string(entry.extra_field_length) + " bytes).");
         }
     }
 
