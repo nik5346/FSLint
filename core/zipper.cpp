@@ -111,7 +111,26 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
         entry.flags = static_cast<uint16_t>(file_info.flag);
         entry.compressed_size = file_info.compressed_size;
         entry.uncompressed_size = file_info.uncompressed_size;
-        entry.offset = unzGetOffset(uf);
+
+        // unzGetOffset in minizip returns the offset in the central directory,
+        // not the offset of the local file header.
+        // We read it manually from the current central directory entry.
+        // Central directory entry structure (partial):
+        // 0-3: Signature (0x02014b50)
+        // ...
+        // 42-45: Relative offset of local header (4 bytes)
+        const ZPOS64_T pos_in_central_dir = unzGetOffset64(uf);
+        entry.offset = 0;
+
+        std::ifstream file(_zip_path, std::ios::binary);
+        if (file)
+        {
+            file.seekg(static_cast<std::streamoff>(pos_in_central_dir + 42), std::ios::beg);
+            uint32_t offset_le = 0;
+            if (file.read(reinterpret_cast<char*>(&offset_le), 4))
+                entry.offset = offset_le;
+        }
+
         entry.filename_length = file_info.size_filename;
         entry.extra_field_length = file_info.size_file_extra;
         entry.is_encrypted = (file_info.flag & 0x01) != 0;

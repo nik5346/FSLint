@@ -208,7 +208,7 @@ void ArchiveChecker::checkDuplicateNames(const std::vector<ZipFileEntry>& entrie
         // Case-insensitive duplicate
         std::string lower_name = entry.filename;
         std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
-                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                       [](unsigned char c) { return static_cast<char>(std::tolower(static_cast<int>(c))); });
 
         if (std::find(seen_names_lower.begin(), seen_names_lower.end(), lower_name) != seen_names_lower.end())
         {
@@ -314,6 +314,14 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
             test.status = TestStatus::FAIL;
             test.messages.push_back("Filename mismatch for '" + entry.filename + "': Central Directory says '" +
                                     entry.filename + "' but Local Header says '" + local_filename + "'.");
+        }
+
+        if (local_extra_len != entry.extra_field_length)
+        {
+            test.status = TestStatus::FAIL;
+            test.messages.push_back("Extra field length mismatch for '" + entry.filename +
+                                    "': Central Directory says " + std::to_string(entry.extra_field_length) +
+                                    " but Local Header says " + std::to_string(local_extra_len) + ".");
         }
 
         // Optional: Check uncompressed size, compressed size, etc.
