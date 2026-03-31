@@ -67,7 +67,8 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
   const { summary, overallStatus, results } = result;
 
   const hasSecurityFailure =
-    overallStatus === 'FAIL' && results.some((r) => r.status === 'FAIL' && r.test_name.includes('[SECURITY]'));
+    overallStatus === 'FAIL' &&
+    results.some((r) => r.status === 'FAIL' && r.test_name.includes('[SECURITY]'));
 
   const statusColor =
     overallStatus === 'FAIL' ? '#ff5555' : overallStatus === 'WARNING' ? '#ffb86c' : '#50fa7b';
