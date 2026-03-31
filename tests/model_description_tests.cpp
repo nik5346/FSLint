@@ -822,6 +822,24 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
         CHECK(has_error_with_text(cert, "version \"3.0.1\" is invalid (must be exactly \"3.0\")."));
     }
 
+    SECTION("Aliased ModelStructure")
+    {
+        checker.validate("tests/data/fmi3/pass/aliased_model_structure", cert);
+        if (has_fail(cert))
+        {
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
+                {
+                    UNSCOPED_INFO("FAIL: " << res.test_name);
+                    for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("  - " << msg);
+                }
+            }
+        }
+        CHECK_FALSE(has_fail(cert));
+    }
+
     SECTION("DefaultExperiment INF")
     {
         checker.validate("tests/data/fmi3/pass/stop_time_inf", cert);

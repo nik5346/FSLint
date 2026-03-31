@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="AliasedModel" instantiationToken="{123}">
+  <ModelExchange modelIdentifier="aliased" />
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+    <Float64 name="x" valueReference="1" causality="output" initial="calculated" />
+    <Float64 name="x_alias" valueReference="1" causality="local" />
+    <Float64 name="der_x" valueReference="2" causality="local" derivative="1" />
+    <Float64 name="der_x_alias" valueReference="2" causality="local" derivative="1" />
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="1" />
+    <ContinuousStateDerivative valueReference="2" />
+    <InitialUnknown valueReference="1" />
+    <InitialUnknown valueReference="2" />
+  </ModelStructure>
+</fmiModelDescription>

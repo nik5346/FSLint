@@ -98,8 +98,10 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
 
     // FMI3-specific model structure checks
     void checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
-    void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
-    void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
+    void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables,
+                         const std::map<uint32_t, uint32_t>& index_to_base_index, Certificate& cert) const;
+    void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables,
+                             const std::map<uint32_t, uint32_t>& index_to_base_index, Certificate& cert) const;
     void validateClockedStates(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void validateEventIndicators(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
