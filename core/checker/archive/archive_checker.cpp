@@ -7,9 +7,9 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
-#include <format>
 #include <cstring>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <string>
