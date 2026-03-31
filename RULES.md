@@ -169,11 +169,11 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Generation Date and Time**: **Should** not be unreasonably old (before 2010).
 - **GUID Presence**: The `guid` attribute **must** be present and non-empty.
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
-- **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **must** use a valid URI scheme (`fmu://`, `file://`, `http://`, or `https://`).
+- **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **must** use a valid URI scheme (`fmu://` or `file://`).
   - URIs using `fmu://` **must** point to existing files within the archive.
   - **[SECURITY] External URIs**:
-    - URIs using `http://` or `https://` **should** be reachable; a warning is issued if the source appears to be offline or unreachable.
-    - URIs using `file://` **should** point to existing files if they use an absolute path; a warning is issued if they do not exist on the current system (this may affect portability).
+    - URIs using `http://` or `https://` **must not** be used (external internet references are a security risk).
+    - URIs using `file://` **should** point to existing files if they use an absolute path; a warning is issued if they do not exist on the current system (this may affect portability and is flagged as a security risk).
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
 ### Variable Consistency

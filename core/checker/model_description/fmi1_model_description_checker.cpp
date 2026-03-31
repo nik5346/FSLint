@@ -7,16 +7,6 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 
-// NOLINTBEGIN(misc-include-cleaner)
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <fcntl.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#endif
-// NOLINTEND(misc-include-cleaner)
-
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -701,38 +691,27 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
             const bool is_absolute = (path_str[0] == '/') || (path_str.size() > 1 && path_str[1] == ':');
             if (is_absolute)
             {
+                if (test.status == TestStatus::PASS)
+                    test.status = TestStatus::WARNING;
+                test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                        ") references an absolute external file path: '" + uri +
+                                        "'. This is a security risk and affects portability.");
+
                 // On Windows, if it starts with /C:/, remove the leading / for std::filesystem
                 if (path_str.size() > 2 && path_str[0] == '/' && path_str[2] == ':')
                     path_str.erase(0, 1);
 
                 if (!std::filesystem::exists(path_str))
-                {
-                    if (test.status == TestStatus::PASS)
-                        test.status = TestStatus::WARNING;
-                    test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
-                                            ") references an external file that does not exist on this system: '" +
-                                            uri + "'. This may affect portability.");
-                }
+                    test.messages.push_back("The referenced file does not exist on this system.");
             }
         }
     }
     else if (uri.compare(0, 7, "http://") == 0 || uri.compare(0, 8, "https://") == 0)
     {
-        // Restrictive regex for URL validation to prevent command injection and ensure standard compliance.
-        static const std::regex url_regex(R"(^https?://[a-zA-Z0-9\-\._~:/?#%@\+&!=\[\]]+$)", std::regex::optimize);
-        if (!std::regex_match(uri, url_regex))
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
-                                    ") has an invalid or unsafe HTTP/HTTPS URI: '" + uri + "'.");
-        }
-        else if (!checkReachability(uri))
-        {
-            if (test.status == TestStatus::PASS)
-                test.status = TestStatus::WARNING;
-            test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
-                                    ") references a web source that appears to be unreachable: '" + uri + "'.");
-        }
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                                ") references an external web source: '" + uri +
+                                "'. External internet references are not allowed for security reasons.");
     }
     else
     {
@@ -740,76 +719,6 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
         test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
                                 ") has an unsupported or invalid URI scheme: '" + uri + "'.");
     }
-}
-
-// NOLINTBEGIN(misc-include-cleaner)
-#ifdef _WIN32
-static int runProcess(const std::string& url)
-{
-    // Build the command line — no shell, direct curl invocation
-    std::string cmdLine = "curl -I -s -L --max-time 5 --fail \"" + url + "\"";
-
-    STARTUPINFOA si{};
-    si.cb = sizeof(si);
-    // Suppress curl output by redirecting handles to NUL
-    HANDLE hNull = CreateFileA("NUL", GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
-    si.dwFlags = STARTF_USESTDHANDLES;
-    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
-    si.hStdOutput = hNull;
-    si.hStdError = hNull;
-
-    PROCESS_INFORMATION pi{};
-    if (!CreateProcessA(nullptr, cmdLine.data(), nullptr, nullptr,
-                        /*bInheritHandles=*/TRUE, 0, nullptr, nullptr, &si, &pi))
-    {
-        CloseHandle(hNull);
-        return -1;
-    }
-    WaitForSingleObject(pi.hProcess, INFINITE);
-    DWORD exitCode = 1;
-    GetExitCodeProcess(pi.hProcess, &exitCode);
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-    CloseHandle(hNull);
-    return static_cast<int>(exitCode);
-}
-#else
-static int runProcess(const std::string& url)
-{
-    const pid_t pid = fork();
-    if (pid < 0)
-        return -1;
-
-    if (pid == 0) // child
-    {
-        // Redirect stdout/stderr to /dev/null
-        const int fd = open("/dev/null", O_WRONLY);
-        if (fd >= 0)
-        {
-            dup2(fd, STDOUT_FILENO);
-            dup2(fd, STDERR_FILENO);
-            close(fd);
-        }
-
-        // execvp does NOT invoke a shell
-        execlp("curl", "curl", "-I", "-s", "-L", "--max-time", "5", "--fail", url.c_str(), nullptr);
-        _exit(127); // exec failed
-    }
-
-    int status = 0;
-    waitpid(pid, &status, 0);
-    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
-#endif
-// NOLINTEND(misc-include-cleaner)
-
-bool Fmi1ModelDescriptionChecker::checkReachability(const std::string& url) const
-{
-    static const std::regex safe_url_regex(R"(^https?://[a-zA-Z0-9\-\._~:/?#%@\+&!=\[\]]+$)", std::regex::optimize);
-    if (!std::regex_match(url, safe_url_regex))
-        return false;
-
-    return runProcess(url) == 0;
 }
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert) const
