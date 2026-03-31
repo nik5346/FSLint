@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <format>
 #include <cstring>
 #include <filesystem>
 #include <fstream>

@@ -10,6 +10,8 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <format>
 #include <optional>
