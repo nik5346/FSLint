@@ -34,7 +34,7 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
     - Parent directory traversal (`..`) **must not** be used.
     - Normalized paths **must not** escape the archive root (e.g., `foo/../../etc/passwd`).
   - **[SECURITY] Control Characters**: Paths **must not** contain control characters (U+0000–U+001F) or null bytes (`\0`).
-  - **[SECURITY] Illegal Characters**: Paths **must not** contain illegal characters for maximum cross-platform compatibility (`<`, `>`, `"`, `|`, `?`, `*`).
+  - **Illegal Characters**: Paths **must not** contain illegal characters for maximum cross-platform compatibility (`<`, `>`, `"`, `|`, `?`, `*`).
   - Non-ASCII characters in paths **should** be avoided.
   - Leading `./` or multiple consecutive slashes `//` **should** be avoided.
 - **Symbolic Links**: Symbolic links **must not** be used within the archive.
