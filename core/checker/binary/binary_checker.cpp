@@ -10,8 +10,6 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
-#include <algorithm>
-#include <cctype>
 #include <filesystem>
 #include <format>
 #include <optional>
@@ -261,40 +259,6 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     }
 
                     cert.printTestResult(format_test);
-
-                    // 3. Suspicious Imports Check
-                    TestResult import_test{std::format("Suspicious Binary Imports: {}/{}{}", platform, model_id, ext),
-                                           TestStatus::PASS,
-                                           {}};
-
-                    const std::vector<std::string> suspicious_libs = {
-                        "ws2_32.dll", "libcurl",   "libssl", "wininet.dll", "winhttp.dll", "libcsoap",
-                        "libnsl",     "libresolv", "libssh", "libcrypto",   "crypt32.dll", "advapi32.dll"};
-
-                    for (const auto& imported : info.importedLibraries)
-                    {
-                        std::string imported_lower = imported;
-                        std::transform(imported_lower.begin(), imported_lower.end(), imported_lower.begin(), ::tolower);
-
-                        for (const auto& suspicious : suspicious_libs)
-                        {
-                            std::string suspicious_lower = suspicious;
-                            std::transform(suspicious_lower.begin(), suspicious_lower.end(), suspicious_lower.begin(),
-                                           ::tolower);
-
-                            if (imported_lower.find(suspicious_lower) != std::string::npos)
-                            {
-                                import_test.status = TestStatus::WARNING;
-                                import_test.messages.push_back(
-                                    std::format("[SECURITY] Binary imports suspicious library '{}' (potential "
-                                                "network or security risk).",
-                                                imported));
-                                break;
-                            }
-                        }
-                    }
-
-                    cert.printTestResult(import_test);
                 }
             }
         }

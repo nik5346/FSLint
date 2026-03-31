@@ -15,7 +15,6 @@ enum ElfConstants : uint32_t
     PT_LOAD = 1,
     PT_DYNAMIC = 2,
     DT_NULL = 0,
-    DT_NEEDED = 1,
     DT_SYMTAB = 6,
     DT_STRTAB = 5,
     DT_HASH = 4,
@@ -591,7 +590,6 @@ static BinaryInfo parseElf64(std::ifstream& f)
     uint64_t strtab_off = 0;
     uint64_t gnu_hash_off = 0;
     uint64_t hash_off = 0;
-    std::vector<uint64_t> needed_offsets;
 
     for (const auto& d : dyns)
     {
@@ -604,10 +602,6 @@ static BinaryInfo parseElf64(std::ifstream& f)
         case DT_STRTAB:
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             strtab_off = d.d_un.d_ptr;
-            break;
-        case DT_NEEDED:
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
-            needed_offsets.push_back(d.d_un.d_val);
             break;
         case DT_HASH:
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
@@ -642,17 +636,6 @@ static BinaryInfo parseElf64(std::ifstream& f)
 
     symtab_off = va_to_off(symtab_off);
     strtab_off = va_to_off(strtab_off);
-
-    for (const uint64_t off : needed_offsets)
-    {
-        f.seekg(static_cast<std::streamoff>(strtab_off + off));
-        std::string lib_name;
-        char c = 0;
-        while (f.get(c) && c != '\0')
-            lib_name += c;
-        if (!lib_name.empty())
-            info.importedLibraries.insert(lib_name);
-    }
 
     hash_off = va_to_off(hash_off);
     gnu_hash_off = va_to_off(gnu_hash_off);
@@ -818,31 +801,6 @@ static BinaryInfo parseMachO(std::ifstream& f, uint32_t base_off)
             nsyms = swap ? swap32(sc.nsyms) : sc.nsyms;
             stroff = swap ? swap32(sc.stroff) : sc.stroff;
         }
-        else if (cmd == 0xc /* LC_LOAD_DYLIB */ || cmd == 0xd /* LC_ID_DYLIB */ ||
-                 cmd == 0x12 /* LC_LOAD_WEAK_DYLIB */ || cmd == 0x1c /* LC_REEXPORT_DYLIB */ ||
-                 cmd == 0x20 /* LC_LOAD_UPWARD_DYLIB */)
-        {
-            f.seekg(curr_off + 8); // Offset to dylib_command.dylib.name.offset
-            uint32_t name_off = 0;
-            readFromFile(f, static_cast<std::streamoff>(f.tellg()), name_off);
-            name_off = swap ? swap32(name_off) : name_off;
-
-            f.seekg(static_cast<std::streamoff>(curr_off) + name_off);
-            std::string lib_name;
-            char c = 0;
-            while (f.get(c) && c != '\0')
-                lib_name += c;
-            if (!lib_name.empty())
-            {
-                // Mach-O paths are often absolute, like /usr/lib/libSystem.B.dylib
-                // We just want the filename
-                const size_t last_slash = lib_name.find_last_of('/');
-                if (last_slash != std::string::npos)
-                    info.importedLibraries.insert(lib_name.substr(last_slash + 1));
-                else
-                    info.importedLibraries.insert(lib_name);
-            }
-        }
         else if (cmd == 0x80000022 /* LC_DYLD_INFO_ONLY */ || cmd == 0x22 /* LC_DYLD_INFO */)
         {
             dyld_info_command dc{};
@@ -960,7 +918,6 @@ static BinaryInfo parseElf32(std::ifstream& f)
     uint32_t strtab_off = 0;
     uint32_t hash_off = 0;
     uint32_t gnu_hash_off = 0;
-    std::vector<uint32_t> needed_offsets;
 
     for (const auto& d : dyns)
     {
@@ -973,10 +930,6 @@ static BinaryInfo parseElf32(std::ifstream& f)
         case DT_STRTAB:
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             strtab_off = d.d_un.d_ptr;
-            break;
-        case DT_NEEDED:
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
-            needed_offsets.push_back(d.d_un.d_val);
             break;
         case DT_HASH:
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
@@ -1009,17 +962,6 @@ static BinaryInfo parseElf32(std::ifstream& f)
 
     symtab_off = va_to_off(symtab_off);
     strtab_off = va_to_off(strtab_off);
-
-    for (const uint32_t off : needed_offsets)
-    {
-        f.seekg(static_cast<std::streamoff>(strtab_off + off));
-        std::string lib_name;
-        char c = 0;
-        while (f.get(c) && c != '\0')
-            lib_name += c;
-        if (!lib_name.empty())
-            info.importedLibraries.insert(lib_name);
-    }
 
     hash_off = va_to_off(hash_off);
     gnu_hash_off = va_to_off(gnu_hash_off);
@@ -1201,33 +1143,6 @@ static BinaryInfo parsePe(std::ifstream& f)
         return 0;
     };
 
-    // --- Import Parsing ---
-    const uint32_t import_dir_off = rva_to_off(import_dir_info.VirtualAddress);
-    if (import_dir_off != 0)
-    {
-        uint32_t curr_import_off = import_dir_off;
-        while (true)
-        {
-            uint32_t name_rva = 0;
-            // IMAGE_IMPORT_DESCRIPTOR has name_rva at offset 12
-            if (!readFromFile(f, curr_import_off + 12, name_rva) || name_rva == 0)
-                break;
-
-            const uint32_t name_off = rva_to_off(name_rva);
-            if (name_off != 0)
-            {
-                f.seekg(static_cast<std::streamoff>(name_off));
-                std::string lib_name;
-                char c = 0;
-                while (f.get(c) && c != '\0')
-                    lib_name += c;
-                if (!lib_name.empty())
-                    info.importedLibraries.insert(lib_name);
-            }
-            curr_import_off += 20; // sizeof(IMAGE_IMPORT_DESCRIPTOR)
-        }
-    }
-
     // --- Export Parsing ---
     const uint32_t export_dir_off = rva_to_off(export_dir_info.VirtualAddress);
     if (export_dir_off != 0)
@@ -1314,7 +1229,6 @@ BinaryInfo BinaryParser::parse(const std::filesystem::path& path)
             if (!res.architectures.empty())
                 combined.architectures.push_back(res.architectures[0]);
             combined.exports.insert(res.exports.begin(), res.exports.end());
-            combined.importedLibraries.insert(res.importedLibraries.begin(), res.importedLibraries.end());
         }
         return combined;
     }

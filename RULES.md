@@ -26,11 +26,13 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
 - **Compression Methods**: Only `store` (0) and `deflate` (8) compression methods **must** be used.
 - **Version Needed**: The maximum version needed to extract **must** be `2.0` (for compatibility).
 - **Encryption**: Encrypted files **must not** be used.
-- **Path Format**:
+- **Path Format and Security**:
   - Only forward slashes `/` **must** be used (no backslashes `\`).
   - Absolute paths **must not** be used (must not start with `/`).
   - Drive letters or device paths (e.g., `C:`) **must not** be used.
-  - Parent directory traversal (`..`) **must not** be used.
+  - **[SECURITY] Path Traversal & Zip Slip**:
+    - Parent directory traversal (`..`) **must not** be used.
+    - Normalized paths **must not** escape the archive root (e.g., `foo/../../etc/passwd`).
   - **[SECURITY] Control Characters**: Paths **must not** contain control characters (U+0000–U+001F) or null bytes (`\0`).
   - **[SECURITY] Illegal Characters**: Paths **must not** contain illegal characters for maximum cross-platform compatibility (`<`, `>`, `"`, `|`, `?`, `*`).
   - Non-ASCII characters in paths **should** be avoided.
@@ -40,9 +42,6 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
   - Bit 11 **must** be set for every file whose filename in the archive contains non-ASCII characters (to indicate UTF-8 encoding).
   - Bit 11 **should** be 0 for files whose filenames only contain ASCII characters (for maximum portability with old tools).
 - **Data Descriptor Consistency**: General purpose bit 3 (data descriptor) is only allowed with `deflate` compression.
-- **[SECURITY] Path Traversal & Zip Slip**:
-  - Parent directory traversal (`..`) **must not** be used.
-  - Normalized paths **must not** escape the archive root (e.g., `foo/../../etc/passwd`).
 - **[SECURITY] Zip Bomb (Decompression Bomb)**:
   - The compression ratio of each entry **must** be below 100:1 (uncompressed vs. compressed size).
   - The uncompressed size of any single entry **must** be less than 1 GB.
@@ -147,8 +146,6 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 
 The binary file **must** be a shared library (dynamic library). Its format, extension, and architecture **must** match the platform identifier (the directory name under `binaries/`):
 
-- **[SECURITY] Suspicious Imports**: Binaries **should** not import libraries related to networking or security (e.g., `ws2_32.dll`, `libcurl`, `libssl`). FMUs generally should not make network calls.
-
 - **Windows**:
   - Format: **PE** (Portable Executable).
   - Extension: `.dll`.
@@ -174,8 +171,9 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
 - **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **must** use a valid URI scheme (`fmu://`, `file://`, `http://`, or `https://`).
   - URIs using `fmu://` **must** point to existing files within the archive.
-  - URIs using `http://` or `https://` **should** be reachable; a warning is issued if the source appears to be offline or unreachable.
-  - URIs using `file://` **should** point to existing files if they use an absolute path; a warning is issued if they do not exist on the current system (this may affect portability).
+  - **[SECURITY] External URIs**:
+    - URIs using `http://` or `https://` **should** be reachable; a warning is issued if the source appears to be offline or unreachable.
+    - URIs using `file://` **should** point to existing files if they use an absolute path; a warning is issued if they do not exist on the current system (this may affect portability).
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
 ### Variable Consistency

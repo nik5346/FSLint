@@ -709,7 +709,7 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
                 {
                     if (test.status == TestStatus::PASS)
                         test.status = TestStatus::WARNING;
-                    test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+                    test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
                                             ") references an external file that does not exist on this system: '" +
                                             uri + "'. This may affect portability.");
                 }
@@ -723,14 +723,14 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
         if (!std::regex_match(uri, url_regex))
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+            test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
                                     ") has an invalid or unsafe HTTP/HTTPS URI: '" + uri + "'.");
         }
         else if (!checkReachability(uri))
         {
             if (test.status == TestStatus::PASS)
                 test.status = TestStatus::WARNING;
-            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
+            test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
                                     ") references a web source that appears to be unreachable: '" + uri + "'.");
         }
     }

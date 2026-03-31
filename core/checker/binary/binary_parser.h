@@ -29,7 +29,6 @@ struct BinaryInfo
     bool isSharedLibrary = false;                ///< True if it is a shared library.
     std::vector<ArchInfo> architectures;         ///< List of architectures (fat binary support).
     std::set<std::string> exports;               ///< Set of exported symbol names.
-    std::set<std::string> importedLibraries;     ///< Set of imported library names.
 };
 
 /// @brief Parser for extracting info from binary executables.
