@@ -676,42 +676,6 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
                                     ") references missing file in FMU: '" + relative_path + "'.");
         }
     }
-    else if (uri.compare(0, 7, "file://") == 0)
-    {
-        std::string path_str = uri.substr(7);
-        if (path_str.empty())
-        {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
-                                    ") has an empty file:// URI.");
-        }
-        else
-        {
-            // Simple heuristic for absolute path: starts with / or [A-Z]:
-            const bool is_absolute = (path_str[0] == '/') || (path_str.size() > 1 && path_str[1] == ':');
-            if (is_absolute)
-            {
-                if (test.status == TestStatus::PASS)
-                    test.status = TestStatus::WARNING;
-                test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
-                                        ") references an absolute external file path: '" + uri +
-                                        "'. This is a security risk and affects portability.");
-            }
-        }
-    }
-    else if (uri.compare(0, 7, "http://") == 0 || uri.compare(0, 8, "https://") == 0)
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("[SECURITY] Attribute '" + attr_name + "' (line " + std::to_string(line) +
-                                ") references an external web source: '" + uri +
-                                "'. External internet references are not allowed for security reasons.");
-    }
-    else
-    {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Attribute '" + attr_name + "' (line " + std::to_string(line) +
-                                ") has an unsupported or invalid URI scheme: '" + uri + "'.");
-    }
 }
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert) const
