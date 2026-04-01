@@ -178,27 +178,28 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         gap: '24px',
       }}
     >
-      {overallStatus === 'FAIL' && (
-        <div
-          style={{
-            padding: '16px',
-            backgroundColor: '#ff555522',
-            border: '1px solid #ff555544',
-            borderRadius: '8px',
-            color: '#ff5555',
-          }}
-        >
-          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1em', fontWeight: 'bold' }}>
-            {hasSecurityFailure ? '🛡️ Security Violation' : 'Critical Failure'}
-          </h3>
-          <p style={{ margin: 0 }}>
-            {hasSecurityFailure
-              ? 'Potential security risk detected. Archive validation failed with severe security concerns. Processing was aborted for safety.'
-              : 'A critical error occurred (e.g., archive extraction or model detection failed), preventing metadata extraction.'}{' '}
-            Please check the <strong>Certificate</strong> tab for details.
-          </p>
-        </div>
-      )}
+      {overallStatus === 'FAIL' &&
+        (hasSecurityFailure || !summary?.standard || summary.standard === 'UNKNOWN') && (
+          <div
+            style={{
+              padding: '16px',
+              backgroundColor: '#ff555522',
+              border: '1px solid #ff555544',
+              borderRadius: '8px',
+              color: '#ff5555',
+            }}
+          >
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1em', fontWeight: 'bold' }}>
+              {hasSecurityFailure ? '🛡️ Security Violation' : 'Critical Failure'}
+            </h3>
+            <p style={{ margin: 0 }}>
+              {hasSecurityFailure
+                ? 'Potential security risk detected. Archive validation failed with severe security concerns. Processing was aborted for safety.'
+                : 'A critical error occurred (e.g., archive extraction or model detection failed), preventing metadata extraction.'}{' '}
+              Please check the <strong>Certificate</strong> tab for details.
+            </p>
+          </div>
+        )}
 
       <div
         style={{
