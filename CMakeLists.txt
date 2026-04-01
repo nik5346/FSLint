@@ -244,7 +244,7 @@ else()
 endif()
 
 # Prevent zlib from building examples and adding tests
-set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ZLIB_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
 FetchContent_GetProperties(zlib)
