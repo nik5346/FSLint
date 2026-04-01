@@ -23,11 +23,6 @@ std::string pathToUtf8(const std::filesystem::path& path);
 /// @return Path.
 std::filesystem::path utf8ToPath(const std::string& utf8);
 
-/// @brief Gets file tree as JSON string.
-/// @param root Root directory.
-/// @return JSON string.
-std::string getFileTreeJson(const std::filesystem::path& root);
-
 /// @brief Gets PNG image dimensions.
 /// @param path Path to PNG.
 /// @return Pair of width and height or std::nullopt.

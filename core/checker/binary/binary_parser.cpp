@@ -1234,8 +1234,3 @@ BinaryInfo BinaryParser::parse(const std::filesystem::path& path)
 
     return {};
 }
-
-std::set<std::string> BinaryParser::getExports(const std::filesystem::path& path)
-{
-    return parse(path).exports;
-}

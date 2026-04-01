@@ -2,8 +2,6 @@
 
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -113,22 +111,6 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
         }
         node.AddMember("children", children, allocator);
     }
-}
-
-std::string getFileTreeJson(const std::filesystem::path& root)
-{
-    if (!std::filesystem::exists(root))
-        return "{}";
-
-    rapidjson::Document doc;
-    doc.SetObject();
-    fileNodeToJson(root, &doc, &doc.GetAllocator());
-
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    doc.Accept(writer);
-
-    return buffer.GetString();
 }
 
 std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesystem::path& path)
