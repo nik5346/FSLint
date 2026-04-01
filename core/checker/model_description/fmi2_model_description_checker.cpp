@@ -774,9 +774,10 @@ void Fmi2ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::
         if (var.value_reference)
         {
             const auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
-            // Use the first variable with a start attribute or derivative attribute as the "representative" if available
+            // Use the first variable with a start attribute or derivative attribute as the "representative" if
+            // available
             if (alias_set_to_base_index.find(key) == alias_set_to_base_index.end() ||
-                (!variables[alias_set_to_base_index[key]-1].derivative_of && var.derivative_of))
+                (!variables[alias_set_to_base_index[key] - 1].derivative_of && var.derivative_of))
                 alias_set_to_base_index[key] = var.index;
             index_to_base_index[var.index] = alias_set_to_base_index[key];
         }
@@ -1156,7 +1157,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
         // A variable is "pinned" if its value is fixed at initialization
         bool is_pinned = false;
-        if (var.causality == "parameter" || var.causality == "input" || var.causality == "independent" || var.initial == "exact" || (var.derivative_of && variables[*var.derivative_of - 1].initial == "exact"))
+        if (var.causality == "parameter" || var.causality == "input" || var.causality == "independent" ||
+            var.initial == "exact" || (var.derivative_of && variables[*var.derivative_of - 1].initial == "exact"))
             is_pinned = true;
 
         if (is_pinned)
@@ -1171,12 +1173,9 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             {
                 const auto& state_var = variables[state_idx - 1];
                 if (state_var.initial == "exact")
-                {
                     base_index_to_is_pinned[base_index] = true;
-                }
             }
         }
-
     }
 
     // Build sets of mandatory and optional unknowns
@@ -1369,7 +1368,6 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             msg += ".";
             test.messages.push_back(msg);
         }
-
     }
 
     cert.printTestResult(test);
