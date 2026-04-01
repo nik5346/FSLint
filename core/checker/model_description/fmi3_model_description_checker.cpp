@@ -1678,12 +1678,8 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     std::vector<std::string> missing_mandatory;
     for (const auto& key : mandatory_quantities)
-    {
         if (!actual_quantities.contains(key))
-        {
             missing_mandatory.push_back(std::format("{} (VR {})", key_to_representative[key], key.second));
-        }
-    }
 
     std::vector<std::string> extra_invalid;
     for (const auto& key : actual_quantities)
@@ -1702,9 +1698,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             }
 
             if (!valid_optional)
-            {
                 extra_invalid.push_back(std::format("VR {}", key.second));
-            }
         }
     }
 

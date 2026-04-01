@@ -232,7 +232,8 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - States **must** have `causality="local"` or `"output"` and `variability="continuous"`.
   - All **must** be of type `Real`.
 - **Model Structure**:
-  - `Outputs`, `Derivatives`, and `InitialUnknowns` **must** be complete (match all variables with respective causalities/attributes) and correctly ordered.
+  - `Outputs`, `Derivatives`, and `InitialUnknowns` **must** be complete and correctly ordered. Each quantity (represented by its alias set sharing the same `valueReference`) **must** be listed exactly once; listing multiple aliases for the same quantity results in a **FAIL**.
+  - `InitialUnknowns` **must not** contain "pinned" variables. A variable is pinned if any of its aliases has `initial="exact"`, or a causality of `parameter`, `input`, or `independent`. A state derivative is also pinned if its corresponding state has `initial="exact"`.
   - Dependencies and `dependenciesKind` **must** be consistent in size.
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 - **Prohibited Special Floats**: Attributes of type `Real` **must not** contain `NaN` or `INF`. This applies to:
@@ -311,8 +312,9 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - Clocked variables **must** be discrete and have specific causality.
   - Clock types **must** have consistent `intervalVariability` and interval attributes.
 - **Model Structure**:
-  - `Output`, `ContinuousStateDerivative`, `ClockedState`, `InitialUnknown`, and `EventIndicator` elements **must** be complete and unique.
-  - Mandatory `InitialUnknowns` **must** be provided for non-clocked outputs, calculated parameters, and states/derivatives with `initial="approx"` or `"calculated"`.
+  - `Output`, `ContinuousStateDerivative`, `ClockedState`, `InitialUnknown`, and `EventIndicator` elements **must** be complete and correctly ordered. Each quantity (represented by its alias set sharing the same `valueReference`) **must** be listed exactly once; listing multiple aliases for the same quantity results in a **FAIL**.
+  - `InitialUnknown` **must not** contain "pinned" variables. A variable is pinned if any of its aliases has `initial="exact"`, or a causality of `parameter`, `structuralParameter`, `input`, or `independent`. A state derivative is also pinned if its corresponding state has `initial="exact"`.
+  - Mandatory `InitialUnknowns` **must** be provided for all non-clocked output quantities, calculated parameters, and states/derivatives that are not pinned.
 - **Variable Dependencies**: `dependenciesKind` **must** be restricted to allowed types and is **not allowed** for `InitialUnknown`.
 
 ### Variable Consistency
