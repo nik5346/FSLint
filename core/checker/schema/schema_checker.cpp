@@ -99,6 +99,9 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
 
         // Validate
         validateXmlFile(xml_path, schema_path, rule.validation_name, cert);
+
+        // Security: Check for DOCTYPE (XXE protection)
+        checkXmlSecurity(xml_path, rule.validation_name, cert);
     }
 
     cert.printSubsectionSummary(is_valid);
@@ -301,6 +304,25 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
 
     cert.printTestResult(test);
     return true;
+}
+
+void SchemaCheckerBase::checkXmlSecurity(const std::filesystem::path& xml_path, const std::string& validation_name,
+                                         Certificate& cert) const
+{
+    TestResult test{validation_name + " [SECURITY] XXE Check", TestStatus::PASS, {}};
+
+    xmlDocPtr doc = readXmlFile(xml_path);
+    if (!doc)
+        return;
+
+    if (hasDoctype(doc))
+    {
+        test.status = TestStatus::FAIL;
+        test.messages.push_back("XML document must not contain a DOCTYPE declaration (potential XXE attack).");
+    }
+
+    xmlFreeDoc(doc);
+    cert.printTestResult(test);
 }
 
 bool SchemaCheckerBase::isValidUtf8File(const std::filesystem::path& file_path)

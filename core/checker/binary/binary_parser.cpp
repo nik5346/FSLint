@@ -635,6 +635,7 @@ static BinaryInfo parseElf64(std::ifstream& f)
 
     symtab_off = va_to_off(symtab_off);
     strtab_off = va_to_off(strtab_off);
+
     hash_off = va_to_off(hash_off);
     gnu_hash_off = va_to_off(gnu_hash_off);
 
@@ -960,6 +961,7 @@ static BinaryInfo parseElf32(std::ifstream& f)
 
     symtab_off = va_to_off(symtab_off);
     strtab_off = va_to_off(strtab_off);
+
     hash_off = va_to_off(hash_off);
     gnu_hash_off = va_to_off(gnu_hash_off);
 
@@ -1094,6 +1096,7 @@ static BinaryInfo parsePe(std::ifstream& f)
         return info;
 
     IMAGE_DATA_DIRECTORY export_dir_info = {0, 0};
+    IMAGE_DATA_DIRECTORY import_dir_info = {0, 0};
     if (magic == 0x10B) // PE32
     {
         arch.bitness = 32;
@@ -1102,6 +1105,8 @@ static BinaryInfo parsePe(std::ifstream& f)
         {
             if (opt.NumberOfRvaAndSizes > 0)
                 export_dir_info = opt.DataDirectory[0];
+            if (opt.NumberOfRvaAndSizes > 1)
+                import_dir_info = opt.DataDirectory[1];
         }
     }
     else if (magic == 0x20B) // PE32+
@@ -1112,12 +1117,14 @@ static BinaryInfo parsePe(std::ifstream& f)
         {
             if (opt.NumberOfRvaAndSizes > 0)
                 export_dir_info = opt.DataDirectory[0];
+            if (opt.NumberOfRvaAndSizes > 1)
+                import_dir_info = opt.DataDirectory[1];
         }
     }
 
     info.architectures.push_back(arch);
 
-    if (export_dir_info.VirtualAddress == 0)
+    if (export_dir_info.VirtualAddress == 0 && import_dir_info.VirtualAddress == 0)
         return info;
 
     std::vector<IMAGE_SECTION_HEADER> sections(file_hdr.NumberOfSections);
@@ -1135,33 +1142,35 @@ static BinaryInfo parsePe(std::ifstream& f)
         return 0;
     };
 
+    // --- Export Parsing ---
     const uint32_t export_dir_off = rva_to_off(export_dir_info.VirtualAddress);
-    if (export_dir_off == 0)
-        return info;
-
-    IMAGE_EXPORT_DIRECTORY export_dir{};
-    if (!readFromFile(f, export_dir_off, export_dir))
-        return info;
-
-    const uint32_t names_off = rva_to_off(export_dir.AddressOfNames);
-    if (names_off == 0)
-        return info;
-
-    for (uint32_t i = 0; i < export_dir.NumberOfNames; ++i)
+    if (export_dir_off != 0)
     {
-        uint32_t name_rva = 0;
-        if (readFromFile(f, static_cast<std::streamoff>(names_off) + static_cast<std::streamoff>(i) * 4, name_rva))
+        IMAGE_EXPORT_DIRECTORY export_dir{};
+        if (readFromFile(f, export_dir_off, export_dir))
         {
-            const uint32_t name_off = rva_to_off(name_rva);
-            if (name_off != 0)
+            const uint32_t names_off = rva_to_off(export_dir.AddressOfNames);
+            if (names_off != 0)
             {
-                f.seekg(static_cast<std::streamoff>(name_off));
-                std::string name;
-                char c = 0;
-                while (f.get(c) && c != '\0')
-                    name += c;
-                if (!name.empty())
-                    info.exports.insert(name);
+                for (uint32_t i = 0; i < export_dir.NumberOfNames; ++i)
+                {
+                    uint32_t name_rva = 0;
+                    if (readFromFile(f, static_cast<std::streamoff>(names_off) + static_cast<std::streamoff>(i) * 4,
+                                     name_rva))
+                    {
+                        const uint32_t name_off = rva_to_off(name_rva);
+                        if (name_off != 0)
+                        {
+                            f.seekg(static_cast<std::streamoff>(name_off));
+                            std::string name;
+                            char c = 0;
+                            while (f.get(c) && c != '\0')
+                                name += c;
+                            if (!name.empty())
+                                info.exports.insert(name);
+                        }
+                    }
+                }
             }
         }
     }

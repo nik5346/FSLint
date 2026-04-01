@@ -26,11 +26,15 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
 - **Compression Methods**: Only `store` (0) and `deflate` (8) compression methods **must** be used.
 - **Version Needed**: The maximum version needed to extract **must** be `2.0` (for compatibility).
 - **Encryption**: Encrypted files **must not** be used.
-- **Path Format**:
+- **Path Format and Security**:
   - Only forward slashes `/` **must** be used (no backslashes `\`).
   - Absolute paths **must not** be used (must not start with `/`).
   - Drive letters or device paths (e.g., `C:`) **must not** be used.
-  - Parent directory traversal (`..`) **must not** be used.
+  - **[SECURITY] Path Traversal & Zip Slip**:
+    - Parent directory traversal (`..`) **must not** be used.
+    - Normalized paths **must not** escape the archive root (e.g., `foo/../../etc/passwd`).
+  - **[SECURITY] Control Characters**: Paths **must not** contain control characters (U+0000–U+001F) or null bytes (`\0`).
+  - **Illegal Characters**: Paths **must not** contain illegal characters for maximum cross-platform compatibility (`<`, `>`, `"`, `|`, `?`, `*`).
   - Non-ASCII characters in paths **should** be avoided.
   - Leading `./` or multiple consecutive slashes `//` **should** be avoided.
 - **Symbolic Links**: Symbolic links **must not** be used within the archive.
@@ -38,12 +42,14 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
   - Bit 11 **must** be set for every file whose filename in the archive contains non-ASCII characters (to indicate UTF-8 encoding).
   - Bit 11 **should** be 0 for files whose filenames only contain ASCII characters (for maximum portability with old tools).
 - **Data Descriptor Consistency**: General purpose bit 3 (data descriptor) is only allowed with `deflate` compression.
-- **[SECURITY] Zip Slip (Path Traversal)**: Normalized paths **must not** escape the archive root (e.g., `foo/../../etc/passwd`).
 - **[SECURITY] Zip Bomb (Decompression Bomb)**:
   - The compression ratio of each entry **must** be below 100:1 (uncompressed vs. compressed size).
   - The uncompressed size of any single entry **must** be less than 1 GB.
   - The total uncompressed size of all entries **must** be less than 10 GB.
-- **[SECURITY] Central Directory vs Local Header Mismatch**: Metadata (filenames, sizes, offsets) **must** be consistent between the central directory and local file headers.
+- **[SECURITY] Central Directory Integrity**:
+  - Metadata (filenames, sizes, offsets) **must** be consistent between the central directory and local file headers.
+  - The total number of entries reported in the central directory **must** match the actual count of local file records found.
+  - The local file header signature (`PK\x03\x04`) **must** be present at the reported offset for every central directory entry.
 - **[SECURITY] Overlapping File Entries**: No two local file data regions (headers + compressed data) **must** overlap in the archive.
 - **[SECURITY] Duplicate Entry Names**:
   - Multiple entries with the same name **must not** be used.
@@ -51,8 +57,6 @@ These rules apply to the ZIP archive itself for both FMU and SSP files.
 - **[SECURITY] Extra Field and Comment Integrity**:
   - The archive comment length **must** match the declared length.
   - Extra field lengths **must not** overflow the header or entry bounds.
-- **[SECURITY] Local File Header Signatures**: The local file header signature (`PK\x03\x04`) **must** be present at the reported offset for every central directory entry.
-- **[SECURITY] Total Entry Count Sanity**: The total number of entries reported in the central directory **must** match the actual count of local file records found.
 
 ## Common FMI Rules (All Versions)
 
@@ -61,6 +65,7 @@ These rules are applied to the `modelDescription.xml` file regardless of the FMI
 ### Metadata and Format
 
 - **Schema Validation**: `modelDescription.xml` is validated against the official FMI XSD schemas. Optional files like `buildDescription.xml` and `terminalsAndIcons.xml` are also schema-validated if present.
+- **[SECURITY] XXE (XML External Entity)**: XML files **must not** contain `<!DOCTYPE>` declarations or external entity references.
 - **XML Declaration**: Must be XML version 1.0.
 - **UTF-8 Encoding**:
   - FMI 2.0 and 3.0: XML files **must** use UTF-8 encoding.
@@ -164,10 +169,8 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Generation Date and Time**: **Should** not be unreasonably old (before 2010).
 - **GUID Presence**: The `guid` attribute **must** be present and non-empty.
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
-- **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **must** use a valid URI scheme (`fmu://`, `file://`, `http://`, or `https://`).
+- **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **should** use the `fmu://` URI scheme.
   - URIs using `fmu://` **must** point to existing files within the archive.
-  - URIs using `http://` or `https://` **should** be reachable; a warning is issued if the source appears to be offline or unreachable.
-  - URIs using `file://` **should** point to existing files if they use an absolute path; a warning is issued if they do not exist on the current system (this may affect portability).
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
 ### Variable Consistency
