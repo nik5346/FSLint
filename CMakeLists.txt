@@ -226,7 +226,7 @@ endif()
 FetchContent_Declare(
     zlib
     GIT_REPOSITORY https://github.com/madler/zlib.git
-    GIT_TAG        v1.3.1
+    GIT_TAG        v1.3.2
 )
 
 # Disable warnings for zlib compilation
@@ -280,7 +280,7 @@ set(ZLIB_INCLUDE_DIR "${ZLIB_SOURCE_DIR};${ZLIB_BINARY_DIR}")
 set(ZLIB_INCLUDE_DIRS "${ZLIB_SOURCE_DIR};${ZLIB_BINARY_DIR}")
 set(ZLIB_LIBRARY zlibstatic)
 set(ZLIB_LIBRARIES zlibstatic)
-set(ZLIB_VERSION_STRING "1.3.1")
+set(ZLIB_VERSION_STRING "1.3.2")
 
 # Create an imported target for ZLIB (needed by libxml2)
 if(NOT TARGET ZLIB::ZLIB)
@@ -333,7 +333,7 @@ endif()
 FetchContent_Declare(
     libxml2
     GIT_REPOSITORY https://github.com/GNOME/libxml2.git
-    GIT_TAG        v2.12.4
+    GIT_TAG        v2.15.2
 )
 
 set(LIBXML2_WITH_TESTS OFF CACHE BOOL "" FORCE)
@@ -388,7 +388,7 @@ endif()
 FetchContent_Declare(
     picosha2
     GIT_REPOSITORY https://github.com/okdshin/PicoSHA2.git
-    GIT_TAG        b699e6c900be6e00152db5a3d123c1db42ea13d0  # Latest commit
+    GIT_TAG        161cb3fc4170fa7a3eca9e582cebd27cc4d1fe29  # Latest commit
 )
 
 FetchContent_Declare(
@@ -400,7 +400,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.4.0
+  GIT_TAG        v3.13.0
 )
 
 # Prevent dependencies from installing
