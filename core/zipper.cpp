@@ -282,11 +282,6 @@ bool Zipper::addFileFromDisk(const std::string& internal_path, const std::filesy
     return addFile(internal_path, buffer, compression_level);
 }
 
-bool Zipper::isOpen() const
-{
-    return _zip_file != nullptr || _zip_writer != nullptr;
-}
-
 int32_t Zipper::getDiskCount() const
 {
     if (_zip_path.empty())

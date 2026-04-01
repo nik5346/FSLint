@@ -84,10 +84,6 @@ class Zipper
     bool addFileFromDisk(const std::string& internal_path, const std::filesystem::path& source_path,
                          int32_t compression_level = DEFAULT_COMPRESSION_LEVEL);
 
-    /// @brief Checks if archive is open.
-    /// @return True if open.
-    bool isOpen() const;
-
     /// @brief Gets the number of disks (spanning support).
     /// @return Disk count.
     int32_t getDiskCount() const;

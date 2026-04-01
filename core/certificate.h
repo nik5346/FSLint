@@ -83,20 +83,6 @@ class Certificate
         _quiet = quiet;
     }
 
-    /// @brief Checks if quiet mode is active.
-    /// @return True if quiet.
-    bool isQuiet() const
-    {
-        return _quiet;
-    }
-
-    /// @brief Sets use of color in console output.
-    /// @param use Use ANSI color codes.
-    void setUseColor(bool use)
-    {
-        _use_color = use;
-    }
-
     /// @brief Checks if color is enabled.
     /// @return True if color enabled.
     bool isColorEnabled() const
