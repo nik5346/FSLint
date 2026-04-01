@@ -83,7 +83,7 @@ void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
         if (var.derivative_of)
-            state_indices.insert(*var.derivative_of);
+            state_indices.insert(var.derivative_of.value());
 
     for (const auto& var : variables)
     {
@@ -153,7 +153,7 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
     {
         index_map[var.index] = &var;
         if (var.derivative_of)
-            state_indices.insert(*var.derivative_of);
+            state_indices.insert(var.derivative_of.value());
     }
 
     for (const auto& var : variables)
@@ -186,7 +186,7 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
                                         ") is a derivative and must have variability=\"continuous\".");
             }
 
-            const uint32_t ref_index = (*var.derivative_of);
+            const uint32_t ref_index = (var.derivative_of.value());
             const auto it = index_map.find(ref_index);
 
             if (it == index_map.end())
@@ -297,7 +297,7 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     std::map<std::pair<std::string, uint32_t>, std::vector<const Variable*>> alias_sets;
     for (const auto& var : variables)
         if (var.value_reference)
-            alias_sets[{get_base_type(var.type), *var.value_reference}].push_back(&var);
+            alias_sets[{get_base_type(var.type), var.value_reference.value()}].push_back(&var);
 
     for (const auto& [key, alias_set] : alias_sets)
     {
@@ -773,7 +773,7 @@ void Fmi2ModelDescriptionChecker::checkModelStructure(xmlDocPtr doc, const std::
     {
         if (var.value_reference)
         {
-            const auto key = std::make_pair(get_base_type(var.type), *var.value_reference);
+            const auto key = std::make_pair(get_base_type(var.type), var.value_reference.value());
             // Use the first variable with a start attribute or derivative attribute as the "representative" if
             // available
             if (alias_set_to_base_index.find(key) == alias_set_to_base_index.end() ||
@@ -816,11 +816,11 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             const auto index_str = getXmlAttribute(node, "index");
 
-            if (index_str)
+            if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
-                    const size_t index = *index_opt;
+                    const size_t index = index_opt.value();
                     // FMI2 uses 1-based indexing
                     if (index > 0 && index <= variables.size())
                     {
@@ -858,10 +858,10 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         const auto deps_str = getXmlAttribute(node, "dependencies");
                         const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str)
+                        if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -881,10 +881,10 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             }
 
                             // Check dependenciesKind size and values
-                            if (deps_kind_str)
+                            if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -915,7 +915,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                 }
                             }
                         }
-                        else if (deps_kind_str)
+                        else if (deps_kind_str.has_value())
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Variable \"" + var.name + "\" (line " +
@@ -981,11 +981,11 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             const auto index_str = getXmlAttribute(node, "index");
 
-            if (index_str)
+            if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
-                    const size_t index = *index_opt;
+                    const size_t index = index_opt.value();
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
@@ -1021,10 +1021,10 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         const auto deps_str = getXmlAttribute(node, "dependencies");
                         const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str)
+                        if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1044,10 +1044,10 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             }
 
                             // Check dependenciesKind size and values
-                            if (deps_kind_str)
+                            if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1077,7 +1077,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                 }
                             }
                         }
-                        else if (deps_kind_str)
+                        else if (deps_kind_str.has_value())
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back(
@@ -1129,7 +1129,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
         if (var.derivative_of)
-            state_indices.insert(*var.derivative_of);
+            state_indices.insert(var.derivative_of.value());
 
     // Group info by alias set
     std::map<uint32_t, bool> base_index_to_is_potentially_unknown;
@@ -1158,7 +1158,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         // A variable is "pinned" if its value is fixed at initialization
         bool is_pinned = false;
         if (var.causality == "parameter" || var.causality == "input" || var.causality == "independent" ||
-            var.initial == "exact" || (var.derivative_of && variables[*var.derivative_of - 1].initial == "exact"))
+            var.initial == "exact" ||
+            (var.derivative_of.has_value() && variables[var.derivative_of.value() - 1].initial == "exact"))
             is_pinned = true;
 
         if (is_pinned)
@@ -1168,7 +1169,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         // the derivative may be fully determined and thus optional in InitialUnknowns.
         if (var.derivative_of.has_value())
         {
-            const uint32_t state_idx = *var.derivative_of;
+            const uint32_t state_idx = var.derivative_of.value();
             if (state_idx > 0 && state_idx <= variables.size())
             {
                 const auto& state_var = variables[state_idx - 1];
@@ -1208,11 +1209,11 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             const auto index_str = getXmlAttribute(node, "index");
 
-            if (index_str)
+            if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
-                    const size_t index = *index_opt;
+                    const size_t index = index_opt.value();
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
@@ -1242,10 +1243,10 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         const auto deps_str = getXmlAttribute(node, "dependencies");
                         const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str)
+                        if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1265,10 +1266,10 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             }
 
                             // Check dependenciesKind size and values
-                            if (deps_kind_str)
+                            if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
