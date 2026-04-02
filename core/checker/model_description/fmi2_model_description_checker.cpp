@@ -810,9 +810,9 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
             if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
-                    const size_t index = *index_opt;
+                    const size_t index = index_opt.value();
                     // FMI2 uses 1-based indexing
                     if (index > 0 && index <= variables.size())
                     {
@@ -846,7 +846,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -869,7 +869,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -982,9 +982,9 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
             if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
-                    const size_t index = *index_opt;
+                    const size_t index = index_opt.value();
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
@@ -1017,7 +1017,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1040,7 +1040,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1208,9 +1208,9 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
             if (index_str.has_value())
             {
-                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                if (const auto index_opt = parseNumber<size_t>(index_str.value()))
                 {
-                    const size_t index = *index_opt;
+                    const size_t index = index_opt.value();
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
@@ -1235,7 +1235,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1258,7 +1258,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(deps_kind_str.value());
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1501,15 +1501,15 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
         auto name_opt = getXmlAttribute(type_node, "name");
         const std::string name = name_opt.value_or("unnamed");
 
-        if (name_opt)
+        if (name_opt.has_value())
         {
-            if (seen_names.contains(*name_opt))
+            if (seen_names.contains(name_opt.value()))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Type definition \"" + *name_opt + "\" (line " +
+                test.messages.push_back("Type definition \"" + name_opt.value() + "\" (line " +
                                         std::to_string(type_node->line) + ") is defined multiple times.");
             }
-            seen_names.insert(*name_opt);
+            seen_names.insert(name_opt.value());
         }
 
         // Check types
@@ -1530,32 +1530,32 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
             td_for_special.name = name;
             td_for_special.sourceline = child->line;
 
-            if (min_str && isSpecialFloat(*min_str))
-                validateTypeDefinitionSpecialFloat(test, td_for_special, *min_str, "min");
-            if (max_str && isSpecialFloat(*max_str))
-                validateTypeDefinitionSpecialFloat(test, td_for_special, *max_str, "max");
-            if (nominal_str && isSpecialFloat(*nominal_str))
-                validateTypeDefinitionSpecialFloat(test, td_for_special, *nominal_str, "nominal");
+            if (min_str && isSpecialFloat(min_str.value()))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, min_str.value(), "min");
+            if (max_str && isSpecialFloat(max_str.value()))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, max_str.value(), "max");
+            if (nominal_str && isSpecialFloat(nominal_str.value()))
+                validateTypeDefinitionSpecialFloat(test, td_for_special, nominal_str.value(), "nominal");
 
             if (min_str && max_str)
             {
-                const bool special_min = isSpecialFloat(*min_str);
-                const bool special_max = isSpecialFloat(*max_str);
+                const bool special_min = isSpecialFloat(min_str.value());
+                const bool special_max = isSpecialFloat(max_str.value());
 
                 if (!special_min && !special_max)
                 {
                     if (elem_name == "Real")
                     {
-                        const auto min_val = parseNumber<double>(*min_str);
-                        const auto max_val = parseNumber<double>(*max_str);
+                        const auto min_val = parseNumber<double>(min_str.value());
+                        const auto max_val = parseNumber<double>(max_str.value());
                         if (min_val && max_val)
                         {
-                            if (*max_val < *min_val)
+                            if (max_val.value() < min_val.value())
                             {
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                        std::to_string(child->line) + "): max (" + *max_str +
-                                                        ") must be >= min (" + *min_str + ").");
+                                                        std::to_string(child->line) + "): max (" + max_str.value() +
+                                                        ") must be >= min (" + min_str.value() + ").");
                             }
                         }
                         else
@@ -1567,16 +1567,16 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                     }
                     else if (elem_name == "Integer" || elem_name == "Enumeration")
                     {
-                        const auto min_val = parseNumber<int64_t>(*min_str);
-                        const auto max_val = parseNumber<int64_t>(*max_str);
+                        const auto min_val = parseNumber<int64_t>(min_str.value());
+                        const auto max_val = parseNumber<int64_t>(max_str.value());
                         if (min_val && max_val)
                         {
-                            if (*max_val < *min_val)
+                            if (max_val.value() < min_val.value())
                             {
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                        std::to_string(child->line) + "): max (" + *max_str +
-                                                        ") must be >= min (" + *min_str + ").");
+                                                        std::to_string(child->line) + "): max (" + max_str.value() +
+                                                        ") must be >= min (" + min_str.value() + ").");
                             }
                         }
                         else
@@ -1622,17 +1622,17 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
                         if (item_value_str)
                         {
-                            if (const auto val = parseNumber<int32_t>(*item_value_str))
+                            if (const auto val = parseNumber<int32_t>(item_value_str.value()))
                             {
-                                if (item_values.contains(*val))
+                                if (item_values.contains(val.value()))
                                 {
                                     test.status = TestStatus::FAIL;
                                     test.messages.push_back(
                                         "Enumeration type \"" + name + "\" (line " + std::to_string(child->line) +
-                                        ") has multiple items with value " + *item_value_str +
+                                        ") has multiple items with value " + item_value_str.value() +
                                         ". Item values must be unique within the same enumeration.");
                                 }
-                                item_values.insert(*val);
+                                item_values.insert(val.value());
                             }
                         }
                     }
@@ -1672,13 +1672,13 @@ void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
         auto name = getXmlAttribute(node, "name");
         if (name)
         {
-            if (seen_names.contains(*name))
+            if (seen_names.contains(name.value()))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Vendor annotation tool \"" + *name + "\" (line " + std::to_string(node->line) +
-                                        ") is defined multiple times.");
+                test.messages.push_back("Vendor annotation tool \"" + name.value() + "\" (line " +
+                                        std::to_string(node->line) + ") is defined multiple times.");
             }
-            seen_names.insert(*name);
+            seen_names.insert(name.value());
         }
     }
 
@@ -1704,7 +1704,7 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         return;
     }
 
-    if (guid_opt->empty())
+    if (guid_opt.value().empty())
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("guid attribute is empty.");
@@ -1713,9 +1713,9 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     }
 
     if (test.status != TestStatus::PASS)
-        test.messages.push_back("GUID: " + *guid_opt);
+        test.messages.push_back("GUID: " + guid_opt.value());
 
-    const std::string& guid = *guid_opt;
+    const std::string& guid = guid_opt.value();
     const std::regex guid_pattern(
         R"(^(\{)?[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}(\})?$)");
 
@@ -1788,13 +1788,13 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
 
         if (name_opt)
         {
-            if (seen_names.contains(*name_opt))
+            if (seen_names.contains(name_opt.value()))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Unit \"" + *name_opt + "\" (line " + std::to_string(unit_node->line) +
+                test.messages.push_back("Unit \"" + name_opt.value() + "\" (line " + std::to_string(unit_node->line) +
                                         ") is defined multiple times.");
             }
-            seen_names.insert(*name_opt);
+            seen_names.insert(name_opt.value());
         }
 
         for (xmlNodePtr child = unit_node->children; child; child = child->next)
@@ -1817,14 +1817,14 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
 
                 if (du_name_opt)
                 {
-                    if (unit_display_names.contains(*du_name_opt))
+                    if (unit_display_names.contains(du_name_opt.value()))
                     {
                         test.status = TestStatus::FAIL;
                         test.messages.push_back(
                             std::format("DisplayUnit \"{}\" (line {}) is defined multiple times for unit \"{}\".",
-                                        *du_name_opt, child->line, name));
+                                        du_name_opt.value(), child->line, name));
                     }
-                    unit_display_names.insert(*du_name_opt);
+                    unit_display_names.insert(du_name_opt.value());
                 }
 
                 const std::string context = std::format("Unit \"{}\" DisplayUnit \"{}\"", name, du_name);
@@ -1917,11 +1917,11 @@ void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certif
             auto name_opt = getXmlAttribute(node, "name");
             if (name_opt)
             {
-                auto file_path = getFmuRootPath() / "sources" / (*name_opt);
+                auto file_path = getFmuRootPath() / "sources" / (name_opt.value());
                 if (!std::filesystem::exists(file_path))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Source file '" + (*name_opt) +
+                    test.messages.push_back("Source file '" + (name_opt.value()) +
                                             "' listed in 'modelDescription.xml' (line " + std::to_string(node->line) +
                                             ") does not exist in 'sources/' directory.");
                 }

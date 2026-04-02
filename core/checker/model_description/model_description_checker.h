@@ -503,23 +503,23 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
 {
     auto parse = [&](const std::optional<std::string>& str_opt, const std::string& attr_name) -> std::optional<T>
     {
-        if (!str_opt)
+        if (!str_opt.has_value())
             return std::nullopt;
 
         // Check for special floats (NaN, INF) using version-specific hook
         if constexpr (std::is_floating_point_v<T>)
         {
-            if (isSpecialFloat(*str_opt))
-                validateVariableSpecialFloat(test, var, *str_opt, attr_name);
+            if (isSpecialFloat(str_opt.value()))
+                validateVariableSpecialFloat(test, var, str_opt.value(), attr_name);
         }
 
-        const auto val = parseNumber<T>(*str_opt);
-        if (!val)
+        const auto val = parseNumber<T>(str_opt.value());
+        if (!val.has_value())
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    "): Failed to parse numeric value of " + attr_name + " with value '" + *str_opt +
-                                    "'");
+                                    "): Failed to parse numeric value of " + attr_name + " with value '" +
+                                    str_opt.value() + "'");
             return std::nullopt;
         }
         return val;
