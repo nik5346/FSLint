@@ -845,8 +845,9 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
                         if (deps_str.has_value())
                         {
+                            const std::string& deps_str_val = deps_str.value();
                             std::vector<size_t> deps;
-                            std::stringstream ss(deps_str.value());
+                            std::stringstream ss(deps_str_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1017,8 +1018,9 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
                         if (deps_str.has_value())
                         {
+                            const std::string& deps_str_val = deps_str.value();
                             std::vector<size_t> deps;
-                            std::stringstream ss(deps_str.value());
+                            std::stringstream ss(deps_str_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1236,8 +1238,9 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
                         if (deps_str.has_value())
                         {
+                            const std::string& deps_str_val = deps_str.value();
                             std::vector<size_t> deps;
-                            std::stringstream ss(deps_str.value());
+                            std::stringstream ss(deps_str_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
