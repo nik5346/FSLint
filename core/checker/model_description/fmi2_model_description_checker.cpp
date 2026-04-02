@@ -83,7 +83,7 @@ void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
         if (var.derivative_of.has_value())
-            state_indices.insert(*var.derivative_of);
+            state_indices.insert(var.derivative_of.value());
 
     for (const auto& var : variables)
     {
@@ -153,7 +153,7 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
     {
         index_map[var.index] = &var;
         if (var.derivative_of.has_value())
-            state_indices.insert(*var.derivative_of);
+            state_indices.insert(var.derivative_of.value());
     }
 
     for (const auto& var : variables)
@@ -186,7 +186,7 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
                                         ") is a derivative and must have variability=\"continuous\".");
             }
 
-            const uint32_t ref_index = *var.derivative_of;
+            const uint32_t ref_index = var.derivative_of.value();
             auto it = index_map.find(ref_index);
 
             if (it == index_map.end())
@@ -456,12 +456,12 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.index = static_cast<uint32_t>(i + 1);
 
         auto multi_set = getXmlAttribute(scalar_var_node, "canHandleMultipleSetPerTimeInstant");
-        if (multi_set)
-            var.can_handle_multiple_set = (*multi_set == "true");
+        if (multi_set.has_value())
+            var.can_handle_multiple_set = (multi_set.value() == "true");
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
         if (vr.has_value())
-            var.value_reference = parseNumber<uint32_t>(*vr);
+            var.value_reference = parseNumber<uint32_t>(vr.value());
 
         // FMI2: The type element (Real, Integer, Boolean, String, Enumeration) is a child of ScalarVariable
         for (xmlNodePtr child = scalar_var_node->children; child; child = child->next)
@@ -481,8 +481,8 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 if (elem_name == "Real")
                 {
                     auto rel_q = getXmlAttribute(child, "relativeQuantity");
-                    if (rel_q)
-                        var.relative_quantity = (*rel_q == "true");
+                    if (rel_q.has_value())
+                        var.relative_quantity = (rel_q.value() == "true");
                 }
                 var.start = getXmlAttribute(child, "start");
                 var.min = getXmlAttribute(child, "min");
@@ -499,11 +499,11 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 {
                     auto der = getXmlAttribute(child, "derivative");
                     if (der.has_value())
-                        var.derivative_of = parseNumber<uint32_t>(*der);
+                        var.derivative_of = parseNumber<uint32_t>(der.value());
 
                     auto ri = getXmlAttribute(child, "reinit");
-                    if (ri)
-                        var.reinit = (*ri == "true");
+                    if (ri.has_value())
+                        var.reinit = (ri.value() == "true");
                 }
 
                 break;
@@ -868,8 +868,9 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const std::string& kinds_str = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(deps_kind_str.value());
+                                std::stringstream ss_kind(kinds_str);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1039,8 +1040,9 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const std::string& kinds_str = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(deps_kind_str.value());
+                                std::stringstream ss_kind(kinds_str);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1130,7 +1132,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     for (const auto& var : variables)
     {
         if (var.derivative_of.has_value())
-            state_indices.insert(*var.derivative_of);
+            state_indices.insert(var.derivative_of.value());
         index_map[var.index] = &var;
     }
 
@@ -1155,7 +1157,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         }
         else if (var.derivative_of.has_value())
         {
-            auto state_idx = *var.derivative_of;
+            auto state_idx = var.derivative_of.value();
             if (index_map.contains(state_idx) && index_map[state_idx]->initial == "exact")
                 pinned = true;
         }
@@ -1257,8 +1259,9 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const std::string& kinds_str = deps_kind_str.value();
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(deps_kind_str.value());
+                                std::stringstream ss_kind(kinds_str);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
@@ -1412,8 +1415,8 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
                 if (elem_name == "Real")
                 {
                     auto rel_q = getXmlAttribute(child, "relativeQuantity");
-                    if (rel_q)
-                        type_def.relative_quantity = (*rel_q == "true");
+                    if (rel_q.has_value())
+                        type_def.relative_quantity = (rel_q.value() == "true");
                 }
                 type_def.min = getXmlAttribute(child, "min");
                 type_def.max = getXmlAttribute(child, "max");
@@ -1608,16 +1611,16 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                         auto item_name = getXmlAttribute(item, "name");
                         auto item_value_str = getXmlAttribute(item, "value");
 
-                        if (item_name)
+                        if (item_name.has_value())
                         {
-                            if (item_names.contains(*item_name))
+                            if (item_names.contains(item_name.value()))
                             {
                                 test.status = TestStatus::FAIL;
                                 test.messages.push_back("Enumeration type \"" + name + "\" (line " +
                                                         std::to_string(child->line) + ") has multiple items named \"" +
-                                                        *item_name + "\".");
+                                                        item_name.value() + "\".");
                             }
-                            item_names.insert(*item_name);
+                            item_names.insert(item_name.value());
                         }
 
                         if (item_value_str)
@@ -1745,8 +1748,8 @@ ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root) cons
     metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
 
     auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
-    if (num_event_ind)
-        metadata.numberOfEventIndicators = parseNumber<uint32_t>(*num_event_ind);
+    if (num_event_ind.has_value())
+        metadata.numberOfEventIndicators = parseNumber<uint32_t>(num_event_ind.value());
 
     return metadata;
 }
