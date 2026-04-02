@@ -2035,13 +2035,12 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
                     }
 
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                            ") is an array with dimensions [" + dim_str + "] (total size " +
-                                            std::to_string(total_size.value()) + ") but has " +
-                                            std::to_string(num_start_values) + " start value" +
-                                            (num_start_values == 1 ? "" : "s") + ". Expected either " +
-                                            std::to_string(total_size.value()) +
-                                            " values or 1 scalar value (for broadcast).");
+                    test.messages.push_back(
+                        "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                        ") is an array with dimensions [" + dim_str + "] (total size " +
+                        std::to_string(total_size.value()) + ") but has " + std::to_string(num_start_values) +
+                        " start value" + (num_start_values == 1 ? "" : "s") + ". Expected either " +
+                        std::to_string(total_size.value()) + " values or 1 scalar value (for broadcast).");
                 }
             }
         }
