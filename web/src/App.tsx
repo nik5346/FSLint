@@ -52,7 +52,7 @@ SyntaxHighlighter.registerLanguage('log', log);
 /**
  * The main Application component.
  * Manages the layout, tabs, theme, and file uploading/processing.
- * @returns {JSX.Element} The rendered App component.
+ * @returns The rendered App component.
  */
 function App() {
   const {
@@ -260,7 +260,7 @@ function App() {
 
   /**
    * Handles file selection from the hidden input.
-   * @param {React.ChangeEvent<HTMLInputElement>} event - The change event.
+   * @param event - The change event.
    */
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -274,7 +274,7 @@ function App() {
 
   /**
    * Handles folder selection, using the directory picker API if available.
-   * @param {React.MouseEvent} event - The click event.
+   * @param event - The click event.
    */
   const handleFolderSelect = async (event: React.MouseEvent) => {
     event.preventDefault();
@@ -300,7 +300,7 @@ function App() {
 
   /**
    * Handles the drag enter event for the drop zone.
-   * @param {React.DragEvent<HTMLElement>} event - The drag event.
+   * @param event - The drag event.
    */
   const handleDragEnter = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
@@ -312,7 +312,7 @@ function App() {
 
   /**
    * Handles the drag leave event for the drop zone.
-   * @param {React.DragEvent<HTMLElement>} event - The drag event.
+   * @param event - The drag event.
    */
   const handleDragLeave = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
@@ -324,7 +324,7 @@ function App() {
 
   /**
    * Handles the drop event for the drop zone.
-   * @param {React.DragEvent<HTMLElement>} event - The drop event.
+   * @param event - The drop event.
    */
   const onDrop = async (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
@@ -364,8 +364,8 @@ function App() {
 
   /**
    * Parses text with ANSI color codes into JSX elements.
-   * @param {string} text - The text containing ANSI codes.
-   * @returns {Array<string | JSX.Element | null>} An array of parsed elements.
+   * @param text - The text containing ANSI codes.
+   * @returns An array of parsed elements.
    */
   const parseAnsi = (text: string) => {
     // eslint-disable-next-line no-control-regex

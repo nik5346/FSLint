@@ -4,14 +4,14 @@ import { formatBytes } from '../utils/format';
 
 /**
  * Component representing a single item (file or directory) in the file tree.
- * @param {Object} props - Component properties.
- * @param {FileNode} props.node - The file node data.
- * @param {boolean} props.isSelected - Whether this item is currently selected.
- * @param {string | null} props.selectedFile - The path of the currently selected file.
- * @param {Function} props.setSelectedFile - Function to set the selected file path.
- * @param {Theme} props.theme - The current theme object.
- * @param {number} [props.level=0] - The nesting level for indentation.
- * @returns {JSX.Element} The rendered FileTreeItem component.
+ * @param props - Component properties.
+ * @param props.node - The file node data.
+ * @param props.isSelected - Whether this item is currently selected.
+ * @param props.selectedFile - The path of the currently selected file.
+ * @param props.setSelectedFile - Function to set the selected file path.
+ * @param props.theme - The current theme object.
+ * @param props.level - The nesting level for indentation.
+ * @returns The rendered FileTreeItem component.
  */
 export const FileTreeItem = memo(function FileTreeItem({
   node,
@@ -21,29 +21,11 @@ export const FileTreeItem = memo(function FileTreeItem({
   theme,
   level = 0,
 }: {
-  /**
-   *
-   */
   node: FileNode;
-  /**
-   *
-   */
   isSelected: boolean;
-  /**
-   *
-   */
   selectedFile: string | null;
-  /**
-   *
-   */
   setSelectedFile: (path: string) => void;
-  /**
-   *
-   */
   theme: Theme;
-  /**
-   *
-   */
   level?: number;
 }) {
   const [isOpen, setIsOpen] = useState(true);
