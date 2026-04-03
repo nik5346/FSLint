@@ -226,7 +226,9 @@ export const useFSLint = () => {
          * The result of the validation run.
          * @type {string}
          */
-        const resultJson = (module as FSLintModule & { run_validation: (t: string) => string }).run_validation(target);
+        const resultJson = (
+          module as FSLintModule & { run_validation: (t: string) => string }
+        ).run_validation(target);
 
         try {
           const result = JSON.parse(resultJson) as ValidationResult;

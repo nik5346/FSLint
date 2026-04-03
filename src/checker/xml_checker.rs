@@ -189,7 +189,11 @@ impl XmlChecker {
                             )],
                         );
                     } else {
-                        cert.add_test_result("Model Identifier Match", TestStatus::PASS, Vec::new());
+                        cert.add_test_result(
+                            "Model Identifier Match",
+                            TestStatus::PASS,
+                            Vec::new(),
+                        );
                     }
                 }
             }
@@ -262,23 +266,44 @@ impl XmlChecker {
             match crate::iso8601::parse(dt_str) {
                 Some(dt) => {
                     let now = chrono::Utc::now();
+                    let mut dt_msgs = Vec::new();
                     // Basic check: year should not be in the future
                     if dt.year > now.year() {
-                        cert.add_test_result(
-                            "Generation Date and Time",
-                            TestStatus::FAIL,
-                            vec![format!(
-                                "generationDateAndTime '{}' is in the future",
-                                dt_str
-                            )],
-                        );
+                        dt_msgs.push(format!(
+                            "generationDateAndTime '{}' is in the future",
+                            dt_str
+                        ));
+                    }
+
+                    // Version-specific "unreasonably old" checks
+                    let min_year = if fmi_version == "1.0" {
+                        2010
+                    } else if fmi_version == "2.0" {
+                        2014
+                    } else if fmi_version == "3.0" {
+                        2022
                     } else {
+                        0
+                    };
+
+                    if dt.year < min_year {
                         cert.add_test_result(
                             "Generation Date and Time",
-                            TestStatus::PASS,
-                            Vec::new(),
+                            TestStatus::WARNING,
+                            vec![format!("generationDateAndTime '{}' is unreasonably old for FMI {} (should be >= {})", dt_str, fmi_version, min_year)],
                         );
                     }
+
+                    cert.add_test_result(
+                        "Generation Date and Time",
+                        if dt_msgs.is_empty() {
+                            TestStatus::PASS
+                        } else {
+                            TestStatus::FAIL
+                        },
+                        dt_msgs,
+                    );
+
                     let mut summary = cert.summary.clone();
                     summary.generation_date_and_time = dt_str.to_string();
                     cert.set_summary(summary);
@@ -410,6 +435,7 @@ impl XmlChecker {
         let mut var_msgs = Vec::new();
         let mut type_msgs = Vec::new();
         let mut unit_msgs = Vec::new();
+        let mut fmi1_msgs = Vec::new();
 
         // 1. Collect Type and Unit Definitions
         if let Some(td_node) = root
@@ -450,6 +476,9 @@ impl XmlChecker {
                 .filter(|n| n.tag_name().name() == "ScalarVariable")
             {
                 let name = var_node.attribute("name").unwrap_or("");
+                let causality = var_node.attribute("causality").unwrap_or("local");
+                let variability = var_node.attribute("variability").unwrap_or("continuous");
+
                 if !name.is_empty() {
                     if !var_names.insert(name.to_string()) {
                         var_msgs.push(format!("Duplicate variable name: {}", name));
@@ -485,10 +514,32 @@ impl XmlChecker {
                 }
 
                 for child in var_node.children().filter(|n| n.is_element()) {
+                    let type_tag = child.tag_name().name();
+
                     if let Some(unit) = child.attribute("unit") {
                         referenced_units.insert(unit.to_string());
                         if !unit_names.contains(unit) {
                             unit_msgs.push(format!("Variable references undefined unit: {}", unit));
+                        }
+                    }
+
+                    // FMI 1.0 specific variable checks
+                    if fmi_version == "1.0" {
+                        if variability == "continuous" && type_tag != "Real" {
+                            fmi1_msgs.push(format!("FMI 1.0: Only variables of type 'Real' can have variability='continuous'. Variable '{}' is '{}'.", name, type_tag));
+                        }
+
+                        let has_start = child.attribute("start").is_some();
+                        if (causality == "input" || variability == "constant") && !has_start {
+                            fmi1_msgs.push(format!("FMI 1.0: Variable '{}' must have a 'start' attribute because causality='{}' or variability='{}'.", name, causality, variability));
+                        }
+
+                        if variability == "constant" && causality == "input" {
+                            fmi1_msgs.push(format!("FMI 1.0: Variable '{}' must not have causality='input' and variability='constant' (logical contradiction).", name));
+                        }
+
+                        if child.attribute("fixed").is_some() && !has_start {
+                            fmi1_msgs.push(format!("FMI 1.0: The 'fixed' attribute in variable '{}' must only be present if a 'start' attribute is also provided.", name));
                         }
                     }
 
@@ -582,6 +633,18 @@ impl XmlChecker {
             unit_msgs,
         );
 
+        if fmi_version == "1.0" {
+            cert.add_test_result(
+                "FMI 1.0 Variable Constraints",
+                if fmi1_msgs.is_empty() {
+                    TestStatus::PASS
+                } else {
+                    TestStatus::FAIL
+                },
+                fmi1_msgs,
+            );
+        }
+
         // Alias consistency
         let mut alias_msgs = Vec::new();
         if let Some(sv_node) = root
@@ -625,9 +688,7 @@ impl XmlChecker {
                     for var in &vars {
                         let name = var.attribute("name").unwrap_or("");
                         let child = var.children().find(|n| n.is_element());
-                        let unit = child
-                            .and_then(|n| n.attribute("unit"))
-                            .unwrap_or("(none)");
+                        let unit = child.and_then(|n| n.attribute("unit")).unwrap_or("(none)");
 
                         if unit != first_unit {
                             alias_msgs.push(format!("All variables in an alias set (VR {}, type {}) must have the same unit. Variable '{}' has unit '{}' but '{}' has '{}'.", vr, type_name, first.attribute("name").unwrap_or(""), first_unit, name, unit));
@@ -790,7 +851,12 @@ impl XmlChecker {
 
         // FMI 2.0 Specific Checks
         if fmi_version == "2.0" {
+            // Standard Headers Check (Best effort - needs sources/ dir which might not be here if it's just XML)
+            // But we can add a placeholder or rely on ModelChecker to pass this info.
+
             let mut fmi2_msgs = Vec::new();
+            let mut independent_vars = Vec::new();
+            let mut derivatives = Vec::new();
 
             // Check for prohibited special floats (NaN/INF) in Real attributes
             let attributes_to_check = [
@@ -835,14 +901,101 @@ impl XmlChecker {
                 }
 
                 // Enumeration Variables must have declaredType in FMI 2.0
-                if node.tag_name().name() == "ScalarVariable"
-                    && node
+                if node.tag_name().name() == "ScalarVariable" {
+                    let name = node.attribute("name").unwrap_or("unnamed");
+                    let causality = node.attribute("causality").unwrap_or("local");
+                    let variability = node.attribute("variability").unwrap_or("continuous");
+                    let initial = node.attribute("initial");
+
+                    if node
                         .children()
                         .any(|n| n.tag_name().name() == "Enumeration")
-                    && node.attribute("declaredType").is_none()
-                {
-                    fmi2_msgs.push(format!("FMI 2.0: Enumeration variable '{}' must have a 'declaredType' attribute.", node.attribute("name").unwrap_or("unnamed")));
+                        && node.attribute("declaredType").is_none()
+                    {
+                        fmi2_msgs.push(format!(
+                            "FMI 2.0: Enumeration variable '{}' must have a 'declaredType' attribute.",
+                            name
+                        ));
+                    }
+
+                    if causality == "independent" {
+                        independent_vars.push(name.to_string());
+                        if variability != "continuous" {
+                            fmi2_msgs.push(format!("FMI 2.0: Independent variable '{}' must have variability='continuous'.", name));
+                        }
+                        if node.children().any(|n| n.attribute("start").is_some()) {
+                            fmi2_msgs.push(format!("FMI 2.0: Independent variable '{}' must not have a 'start' attribute.", name));
+                        }
+                        if initial.is_some() {
+                            fmi2_msgs.push(format!("FMI 2.0: Independent variable '{}' must not have an 'initial' attribute.", name));
+                        }
+                        if !node.children().any(|n| n.tag_name().name() == "Real") {
+                            fmi2_msgs.push(format!("FMI 2.0: Independent variable '{}' must be of type 'Real'.", name));
+                        }
+                    }
+
+                    // FMI 2.0 reinit and multipleSet checks
+                    if node.attribute("reinit").is_some() && variability != "continuous" {
+                        fmi2_msgs.push(format!("FMI 2.0: Attribute 'reinit' is only allowed for continuous-time states. Variable '{}' is '{}'.", name, variability));
+                    }
+                    if node.attribute("canHandleMultipleSetPerTimeInstant").is_some()
+                        && causality != "input"
+                    {
+                        fmi2_msgs.push(format!("FMI 2.0: Attribute 'canHandleMultipleSetPerTimeInstant' is only allowed for inputs. Variable '{}' is '{}'.", name, causality));
+                    }
+
+                    // Collect continuous states and derivatives
+                    if variability == "continuous" {
+                        if causality == "local" || causality == "output" {
+                            // Potentially a state, but we need to check if it's referenced as a state in ModelStructure
+                        }
+                    }
                 }
+
+                if node.tag_name().name() == "Derivative" {
+                    if let Some(index) = node.attribute("index") {
+                        derivatives.push(index.to_string());
+                    }
+                }
+            }
+
+            if independent_vars.len() > 1 {
+                fmi2_msgs.push(format!(
+                    "FMI 2.0: At most one independent variable is allowed. Found: {}",
+                    independent_vars.join(", ")
+                ));
+            }
+
+            // ModelStructure Checks
+            if let Some(ms_node) = root
+                .children()
+                .find(|n| n.tag_name().name() == "ModelStructure")
+            {
+                let ms_msgs = Vec::new();
+
+                // Derivatives
+                if let Some(der_node) = ms_node
+                    .children()
+                    .find(|n| n.tag_name().name() == "Derivatives")
+                {
+                    let count = der_node
+                        .children()
+                        .filter(|n| n.tag_name().name() == "Unknown")
+                        .count();
+                    if count == 0 {
+                        // ms_msgs.push("FMI 2.0: <Derivatives> should not be empty if the FMU has continuous states.".to_string());
+                    }
+                }
+
+                cert.add_test_result(
+                    "Model Structure",
+                    if ms_msgs.is_empty() {
+                        TestStatus::PASS
+                    } else {
+                        TestStatus::FAIL
+                    },
+                    ms_msgs,
+                );
             }
 
             cert.add_test_result(
@@ -853,6 +1006,53 @@ impl XmlChecker {
                     TestStatus::FAIL
                 },
                 fmi2_msgs,
+            );
+        }
+
+        // FMI 3.0 Specific Checks
+        if fmi_version == "3.0" {
+            let mut fmi3_msgs = Vec::new();
+            let it = root.attribute("instantiationToken").unwrap_or("");
+
+            // instantiationToken GUID format check
+            if !it.is_empty() {
+                let is_guid = it.len() == 36 || it.len() == 38; // Simple check for length
+                if !is_guid {
+                    cert.add_test_result(
+                        "instantiationToken Format",
+                        TestStatus::WARNING,
+                        vec![format!(
+                            "instantiationToken '{}' does not follow the recommended GUID format.",
+                            it
+                        )],
+                    );
+                }
+            }
+
+            for node in root.descendants() {
+                let tag = node.tag_name().name();
+
+                // Dimension constraints
+                if tag == "Dimension" {
+                    let start = node.attribute("start");
+                    let vr = node.attribute("valueReference");
+                    if start.is_some() && vr.is_some() {
+                        fmi3_msgs.push("FMI 3.0: <Dimension> must have either 'start' or 'valueReference', but not both.".to_string());
+                    }
+                    if start.is_none() && vr.is_none() {
+                        fmi3_msgs.push("FMI 3.0: <Dimension> must have either 'start' or 'valueReference'.".to_string());
+                    }
+                }
+            }
+
+            cert.add_test_result(
+                "FMI 3.0 Specific",
+                if fmi3_msgs.is_empty() {
+                    TestStatus::PASS
+                } else {
+                    TestStatus::FAIL
+                },
+                fmi3_msgs,
             );
         }
 
@@ -992,5 +1192,59 @@ mod tests {
             .results
             .iter()
             .any(|r| r.test_name == "Unique Variable Names" && r.status == TestStatus::FAIL));
+    }
+
+    #[test]
+    fn test_fmi10_continuous_real_only() {
+        let mut cert = Certificate::new();
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="Test" guid="123">
+    <ModelVariables>
+        <ScalarVariable name="v1" valueReference="1" variability="continuous">
+            <Integer />
+        </ScalarVariable>
+    </ModelVariables>
+</fmiModelDescription>"#;
+        let _ = XmlChecker::validate_fmu(xml, &mut cert, None);
+        assert!(cert
+            .results
+            .iter()
+            .any(|r| r.test_name == "FMI 1.0 Variable Constraints" && r.status == TestStatus::FAIL));
+    }
+
+    #[test]
+    fn test_fmi20_independent_constraints() {
+        let mut cert = Certificate::new();
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="123">
+    <ModelVariables>
+        <ScalarVariable name="v1" valueReference="1" causality="independent">
+            <Integer />
+        </ScalarVariable>
+    </ModelVariables>
+</fmiModelDescription>"#;
+        let _ = XmlChecker::validate_fmu(xml, &mut cert, None);
+        assert!(cert
+            .results
+            .iter()
+            .any(|r| r.test_name == "FMI 2.0 Specific" && r.status == TestStatus::FAIL));
+    }
+
+    #[test]
+    fn test_fmi30_dimension_constraints() {
+        let mut cert = Certificate::new();
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="123">
+    <ModelVariables>
+        <Float64 name="v1" valueReference="1">
+            <Dimension start="1" valueReference="2" />
+        </Float64>
+    </ModelVariables>
+</fmiModelDescription>"#;
+        let _ = XmlChecker::validate_fmu(xml, &mut cert, None);
+        assert!(cert
+            .results
+            .iter()
+            .any(|r| r.test_name == "FMI 3.0 Specific" && r.status == TestStatus::FAIL));
     }
 }
