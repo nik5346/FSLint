@@ -95,7 +95,12 @@ impl ModelChecker {
         }
 
         if model_type == "FMU" {
-            XmlChecker::validate_fmu(&xml_content, &mut self.cert)?;
+            let fmu_name = if !is_dir {
+                path_ref.file_stem().and_then(|s| s.to_str())
+            } else {
+                None
+            };
+            XmlChecker::validate_fmu(&xml_content, &mut self.cert, fmu_name)?;
 
             // Binary Validation
             self.cert.log("\n--- BINARY VALIDATION ---");

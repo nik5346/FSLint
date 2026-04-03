@@ -50,15 +50,14 @@ export const useFSLint = () => {
   }, [module]);
 
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'fslint.js';
-    script.async = true;
-
-    script.onload = async () => {
+    /**
+     * Initializes the FSLint WASM module.
+     */
+    const initModule = async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error wasm_bindgen is injected by fslint.js
         await window.wasm_bindgen('fslint_bg.wasm');
-        // @ts-ignore
+        // @ts-expect-error wasm_bindgen is injected by fslint.js
         const mod = window.wasm_bindgen;
         setModule(mod);
         setIsReady(true);
@@ -66,6 +65,17 @@ export const useFSLint = () => {
       } catch (err) {
         setOutput('Error initializing WASM module: ' + err + '\n');
       }
+    };
+
+    const script = document.createElement('script');
+    script.src = 'fslint.js';
+    script.async = true;
+
+    /**
+     * Event handler for the script onload event.
+     */
+    script.onload = () => {
+      initModule();
     };
     document.body.appendChild(script);
   }, []);
@@ -212,8 +222,11 @@ export const useFSLint = () => {
           discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
         const target = targetPath === '.' ? workDir : `${workDir}/${targetPath}`;
 
-        // @ts-ignore
-        const resultJson = (module as any).run_validation(target);
+        /**
+         * The result of the validation run.
+         * @type {string}
+         */
+        const resultJson = (module as FSLintModule & { run_validation: (t: string) => string }).run_validation(target);
 
         try {
           const result = JSON.parse(resultJson) as ValidationResult;

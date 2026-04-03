@@ -52,6 +52,10 @@ const Section = ({
 /**
  * Component displaying metadata and status summary of a validated model.
  * @param props - Component properties.
+ * @param props.result - The validation result object.
+ * @param props.theme - The current theme object.
+ * @param props.isDark - Whether the dark mode is enabled.
+ * @param props.module - The FSLint WASM module, if initialized.
  * @returns The rendered ModelInfo component.
  */
 export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => {
@@ -81,8 +85,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
        * @param names - The list of file names to search for.
        * @returns The absolute path to the file, or null if not found.
        */
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const findPath = (node: any, names: string[]): string | null => {
+      const findPath = (node: FileNode, names: string[]): string | null => {
         if (names.includes(node.name) && node.kind === 'file') return node.path;
         if (node.children) {
           for (const child of node.children) {
@@ -102,8 +105,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
       if (iconPath) {
         const data = module.FS.readFile(iconPath) as Uint8Array;
         const type = iconPath.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const blob = new Blob([data as any], { type });
+        const blob = new Blob([data], { type });
         url = URL.createObjectURL(blob);
         setIconUrl(url);
       }
