@@ -57,6 +57,7 @@ export const MarkdownContent = ({
           /**
            * Renders an H1 header with an ID for anchor links.
            * @param props - Component properties.
+           * @param props.children - The child elements to render.
            * @returns The rendered H1.
            */
           h1: ({ children, ...props }: any) => {
@@ -66,6 +67,7 @@ export const MarkdownContent = ({
           /**
            * Renders an H2 header with an ID for anchor links.
            * @param props - Component properties.
+           * @param props.children - The child elements to render.
            * @returns The rendered H2.
            */
           h2: ({ children, ...props }: any) => {
@@ -75,6 +77,7 @@ export const MarkdownContent = ({
           /**
            * Renders an H3 header with an ID for anchor links.
            * @param props - Component properties.
+           * @param props.children - The child elements to render.
            * @returns The rendered H3.
            */
           h3: ({ children, ...props }: any) => {
@@ -84,6 +87,7 @@ export const MarkdownContent = ({
           /**
            * Renders an H4 header with an ID for anchor links.
            * @param props - Component properties.
+           * @param props.children - The child elements to render.
            * @returns The rendered H4.
            */
           h4: ({ children, ...props }: any) => {
@@ -93,6 +97,7 @@ export const MarkdownContent = ({
           /**
            * Renders an H5 header with an ID for anchor links.
            * @param props - Component properties.
+           * @param props.children - The child elements to render.
            * @returns The rendered H5.
            */
           h5: ({ children, ...props }: any) => {
@@ -102,6 +107,7 @@ export const MarkdownContent = ({
           /**
            * Renders an H6 header with an ID for anchor links.
            * @param props - Component properties.
+           * @param props.children - The child elements to render.
            * @returns The rendered H6.
            */
           h6: ({ children, ...props }: any) => {
@@ -111,6 +117,9 @@ export const MarkdownContent = ({
           /**
            * Renders a code block with syntax highlighting.
            * @param props - Component properties.
+           * @param props.inline - Whether the code is inline.
+           * @param props.className - The CSS class name.
+           * @param props.children - The child elements to render.
            * @returns The rendered code block.
            */
           code({ inline, className, children, ...props }: any) {

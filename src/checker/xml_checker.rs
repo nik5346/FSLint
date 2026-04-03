@@ -5,7 +5,11 @@ use roxmltree::Document;
 pub struct XmlChecker;
 
 impl XmlChecker {
-    pub fn validate_fmu(xml_content: &str, cert: &mut Certificate) -> anyhow::Result<()> {
+    pub fn validate_fmu(
+        xml_content: &str,
+        cert: &mut Certificate,
+        fmu_name: Option<&str>,
+    ) -> anyhow::Result<()> {
         cert.log("\n--- FMU MODEL DESCRIPTION VALIDATION ---");
 
         // XXE Security Check
@@ -172,6 +176,22 @@ impl XmlChecker {
         if fmi_version == "1.0" {
             if let Some(id) = root.attribute("modelIdentifier") {
                 model_ids.push(id);
+
+                // FMI 1.0: modelIdentifier must match FMU filename stem
+                if let Some(name) = fmu_name {
+                    if id != name {
+                        cert.add_test_result(
+                            "Model Identifier Match",
+                            TestStatus::FAIL,
+                            vec![format!(
+                                "FMI 1.0: modelIdentifier '{}' must match FMU filename stem '{}'",
+                                id, name
+                            )],
+                        );
+                    } else {
+                        cert.add_test_result("Model Identifier Match", TestStatus::PASS, Vec::new());
+                    }
+                }
             }
         } else {
             for node in root.children() {
@@ -598,14 +618,59 @@ impl XmlChecker {
                         .and_then(|n| n.attribute("unit"))
                         .unwrap_or("(none)");
 
-                    for var in &vars[1..] {
-                        let unit = var
-                            .children()
-                            .find(|n| n.is_element())
+                    let mut settable_vars = Vec::new();
+                    let mut vars_with_start = Vec::new();
+                    let mut all_constant = true;
+
+                    for var in &vars {
+                        let name = var.attribute("name").unwrap_or("");
+                        let child = var.children().find(|n| n.is_element());
+                        let unit = child
                             .and_then(|n| n.attribute("unit"))
                             .unwrap_or("(none)");
+
                         if unit != first_unit {
-                            alias_msgs.push(format!("All variables in an alias set (VR {}, type {}) must have the same unit. Variable '{}' has unit '{}' but '{}' has '{}'.", vr, type_name, first.attribute("name").unwrap_or(""), first_unit, var.attribute("name").unwrap_or(""), unit));
+                            alias_msgs.push(format!("All variables in an alias set (VR {}, type {}) must have the same unit. Variable '{}' has unit '{}' but '{}' has '{}'.", vr, type_name, first.attribute("name").unwrap_or(""), first_unit, name, unit));
+                        }
+
+                        // FMI 2.0 specific alias checks
+                        if fmi_version == "2.0" {
+                            let causality = var.attribute("causality").unwrap_or("local");
+                            let variability = var.attribute("variability").unwrap_or("continuous");
+                            let initial = var.attribute("initial");
+                            let has_start = child.and_then(|n| n.attribute("start")).is_some();
+
+                            if variability != "constant" {
+                                all_constant = false;
+                            }
+
+                            // Settable check: input OR (parameter AND not constant) OR (initial=exact/approx)
+                            let is_settable = causality == "input"
+                                || (causality == "parameter" && variability != "constant")
+                                || matches!(initial, Some("exact") | Some("approx"));
+
+                            if is_settable {
+                                settable_vars.push(name);
+                            }
+
+                            if has_start && variability != "constant" {
+                                vars_with_start.push(name);
+                            }
+                        }
+                    }
+
+                    if fmi_version == "2.0" {
+                        if settable_vars.len() > 1 {
+                            alias_msgs.push(format!(
+                                "FMI 2.0: At most one variable in an alias set (VR {}, type {}) can be settable. Found: {}",
+                                vr, type_name, settable_vars.join(", ")
+                            ));
+                        }
+                        if !all_constant && vars_with_start.len() > 1 {
+                            alias_msgs.push(format!(
+                                "FMI 2.0: At most one variable in an alias set (VR {}, type {}) that is not constant can have a 'start' attribute. Found: {}",
+                                vr, type_name, vars_with_start.join(", ")
+                            ));
                         }
                     }
                 }
@@ -743,16 +808,28 @@ impl XmlChecker {
 
             // This requires a deeper search through the XML, but we can check the attributes of the current root and its children
             for node in root.descendants() {
-                for attr in attributes_to_check {
-                    if let Some(val) = node.attribute(attr) {
-                        let v = val.to_lowercase();
-                        if v.contains("nan") || v.contains("inf") {
-                            fmi2_msgs.push(format!(
-                                "FMI 2.0 prohibits NaN/INF in attribute '{}' of <{}>: {}",
-                                attr,
-                                node.tag_name().name(),
-                                val
-                            ));
+                // Determine if this is a node where special floats are prohibited
+                let tag = node.tag_name().name();
+                let prohibited = matches!(
+                    tag,
+                    "ScalarVariable"
+                        | "Real"
+                        | "SimpleType"
+                        | "BaseUnit"
+                        | "DisplayUnit"
+                        | "DefaultExperiment"
+                );
+
+                if prohibited {
+                    for attr in attributes_to_check {
+                        if let Some(val) = node.attribute(attr) {
+                            let v = val.to_lowercase();
+                            if v.contains("nan") || v.contains("inf") {
+                                fmi2_msgs.push(format!(
+                                    "FMI 2.0 prohibits NaN/INF in attribute '{}' of <{}>: {}",
+                                    attr, tag, val
+                                ));
+                            }
                         }
                     }
                 }
@@ -762,10 +839,9 @@ impl XmlChecker {
                     && node
                         .children()
                         .any(|n| n.tag_name().name() == "Enumeration")
+                    && node.attribute("declaredType").is_none()
                 {
-                    if node.attribute("declaredType").is_none() {
-                        fmi2_msgs.push(format!("FMI 2.0: Enumeration variable '{}' must have a 'declaredType' attribute.", node.attribute("name").unwrap_or("unnamed")));
-                    }
+                    fmi2_msgs.push(format!("FMI 2.0: Enumeration variable '{}' must have a 'declaredType' attribute.", node.attribute("name").unwrap_or("unnamed")));
                 }
             }
 
@@ -859,7 +935,7 @@ mod tests {
 <fmiModelDescription fmiVersion="2.0" modelName="TestModel" guid="123" generationDateAndTime="2024-03-15T14:30:05Z">
     <CoSimulation modelIdentifier="TestModel" />
 </fmiModelDescription>"#;
-        XmlChecker::validate_fmu(xml, &mut cert).unwrap();
+        XmlChecker::validate_fmu(xml, &mut cert, None).unwrap();
         assert!(cert
             .results
             .iter()
@@ -881,7 +957,7 @@ mod tests {
 <fmiModelDescription fmiVersion="2.0" modelName="TestModel" guid="123">
     <CoSimulation modelIdentifier="123_Invalid" />
 </fmiModelDescription>"#;
-        let _ = XmlChecker::validate_fmu(xml, &mut cert);
+        let _ = XmlChecker::validate_fmu(xml, &mut cert, None);
         assert!(cert
             .results
             .iter()
@@ -894,7 +970,7 @@ mod tests {
         let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="TestModel" guid="123" generationDateAndTime="2099-01-01T00:00:00Z">
 </fmiModelDescription>"#;
-        let _ = XmlChecker::validate_fmu(xml, &mut cert);
+        let _ = XmlChecker::validate_fmu(xml, &mut cert, None);
         assert!(cert
             .results
             .iter()
@@ -911,7 +987,7 @@ mod tests {
         <ScalarVariable name="v1" valueReference="2" />
     </ModelVariables>
 </fmiModelDescription>"#;
-        let _ = XmlChecker::validate_fmu(xml, &mut cert);
+        let _ = XmlChecker::validate_fmu(xml, &mut cert, None);
         assert!(cert
             .results
             .iter()
