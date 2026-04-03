@@ -105,6 +105,54 @@ impl ModelChecker {
                 temp_dir.as_ref().unwrap().path().to_path_buf()
             };
 
+            // Directory Structure Checks
+            let mut dir_msgs = Vec::new();
+
+            // Documentation
+            let doc_dir = base_path.join("documentation");
+            if !doc_dir.exists() {
+                dir_msgs.push("The 'documentation/' directory is missing (recommended).".to_string());
+                self.cert.add_test_result("Documentation", TestStatus::WARNING, vec!["documentation/ directory is missing".to_string()]);
+            } else {
+                let mut doc_entry_point = false;
+                if let Ok(entries) = fs::read_dir(&doc_dir) {
+                    let mut count = 0;
+                    for entry in entries.flatten() {
+                        count += 1;
+                        let name = entry.file_name();
+                        let name_str = name.to_string_lossy();
+                        if name_str == "index.html" || name_str == "_main.html" {
+                            doc_entry_point = true;
+                        }
+                    }
+                    if count == 0 {
+                        dir_msgs.push("The 'documentation/' directory is effectively empty.".to_string());
+                    }
+                }
+                if !doc_entry_point {
+                    dir_msgs.push("Standard documentation entry point (index.html or _main.html) is missing.".to_string());
+                }
+                self.cert.add_test_result("Documentation", if doc_entry_point { TestStatus::PASS } else { TestStatus::FAIL }, dir_msgs.clone());
+            }
+
+            // Licenses
+            let license_dir = base_path.join("documentation").join("licenses");
+            if !license_dir.exists() {
+                self.cert.add_test_result("Licenses", TestStatus::WARNING, vec!["documentation/licenses/ directory is missing".to_string()]);
+            } else {
+                let mut license_entry_point = false;
+                if let Ok(entries) = fs::read_dir(&license_dir) {
+                    for entry in entries.flatten() {
+                        let name = entry.file_name();
+                        let name_str = name.to_string_lossy();
+                        if name_str == "license.txt" || name_str == "license.html" || name_str == "license.spdx" {
+                            license_entry_point = true;
+                        }
+                    }
+                }
+                self.cert.add_test_result("Licenses", if license_entry_point { TestStatus::PASS } else { TestStatus::FAIL }, if license_entry_point { Vec::new() } else { vec!["Standard license entry point (license.txt, license.html, or license.spdx) is missing in documentation/licenses/.".to_string()] });
+            }
+
             let binaries_dir = base_path.join("binaries");
             if binaries_dir.exists() && binaries_dir.is_dir() {
                 let mut binary_msgs = Vec::new();
@@ -112,7 +160,7 @@ impl ModelChecker {
                     let entry = entry?;
                     let platform_path = entry.path();
                     if platform_path.is_dir() {
-                        for bin_entry in fs::read_dir(platform_path)? {
+                        for bin_entry in fs::read_dir(&platform_path)? {
                             let bin_entry = bin_entry?;
                             let bin_path = bin_entry.path();
                             if bin_path.is_file() {
@@ -124,6 +172,19 @@ impl ModelChecker {
                                                 bin_path.file_name().unwrap()
                                             ));
                                         }
+
+                                        let platform = platform_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                                        let mut arch_match = false;
+                                        for arch in &info.architectures {
+                                            if platform.contains(&arch.architecture) {
+                                                 arch_match = true;
+                                                 break;
+                                            }
+                                        }
+                                        if !arch_match {
+                                             binary_msgs.push(format!("Binary '{:?}' does not match platform identifier '{}'", bin_path.file_name().unwrap(), platform));
+                                        }
+
                                         self.cert.log(&format!(
                                             "Validated binary: {:?} ({:?})",
                                             bin_path.file_name().unwrap(),

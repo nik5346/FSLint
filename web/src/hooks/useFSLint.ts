@@ -51,36 +51,15 @@ export const useFSLint = () => {
 
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'FSLint-cli-wasm.js';
+    script.src = 'fslint.js';
     script.async = true;
 
-    /**
-     * Initializes the WASM module when the script is loaded.
-     */
     script.onload = async () => {
       try {
-        const mod = await window.createFSLintModule({
-          /**
-           * Callback for standard output.
-           * @param {string} text - The text to print.
-           */
-          print: (text: string) => setOutput((prev) => prev + text + '\n'),
-          /**
-           * Callback for error output.
-           * @param {string} text - The text to print.
-           */
-          printErr: (text: string) => setOutput((prev) => prev + 'Error: ' + text + '\n'),
-          /**
-           * Locates the WASM file for Emscripten.
-           * @param {string} path - The path to the file.
-           * @param {string} prefix - The path prefix.
-           * @returns {string} The resolved file path.
-           */
-          locateFile: (path: string, prefix: string) => {
-            if (path.endsWith('.wasm')) return prefix + 'FSLint-cli-wasm.wasm';
-            return prefix + path;
-          },
-        });
+        // @ts-ignore
+        await window.wasm_bindgen('fslint_bg.wasm');
+        // @ts-ignore
+        const mod = window.wasm_bindgen;
         setModule(mod);
         setIsReady(true);
         setOutput('');
@@ -233,12 +212,8 @@ export const useFSLint = () => {
           discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
         const target = targetPath === '.' ? workDir : `${workDir}/${targetPath}`;
 
-        const stack = module.stackSave();
-        const targetPtr = module.stackAlloc(target.length * 4 + 1);
-        module.stringToUTF8(target, targetPtr, target.length * 4 + 1);
-        const resultPtr = module._run_validation(targetPtr);
-        const resultJson = module.UTF8ToString(resultPtr);
-        module.stackRestore(stack);
+        // @ts-ignore
+        const resultJson = (module as any).run_validation(target);
 
         try {
           const result = JSON.parse(resultJson) as ValidationResult;
