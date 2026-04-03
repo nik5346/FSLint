@@ -1,4 +1,6 @@
 build/
+target/
+**/target/
 build-wasm/
 __pycache__/
 web/node_modules/
@@ -11,3 +13,8 @@ models/
 *.dylib
 tests/reference_fmus/
 .vscode/launch.json
+
+
+# Added by cargo
+
+/target

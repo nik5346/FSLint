@@ -1,0 +1,28 @@
+[package]
+name = "fslint"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "fslint"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fslint-cli"
+path = "src/main.rs"
+
+[dependencies]
+iso8601 = "0.6"
+clap = { version = "4.0", features = ["derive"] }
+object = "0.32"
+zip = "2.0"
+libc = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+roxmltree = "0.19"
+walkdir = "2.4"
+sha2 = "0.10"
+hex = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1.0"
+anyhow = "1.0"
