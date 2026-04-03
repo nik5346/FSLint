@@ -203,6 +203,53 @@ impl ModelChecker {
                                             ));
                                         }
 
+                                        // Mandatory Function Checks
+                                        let fmi_v = self.cert.summary.fmi_version.as_str();
+                                        let mut missing_funcs = Vec::new();
+
+                                        let mandatory_1_0_me = [
+                                            "fmiGetModelTypesPlatform", "fmiGetVersion", "fmiInstantiateModel", "fmiFreeModelInstance",
+                                            "fmiSetDebugLogging", "fmiSetTime", "fmiSetContinuousStates", "fmiCompletedIntegratorStep",
+                                            "fmiSetReal", "fmiSetInteger", "fmiSetBoolean", "fmiSetString", "fmiInitialize",
+                                            "fmiGetDerivatives", "fmiGetEventIndicators", "fmiGetReal", "fmiGetInteger",
+                                            "fmiGetBoolean", "fmiGetString", "fmiEventUpdate", "fmiGetContinuousStates",
+                                            "fmiGetNominalContinuousStates", "fmiGetStateValueReferences", "fmiTerminate"
+                                        ];
+
+                                        let mandatory_2_0 = [
+                                            "fmi2GetTypesPlatform", "fmi2GetVersion", "fmi2SetDebugLogging", "fmi2Instantiate",
+                                            "fmi2FreeInstance", "fmi2SetupExperiment", "fmi2EnterInitializationMode",
+                                            "fmi2ExitInitializationMode", "fmi2Terminate", "fmi2Reset", "fmi2GetReal",
+                                            "fmi2GetInteger", "fmi2GetBoolean", "fmi2GetString", "fmi2SetReal",
+                                            "fmi2SetInteger", "fmi2SetBoolean", "fmi2SetString"
+                                        ];
+
+                                        if fmi_v == "1.0" {
+                                            let stem = if !is_dir {
+                                                path_ref.file_stem().and_then(|s| s.to_str()).unwrap_or("")
+                                            } else {
+                                                ""
+                                            };
+                                            for f in &mandatory_1_0_me {
+                                                let prefixed = format!("{}_{}", stem, f);
+                                                if !info.exports.contains(*f)
+                                                    && !info.exports.contains(&prefixed)
+                                                {
+                                                    missing_funcs.push(f.to_string());
+                                                }
+                                            }
+                                        } else if fmi_v == "2.0" {
+                                            for f in &mandatory_2_0 {
+                                                if !info.exports.contains(*f) {
+                                                    missing_funcs.push(f.to_string());
+                                                }
+                                            }
+                                        }
+
+                                        if !missing_funcs.is_empty() {
+                                            binary_msgs.push(format!("Binary '{:?}' is missing mandatory FMI functions: {}", bin_path.file_name().unwrap(), missing_funcs.join(", ")));
+                                        }
+
                                         let platform = platform_path
                                             .file_name()
                                             .and_then(|n| n.to_str())
