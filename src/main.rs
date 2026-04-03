@@ -9,28 +9,34 @@ struct Args {
     path: PathBuf,
 
     #[arg(short, long)]
-    save: bool,
-
-    #[arg(short, long)]
-    update: bool,
-
-    #[arg(short, long)]
-    remove: bool,
-
-    #[arg(short, long)]
-    display: bool,
-
-    #[arg(short, long)]
-    verify: bool,
-
-    #[arg(short, long)]
-    tree: bool,
+    json: bool,
 }
 
 fn main() {
     let args = Args::parse();
-    println!("FSLint Rust Port (v0.1.0) - Validating: {:?}", args.path);
 
-    let _checker = ModelChecker::new();
-    // Implementation for the CLI flow...
+    let mut checker = ModelChecker::new();
+    match checker.validate(&args.path) {
+        Ok(_) => {
+            if args.json {
+                println!("{}", checker.cert.to_json());
+            } else {
+                println!("{}", checker.cert.report);
+                println!("\nSummary:");
+                println!("  Standard: {}", checker.cert.summary.standard);
+                println!("  Model Name: {}", checker.cert.summary.model_name);
+                println!("  FMI Version: {}", checker.cert.summary.fmi_version);
+                println!("  Overall Status: {:?}", checker.cert.get_overall_status());
+            }
+        }
+        Err(e) => {
+            if args.json {
+                println!("{}", checker.cert.to_json());
+            } else {
+                println!("{}", checker.cert.report);
+                eprintln!("\x1b[31mError during validation: {}\x1b[0m", e);
+            }
+            std::process::exit(1);
+        }
+    }
 }
