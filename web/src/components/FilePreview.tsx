@@ -8,8 +8,8 @@ import { decodeText } from '../utils/file';
 
 /**
  * Detects the most likely separator for a CSV file based on consistency and frequency.
- * @param {string} text - The sample text from the CSV file.
- * @returns {string} The detected separator (',', ';', '\t', or '|').
+ * @param text - The sample text from the CSV file.
+ * @returns The detected separator (',', ';', '\t', or '|').
  */
 const detectSeparator = (text: string) => {
   const candidates = [',', ';', '\t', '|'];
@@ -41,13 +41,13 @@ const detectSeparator = (text: string) => {
 
 /**
  * Component for previewing various file types (images, PDFs, HTML, Markdown, CSV, Hex).
- * @param {Object} props - Component properties.
- * @param {string | null} props.selectedFile - The path of the currently selected file.
- * @param {FileNode | null | undefined} props.node - The file node data from the file tree.
- * @param {FSLintModule | null} props.module - The FSLint WASM module for reading files.
- * @param {Theme} props.theme - The current theme object.
- * @param {boolean} props.isDark - Whether dark mode is active.
- * @returns {JSX.Element | null} The rendered FilePreview component or null if no file is selected.
+ * @param props - Component properties.
+ * @param props.selectedFile - The path of the currently selected file.
+ * @param props.node - The file node data from the file tree.
+ * @param props.module - The FSLint WASM module for reading files.
+ * @param props.theme - The current theme object.
+ * @param props.isDark - Whether dark mode is active.
+ * @returns The rendered FilePreview component or null if no file is selected.
  */
 export const FilePreview = ({
   selectedFile,
@@ -56,25 +56,10 @@ export const FilePreview = ({
   theme,
   isDark,
 }: {
-  /**
-   *
-   */
   selectedFile: string | null;
-  /**
-   *
-   */
   node: FileNode | null | undefined;
-  /**
-   *
-   */
   module: FSLintModule | null;
-  /**
-   *
-   */
   theme: Theme;
-  /**
-   *
-   */
   isDark: boolean;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -160,7 +145,7 @@ export const FilePreview = ({
   /**
    * Configures the Monaco editor before it is mounted.
    * Registers the CSV language and custom themes.
-   * @param {Monaco} monaco - The Monaco editor instance.
+   * @param monaco - The Monaco editor instance.
    */
   const handleBeforeMount = useCallback((monaco: Monaco) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -287,9 +272,9 @@ export const FilePreview = ({
 
   /**
    * Determines the Monaco language ID based on the file extension and content.
-   * @param {string} filename - The file name.
-   * @param {string} text - The file content.
-   * @returns {string} The language ID.
+   * @param filename - The file name.
+   * @param text - The file content.
+   * @returns The language ID.
    */
   const getLanguage = (filename: string, text: string) => {
     const ext = filename.split('.').pop()?.toLowerCase();

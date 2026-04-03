@@ -7,8 +7,8 @@ import { Theme } from '../types';
 
 /**
  * Strips textShadow from Prism styles to fix "ghosting" effects.
- * @param {Object} style - The original Prism style object.
- * @returns {Object} The updated style object without text shadows.
+ * @param style - The original Prism style object.
+ * @returns The updated style object without text shadows.
  */
 const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
   const newStyle: { [key: string]: React.CSSProperties } = {};
@@ -22,28 +22,19 @@ const stripTextShadow = (style: { [key: string]: React.CSSProperties }) => {
 
 /**
  * Component for rendering Markdown content with syntax highlighting and anchor support.
- * @param {Object} props - Component properties.
- * @param {string} props.content - The Markdown content to render.
- * @param {Theme} props.theme - The current theme object.
- * @param {boolean} props.isDark - Whether dark mode is active.
- * @returns {JSX.Element} The rendered MarkdownContent component.
+ * @param props - Component properties.
+ * @param props.content - The Markdown content to render.
+ * @param props.theme - The current theme object.
+ * @param props.isDark - Whether dark mode is active.
+ * @returns The rendered MarkdownContent component.
  */
 export const MarkdownContent = ({
   content,
   theme,
   isDark,
 }: {
-  /**
-   *
-   */
   content: string;
-  /**
-   *
-   */
   theme: Theme;
-  /**
-   *
-   */
   isDark: boolean;
 }) => {
   const syntaxStyle = useMemo(() => stripTextShadow(isDark ? vscDarkPlus : prism), [isDark]);
@@ -65,8 +56,8 @@ export const MarkdownContent = ({
           /* eslint-disable @typescript-eslint/no-explicit-any */
           /**
            * Renders an H1 header with an ID for anchor links.
-           * @param {any} props - Component properties.
-           * @returns {JSX.Element} The rendered H1.
+           * @param props - Component properties.
+           * @returns The rendered H1.
            */
           h1: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
@@ -74,8 +65,8 @@ export const MarkdownContent = ({
           },
           /**
            * Renders an H2 header with an ID for anchor links.
-           * @param {any} props - Component properties.
-           * @returns {JSX.Element} The rendered H2.
+           * @param props - Component properties.
+           * @returns The rendered H2.
            */
           h2: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
@@ -83,8 +74,8 @@ export const MarkdownContent = ({
           },
           /**
            * Renders an H3 header with an ID for anchor links.
-           * @param {any} props - Component properties.
-           * @returns {JSX.Element} The rendered H3.
+           * @param props - Component properties.
+           * @returns The rendered H3.
            */
           h3: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
@@ -92,8 +83,8 @@ export const MarkdownContent = ({
           },
           /**
            * Renders an H4 header with an ID for anchor links.
-           * @param {any} props - Component properties.
-           * @returns {JSX.Element} The rendered H4.
+           * @param props - Component properties.
+           * @returns The rendered H4.
            */
           h4: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
@@ -101,8 +92,8 @@ export const MarkdownContent = ({
           },
           /**
            * Renders an H5 header with an ID for anchor links.
-           * @param {any} props - Component properties.
-           * @returns {JSX.Element} The rendered H5.
+           * @param props - Component properties.
+           * @returns The rendered H5.
            */
           h5: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
@@ -110,8 +101,8 @@ export const MarkdownContent = ({
           },
           /**
            * Renders an H6 header with an ID for anchor links.
-           * @param {any} props - Component properties.
-           * @returns {JSX.Element} The rendered H6.
+           * @param props - Component properties.
+           * @returns The rendered H6.
            */
           h6: ({ children, ...props }: any) => {
             const line = (props as any).node?.position?.start.line;
@@ -119,8 +110,8 @@ export const MarkdownContent = ({
           },
           /**
            * Renders a code block with syntax highlighting.
-           * @param {any} props - Component properties.
-           * @returns {JSX.Element} The rendered code block.
+           * @param props - Component properties.
+           * @returns The rendered code block.
            */
           code({ inline, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || '');

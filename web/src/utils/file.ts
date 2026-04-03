@@ -1,7 +1,7 @@
 /**
  * Extracts Markdown headers from a string.
- * @param {string} text - The Markdown text to extract headers from.
- * @returns {Array<{ level: number; text: string; line: number }>} An array of header objects.
+ * @param text - The Markdown text to extract headers from.
+ * @returns An array of header objects.
  */
 export const extractHeaders = (text: string) => {
   const lines = text.split('\n');
@@ -42,9 +42,9 @@ export interface CollectedItems {
 
 /**
  * Recursively gets all files from a FileSystemDirectoryHandle.
- * @param {FileSystemDirectoryHandle} handle - The directory handle to read from.
- * @param {string} [path=handle.name] - The current path within the directory.
- * @returns {Promise<CollectedItems>} A promise that resolves to the collected items.
+ * @param handle - The directory handle to read from.
+ * @param path - The current path within the directory.
+ * @returns A promise that resolves to the collected items.
  */
 export async function getFilesFromHandle(
   handle: FileSystemDirectoryHandle,
@@ -70,8 +70,8 @@ export async function getFilesFromHandle(
 
 /**
  * Recursively gets all files from a FileSystemEntry (used for drag and drop).
- * @param {FileSystemEntry} entry - The entry to read from.
- * @returns {Promise<CollectedItems>} A promise that resolves to the collected items.
+ * @param entry - The entry to read from.
+ * @returns A promise that resolves to the collected items.
  */
 export async function getFilesFromEntry(entry: FileSystemEntry): Promise<CollectedItems> {
   if (entry.isFile) {
@@ -125,8 +125,8 @@ export async function getFilesFromEntry(entry: FileSystemEntry): Promise<Collect
 
 /**
  * Decodes a Uint8Array into a string using UTF-8 or Windows-1252 fallbacks.
- * @param {Uint8Array} data - The binary data to decode.
- * @returns {string} The decoded string.
+ * @param data - The binary data to decode.
+ * @returns The decoded string.
  */
 export function decodeText(data: Uint8Array): string {
   try {
@@ -164,10 +164,10 @@ export const mimeMap: { [key: string]: string } = {
 
 /**
  * Performs a case-insensitive file resolution using Emscripten FS.
- * @param {any} module - The Emscripten module.
- * @param {string} base - The base directory.
- * @param {string} rel - The relative path to resolve.
- * @returns {string | null} The resolved path, or null if it cannot be resolved.
+ * @param module - The Emscripten module.
+ * @param base - The base directory.
+ * @param rel - The relative path to resolve.
+ * @returns The resolved path, or null if it cannot be resolved.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function resolveCaseInsensitive(module: any, base: string, rel: string): string | null {

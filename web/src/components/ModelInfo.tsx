@@ -17,28 +17,19 @@ interface ModelInfoProps {
 
 /**
  * A section component with a title and content.
- * @param {Object} props - Component properties.
- * @param {string} props.title - The section title.
- * @param {Theme} props.theme - The current theme object.
- * @param {React.ReactNode} props.children - The section content.
- * @returns {JSX.Element} The rendered section.
+ * @param props - Component properties.
+ * @param props.title - The section title.
+ * @param props.theme - The current theme object.
+ * @param props.children - The section content.
+ * @returns The rendered section.
  */
 const Section = ({
   title,
   theme,
   children,
 }: {
-  /**
-   *
-   */
   title: string;
-  /**
-   *
-   */
   theme: Theme;
-  /**
-   *
-   */
   children: React.ReactNode;
 }) => (
   <div style={{ marginBottom: '24px' }}>
@@ -60,8 +51,8 @@ const Section = ({
 
 /**
  * Component displaying metadata and status summary of a validated model.
- * @param {ModelInfoProps} props - Component properties.
- * @returns {JSX.Element} The rendered ModelInfo component.
+ * @param props - Component properties.
+ * @returns The rendered ModelInfo component.
  */
 export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => {
   const { summary, overallStatus, results } = result;
@@ -86,9 +77,9 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     try {
       /**
        * Recursively searches for a file in the tree matching any of the given names.
-       * @param {any} node - The current node to search.
-       * @param {string[]} names - The list of file names to search for.
-       * @returns {string | null} The absolute path to the file, or null if not found.
+       * @param node - The current node to search.
+       * @param names - The list of file names to search for.
+       * @returns The absolute path to the file, or null if not found.
        */
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const findPath = (node: any, names: string[]): string | null => {
@@ -127,8 +118,8 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
 
   /**
    * Formats a size in bytes into a human-readable string.
-   * @param {number} bytes - The number of bytes.
-   * @returns {string} The formatted size string.
+   * @param bytes - The number of bytes.
+   * @returns The formatted size string.
    */
   const formatSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -139,17 +130,8 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
   };
 
   const infoItems: {
-    /**
-     *
-     */
     label: string;
-    /**
-     *
-     */
     value: string;
-    /**
-     *
-     */
     mono?: boolean;
   }[] = [
     { label: 'Model Name', value: summary.modelName },

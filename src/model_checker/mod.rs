@@ -111,8 +111,13 @@ impl ModelChecker {
             // Documentation
             let doc_dir = base_path.join("documentation");
             if !doc_dir.exists() {
-                dir_msgs.push("The 'documentation/' directory is missing (recommended).".to_string());
-                self.cert.add_test_result("Documentation", TestStatus::WARNING, vec!["documentation/ directory is missing".to_string()]);
+                dir_msgs
+                    .push("The 'documentation/' directory is missing (recommended).".to_string());
+                self.cert.add_test_result(
+                    "Documentation",
+                    TestStatus::WARNING,
+                    vec!["documentation/ directory is missing".to_string()],
+                );
             } else {
                 let mut doc_entry_point = false;
                 if let Ok(entries) = fs::read_dir(&doc_dir) {
@@ -126,26 +131,46 @@ impl ModelChecker {
                         }
                     }
                     if count == 0 {
-                        dir_msgs.push("The 'documentation/' directory is effectively empty.".to_string());
+                        dir_msgs.push(
+                            "The 'documentation/' directory is effectively empty.".to_string(),
+                        );
                     }
                 }
                 if !doc_entry_point {
-                    dir_msgs.push("Standard documentation entry point (index.html or _main.html) is missing.".to_string());
+                    dir_msgs.push(
+                        "Standard documentation entry point (index.html or _main.html) is missing."
+                            .to_string(),
+                    );
                 }
-                self.cert.add_test_result("Documentation", if doc_entry_point { TestStatus::PASS } else { TestStatus::FAIL }, dir_msgs.clone());
+                self.cert.add_test_result(
+                    "Documentation",
+                    if doc_entry_point {
+                        TestStatus::PASS
+                    } else {
+                        TestStatus::FAIL
+                    },
+                    dir_msgs.clone(),
+                );
             }
 
             // Licenses
             let license_dir = base_path.join("documentation").join("licenses");
             if !license_dir.exists() {
-                self.cert.add_test_result("Licenses", TestStatus::WARNING, vec!["documentation/licenses/ directory is missing".to_string()]);
+                self.cert.add_test_result(
+                    "Licenses",
+                    TestStatus::WARNING,
+                    vec!["documentation/licenses/ directory is missing".to_string()],
+                );
             } else {
                 let mut license_entry_point = false;
                 if let Ok(entries) = fs::read_dir(&license_dir) {
                     for entry in entries.flatten() {
                         let name = entry.file_name();
                         let name_str = name.to_string_lossy();
-                        if name_str == "license.txt" || name_str == "license.html" || name_str == "license.spdx" {
+                        if name_str == "license.txt"
+                            || name_str == "license.html"
+                            || name_str == "license.spdx"
+                        {
                             license_entry_point = true;
                         }
                     }
@@ -173,16 +198,19 @@ impl ModelChecker {
                                             ));
                                         }
 
-                                        let platform = platform_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                                        let platform = platform_path
+                                            .file_name()
+                                            .and_then(|n| n.to_str())
+                                            .unwrap_or("");
                                         let mut arch_match = false;
                                         for arch in &info.architectures {
                                             if platform.contains(&arch.architecture) {
-                                                 arch_match = true;
-                                                 break;
+                                                arch_match = true;
+                                                break;
                                             }
                                         }
                                         if !arch_match {
-                                             binary_msgs.push(format!("Binary '{:?}' does not match platform identifier '{}'", bin_path.file_name().unwrap(), platform));
+                                            binary_msgs.push(format!("Binary '{:?}' does not match platform identifier '{}'", bin_path.file_name().unwrap(), platform));
                                         }
 
                                         self.cert.log(&format!(

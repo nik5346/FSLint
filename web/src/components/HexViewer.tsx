@@ -46,7 +46,7 @@ export const HexViewer = ({ data, theme, isDark }: HexViewerProps) => {
 
   /**
    * Updates the scroll top state on scroll events.
-   * @param {React.UIEvent<HTMLDivElement>} e - The scroll event.
+   * @param e - The scroll event.
    */
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setScrollTop(e.currentTarget.scrollTop);
@@ -72,20 +72,20 @@ export const HexViewer = ({ data, theme, isDark }: HexViewerProps) => {
 
   /**
    * Formats a byte offset into an 8-character hex string.
-   * @param {number} offset - The byte offset.
-   * @returns {string} The formatted hex offset.
+   * @param offset - The byte offset.
+   * @returns The formatted hex offset.
    */
   const formatOffset = (offset: number) => offset.toString(16).padStart(8, '0').toUpperCase();
   /**
    * Formats a byte into a 2-character hex string.
-   * @param {number} byte - The byte value.
-   * @returns {string} The formatted hex byte.
+   * @param byte - The byte value.
+   * @returns The formatted hex byte.
    */
   const formatHex = (byte: number) => byte.toString(16).padStart(2, '0').toUpperCase();
   /**
    * Returns the ASCII representation of a byte, or a dot if it's not printable.
-   * @param {number} byte - The byte value.
-   * @returns {string} The ASCII character or '.'.
+   * @param byte - The byte value.
+   * @returns The ASCII character or '.'.
    */
   const formatAscii = (byte: number) =>
     byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : '.';

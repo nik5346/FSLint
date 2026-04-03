@@ -1,8 +1,8 @@
 /**
  * Formats a number of bytes into a human-readable string.
- * @param {number} bytes - The number of bytes to format.
- * @param {number} [decimals=2] - The number of decimal places to include.
- * @returns {string} The formatted byte string.
+ * @param bytes - The number of bytes to format.
+ * @param decimals - The number of decimal places to include.
+ * @returns The formatted byte string.
  */
 export function formatBytes(bytes: number, decimals = 2) {
   if (bytes === 0) return '0 B';

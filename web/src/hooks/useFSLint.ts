@@ -4,7 +4,7 @@ import { CollectedItems, resolveCaseInsensitive, mimeMap } from '../utils/file';
 
 /**
  * Custom hook for interacting with the FSLint WASM module.
- * @returns {Object} An object containing the FSLint state and processing functions.
+ * @returns An object containing the FSLint state and processing functions.
  */
 export const useFSLint = () => {
   const [module, setModule] = useState<FSLintModule | null>(null);
@@ -18,7 +18,7 @@ export const useFSLint = () => {
   useEffect(() => {
     /**
      * Handles incoming messages from the service worker.
-     * @param {MessageEvent} event - The message event.
+     * @param event - The message event.
      */
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'GET_FMU_FILE' && module) {
@@ -72,7 +72,7 @@ export const useFSLint = () => {
 
   /**
    * Recursively unlinks (deletes) a path from the virtual FS.
-   * @param {string} path - The path to delete.
+   * @param path - The path to delete.
    */
   const recursiveUnlink = useCallback(
     (path: string) => {
@@ -99,7 +99,7 @@ export const useFSLint = () => {
 
   /**
    * Equivalent to `mkdir -p` in the virtual FS.
-   * @param {string} fullPath - The path to create.
+   * @param fullPath - The path to create.
    */
   const mkdirP = useCallback(
     (fullPath: string) => {
@@ -141,8 +141,8 @@ export const useFSLint = () => {
 
   /**
    * Processes the collected files and runs the FSLint validation.
-   * @param {CollectedItems | File[]} items - The items to validate.
-   * @returns {Promise<void>} A promise that resolves when processing is complete.
+   * @param items - The items to validate.
+   * @returns A promise that resolves when processing is complete.
    */
   const processItems = useCallback(
     async (items: CollectedItems | File[]) => {
