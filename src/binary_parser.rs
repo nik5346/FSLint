@@ -1,4 +1,4 @@
-use object::{Object};
+use object::Object;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;

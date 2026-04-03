@@ -49,17 +49,17 @@ pub fn parse(s: &str) -> Option<DateTime> {
         let mut res = DateTime::default();
         match dt.date {
             iso8601::Date::YMD { year, month, day } => {
-                res.year = year as i32;
+                res.year = year;
                 res.month = month as i32;
                 res.day = day as i32;
             }
             iso8601::Date::Week { year, ww, d } => {
-                res.year = year as i32;
+                res.year = year;
                 res.week = ww as i32;
                 res.weekday = d as i32;
             }
             iso8601::Date::Ordinal { year, ddd } => {
-                res.year = year as i32;
+                res.year = year;
                 res.year_day = ddd as i32;
             }
         }
@@ -72,7 +72,7 @@ pub fn parse(s: &str) -> Option<DateTime> {
         if dt.time.tz_offset_hours == 0 && dt.time.tz_offset_minutes == 0 {
             res.tz.utc = true;
         } else {
-            res.tz.offset_minutes = (dt.time.tz_offset_hours * 60 + dt.time.tz_offset_minutes) as i32;
+            res.tz.offset_minutes = dt.time.tz_offset_hours * 60 + dt.time.tz_offset_minutes;
         }
 
         return Some(res);
@@ -82,17 +82,17 @@ pub fn parse(s: &str) -> Option<DateTime> {
         let mut res = DateTime::default();
         match d {
             iso8601::Date::YMD { year, month, day } => {
-                res.year = year as i32;
+                res.year = year;
                 res.month = month as i32;
                 res.day = day as i32;
             }
             iso8601::Date::Week { year, ww, d } => {
-                res.year = year as i32;
+                res.year = year;
                 res.week = ww as i32;
                 res.weekday = d as i32;
             }
             iso8601::Date::Ordinal { year, ddd } => {
-                res.year = year as i32;
+                res.year = year;
                 res.year_day = ddd as i32;
             }
         }

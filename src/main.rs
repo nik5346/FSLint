@@ -1,6 +1,6 @@
 use clap::Parser;
-use std::path::PathBuf;
 use fslint::ModelChecker;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -31,6 +31,6 @@ fn main() {
     let args = Args::parse();
     println!("FSLint Rust Port (v0.1.0) - Validating: {:?}", args.path);
 
-    let checker = ModelChecker::new();
+    let _checker = ModelChecker::new();
     // Implementation for the CLI flow...
 }

@@ -1,9 +1,9 @@
-pub mod iso8601;
-pub mod binary_parser;
 pub mod archive;
-pub mod checker;
+pub mod binary_parser;
 pub mod certificate;
+pub mod checker;
 pub mod file_utils;
+pub mod iso8601;
 
 pub use certificate::Certificate;
 pub use model_checker::ModelChecker;
