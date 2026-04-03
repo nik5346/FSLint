@@ -160,7 +160,7 @@ impl ModelChecker {
                     let entry = entry?;
                     let platform_path = entry.path();
                     if platform_path.is_dir() {
-                        for bin_entry in fs::read_dir(platform_path)? {
+                        for bin_entry in fs::read_dir(&platform_path)? {
                             let bin_entry = bin_entry?;
                             let bin_path = bin_entry.path();
                             if bin_path.is_file() {
@@ -172,6 +172,19 @@ impl ModelChecker {
                                                 bin_path.file_name().unwrap()
                                             ));
                                         }
+
+                                        let platform = platform_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                                        let mut arch_match = false;
+                                        for arch in &info.architectures {
+                                            if platform.contains(&arch.architecture) {
+                                                 arch_match = true;
+                                                 break;
+                                            }
+                                        }
+                                        if !arch_match {
+                                             binary_msgs.push(format!("Binary '{:?}' does not match platform identifier '{}'", bin_path.file_name().unwrap(), platform));
+                                        }
+
                                         self.cert.log(&format!(
                                             "Validated binary: {:?} ({:?})",
                                             bin_path.file_name().unwrap(),

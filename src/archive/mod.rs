@@ -42,10 +42,12 @@ impl ArchiveChecker {
         let mut duplicate_msgs = Vec::new();
         let mut format_msgs = Vec::new();
         let mut integrity_msgs = Vec::new();
+        let mut security_msgs = Vec::new();
 
-        // Disk Spanning Check
-        // zip-rs doesn't support multi-disk archives for reading, but we can check if it's reported.
-        // For ZipArchive, there isn't a direct way to check disk spanning easily without raw access.
+        // Disk Spanning and Multi-disk archives
+        // zip-rs doesn't support multi-disk archives for reading.
+        // But if it is multi-disk, ZipArchive::new usually fails.
+        // We can't easily check for disk spanning with the high-level API.
 
         // [SECURITY] Overlapping File Entries
         // We'll track byte ranges of local file headers and data.
@@ -58,6 +60,23 @@ impl ArchiveChecker {
             // Archive Format Checks
             if file.is_dir() && !name.ends_with('/') {
                 format_msgs.push(format!("Directory entry must end with '/': {}", name));
+            }
+
+            if name.starts_with("./") {
+                 format_msgs.push(format!("Leading './' in path should be avoided: {}", name));
+            }
+            if name.contains("//") {
+                 format_msgs.push(format!("Multiple consecutive slashes '//' in path should be avoided: {}", name));
+            }
+
+            // [SECURITY] Symbolic Links
+            // Note: zip-rs doesn't directly tell if it's a symlink in a cross-platform way easily,
+            // but we can check the unix mode if available.
+            if let Some(mode) = file.unix_mode() {
+                if (mode & 0o120000) == 0o120000 {
+                    security_msgs.push(format!("Symbolic links are not allowed: {}", name));
+                    fatal_error = true;
+                }
             }
 
             // [SECURITY] Encryption
@@ -158,6 +177,10 @@ impl ArchiveChecker {
             // Bit 11 is not directly exposed as flags() in zip-rs 2.4.2 ZipFile.
             // But ZipFileData has is_utf8 field.
             let bit11_set = file.get_metadata().is_utf8;
+            if !is_ascii {
+                 bit11_msgs.push(format!("Path contains non-ASCII characters (recommended to avoid for portability): {}", name));
+            }
+
             if !is_ascii && !bit11_set {
                 bit11_msgs.push(format!(
                     "Language encoding flag (bit 11) MUST be set for '{}' because it contains non-ASCII characters.",
@@ -283,6 +306,16 @@ impl ArchiveChecker {
                 TestStatus::FAIL
             },
             duplicate_msgs,
+        );
+
+        cert.add_test_result(
+            "Symbolic Links",
+            if security_msgs.iter().any(|m| m.contains("Symbolic links")) {
+                TestStatus::FAIL
+            } else {
+                TestStatus::PASS
+            },
+            security_msgs.iter().filter(|m| m.contains("Symbolic links")).cloned().collect(),
         );
 
         if fatal_error {

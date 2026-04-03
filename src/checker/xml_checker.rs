@@ -19,6 +19,15 @@ impl XmlChecker {
         }
         cert.add_test_result("[SECURITY] XXE Check", TestStatus::PASS, Vec::new());
 
+        // XML Declaration and Encoding
+        if !xml_content.trim_start().starts_with("<?xml") {
+             cert.add_test_result("XML Declaration", TestStatus::WARNING, vec!["XML declaration is missing".to_string()]);
+        } else if !xml_content.contains("version=\"1.0\"") {
+             cert.add_test_result("XML Declaration", TestStatus::FAIL, vec!["XML version must be 1.0".to_string()]);
+        } else {
+             cert.add_test_result("XML Declaration", TestStatus::PASS, Vec::new());
+        }
+
         let doc = match Document::parse(xml_content) {
             Ok(d) => d,
             Err(e) => {
@@ -76,6 +85,16 @@ impl XmlChecker {
                 cert.add_test_result("FMI Version", TestStatus::PASS, Vec::new());
                 let mut summary = cert.summary.clone();
                 summary.fmi_version = version.to_string();
+
+                if let Some(mv) = root.attribute("version") {
+                    summary.model_version = mv.to_string();
+                    // Basic semver check
+                    let parts: Vec<&str> = mv.split('.').collect();
+                    if parts.len() < 2 {
+                        cert.add_test_result("Model Version Format", TestStatus::WARNING, vec![format!("Model version '{}' does not follow recommended semantic versioning (MAJOR.MINOR.PATCH)", mv)]);
+                    }
+                }
+
                 cert.set_summary(summary);
             }
         } else {
@@ -110,6 +129,20 @@ impl XmlChecker {
                 TestStatus::FAIL,
                 vec!["GUID (FMI 1.0/2.0) or instantiationToken (FMI 3.0) is missing".to_string()],
             );
+        }
+
+        // Log Categories
+        if let Some(log_node) = root.children().find(|n| n.tag_name().name() == "LogCategories") {
+            let mut category_names = std::collections::HashSet::new();
+            let mut log_msgs = Vec::new();
+            for category in log_node.children().filter(|n| n.tag_name().name() == "Category") {
+                if let Some(name) = category.attribute("name") {
+                    if !category_names.insert(name.to_string()) {
+                        log_msgs.push(format!("Duplicate log category name: {}", name));
+                    }
+                }
+            }
+            cert.add_test_result("Log Categories", if log_msgs.is_empty() { TestStatus::PASS } else { TestStatus::FAIL }, log_msgs);
         }
 
         // modelIdentifier
@@ -222,6 +255,37 @@ impl XmlChecker {
         } else {
              cert.add_test_result("License Attribute", TestStatus::WARNING, vec!["license attribute is missing in modelDescription.xml".to_string()]);
         }
+
+        // FMI 1.0 specific
+        if fmi_version == "1.0" {
+             if let Some(va_node) = root.children().find(|n| n.tag_name().name() == "VendorAnnotations") {
+                  let mut tool_names = std::collections::HashSet::new();
+                  let mut va_msgs = Vec::new();
+                  for tool in va_node.children().filter(|n| n.tag_name().name() == "Tool") {
+                       if let Some(name) = tool.attribute("name") {
+                            if !tool_names.insert(name.to_string()) {
+                                 va_msgs.push(format!("Duplicate tool name in VendorAnnotations: {}", name));
+                            }
+                       }
+                  }
+                  cert.add_test_result("Vendor Annotations", if va_msgs.is_empty() { TestStatus::PASS } else { TestStatus::FAIL }, va_msgs);
+             }
+
+             // URI-based file references
+             if let Some(cs_node) = root.children().find(|n| n.tag_name().name() == "CoSimulation_Tool") {
+                  let mut uri_msgs = Vec::new();
+                  for attr in ["entryPoint", "file"] {
+                       if let Some(val) = cs_node.attribute(attr) {
+                            if !val.starts_with("fmu://") {
+                                 uri_msgs.push(format!("Attribute '{}' in CoSimulation_Tool should use 'fmu://' URI scheme (found: {})", attr, val));
+                            }
+                       }
+                  }
+                  if !uri_msgs.is_empty() {
+                       cert.add_test_result("URI References", TestStatus::WARNING, uri_msgs);
+                  }
+             }
+        }
         cert.set_summary(summary);
 
         // Variable Naming, Unique Names, and Consistency
@@ -261,15 +325,23 @@ impl XmlChecker {
             let naming_convention = root.attribute("namingConvention").unwrap_or("flat");
 
             for var_node in sv_node.children().filter(|n| n.tag_name().name() == "ScalarVariable") {
-                if let Some(name) = var_node.attribute("name") {
+                let name = var_node.attribute("name").unwrap_or("");
+                if !name.is_empty() {
                     if !var_names.insert(name.to_string()) {
                         var_msgs.push(format!("Duplicate variable name: {}", name));
                     }
 
                     // Naming Convention Check
                     if naming_convention == "structured" {
-                         // Simple check: if it contains der( or . or [, it should follow structured syntax
-                         // For now, we'll just check for basics like not starting with a number if not quoted.
+                         // Structured name syntax
+                         let is_valid = if name.starts_with("der(") && name.ends_with(')') {
+                             true // Simplified
+                         } else {
+                             !name.is_empty() && !name.chars().next().unwrap().is_ascii_digit()
+                         };
+                         if !is_valid {
+                             var_msgs.push(format!("Variable name '{}' does not follow structured naming convention", name));
+                         }
                     } else if name.chars().any(|c| matches!(c, '\r' | '\n' | '\t')) {
                          var_msgs.push(format!("Variable name '{}' contains illegal control characters (CR, LF, or Tab)", name));
                     }
@@ -289,6 +361,29 @@ impl XmlChecker {
                             unit_msgs.push(format!("Variable references undefined unit: {}", unit));
                         }
                     }
+
+                    // Min/Max/Start Constraints
+                    let min = child.attribute("min").and_then(|s| s.parse::<f64>().ok());
+                    let max = child.attribute("max").and_then(|s| s.parse::<f64>().ok());
+                    let start = child.attribute("start").and_then(|s| s.parse::<f64>().ok());
+
+                    if let (Some(mi), Some(ma)) = (min, max) {
+                        if ma < mi {
+                            var_msgs.push(format!("Variable '{}': max ({}) must be >= min ({})", name, ma, mi));
+                        }
+                    }
+                    if let Some(s) = start {
+                        if let Some(mi) = min {
+                            if s < mi {
+                                var_msgs.push(format!("Variable '{}': start value ({}) is below min ({})", name, s, mi));
+                            }
+                        }
+                        if let Some(ma) = max {
+                            if s > ma {
+                                var_msgs.push(format!("Variable '{}': start value ({}) is above max ({})", name, s, ma));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -299,6 +394,35 @@ impl XmlChecker {
         cert.add_test_result("Type References", if type_msgs.iter().any(|m| m.contains("undefined")) { TestStatus::FAIL } else { TestStatus::PASS }, type_msgs);
         cert.add_test_result("Unique Unit Names", if unit_msgs.iter().any(|m| m.contains("Duplicate")) { TestStatus::FAIL } else { TestStatus::PASS }, unit_msgs.clone());
         cert.add_test_result("Unit References", if unit_msgs.iter().any(|m| m.contains("undefined")) { TestStatus::FAIL } else { TestStatus::PASS }, unit_msgs);
+
+        // Alias consistency
+        let mut alias_msgs = Vec::new();
+        if let Some(sv_node) = root.children().find(|n| n.tag_name().name() == "ModelVariables") {
+             let mut alias_sets: std::collections::HashMap<(String, u32), Vec<roxmltree::Node>> = std::collections::HashMap::new();
+             for var_node in sv_node.children().filter(|n| n.tag_name().name() == "ScalarVariable") {
+                  if let Some(vr_str) = var_node.attribute("valueReference") {
+                      if let Ok(vr) = vr_str.parse::<u32>() {
+                          let type_name = var_node.children().find(|n| n.is_element()).map(|n| n.tag_name().name().to_string()).unwrap_or_default();
+                          alias_sets.entry((type_name, vr)).or_default().push(var_node);
+                      }
+                  }
+             }
+
+             for ((type_name, vr), vars) in alias_sets {
+                  if vars.len() > 1 {
+                       let first = &vars[0];
+                       let first_unit = first.children().find(|n| n.is_element()).and_then(|n| n.attribute("unit")).unwrap_or("(none)");
+
+                       for var in &vars[1..] {
+                            let unit = var.children().find(|n| n.is_element()).and_then(|n| n.attribute("unit")).unwrap_or("(none)");
+                            if unit != first_unit {
+                                 alias_msgs.push(format!("All variables in an alias set (VR {}, type {}) must have the same unit. Variable '{}' has unit '{}' but '{}' has '{}'.", vr, type_name, first.attribute("name").unwrap_or(""), first_unit, var.attribute("name").unwrap_or(""), unit));
+                            }
+                       }
+                  }
+             }
+        }
+        cert.add_test_result("Alias Consistency", if alias_msgs.is_empty() { TestStatus::PASS } else { TestStatus::FAIL }, alias_msgs);
 
         // Unused definitions (WARNING)
         let mut unused_msgs = Vec::new();
