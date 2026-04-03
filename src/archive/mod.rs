@@ -1,6 +1,5 @@
 use std::fs::File;
-use std::io::{Read, Seek};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use zip::ZipArchive;
 
 pub struct ArchiveChecker;
@@ -20,7 +19,10 @@ impl ArchiveChecker {
             }
 
             // Security Check: Illegal Characters
-            if name.chars().any(|c| matches!(c, '<' | '>' | ':' | '"' | '|' | '?' | '*')) {
+            if name
+                .chars()
+                .any(|c| matches!(c, '<' | '>' | ':' | '"' | '|' | '?' | '*'))
+            {
                 return Err(anyhow::anyhow!("Illegal characters in path: {}", name));
             }
 
@@ -32,11 +34,18 @@ impl ArchiveChecker {
             // Security Check: Zip Bomb
             let compressed_size = file.compressed_size();
             let uncompressed_size = file.size();
-            if uncompressed_size > 1024 * 1024 * 1024 { // 1GB limit
-                return Err(anyhow::anyhow!("File too large in archive (potential zip bomb): {}", name));
+            if uncompressed_size > 1024 * 1024 * 1024 {
+                // 1GB limit
+                return Err(anyhow::anyhow!(
+                    "File too large in archive (potential zip bomb): {}",
+                    name
+                ));
             }
             if compressed_size > 0 && (uncompressed_size / compressed_size) > 100 {
-                return Err(anyhow::anyhow!("High compression ratio (potential zip bomb): {}", name));
+                return Err(anyhow::anyhow!(
+                    "High compression ratio (potential zip bomb): {}",
+                    name
+                ));
             }
         }
 

@@ -1,1 +1,3 @@
-pub fn exists() -> bool { true }
+pub fn exists() -> bool {
+    true
+}
