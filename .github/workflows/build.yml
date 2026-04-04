@@ -17,11 +17,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: Install Ninja and Doxygen
+      - name: Install LLVM, Ninja and Doxygen
         run: |
           python -m pip install ninja
           sudo apt-get update
-          sudo apt-get install -y doxygen
+          sudo apt-get install -y doxygen clang-tidy clang-format
       - name: Check Encodings
         run: python scripts/check_encodings.py
       - name: Configure CMake
