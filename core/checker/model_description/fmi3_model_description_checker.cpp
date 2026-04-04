@@ -856,15 +856,14 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 {
     TestResult test{"ModelStructure Outputs", TestStatus::PASS, {}};
 
-    // Get expected outputs (all variables with causality="output")
+    // Get expected outputs (all non-clocked variables with causality="output")
     std::set<uint32_t> expected_vrs;
-    std::map<uint32_t, std::string> vr_to_name;
     for (const auto& var : variables)
     {
-        if (var.causality == "output" && var.value_reference.has_value())
+        if (var.causality == "output" && var.value_reference.has_value() &&
+            (!var.clocks.has_value() || var.clocks->empty()))
         {
             expected_vrs.insert(*var.value_reference);
-            vr_to_name[*var.value_reference] = var.name;
         }
     }
 
@@ -934,38 +933,19 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     if (expected_vrs != actual_vrs)
     {
         test.status = TestStatus::FAIL;
-        std::vector<std::string> missing;
-        std::vector<std::string> extra;
 
         for (const uint32_t vr : expected_vrs)
+        {
             if (!actual_vrs.contains(vr))
-                missing.push_back(vr_to_name[vr] + " (VR " + std::to_string(vr) + ")");
-
-        for (const uint32_t vr : actual_vrs)
-            if (!expected_vrs.contains(vr))
-                extra.push_back("VR " + std::to_string(vr));
-
-        if (!missing.empty())
-        {
-            std::string msg =
-                "The following variables with causality=\"output\" are missing from ModelStructure/Output: ";
-            for (size_t i = 0; i < missing.size(); ++i)
-                msg += (i > 0 ? ", " : "") + missing[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
-        if (!extra.empty())
-        {
-            std::string msg = "The following variables in ModelStructure/Output do not have causality=\"output\": ";
-            for (size_t i = 0; i < extra.size(); ++i)
-                msg += (i > 0 ? ", " : "") + extra[i];
-            msg += ".";
-            test.messages.push_back(msg);
+            {
+                test.messages.push_back(std::format(
+                    "Output alias set (VR {}) is missing a representative in ModelStructure/Output.", vr));
+            }
         }
 
         test.messages.push_back(
-            "ModelStructure/Output must have exactly one entry for each variable with causality=\"output\".");
+            "ModelStructure/Output must have exactly one representative for each alias set of "
+            "non-clocked variables with causality=\"output\".");
     }
 
     cert.printTestResult(test);
@@ -1090,16 +1070,11 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 {
     TestResult test{"ModelStructure Derivatives", TestStatus::PASS, {}};
 
-    // Build map of variables that are derivatives
-    std::set<uint32_t> expected_vrs;
-    std::map<uint32_t, std::string> vr_to_name;
+    std::map<uint32_t, const Variable*> vr_map;
     for (const auto& var : variables)
     {
-        if (var.derivative_of.has_value() && var.value_reference.has_value())
-        {
-            expected_vrs.insert(*var.value_reference);
-            vr_to_name[*var.value_reference] = var.name;
-        }
+        if (var.value_reference.has_value())
+            vr_map[*var.value_reference] = &var;
     }
 
     // FMI3: Check ContinuousStateDerivative entries (using valueReference attribute)
@@ -1124,60 +1099,35 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                 if (actual_vrs.contains(vr))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Value reference " + std::to_string(vr) +
-                                            " is listed multiple times in ModelStructure/ContinuousStateDerivative.");
+                    test.messages.push_back(std::format(
+                        "Value reference {} is listed multiple times in ModelStructure/ContinuousStateDerivative.",
+                        vr));
                 }
                 actual_vrs.insert(vr);
 
-                if (!expected_vrs.contains(vr))
+                auto it = vr_map.find(vr);
+                if (it == vr_map.end())
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Value reference " + std::to_string(vr) +
-                                            " listed in ModelStructure/ContinuousStateDerivative does not have the "
-                                            "\"derivative\" attribute.");
+                    test.messages.push_back(std::format("ModelStructure/ContinuousStateDerivative references "
+                                                        "non-existent valueReference {}.",
+                                                        vr));
+                }
+                else
+                {
+                    const Variable& var = *it->second;
+                    if (!var.derivative_of.has_value())
+                    {
+                        test.status = TestStatus::FAIL;
+                        test.messages.push_back(
+                            std::format("Variable \"{}\" (VR {}) listed in ModelStructure/ContinuousStateDerivative "
+                                        "must have a \"derivative\" attribute.",
+                                        var.name, vr));
+                    }
                 }
             }
         }
         xmlXPathFreeObject(xpath_obj);
-    }
-
-    if (expected_vrs != actual_vrs)
-    {
-        test.status = TestStatus::FAIL;
-        std::vector<std::string> missing;
-        std::vector<std::string> extra;
-
-        for (const uint32_t vr : expected_vrs)
-            if (!actual_vrs.contains(vr))
-                missing.push_back(vr_to_name[vr] + " (VR " + std::to_string(vr) + ")");
-
-        for (const uint32_t vr : actual_vrs)
-            if (!expected_vrs.contains(vr))
-                extra.push_back("VR " + std::to_string(vr));
-
-        if (!missing.empty())
-        {
-            std::string msg = "The following variables with a \"derivative\" attribute are missing from "
-                              "ModelStructure/ContinuousStateDerivative: ";
-            for (size_t i = 0; i < missing.size(); ++i)
-                msg += (i > 0 ? ", " : "") + missing[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
-        if (!extra.empty())
-        {
-            std::string msg = "The following value references in ModelStructure/ContinuousStateDerivative do not "
-                              "correspond to derivatives: ";
-            for (size_t i = 0; i < extra.size(); ++i)
-                msg += (i > 0 ? ", " : "") + extra[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
-        test.messages.push_back(
-            "ModelStructure/ContinuousStateDerivative must have exactly one entry for each variable that has a "
-            "\"derivative\" attribute.");
     }
 
     cert.printTestResult(test);
@@ -1540,7 +1490,6 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     // Build expected set of initial unknown value references (FMI3 spec)
     std::set<uint32_t> expected_vrs;
-    std::map<uint32_t, std::string> vr_to_name;
 
     for (const auto& var : variables)
     {
@@ -1554,7 +1503,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         // (2) Calculated parameters
         // (3) State derivatives with initial="approx" or "calculated"
         if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
-             !var.clocks.has_value()) ||
+             (!var.clocks.has_value() || var.clocks->empty())) ||
             (var.causality == "calculatedParameter") ||
             (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")))
         {
@@ -1580,7 +1529,6 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         if (is_required)
         {
             expected_vrs.insert(*var.value_reference);
-            vr_to_name[*var.value_reference] = var.name;
         }
     }
 
@@ -1604,8 +1552,8 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                     if (actual_vrs.contains(vr))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("Value reference " + std::to_string(vr) +
-                                                " is listed multiple times in ModelStructure/InitialUnknown.");
+                        test.messages.push_back(std::format(
+                            "Value reference {} is listed multiple times in ModelStructure/InitialUnknown.", vr));
                     }
                     actual_vrs.insert(vr);
                 }
@@ -1621,18 +1569,18 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         if (var.value_reference.has_value())
             vr_to_variable[*var.value_reference] = &var;
 
-    bool mismatch = false;
-    std::vector<std::string> missing_mandatory;
     for (const uint32_t vr : expected_vrs)
     {
         if (!actual_vrs.contains(vr))
         {
-            missing_mandatory.push_back(vr_to_name[vr] + " (VR " + std::to_string(vr) + ")");
-            mismatch = true;
+            test.status = TestStatus::FAIL;
+            test.messages.push_back(
+                std::format("Mandatory initial unknown alias set (VR {}) is missing a representative in "
+                            "ModelStructure/InitialUnknown.",
+                            vr));
         }
     }
 
-    std::vector<std::string> extra_invalid;
     for (const uint32_t vr : actual_vrs)
     {
         if (!expected_vrs.contains(vr))
@@ -1649,34 +1597,19 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
             if (!is_clocked)
             {
-                extra_invalid.push_back("VR " + std::to_string(vr));
-                mismatch = true;
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(
+                    std::format("Variable (VR {}) in ModelStructure/InitialUnknown is not allowed (only "
+                                "mandatory unknowns and optional clocked variables are allowed).",
+                                vr));
             }
         }
     }
 
-    if (mismatch)
+    if (test.status == TestStatus::FAIL)
     {
-        test.status = TestStatus::FAIL;
-
-        if (!missing_mandatory.empty())
-        {
-            std::string msg = "The following mandatory variables are missing from ModelStructure/InitialUnknown: ";
-            for (size_t i = 0; i < missing_mandatory.size(); ++i)
-                msg += (i > 0 ? ", " : "") + missing_mandatory[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
-        if (!extra_invalid.empty())
-        {
-            std::string msg = "The following variables in ModelStructure/InitialUnknown are not allowed (only "
-                              "mandatory unknowns and optional clocked variables are allowed): ";
-            for (size_t i = 0; i < extra_invalid.size(); ++i)
-                msg += (i > 0 ? ", " : "") + extra_invalid[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
+        test.messages.push_back("ModelStructure/InitialUnknown must have exactly one representative for each mandatory "
+                                "alias set. Optional clocked variables are also allowed.");
     }
 
     cert.printTestResult(test);
