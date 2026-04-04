@@ -13,7 +13,7 @@ This document defines the coding conventions, skills, and references for Jules w
   - Variables/Members: `snake_case` (private members should NOT have a trailing underscore unless necessary for disambiguation).
   - Constants/Macros: `SCREAMING_SNAKE_CASE`
 - **Modern C++ Best Practices:**
-  - Prefer `std::optional` for error handling.
+  - Prefer `std::optional` or `std::variant` for error handling and results.
   - Use `[[nodiscard]]` for functions where the return value should not be ignored.
   - Prefer `auto` for complex types or when the type is obvious.
   - Use `std::format` (C++20) for string formatting.
@@ -25,14 +25,15 @@ This document defines the coding conventions, skills, and references for Jules w
 
 - **Framework:** React 19+ with Vite.
 - **Language:** TypeScript 6+. Use strict type checking.
-- **Formatting:** Always run `npm run format` in the `web/` directory before submitting.
+- **Formatting:** Always run `npm run format` (to fix) or `npm run format:check` (to verify) in the `web/` directory.
 - **Linting:** Always run `npm run lint` in the `web/` directory. No warnings allowed (`--max-warnings 0`).
+- **Type Checking:** Always run `npm run check-types` in the `web/` directory.
 - **Documentation (JSDoc):**
   - Every component, hook, interface, and function must have a JSDoc comment.
   - Include `@description`, `@param` (with description), and `@returns` (with description).
   - Types should be omitted from JSDoc as TypeScript handles them.
   - `@returns` is optional for Components and Hooks.
-- **Styling:** Use CSS Modules (*.module.css). Avoid global CSS and Tailwind.
+- **Styling:** Use CSS Modules (*.module.css). Avoid global CSS.
 - **Component Patterns:**
   - Use functional components and hooks.
   - Destructure props in the function signature.
@@ -40,7 +41,7 @@ This document defines the coding conventions, skills, and references for Jules w
 
 ## FMI & SSP Specifications
 
-Jules should refer to these specifications when implementing or checking FMI/SSP logic:
+Refer to these specifications when implementing or checking FMI/SSP logic:
 
 - **FMI 1.0.1 (Model Exchange):** [FMI 1.0.1 ME Specification](https://fmi-standard.org/assets/releases/FMI_for_ModelExchange_v1.0.1.pdf)
 - **FMI 1.0.1 (Co-Simulation):** [FMI 1.0.1 CS Specification](https://fmi-standard.org/assets/releases/FMI_for_CoSimulation_v1.0.1.pdf)
@@ -54,12 +55,12 @@ Jules should refer to these specifications when implementing or checking FMI/SSP
 Before completing any task, Jules **must**:
 
 1. **Format Code:**
-   - C++: Run `cmake --build build --target clang-format`.
-   - Web: Run `npm run format` in `web/`.
-2. **Lint Code:**
-   - C++: Run `cmake --build build --target clang-tidy`.
-   - Web: Run `npm run lint` in `web/`.
-3. **Verify:**
-   - Ensure all C++ tests pass: `ctest --output-on-failure -C Release` in `build/`.
-   - Ensure Web build passes: `npm run build` in `web/`.
+   - C++: `cmake --build build --target clang-format`
+   - Web: `npm run format` in `web/`
+2. **Lint & Check:**
+   - C++: `cmake --build build --target clang-tidy`
+   - Web: `npm run lint`, `npm run check-types`, and `npm run format:check` in `web/`
+3. **Verify Build & Tests:**
+   - C++: `ctest --output-on-failure -C Release` in `build/`
+   - Web: `npm run build` in `web/`
 4. **Reflect:** Check if any new files or logic adhere to the architectural patterns of the project (e.g., using `CheckerFactory`, following the `SchemaCheckerBase` pattern).

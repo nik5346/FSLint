@@ -429,9 +429,11 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         test.status = TestStatus::FAIL;
         std::tm current_tm = {};
 #ifdef _WIN32
-        gmtime_s(&current_tm, &current_time);
+        if (gmtime_s(&current_tm, &current_time) != 0)
+            return;
 #else
-        gmtime_r(&current_time, &current_tm);
+        if (gmtime_r(&current_time, &current_tm) == nullptr)
+            return;
 #endif
         char buf[64];
         (void)std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &current_tm);
