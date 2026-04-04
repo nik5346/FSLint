@@ -58,7 +58,7 @@ Before completing any task, Jules **must**:
    - C++: `cmake --build build --target clang-format`
    - Web: `npm run format` in `web/`
 2. **Lint & Check:**
-   - C++: `cmake --build build --target clang-tidy`
+   - C++: `cmake --build build --target clang-tidy` and `cmake --build build --target doxygen-check`
    - Web: `npm run lint`, `npm run check-types`, and `npm run format:check` in `web/`
 3. **Verify Build & Tests:**
    - C++: `ctest --output-on-failure -C Release` in `build/`

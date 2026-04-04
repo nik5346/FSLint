@@ -44,8 +44,14 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) const override;
     void validateFmiVersionValue(const std::string& version, TestResult& test) const override;
     void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) const override;
+
+    /// @brief Checks min/max start values.
+    /// @param variables Variables.
+    /// @param type_definitions Types.
+    /// @param cert Certificate.
     void checkMinMaxStartValues(const std::vector<Variable>& variables,
-                                const std::map<std::string, TypeDefinition>& type_definitions, Certificate& cert) const;
+                                const std::map<std::string, TypeDefinition>& type_definitions,
+                                Certificate& cert) const;
 
     void checkUnits(xmlDocPtr doc, Certificate& cert) const override;
     void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) const override;

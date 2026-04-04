@@ -43,7 +43,6 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     checkClockTypes(doc, cert);
     checkStructuralParameter(variables, cert);
     checkDerivativeDimensions(variables, cert);
-    checkMinMaxStartValues(variables, type_definitions, cert);
     checkModelStructure(doc, variables, cert);
 }
 
@@ -86,7 +85,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
         var.initial = getXmlAttribute(node, "initial").value_or("");
         var.start = getXmlAttribute(node, "start");
-        if (var.start)
+        if (var.start.has_value())
         {
             std::string s = *var.start;
             std::replace(s.begin(), s.end(), ',', ' ');
@@ -111,7 +110,7 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Start")) == 0)
                 {
-                    if (!var.start)
+                    if (!var.start.has_value())
                         var.start = getXmlAttribute(child, "value");
                     var.num_start_values++;
                 }
@@ -140,12 +139,12 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
         };
 
         auto vr = getXmlAttribute(node, "valueReference");
-        if (vr)
+        if (vr.has_value())
             var.value_reference = parseNumber<uint32_t>(*vr);
 
         // FMI3: derivative attribute is on the variable element itself
         auto der = getXmlAttribute(node, "derivative");
-        if (der)
+        if (der.has_value())
             var.derivative_of = parseNumber<uint32_t>(*der);
 
         var.reinit = parse_bool(getXmlAttribute(node, "reinit"));
@@ -308,7 +307,7 @@ void Fmi3ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
         if (var.variability == "constant")
             needs_start = true;
 
-        if (needs_start && !var.start)
+        if (needs_start && !var.start.has_value())
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -390,7 +389,7 @@ void Fmi3ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
     for (const auto& var : variables)
     {
         // Variables with initial="calculated" should not have start values
-        if (var.initial == "calculated" && var.start)
+        if (var.initial == "calculated" && var.start.has_value())
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -398,7 +397,7 @@ void Fmi3ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         }
 
         // FMI3: Independent variables should not have start values
-        if (var.causality == "independent" && var.start)
+        if (var.causality == "independent" && var.start.has_value())
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -460,7 +459,7 @@ void Fmi3ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
 
     for (const auto& var : variables)
     {
-        if (var.type == "Enumeration" && !var.declared_type)
+        if (var.type == "Enumeration" && !var.declared_type.has_value())
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -501,7 +500,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
             }
 
             // FMI3: Check for illegal start attribute
-            if (var.start)
+            if (var.start.has_value())
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Independent variable \"" + var.name + "\" (line " +
@@ -528,12 +527,12 @@ void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<V
 
     std::map<uint32_t, const Variable*> vr_map;
     for (const auto& var : variables)
-        if (var.value_reference)
+        if (var.value_reference.has_value())
             vr_map[*var.value_reference] = &var;
 
     for (const auto& var : variables)
     {
-        if (var.derivative_of)
+        if (var.derivative_of.has_value())
         {
             // 1. Variability of derivative must be continuous
             if (var.variability != "continuous")
@@ -589,7 +588,7 @@ void Fmi3ModelDescriptionChecker::checkCanHandleMultipleSet(const std::vector<Va
 
     for (const auto& var : variables)
     {
-        if (var.can_handle_multiple_set && var.causality != "input")
+        if (var.can_handle_multiple_set.has_value() && var.causality != "input")
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -608,15 +607,15 @@ void Fmi3ModelDescriptionChecker::checkReinitAttribute(const std::vector<Variabl
     // Continuous-time states are variables referenced by 'derivative' attribute of some other variable
     std::set<uint32_t> state_vrs;
     for (const auto& var : variables)
-        if (var.derivative_of)
+        if (var.derivative_of.has_value())
             state_vrs.insert(*var.derivative_of);
 
     for (const auto& var : variables)
     {
-        if (var.reinit)
+        if (var.reinit.has_value())
         {
             // FMI3: reinit may only be present for continuous-time states
-            if (!var.value_reference || !state_vrs.contains(*var.value_reference))
+            if (!var.value_reference.has_value() || !state_vrs.contains(*var.value_reference))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -644,7 +643,7 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     // Group variables by valueReference
     std::map<uint32_t, std::vector<const Variable*>> vr_to_vars;
     for (const auto& var : variables)
-        if (var.value_reference)
+        if (var.value_reference.has_value())
             vr_to_vars[*var.value_reference].push_back(&var);
 
     for (const auto& [vr, alias_set] : vr_to_vars)
@@ -754,7 +753,7 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         // 7. Start attributes: At most one non-constant variable with start
         std::vector<const Variable*> non_constant_with_start;
         for (const auto* v : alias_set)
-            if (v->variability != "constant" && v->start)
+            if (v->variability != "constant" && v->start.has_value())
                 non_constant_with_start.push_back(v);
 
         if (non_constant_with_start.size() > 1)
@@ -785,7 +784,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
     {
         if (var.causality == "structuralParameter")
         {
-            if (var.value_reference)
+            if (var.value_reference.has_value())
                 sp_map[*var.value_reference] = &var;
 
             // FMI3: Structural parameters must be UInt64
@@ -804,7 +803,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
     {
         for (const auto& dim : var.dimensions)
         {
-            if (dim.value_reference)
+            if (dim.value_reference.has_value())
             {
                 const uint32_t vr = *dim.value_reference;
                 auto it = sp_map.find(vr);
@@ -819,7 +818,7 @@ void Fmi3ModelDescriptionChecker::checkStructuralParameter(const std::vector<Var
                 else
                 {
                     const Variable* sp = it->second;
-                    if (sp->start)
+                    if (sp->start.has_value())
                     {
                         // Check that the structural parameter has start > 0
                         if (const auto start_val_opt = parseNumber<uint64_t>(*sp->start))
@@ -862,7 +861,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     std::map<uint32_t, std::string> vr_to_name;
     for (const auto& var : variables)
     {
-        if (var.causality == "output" && var.value_reference)
+        if (var.causality == "output" && var.value_reference.has_value())
         {
             expected_vrs.insert(*var.value_reference);
             vr_to_name[*var.value_reference] = var.name;
@@ -881,7 +880,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto vr_str = getXmlAttribute(node, "valueReference");
 
-            if (vr_str)
+            if (vr_str.has_value())
             {
                 const auto vr_opt = parseNumber<uint32_t>(*vr_str);
                 if (!vr_opt)
@@ -905,7 +904,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 bool is_output = false;
                 for (const auto& var : variables)
                 {
-                    if (var.value_reference && *var.value_reference == vr)
+                    if (var.value_reference.has_value() && *var.value_reference == vr)
                     {
                         if (var.causality == "output")
                             is_output = true;
@@ -982,12 +981,12 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
     std::map<uint32_t, const Variable*> vr_to_var;
     for (const auto& var : variables)
     {
-        if (var.value_reference)
+        if (var.value_reference.has_value())
             vr_to_var[*var.value_reference] = &var;
 
-        if ((var.causality == "local" || var.causality == "output") && var.clocks && !var.clocks->empty())
+        if ((var.causality == "local" || var.causality == "output") && var.clocks.has_value() && !var.clocks->empty())
         {
-            if (var.value_reference)
+            if (var.value_reference.has_value())
                 expected_vrs.insert(*var.value_reference);
         }
     }
@@ -1004,7 +1003,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto vr_str = getXmlAttribute(node, "valueReference");
 
-            if (vr_str)
+            if (vr_str.has_value())
             {
                 const auto vr_opt = parseNumber<uint32_t>(*vr_str);
                 if (!vr_opt)
@@ -1037,7 +1036,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
                                                 ") must have variability=\"discrete\".");
                     }
 
-                    if (!var.clocks || var.clocks->empty())
+                    if (!var.clocks.has_value() || var.clocks->empty())
                     {
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("Clocked state variable \"" + var.name + "\" (line " +
@@ -1053,7 +1052,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
                     }
 
                     auto prev_str = getXmlAttribute(node, "previous");
-                    if (!prev_str)
+                    if (!prev_str.has_value())
                     {
                         test.status = TestStatus::FAIL;
                         test.messages.push_back("ModelStructure/ClockedState for variable \"" + var.name +
@@ -1096,7 +1095,7 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     std::map<uint32_t, std::string> vr_to_name;
     for (const auto& var : variables)
     {
-        if (var.derivative_of && var.value_reference)
+        if (var.derivative_of.has_value() && var.value_reference.has_value())
         {
             expected_vrs.insert(*var.value_reference);
             vr_to_name[*var.value_reference] = var.name;
@@ -1115,7 +1114,7 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto vr_str = getXmlAttribute(node, "valueReference");
 
-            if (vr_str)
+            if (vr_str.has_value())
             {
                 const auto vr_opt = parseNumber<uint32_t>(*vr_str);
                 if (!vr_opt)
@@ -1192,13 +1191,13 @@ void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Va
     // Build a map of value_reference -> Variable for quick lookup
     std::map<uint32_t, const Variable*> vr_to_variable;
     for (const auto& var : variables)
-        if (var.value_reference)
+        if (var.value_reference.has_value())
             vr_to_variable[*var.value_reference] = &var;
 
     // Check each variable that has a derivative_of attribute
     for (const auto& var : variables)
     {
-        if (var.derivative_of)
+        if (var.derivative_of.has_value())
         {
             const uint32_t derivative_of_vr = *var.derivative_of;
 
@@ -1255,13 +1254,13 @@ bool Fmi3ModelDescriptionChecker::compareDimensions(const Variable& var1, const 
         const auto& dim2 = var2.dimensions[i];
 
         // Case 1: Both have fixed start values - must be equal
-        if (dim1.start && dim2.start)
+        if (dim1.start.has_value() && dim2.start.has_value())
         {
             if (*dim1.start != *dim2.start)
                 return false;
         }
         // Case 2: Both reference value references - must reference the same parameter
-        else if (dim1.value_reference && dim2.value_reference)
+        else if (dim1.value_reference.has_value() && dim2.value_reference.has_value())
         {
             if (*dim1.value_reference != *dim2.value_reference)
                 return false;
@@ -1290,9 +1289,9 @@ std::string Fmi3ModelDescriptionChecker::formatDimensions(const Variable& var) c
             result += ", ";
 
         const auto& dim = var.dimensions[i];
-        if (dim.start)
+        if (dim.start.has_value())
             result += std::to_string(*dim.start);
-        else if (dim.value_reference)
+        else if (dim.value_reference.has_value())
             result += "vr:" + std::to_string(*dim.value_reference);
         else
             result += "?";
@@ -1310,7 +1309,7 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
     // Build a map for lookup
     std::map<uint32_t, const Variable*> vr_to_var;
     for (const auto& var : variables)
-        if (var.value_reference)
+        if (var.value_reference.has_value())
             vr_to_var[*var.value_reference] = &var;
 
     auto check_deps = [&](xmlNodePtr node, const std::string& elem_name, bool is_initial_unknown)
@@ -1455,7 +1454,7 @@ void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const s
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto vr_str = getXmlAttribute(node, "valueReference");
 
-            if (vr_str)
+            if (vr_str.has_value())
             {
                 const auto vr_opt = parseNumber<uint32_t>(*vr_str);
                 if (!vr_opt)
@@ -1479,7 +1478,7 @@ void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const s
                 bool found = false;
                 for (const auto& var : variables)
                 {
-                    if (var.value_reference && *var.value_reference == vr)
+                    if (var.value_reference.has_value() && *var.value_reference == vr)
                     {
                         found = true;
                         // Continuous-time state or an event indicator must have causality = local or output
@@ -1545,7 +1544,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     for (const auto& var : variables)
     {
-        if (!var.value_reference)
+        if (!var.value_reference.has_value())
             continue;
 
         bool is_required = false;
@@ -1554,9 +1553,10 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         // (1) Outputs with initial="approx" or "calculated" (not clocked)
         // (2) Calculated parameters
         // (3) State derivatives with initial="approx" or "calculated"
-        if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") && !var.clocks) ||
+        if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
+             !var.clocks.has_value()) ||
             (var.causality == "calculatedParameter") ||
-            (var.derivative_of && (var.initial == "approx" || var.initial == "calculated")))
+            (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")))
         {
             is_required = true;
         }
@@ -1566,7 +1566,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         {
             for (const auto& other : variables)
             {
-                if (other.derivative_of && *other.derivative_of == *var.value_reference)
+                if (other.derivative_of.has_value() && *other.derivative_of == *var.value_reference)
                 {
                     if (var.initial == "approx" || var.initial == "calculated")
                     {
@@ -1596,7 +1596,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto vr_str = getXmlAttribute(node, "valueReference");
 
-            if (vr_str)
+            if (vr_str.has_value())
             {
                 if (const auto vr_opt = parseNumber<uint32_t>(*vr_str))
                 {
@@ -1618,7 +1618,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     // Optional: clocked variables
     std::map<uint32_t, const Variable*> vr_to_variable;
     for (const auto& var : variables)
-        if (var.value_reference)
+        if (var.value_reference.has_value())
             vr_to_variable[*var.value_reference] = &var;
 
     bool mismatch = false;
@@ -1643,7 +1643,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             if (it != vr_to_variable.end())
             {
                 const auto& var_obj = *it->second;
-                if (var_obj.clocks && !var_obj.clocks->empty())
+                if (var_obj.clocks.has_value() && !var_obj.clocks.value().empty())
                     is_clocked = true;
             }
 
@@ -1749,12 +1749,12 @@ void Fmi3ModelDescriptionChecker::extractDimensions(xmlNodePtr node, Variable& v
 
             // Extract start attribute (fixed dimension size)
             auto start_attr = getXmlAttribute(child, "start");
-            if (start_attr)
+            if (start_attr.has_value())
                 dim.start = parseNumber<uint64_t>(*start_attr);
 
             // Extract valueReference attribute (reference to structural parameter)
             auto vr_attr = getXmlAttribute(child, "valueReference");
-            if (vr_attr)
+            if (vr_attr.has_value())
                 dim.value_reference = parseNumber<uint32_t>(*vr_attr);
 
             var.dimensions.push_back(dim);
@@ -1771,7 +1771,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
     // Build a map of value_reference -> Variable for structural parameters
     std::map<uint32_t, const Variable*> structural_params_by_vr;
     for (const auto& var : variables)
-        if (var.causality == "structuralParameter" && var.value_reference)
+        if (var.causality == "structuralParameter" && var.value_reference.has_value())
             structural_params_by_vr[*var.value_reference] = &var;
 
     // Check each variable with dimensions
@@ -1835,7 +1835,7 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                         }
 
                         // Check that the structural parameter has start > 0
-                        if (sp->start)
+                        if (sp->start.has_value())
                         {
                             if (const auto start_val_opt = parseNumber<uint64_t>(*sp->start))
                             {
@@ -1899,13 +1899,13 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
     // Build a map of value_reference -> Variable for structural parameters
     std::map<uint32_t, const Variable*> structural_params_by_vr;
     for (const auto& var : variables)
-        if (var.causality == "structuralParameter" && var.value_reference)
+        if (var.causality == "structuralParameter" && var.value_reference.has_value())
             structural_params_by_vr[*var.value_reference] = &var;
 
     // Check each variable with dimensions that has a start value
     for (const auto& var : variables)
     {
-        if (!var.dimensions.empty() && var.start)
+        if (!var.dimensions.empty() && var.start.has_value())
         {
             // Calculate the expected total array size
             std::optional<uint64_t> total_size = 1;
@@ -1914,20 +1914,20 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
 
             for (const auto& dim : var.dimensions)
             {
-                if (dim.start)
+                if (dim.start.has_value())
                 {
                     // Fixed dimension size
                     total_size = *total_size * (*dim.start);
                     dimension_info.push_back(std::to_string(*dim.start));
                 }
-                else if (dim.value_reference)
+                else if (dim.value_reference.has_value())
                 {
                     // Dimension from structural parameter
                     auto it = structural_params_by_vr.find(*dim.value_reference);
                     if (it != structural_params_by_vr.end())
                     {
                         const Variable* sp = it->second;
-                        if (sp->start)
+                        if (sp->start.has_value())
                         {
                             if (const auto dim_size_opt = parseNumber<uint64_t>(*sp->start))
                             {
@@ -1966,7 +1966,7 @@ void Fmi3ModelDescriptionChecker::checkArrayStartValues(const std::vector<Variab
             }
 
             // If we can determine the size, count the start values
-            if (size_determinable && total_size)
+            if (size_determinable && total_size.has_value())
             {
                 // Count the number of start values
                 // In FMI3, start values for arrays can be:
@@ -2011,13 +2011,13 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
     std::map<uint32_t, const Variable*> vr_to_var;
 
     for (const auto& var : variables)
-        if (var.value_reference)
+        if (var.value_reference.has_value())
             vr_to_var[*var.value_reference] = &var;
 
     // Check each variable that has a clocks attribute
     for (const auto& var : variables)
     {
-        if (!var.clocks || var.clocks->empty())
+        if (!var.clocks.has_value() || var.clocks->empty())
             continue;
 
         // Parse the space-separated list of clock value references
@@ -2044,7 +2044,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
         for (const uint32_t clock_vr : clock_refs)
         {
             // Check if a Clock is referencing itself
-            if (var.type == "Clock" && var.value_reference && *var.value_reference == clock_vr)
+            if (var.type == "Clock" && var.value_reference.has_value() && *var.value_reference == clock_vr)
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Clock variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -2085,7 +2085,7 @@ void Fmi3ModelDescriptionChecker::checkClockedVariables(const std::vector<Variab
     for (const auto& var : variables)
     {
         // Skip variables without clocks attribute
-        if (!var.clocks || var.clocks->empty())
+        if (!var.clocks.has_value() || var.clocks->empty())
             continue;
 
         // Note: Clock variables CAN have a clocks attribute (per FMI3 spec section 2.2.8.3)
@@ -2398,7 +2398,7 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
 {
     TestResult test{"Instantiation Token", TestStatus::PASS, {}};
 
-    if (!guid_opt)
+    if (!guid_opt.has_value())
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("instantiationToken attribute is missing.");
