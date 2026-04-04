@@ -222,7 +222,7 @@ inline void parseFractionalSeconds(Cursor& c, DateTime& dt) noexcept
     if (len > 0)
     {
         double v = 0;
-#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__) || !defined(__cpp_lib_to_chars)
         char* endptr = nullptr;
         const std::string s_str(fs, static_cast<size_t>(len));
         v = std::strtod(s_str.c_str(), &endptr);

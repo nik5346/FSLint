@@ -2,7 +2,7 @@
 Checks: >
   cert-*,
   bugprone-*,
-  cppcoreguidelines-*,
+  cppcoreguidelines-*
   modernize-*,
   performance-*,
   misc-include-cleaner,

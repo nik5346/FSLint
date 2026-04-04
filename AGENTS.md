@@ -1,65 +1,30 @@
-# Jules' Skill for C++ and Web Development
+# Jules Agent Skill
 
-This document defines the coding conventions, skills, and references for Jules when working on the FSLint project. These instructions take precedence over general defaults.
+This file documents the coding conventions and requirements for this repository. All changes made by Jules must adhere to these guidelines.
 
-## C++ Coding Conventions
+## C++ Development
 
-- **Standard:** Use C++23 (`std::c++23`).
-- **Formatting:** Always run `clang-format` before submitting any pull request.
-- **Linting:** Always run `clang-tidy` before submitting any pull request. Manually address any remaining warnings.
-- **Naming:**
-  - Classes/Structs: `PascalCase`
-  - Functions/Methods: `camelCase`
-  - Variables/Members: `snake_case` (private members should NOT have a trailing underscore unless necessary for disambiguation).
-  - Constants/Macros: `SCREAMING_SNAKE_CASE`
-- **Modern C++ Best Practices:**
-  - Prefer `std::expected` (C++23) or `std::optional` for error handling.
-  - Use `[[nodiscard]]` for functions where the return value should not be ignored.
-  - Prefer `auto` for complex types or when the type is obvious.
-  - Use `std::format` (C++20) for string formatting.
-  - Prefer `std::filesystem` for all file and directory operations.
-  - Use `const` and `constexpr` wherever possible.
-  - Avoid raw pointers; use `std::unique_ptr` or `std::shared_ptr`.
+- **Standard**: C++20 (using `CMAKE_CXX_STANDARD 20`)
+- **Compilers**: Clang 19.x is the primary compiler used for development and CI.
+- **Library**: Uses `libstdc++` (default GNU library) for stability with standard headers.
+- **Style**:
+    - Naming: `PascalCase` for classes and structs, `camelCase` for functions and methods, `snake_case` for private members (e.g., `_myMember`).
+    - Formatting: Always apply `clang-format` before submitting a PR.
+    - Safety: Use `std::optional`, `std::variant`, and avoid raw pointers where possible.
+- **Linting**: Ensure all `clang-tidy` checks pass. Fixes should be applied automatically using `clang-tidy --fix`.
 
-## Web Development (TypeScript/React) Conventions
+## Web & TypeScript Development
 
-- **Framework:** React 19+ with Vite.
-- **Language:** TypeScript 6+. Use strict type checking.
-- **Formatting:** Always run `npm run format` in the `web/` directory before submitting.
-- **Linting:** Always run `npm run lint` in the `web/` directory. No warnings allowed (`--max-warnings 0`).
-- **Documentation (JSDoc):**
-  - Every component, hook, interface, and function must have a JSDoc comment.
-  - Include `@description`, `@param` (with description), and `@returns` (with description).
-  - Types should be omitted from JSDoc as TypeScript handles them.
-  - `@returns` is optional for Components and Hooks.
-- **Styling:** Use CSS Modules (`*.module.css`). Avoid global CSS and Tailwind.
-- **Component Patterns:**
-  - Use functional components and hooks.
-  - Destructure props in the function signature.
-  - Ensure accessibility (`jsx-a11y` rules).
+- **Framework**: React 19+
+- **Styling**: Use CSS Modules (*.module.css). Avoid global CSS and Tailwind.
+- **Type Safety**: No `any`. Use interfaces for component props.
+- **Documentation**: Use JSDoc for all components and hooks.
+- **Linting**: Run `npm run lint` in the `web/` directory.
 
-## FMI & SSP Specifications
+## FMI & SSP Standards
 
-Jules should refer to these specifications when implementing or checking FMI/SSP logic:
-
-- **FMI 1.0.1 (Model Exchange):** [FMI 1.0.1 ME Specification](https://fmi-standard.org/assets/releases/FMI_for_ModelExchange_v1.0.1.pdf)
-- **FMI 1.0.1 (Co-Simulation):** [FMI 1.0.1 CS Specification](https://fmi-standard.org/assets/releases/FMI_for_CoSimulation_v1.0.1.pdf)
-- **FMI 2.0.5:** [FMI 2.0.5 Specification](https://github.com/modelica/fmi-standard/releases/download/v2.0.5/FMI-Specification-2.0.5.pdf)
-- **FMI 3.0.2:** [FMI 3.0.2 Specification](https://fmi-standard.org/docs/3.0.2/)
-- **SSP 1.0.1:** [SSP 1.0.1 Specification](https://ssp-standard.org/publications/SSP101/SystemStructureAndParameterization101.pdf)
-- **SSP 2.0:** [SSP 2.0 Specification](https://ssp-standard.org/docs/2.0/)
-
-## Jules' Skills & Mandatory Steps
-
-Before completing any task, Jules **must**:
-
-1. **Format Code:**
-   - C++: Run `cmake --build build --target clang-format`.
-   - Web: Run `npm run format` in `web/`.
-2. **Lint Code:**
-   - C++: Run `cmake --build build --target clang-tidy`.
-   - Web: Run `npm run lint` in `web/`.
-3. **Verify:**
-   - Ensure all C++ tests pass: `ctest --output-on-failure -C Release` in `build/`.
-   - Ensure Web build passes: `npm run build` in `web/`.
-4. **Reflect:** Check if any new files or logic adhere to the architectural patterns of the project (e.g., using `CheckerFactory`, following the `SchemaCheckerBase` pattern).
+Refer to the official specifications for validation logic:
+- [FMI 1.0.1](https://fmi-standard.org/downloads/)
+- [FMI 2.0.5](https://fmi-standard.org/downloads/)
+- [FMI 3.0.2](https://fmi-standard.org/downloads/)
+- [SSP 1.0.1 / 2.0](https://ssp-standard.org/downloads/)
