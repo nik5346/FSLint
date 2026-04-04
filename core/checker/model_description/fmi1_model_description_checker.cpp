@@ -811,12 +811,14 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                             std::string msg1 = std::format("\"{}\" (", var->name);
                             if (negated)
                                 msg1 += "negated, ";
-                            msg1 += std::format("start=\"{}\")", *var->start);
+                            if (var->start)
+                                msg1 += std::format("start=\"{}\")", *var->start);
 
                             std::string msg2 = std::format("\"{}\" (", first_with_start->name);
                             if (first_negated)
                                 msg2 += "negated, ";
-                            msg2 += std::format("start=\"{}\")", *first_with_start->start);
+                            if (first_with_start->start)
+                                msg2 += std::format("start=\"{}\")", *first_with_start->start);
 
                             test.messages.push_back(std::format(
                                 "All variables in an alias set (VR {}) must have equivalent start values. {} and {} "
