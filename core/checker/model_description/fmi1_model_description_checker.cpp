@@ -46,7 +46,7 @@ void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
 void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid, Certificate& cert) const
 {
     TestResult test{"GUID", TestStatus::PASS, {}};
-    if (!guid.has_value())
+    if (!guid)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("guid attribute is missing.");
@@ -182,7 +182,7 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
         if (var.causality == "input" || var.variability == "constant")
             needs_start = true;
 
-        if (needs_start && !var.start.has_value())
+        if (needs_start && !var.start)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -199,7 +199,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
     for (const auto& var : variables)
     {
         // FMI 1.0: "fixed" attribute is only allowed if "start" is present
-        if (var.fixed.has_value() && !var.start.has_value())
+        if (var.fixed && !var.start)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -207,7 +207,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         }
 
         // FMI 1.0: "fixed" attribute is not defined for causality="input"
-        if (var.causality == "input" && var.fixed.has_value())
+        if (var.causality == "input" && var.fixed)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -216,7 +216,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         }
 
         // FMI 1.0: "fixed" attribute for variability="constant"
-        if (var.variability == "constant" && var.fixed.has_value() && !var.fixed.value())
+        if (var.variability == "constant" && var.fixed && !*var.fixed)
         {
             // fixed="false" (guess value) makes no sense for a constant
             test.status = TestStatus::FAIL;
@@ -442,7 +442,7 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 if (fixed)
                 {
                     var.fixed = (*fixed == "true");
-                    var.initial = (var.fixed.value() ? "exact" : "approx");
+                    var.initial = (*var.fixed ? "exact" : "approx");
                 }
 
                 if (elem_name == "Real")
@@ -693,7 +693,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     // In FMI 1.0, valueReference is unique only per base type.
     std::map<std::pair<std::string, uint32_t>, std::vector<const Variable*>> alias_sets;
     for (const auto& var : variables)
-        if (var.value_reference.has_value())
+        if (var.value_reference)
             alias_sets[{get_base_type(var.type), *var.value_reference}].push_back(&var);
 
     TestResult variability_consistency_test{"Alias Variability Consistency", TestStatus::PASS, {}};
@@ -727,7 +727,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             }
 
             // noAlias count
-            if (!var->alias.has_value() || *var->alias == "noAlias")
+            if (!var->alias || *var->alias == "noAlias")
                 no_alias_count++;
 
             // variability
@@ -759,7 +759,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             }
 
             // 3. Equivalent start values
-            if (var->start.has_value())
+            if (var->start)
             {
                 double current_val = 0;
                 bool valid = false;
@@ -811,12 +811,12 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                             std::string msg1 = std::format("\"{}\" (", var->name);
                             if (negated)
                                 msg1 += "negated, ";
-                            msg1 += std::format("start=\"{}\")", var->start.value());
+                            msg1 += std::format("start=\"{}\")", *var->start);
 
                             std::string msg2 = std::format("\"{}\" (", first_with_start->name);
                             if (first_negated)
                                 msg2 += "negated, ";
-                            msg2 += std::format("start=\"{}\")", first_with_start->start.value());
+                            msg2 += std::format("start=\"{}\")", *first_with_start->start);
 
                             test.messages.push_back(std::format(
                                 "All variables in an alias set (VR {}) must have equivalent start values. {} and {} "
