@@ -105,8 +105,7 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
     /// @param type_definitions Types.
     /// @param cert Certificate.
     void checkMinMaxStartValues(const std::vector<Variable>& variables,
-                                const std::map<std::string, TypeDefinition>& type_definitions,
-                                Certificate& cert) const override;
+                                const std::map<std::string, TypeDefinition>& type_definitions, Certificate& cert) const;
 
     /// @brief Extracts metadata.
     /// @param root XML root.

@@ -374,9 +374,6 @@ class ModelDescriptionCheckerBase : public Checker
     /// @param variables Variables.
     /// @param type_definitions Types.
     /// @param cert Certificate to record results.
-    virtual void checkMinMaxStartValues(const std::vector<Variable>& variables,
-                                        const std::map<std::string, TypeDefinition>& type_definitions,
-                                        Certificate& cert) const = 0;
 
     /// @brief Extracts metadata from XML root.
     /// @param root XML node.
@@ -506,23 +503,25 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         if (!str_opt)
             return std::nullopt;
 
+        const auto& val_str = *str_opt;
+
         // Check for special floats (NaN, INF) using version-specific hook
         if constexpr (std::is_floating_point_v<T>)
         {
-            if (isSpecialFloat(*str_opt))
-                validateVariableSpecialFloat(test, var, *str_opt, attr_name);
+            if (isSpecialFloat(val_str))
+                validateVariableSpecialFloat(test, var, val_str, attr_name);
         }
 
-        const auto val = parseNumber<T>(*str_opt);
+        const auto val = parseNumber<T>(val_str);
         if (!val)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    "): Failed to parse numeric value of " + attr_name + " with value '" + *str_opt +
+                                    "): Failed to parse numeric value of " + attr_name + " with value '" + val_str +
                                     "'");
             return std::nullopt;
         }
-        return val;
+        return *val;
     };
 
     // Parse the effective min/max (which may come from type definition)
@@ -533,54 +532,69 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     bool success = true;
 
     // 1. Check: max >= min
-    if (min_val.has_value() && max_val.has_value() && max_val.value() < min_val.value())
+    if (min_val && max_val)
     {
-        test.status = TestStatus::FAIL;
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (";
-        if (effective_max.has_value())
-            msg += effective_max.value();
-        msg += ") must be >= min (";
-        if (effective_min.has_value())
-            msg += effective_min.value();
-        msg += ").";
-        test.messages.push_back(msg);
-        success = false;
+        const auto& min_v = *min_val;
+        const auto& max_v = *max_val;
+        if (max_v < min_v)
+        {
+            test.status = TestStatus::FAIL;
+            std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (";
+            if (effective_max)
+                msg += *effective_max;
+            msg += ") must be >= min (";
+            if (effective_min)
+                msg += *effective_min;
+            msg += ").";
+            test.messages.push_back(msg);
+            success = false;
+        }
     }
 
     // 2. Check: start >= min
-    if (start_val.has_value() && min_val.has_value() && start_val.value() < min_val.value())
+    if (start_val && min_val)
     {
-        test.status = TestStatus::FAIL;
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
-        if (var.start.has_value())
-            msg += var.start.value();
-        msg += ") must be >= min (";
-        if (effective_min.has_value())
-            msg += effective_min.value();
-        msg += ")";
-        if (!var.min && var.declared_type)
-            msg += " (min inherited from type '" + *var.declared_type + "')";
-        msg += ".";
-        test.messages.push_back(msg);
-        success = false;
+        const auto& start_v = *start_val;
+        const auto& min_v = *min_val;
+        if (start_v < min_v)
+        {
+            test.status = TestStatus::FAIL;
+            std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
+            if (var.start)
+                msg += *var.start;
+            msg += ") must be >= min (";
+            if (effective_min)
+                msg += *effective_min;
+            msg += ")";
+            if (!var.min && var.declared_type)
+                msg += " (min inherited from type '" + *var.declared_type + "')";
+            msg += ".";
+            test.messages.push_back(msg);
+            success = false;
+        }
     }
 
     // 3. Check: start <= max
-    if (start_val.has_value() && max_val.has_value() && start_val.value() > max_val.value())
+    if (start_val && max_val)
     {
-        test.status = TestStatus::FAIL;
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
-        if (var.start.has_value())
-            msg += var.start.value();
-        msg += ") must be <= max (";
-        if (effective_max.has_value())
-            msg += effective_max.value();
-        msg += ")";
-        if (!var.max && var.declared_type)
-            msg += " (max inherited from type '" + *var.declared_type + "')";
-        msg += ".";
-        test.messages.push_back(msg);
-        success = false;
+        const auto& start_v = *start_val;
+        const auto& max_v = *max_val;
+        if (start_v > max_v)
+        {
+            test.status = TestStatus::FAIL;
+            std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
+            if (var.start)
+                msg += *var.start;
+            msg += ") must be <= max (";
+            if (effective_max)
+                msg += *effective_max;
+            msg += ")";
+            if (!var.max && var.declared_type)
+                msg += " (max inherited from type '" + *var.declared_type + "')";
+            msg += ".";
+            test.messages.push_back(msg);
+            success = false;
+        }
     }
 
     return success;

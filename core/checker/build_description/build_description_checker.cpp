@@ -223,9 +223,9 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
             }
 
             const auto compiler_opt = getXmlAttribute(node, "compiler");
-            if (compiler_opt.has_value())
+            if (compiler_opt)
             {
-                const std::string& compiler = compiler_opt.value();
+                const std::string& compiler = *compiler_opt;
                 bool known = false;
                 for (const auto& suggested : suggested_compilers)
                 {

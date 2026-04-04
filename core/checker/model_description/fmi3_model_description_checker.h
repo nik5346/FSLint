@@ -43,8 +43,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void validateFmiVersionValue(const std::string& version, TestResult& test) const override;
     void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) const override;
     void checkMinMaxStartValues(const std::vector<Variable>& variables,
-                                const std::map<std::string, TypeDefinition>& type_definitions,
-                                Certificate& cert) const override;
+                                const std::map<std::string, TypeDefinition>& type_definitions, Certificate& cert) const;
 
     void checkUnits(xmlDocPtr doc, Certificate& cert) const override;
     void checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) const override;

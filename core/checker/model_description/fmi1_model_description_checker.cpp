@@ -32,6 +32,9 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
 
     // Check implementation (CoSimulation only)
     checkImplementation(doc, cert);
+
+    // Check min/max start values
+    checkMinMaxStartValues(variables, type_definitions, cert);
 }
 
 void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test) const
@@ -46,7 +49,7 @@ void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
 void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& guid, Certificate& cert) const
 {
     TestResult test{"GUID", TestStatus::PASS, {}};
-    if (!guid.has_value())
+    if (!guid)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("guid attribute is missing.");
@@ -54,7 +57,8 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         return;
     }
 
-    if (guid->empty())
+    const auto& guid_val = *guid;
+    if (guid_val.empty())
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("guid attribute is empty.");
@@ -63,15 +67,15 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     }
 
     if (test.status != TestStatus::PASS)
-        test.messages.push_back("GUID: " + *guid);
+        test.messages.push_back("GUID: " + guid_val);
 
     static const std::regex guid_pattern(
         R"(^(\{)?[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}(\})?$)");
 
-    if (!std::regex_match(*guid, guid_pattern))
+    if (!std::regex_match(guid_val, guid_pattern))
     {
         test.status = TestStatus::FAIL;
-        test.messages.push_back("guid \"" + *guid +
+        test.messages.push_back("guid \"" + guid_val +
                                 "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
     }
 
@@ -95,16 +99,17 @@ void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
-            auto name = getXmlAttribute(node, "name");
-            if (name)
+            auto name_opt = getXmlAttribute(node, "name");
+            if (name_opt)
             {
-                if (seen_names.contains(*name))
+                const auto& name = *name_opt;
+                if (seen_names.contains(name))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Vendor annotation tool \"" + *name + "\" (line " +
+                    test.messages.push_back("Vendor annotation tool \"" + name + "\" (line " +
                                             std::to_string(node->line) + ") is defined multiple times.");
                 }
-                seen_names.insert(*name);
+                seen_names.insert(name);
             }
         }
     }
@@ -182,7 +187,7 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
         if (var.causality == "input" || var.variability == "constant")
             needs_start = true;
 
-        if (needs_start && !var.start.has_value())
+        if (needs_start && !var.start)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -199,7 +204,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
     for (const auto& var : variables)
     {
         // FMI 1.0: "fixed" attribute is only allowed if "start" is present
-        if (var.fixed.has_value() && !var.start.has_value())
+        if (var.fixed && !var.start)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -207,7 +212,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         }
 
         // FMI 1.0: "fixed" attribute is not defined for causality="input"
-        if (var.causality == "input" && var.fixed.has_value())
+        if (var.causality == "input" && var.fixed)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -216,12 +221,17 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         }
 
         // FMI 1.0: "fixed" attribute for variability="constant"
-        if (var.variability == "constant" && var.fixed.has_value() && !var.fixed.value())
+        if (var.variability == "constant" && var.fixed)
         {
-            // fixed="false" (guess value) makes no sense for a constant
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has variability=\"constant\" and fixed=\"false\", which is a contradiction.");
+            const bool is_fixed = *var.fixed;
+            if (!is_fixed)
+            {
+                // fixed="false" (guess value) makes no sense for a constant
+                test.status = TestStatus::FAIL;
+                test.messages.push_back(
+                    "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                    ") has variability=\"constant\" and fixed=\"false\", which is a contradiction.");
+            }
         }
     }
     cert.printTestResult(test);
@@ -251,9 +261,10 @@ std::map<std::string, std::string> Fmi1ModelDescriptionChecker::extractModelIden
 {
     std::map<std::string, std::string> model_identifiers;
     xmlNodePtr root = xmlDocGetRootElement(doc);
-    auto model_id = getXmlAttribute(root, "modelIdentifier");
-    if (model_id)
+    auto model_id_opt = getXmlAttribute(root, "modelIdentifier");
+    if (model_id_opt)
     {
+        const auto& model_id = *model_id_opt;
         bool is_cs = false;
         xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/Implementation");
         if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
@@ -262,9 +273,9 @@ std::map<std::string, std::string> Fmi1ModelDescriptionChecker::extractModelIden
             xmlXPathFreeObject(xpath_obj);
 
         if (is_cs)
-            model_identifiers["CoSimulation"] = *model_id;
+            model_identifiers["CoSimulation"] = model_id;
         else
-            model_identifiers["ModelExchange"] = *model_id;
+            model_identifiers["ModelExchange"] = model_id;
     }
     return model_identifiers;
 }
@@ -280,15 +291,14 @@ ModelMetadata Fmi1ModelDescriptionChecker::extractMetadata(xmlNodePtr root) cons
     metadata.description = getXmlAttribute(root, "description");
     metadata.generationTool = getXmlAttribute(root, "generationTool");
     metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
-    metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
 
-    auto num_states = getXmlAttribute(root, "numberOfContinuousStates");
-    // We don't have a place for numberOfContinuousStates in metadata currently, but it's used in directory check?
-    // Actually ModelMetadata doesn't have it.
+    auto vnc_opt = getXmlAttribute(root, "variableNamingConvention");
+    metadata.variableNamingConvention = vnc_opt.value_or("flat");
 
-    auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
-    if (num_event_ind)
-        metadata.numberOfEventIndicators = parseNumber<uint32_t>(*num_event_ind);
+    auto num_event_ind_opt = getXmlAttribute(root, "numberOfEventIndicators");
+    if (num_event_ind_opt)
+        metadata.numberOfEventIndicators = parseNumber<uint32_t>(*num_event_ind_opt);
+
     return metadata;
 }
 
@@ -321,11 +331,11 @@ std::map<std::string, UnitDefinition> Fmi1ModelDescriptionChecker::extractUnitDe
             const std::string elem_name = reinterpret_cast<const char*>(child->name);
             if (elem_name == "DisplayUnitDefinition")
             {
-                auto du_name = getXmlAttribute(child, "displayUnit");
-                if (du_name)
+                auto du_name_opt = getXmlAttribute(child, "displayUnit");
+                if (du_name_opt)
                 {
                     DisplayUnit du;
-                    du.name = *du_name;
+                    du.name = *du_name_opt;
                     du.factor = getXmlAttribute(child, "gain"); // FMI1 uses gain
                     du.offset = getXmlAttribute(child, "offset");
                     du.sourceline = child->line;
@@ -373,9 +383,9 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
                 type_def.nominal = getXmlAttribute(child, "nominal");
                 type_def.unit = getXmlAttribute(child, "unit");
                 type_def.display_unit = getXmlAttribute(child, "displayUnit");
-                auto rel_q = getXmlAttribute(child, "relativeQuantity");
-                if (rel_q)
-                    type_def.relative_quantity = (*rel_q == "true");
+                auto rel_q_opt = getXmlAttribute(child, "relativeQuantity");
+                if (rel_q_opt)
+                    type_def.relative_quantity = (*rel_q_opt == "true");
                 break;
             }
         }
@@ -388,13 +398,6 @@ std::map<std::string, TypeDefinition> Fmi1ModelDescriptionChecker::extractTypeDe
 
 std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr doc) const
 {
-    _is_cs = false;
-    xmlXPathObjectPtr xpath_obj_impl = getXPathNodes(doc, "/fmiModelDescription/Implementation");
-    if (xpath_obj_impl && xpath_obj_impl->nodesetval && xpath_obj_impl->nodesetval->nodeNr > 0)
-        _is_cs = true;
-    if (xpath_obj_impl)
-        xmlXPathFreeObject(xpath_obj_impl);
-
     std::vector<Variable> variables;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "/fmiModelDescription/ModelVariables/ScalarVariable");
     if (!xpath_obj || !xpath_obj->nodesetval)
@@ -417,9 +420,9 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.index = static_cast<uint32_t>(i + 1);
         var.alias = getXmlAttribute(scalar_var_node, "alias");
 
-        auto vr = getXmlAttribute(scalar_var_node, "valueReference");
-        if (vr)
-            var.value_reference = parseNumber<uint32_t>(*vr);
+        auto vr_opt = getXmlAttribute(scalar_var_node, "valueReference");
+        if (vr_opt)
+            var.value_reference = parseNumber<uint32_t>(*vr_opt);
 
         for (xmlNodePtr child = scalar_var_node->children; child; child = child->next)
         {
@@ -438,18 +441,19 @@ std::vector<Variable> Fmi1ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 var.unit = getXmlAttribute(child, "unit");
                 var.display_unit = getXmlAttribute(child, "displayUnit");
 
-                auto fixed = getXmlAttribute(child, "fixed");
-                if (fixed)
+                auto fixed_opt = getXmlAttribute(child, "fixed");
+                if (fixed_opt)
                 {
-                    var.fixed = (*fixed == "true");
-                    var.initial = (var.fixed.value() ? "exact" : "approx");
+                    const bool is_fixed = (*fixed_opt == "true");
+                    var.fixed = is_fixed;
+                    var.initial = (is_fixed ? "exact" : "approx");
                 }
 
                 if (elem_name == "Real")
                 {
-                    auto rel_q = getXmlAttribute(child, "relativeQuantity");
-                    if (rel_q)
-                        var.relative_quantity = (*rel_q == "true");
+                    auto rel_q_opt = getXmlAttribute(child, "relativeQuantity");
+                    if (rel_q_opt)
+                        var.relative_quantity = (*rel_q_opt == "true");
                 }
                 break;
             }
@@ -480,16 +484,17 @@ void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
-            auto name = getXmlAttribute(node, "unit");
-            if (name)
+            auto name_opt = getXmlAttribute(node, "unit");
+            if (name_opt)
             {
-                if (seen_names.contains(*name))
+                const auto& name = *name_opt;
+                if (seen_names.contains(name))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Unit \"" + *name + "\" (line " + std::to_string(node->line) +
+                    test.messages.push_back("Unit \"" + name + "\" (line " + std::to_string(node->line) +
                                             ") is defined multiple times.");
                 }
-                seen_names.insert(*name);
+                seen_names.insert(name);
             }
         }
     }
@@ -509,16 +514,17 @@ void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
-            auto name = getXmlAttribute(node, "name");
-            if (name)
+            auto name_opt = getXmlAttribute(node, "name");
+            if (name_opt)
             {
-                if (seen_names.contains(*name))
+                const auto& name = *name_opt;
+                if (seen_names.contains(name))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Type definition \"" + *name + "\" (line " + std::to_string(node->line) +
+                    test.messages.push_back("Type definition \"" + name + "\" (line " + std::to_string(node->line) +
                                             ") is defined multiple times.");
                 }
-                seen_names.insert(*name);
+                seen_names.insert(name);
             }
         }
     }
@@ -606,9 +612,9 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
 
             if (model_node)
             {
-                auto entry_point = getXmlAttribute(model_node, "entryPoint");
-                if (entry_point)
-                    checkUri(*entry_point, "entryPoint", model_node->line, test);
+                auto entry_point_opt = getXmlAttribute(model_node, "entryPoint");
+                if (entry_point_opt)
+                    checkUri(*entry_point_opt, "entryPoint", model_node->line, test);
 
                 // Check additional files
                 for (xmlNodePtr child = model_node->children; child; child = child->next)
@@ -618,9 +624,9 @@ void Fmi1ModelDescriptionChecker::checkImplementation(xmlDocPtr doc, Certificate
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     if (reinterpret_cast<const char*>(child->name) == std::string("File"))
                     {
-                        auto file_uri = getXmlAttribute(child, "file");
-                        if (file_uri)
-                            checkUri(*file_uri, "file", child->line, test);
+                        auto file_uri_opt = getXmlAttribute(child, "file");
+                        if (file_uri_opt)
+                            checkUri(*file_uri_opt, "file", child->line, test);
                     }
                 }
             }
@@ -693,7 +699,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     // In FMI 1.0, valueReference is unique only per base type.
     std::map<std::pair<std::string, uint32_t>, std::vector<const Variable*>> alias_sets;
     for (const auto& var : variables)
-        if (var.value_reference.has_value())
+        if (var.value_reference)
             alias_sets[{get_base_type(var.type), *var.value_reference}].push_back(&var);
 
     TestResult variability_consistency_test{"Alias Variability Consistency", TestStatus::PASS, {}};
@@ -727,7 +733,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             }
 
             // noAlias count
-            if (!var->alias.has_value() || *var->alias == "noAlias")
+            if (!var->alias || *var->alias == "noAlias")
                 no_alias_count++;
 
             // variability
@@ -752,40 +758,46 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             if (base_type == "Real" && var->unit != first->unit)
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back(std::format(
-                    "All variables in an alias set (VR {}) must have the same unit. Variable \"{}\" has "
-                    "unit \"{}\" but \"{}\" has unit \"{}\".",
-                    vr, var->name, var->unit.value_or("(none)"), first->name, first->unit.value_or("(none)")));
+                const std::string unit1 = var->unit ? *var->unit : "(none)";
+                const std::string unit2 = first->unit ? *first->unit : "(none)";
+                test.messages.push_back(
+                    std::format("All variables in an alias set (VR {}) must have the same unit. Variable \"{}\" has "
+                                "unit \"{}\" but \"{}\" has unit \"{}\".",
+                                vr, var->name, unit1, first->name, unit2));
             }
 
             // 3. Equivalent start values
-            if (var->start.has_value())
+            if (var->start)
             {
                 double current_val = 0;
                 bool valid = false;
 
+                const auto& start_str = *var->start;
                 if (base_type == "Real")
                 {
-                    if (const auto val = parseNumber<double>(*var->start))
+                    if (const auto val_opt = parseNumber<double>(start_str))
                     {
-                        current_val = (negated ? -*val : *val);
+                        const double val = *val_opt;
+                        current_val = (negated ? -val : val);
                         valid = true;
                     }
                 }
                 else if (base_type == "Integer/Enumeration")
                 {
-                    if (const auto val = parseNumber<int32_t>(*var->start))
+                    if (const auto val_opt = parseNumber<int32_t>(start_str))
                     {
-                        current_val = static_cast<double>(negated ? -*val : *val);
+                        const double val = static_cast<double>(*val_opt);
+                        current_val = (negated ? -val : val);
                         valid = true;
                     }
                 }
                 else if (base_type == "Boolean")
                 {
-                    if (const auto val = parseNumber<int32_t>(*var->start))
+                    if (const auto val_opt = parseNumber<int32_t>(start_str))
                     {
                         // In FMI 1.0 Booleans are 0 or 1.
-                        current_val = static_cast<double>(negated ? -*val : *val);
+                        const double val = static_cast<double>(*val_opt);
+                        current_val = (negated ? -val : val);
                         valid = true;
                     }
                 }
@@ -811,17 +823,25 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                             std::string msg1 = std::format("\"{}\" (", var->name);
                             if (negated)
                                 msg1 += "negated, ";
-                            msg1 += std::format("start=\"{}\")", var->start.value());
+                            if (var->start)
+                            {
+                                const auto& val = *var->start;
+                                msg1 += std::format("start=\"{}\")", val);
+                            }
 
                             std::string msg2 = std::format("\"{}\" (", first_with_start->name);
                             if (first_negated)
                                 msg2 += "negated, ";
-                            msg2 += std::format("start=\"{}\")", first_with_start->start.value());
+                            if (first_with_start->start)
+                            {
+                                const auto& val = *first_with_start->start;
+                                msg2 += std::format("start=\"{}\")", val);
+                            }
 
-                            test.messages.push_back(std::format(
-                                "All variables in an alias set (VR {}) must have equivalent start values. {} and {} "
-                                "are inconsistent.",
-                                vr, msg1, msg2));
+                            test.messages.push_back(std::format("All variables in an alias set (VR {}) must have "
+                                                                "equivalent start values. {} and {} "
+                                                                "are inconsistent.",
+                                                                vr, msg1, msg2));
                         }
                     }
                 }
@@ -839,10 +859,10 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         else if (no_alias_count == 0)
         {
             test.status = TestStatus::FAIL;
-            test.messages.push_back(std::format(
-                "All variables in an alias set (VR {}) must have exactly one base variable (noAlias). No base variable "
-                "found.",
-                vr));
+            test.messages.push_back(std::format("All variables in an alias set (VR {}) must have exactly one base "
+                                                "variable (noAlias). No base variable "
+                                                "found.",
+                                                vr));
         }
 
         if (constant_var && non_constant_var)
@@ -866,10 +886,13 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             }
 
             variability_consistency_test.status = TestStatus::WARNING;
-            variability_consistency_test.messages.push_back(
-                std::format("All variables in an alias set (VR {}) should have the same variability. Variable \"{}\" "
-                            "is {} but \"{}\" is {}.",
-                            vr, first->name, first->variability, mismatch->name, mismatch->variability));
+            if (mismatch)
+            {
+                variability_consistency_test.messages.push_back(std::format(
+                    "All variables in an alias set (VR {}) should have the same variability. Variable \"{}\" "
+                    "is {} but \"{}\" is {}.",
+                    vr, first->name, first->variability, mismatch->name, mismatch->variability));
+            }
         }
     }
 

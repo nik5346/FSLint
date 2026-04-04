@@ -50,6 +50,9 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     // Check SourceFiles semantic validation (existence of listed files)
     checkSourceFilesSemantic(doc, cert);
 
+    // Check min/max start values
+    checkMinMaxStartValues(variables, type_definitions, cert);
+
     // Run FMI2-specific model structure checks (should be last)
     checkModelStructure(doc, variables, cert);
 }
@@ -61,7 +64,7 @@ void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
 
     for (const auto& var : variables)
     {
-        if (var.type == "Enumeration" && !var.declared_type.has_value())
+        if (var.type == "Enumeration" && !var.declared_type)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -82,12 +85,12 @@ void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
 
     std::set<uint32_t> state_indices;
     for (const auto& var : variables)
-        if (var.derivative_of.has_value())
+        if (var.derivative_of)
             state_indices.insert(*var.derivative_of);
 
     for (const auto& var : variables)
     {
-        if (var.reinit.has_value())
+        if (var.reinit)
         {
             if (!state_indices.contains(var.index))
             {
@@ -118,7 +121,7 @@ void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const
 
     for (const auto& var : variables)
     {
-        if (var.can_handle_multiple_set.has_value())
+        if (var.can_handle_multiple_set)
         {
             if (var.causality != "input")
             {
@@ -152,7 +155,7 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
     for (const auto& var : variables)
     {
         index_map[var.index] = &var;
-        if (var.derivative_of.has_value())
+        if (var.derivative_of)
             state_indices.insert(*var.derivative_of);
     }
 
@@ -177,7 +180,7 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
         }
 
         // Check derivatives
-        if (var.derivative_of.has_value())
+        if (var.derivative_of)
         {
             if (var.variability != "continuous")
             {
@@ -211,12 +214,12 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
         }
 
         // Type check for both
-        if (var.derivative_of.has_value() || state_indices.contains(var.index))
+        if (var.derivative_of || state_indices.contains(var.index))
         {
             if (var.type != "Real")
             {
                 test.status = TestStatus::FAIL;
-                const std::string role = var.derivative_of.has_value() ? "State derivative" : "Continuous-time state";
+                const std::string role = var.derivative_of ? "State derivative" : "Continuous-time state";
                 test.messages.push_back(role + " \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                                         ") must be of type Real.");
             }
@@ -257,7 +260,7 @@ void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
             test.messages.push_back("Independent variable \"" + independent_var->name + "\" must be of type \"Real\".");
         }
 
-        if (independent_var->start.has_value())
+        if (independent_var->start)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Independent variable \"" + independent_var->name +
@@ -296,7 +299,7 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 
     std::map<std::pair<std::string, uint32_t>, std::vector<const Variable*>> alias_sets;
     for (const auto& var : variables)
-        if (var.value_reference.has_value())
+        if (var.value_reference)
             alias_sets[{get_base_type(var.type), *var.value_reference}].push_back(&var);
 
     for (const auto& [key, alias_set] : alias_sets)
@@ -358,7 +361,7 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         {
             std::vector<const Variable*> non_constant_with_start;
             for (const auto* v : alias_set)
-                if (v->variability != "constant" && v->start.has_value())
+                if (v->variability != "constant" && v->start)
                     non_constant_with_start.push_back(v);
 
             if (non_constant_with_start.size() > 1)
@@ -460,7 +463,7 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
             var.can_handle_multiple_set = (*multi_set == "true");
 
         auto vr = getXmlAttribute(scalar_var_node, "valueReference");
-        if (vr.has_value())
+        if (vr)
             var.value_reference = parseNumber<uint32_t>(*vr);
 
         // FMI2: The type element (Real, Integer, Boolean, String, Enumeration) is a child of ScalarVariable
@@ -491,14 +494,14 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
                 var.unit = getXmlAttribute(child, "unit");
                 var.display_unit = getXmlAttribute(child, "displayUnit");
 
-                if (!var.declared_type.has_value())
+                if (!var.declared_type)
                     var.declared_type = getXmlAttribute(child, "declaredType");
 
                 // FMI2: derivative and reinit attributes are on the Real element
                 if (elem_name == "Real")
                 {
                     auto der = getXmlAttribute(child, "derivative");
-                    if (der.has_value())
+                    if (der)
                         var.derivative_of = parseNumber<uint32_t>(*der);
 
                     auto ri = getXmlAttribute(child, "reinit");
@@ -633,7 +636,7 @@ void Fmi2ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
         if (var.variability == "constant")
             needs_start = true;
 
-        if (needs_start && !var.start.has_value())
+        if (needs_start && !var.start)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -712,7 +715,7 @@ void Fmi2ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
     for (const auto& var : variables)
     {
         // Variables with initial="calculated" should not have start values
-        if (var.initial == "calculated" && var.start.has_value())
+        if (var.initial == "calculated" && var.start)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -720,7 +723,7 @@ void Fmi2ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         }
 
         // FMI2: Independent variables should not have start values
-        if (var.causality == "independent" && var.start.has_value())
+        if (var.causality == "independent" && var.start)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
@@ -791,7 +794,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto index_str = getXmlAttribute(node, "index");
 
-            if (index_str.has_value())
+            if (index_str)
             {
                 if (const auto index_opt = parseNumber<size_t>(*index_str))
                 {
@@ -822,7 +825,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         auto deps_str = getXmlAttribute(node, "dependencies");
                         auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str.has_value())
+                        if (deps_str)
                         {
                             std::vector<size_t> deps;
                             std::stringstream ss(*deps_str);
@@ -845,7 +848,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             }
 
                             // Check dependenciesKind size and values
-                            if (deps_kind_str.has_value())
+                            if (deps_kind_str)
                             {
                                 std::vector<std::string> kinds;
                                 std::stringstream ss_kind(*deps_kind_str);
@@ -878,7 +881,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                 }
                             }
                         }
-                        else if (deps_kind_str.has_value())
+                        else if (deps_kind_str)
                         {
                             test.status = TestStatus::FAIL;
                             test.messages.push_back("Variable \"" + var.name + "\" (line " +
@@ -1592,7 +1595,7 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
 {
     TestResult test{"GUID", TestStatus::PASS, {}};
 
-    if (!guid_opt.has_value())
+    if (!guid_opt)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("guid attribute is missing.");

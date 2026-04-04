@@ -65,8 +65,8 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
     checkModelVersion(metadata.modelVersion, cert);
 
-    const bool has_author = metadata.author.has_value() && !metadata.author->empty();
-    const bool has_copyright = metadata.copyright.has_value() && !metadata.copyright->empty();
+    const bool has_author = metadata.author && !metadata.author->empty();
+    const bool has_copyright = metadata.copyright && !metadata.copyright->empty();
 
     checkCopyright(metadata.copyright, cert, !has_author);
     checkLicense(metadata.license, cert);
@@ -100,7 +100,6 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     checkTypeAndUnitReferences(variables, type_definitions, units, cert);
 
     checkUnusedDefinitions(type_definitions, units, cert);
-    checkMinMaxStartValues(variables, type_definitions, cert);
 
     // Perform version-specific validation
     performVersionSpecificChecks(doc, variables, type_definitions, units, cert);
@@ -249,7 +248,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
 {
     TestResult test{"Model Name", TestStatus::PASS, {}};
 
-    if (!model_name.has_value())
+    if (!model_name)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("modelName attribute is missing.");
@@ -257,7 +256,9 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
         return;
     }
 
-    if (model_name->empty())
+    const auto& name = *model_name;
+
+    if (name.empty())
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("modelName attribute is empty.");
@@ -266,7 +267,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     }
 
     if (test.status != TestStatus::PASS)
-        test.messages.push_back("Name: " + *model_name);
+        test.messages.push_back("Name: " + name);
 
     cert.printTestResult(test);
 }
@@ -337,7 +338,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 {
     TestResult test{"Generation Date and Time Format", TestStatus::PASS, {}};
 
-    if (!generation_date_time.has_value())
+    if (!generation_date_time)
     {
         test.status = TestStatus::WARNING;
         test.messages.push_back("Providing 'generationDateAndTime' is recommended.");
@@ -483,7 +484,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
 {
     TestResult test{"FMI Version", TestStatus::PASS, {}};
 
-    if (!fmi_version.has_value())
+    if (!fmi_version)
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("version attribute is missing.");
@@ -491,10 +492,12 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
         return;
     }
 
-    if (test.status != TestStatus::PASS)
-        test.messages.push_back("Version: " + fmi_version.value_or("[missing]"));
+    const auto& version = *fmi_version;
 
-    if (fmi_version->empty())
+    if (test.status != TestStatus::PASS)
+        test.messages.push_back("Version: " + version);
+
+    if (version.empty())
     {
         test.status = TestStatus::FAIL;
         test.messages.push_back("version attribute is empty.");
@@ -502,7 +505,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
         return;
     }
 
-    validateFmiVersionValue(*fmi_version, test);
+    validateFmiVersionValue(version, test);
 
     cert.printTestResult(test);
 }
@@ -511,7 +514,7 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
 {
     TestResult test{"Model Version", TestStatus::PASS, {}};
 
-    if (!version.has_value())
+    if (!version)
     {
         test.status = TestStatus::WARNING;
         test.messages.push_back("Providing a model version is recommended.");
@@ -523,14 +526,15 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
     }
     else
     {
+        const auto& ver = *version;
         // Semantic versioning format: MAJOR.MINOR.PATCH or simpler versions like MAJOR.MINOR
         const std::regex semver_pattern(
             R"(^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z\-\.]+))?(?:\+([0-9A-Za-z\-\.]+))?$)");
 
-        if (!std::regex_match(*version, semver_pattern))
+        if (!std::regex_match(ver, semver_pattern))
         {
             test.status = TestStatus::WARNING;
-            test.messages.push_back("Model version \"" + *version +
+            test.messages.push_back("Model version \"" + ver +
                                     "\" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).");
         }
     }
@@ -543,7 +547,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
 {
     TestResult test{"Copyright", TestStatus::PASS, {}};
 
-    if (!copyright.has_value())
+    if (!copyright)
     {
         if (mandatory)
         {
@@ -626,7 +630,7 @@ void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>&
 {
     TestResult test{"License", TestStatus::PASS, {}};
 
-    if (!license.has_value())
+    if (!license)
     {
         test.status = TestStatus::WARNING;
         test.messages.push_back("Providing a license is recommended.");
@@ -645,7 +649,7 @@ void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& 
 {
     TestResult test{"Author", TestStatus::PASS, {}};
 
-    if (!author.has_value())
+    if (!author)
     {
         if (mandatory)
         {
@@ -669,7 +673,7 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
 {
     TestResult test{"Generation Tool", TestStatus::PASS, {}};
 
-    if (!tool.has_value())
+    if (!tool)
     {
         test.status = TestStatus::WARNING;
         test.messages.push_back(
@@ -837,7 +841,7 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc,
             auto model_id = getXmlAttribute(
                 xpath->nodesetval->nodeTab[0], // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 "modelIdentifier");
-            if (model_id.has_value())
+            if (model_id)
                 model_identifiers[elem] = *model_id;
         }
         if (xpath)
@@ -965,7 +969,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     };
 
     // Parse startTime
-    if (start_time_str.has_value())
+    if (start_time_str)
     {
         checkSpecial(start_time_str, "startTime");
         start_time = parseNumber<double>(*start_time_str);
@@ -987,7 +991,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     }
 
     // Parse stopTime
-    if (stop_time_str.has_value())
+    if (stop_time_str)
     {
         checkSpecial(stop_time_str, "stopTime");
         stop_time = parseNumber<double>(*stop_time_str);
@@ -1008,7 +1012,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     }
 
     // Check stopTime > startTime if both are present and finite
-    if (start_time.has_value() && stop_time.has_value() && test.status == TestStatus::PASS)
+    if (start_time && stop_time && test.status == TestStatus::PASS)
     {
         // If stopTime is infinite, the comparison is automatically valid
         if (!std::isinf(*stop_time) && *stop_time <= *start_time)
@@ -1020,7 +1024,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     }
 
     // Parse tolerance
-    if (tolerance_str.has_value())
+    if (tolerance_str)
     {
         checkSpecial(tolerance_str, "tolerance");
         tolerance = parseNumber<double>(*tolerance_str);
@@ -1041,7 +1045,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     }
 
     // Parse stepSize
-    if (step_size_str.has_value())
+    if (step_size_str)
     {
         checkSpecial(step_size_str, "stepSize");
         step_size = parseNumber<double>(*step_size_str);
@@ -1078,61 +1082,64 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
     for (const auto& var : variables)
     {
         // 1. Check declaredType
-        if (var.declared_type.has_value())
+        if (var.declared_type)
         {
-            if (!type_definitions.contains(*var.declared_type))
+            const auto& dtype = *var.declared_type;
+            if (!type_definitions.contains(dtype))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") references undefined type \"" + *var.declared_type + "\".");
+                                        ") references undefined type \"" + dtype + "\".");
             }
             else
             {
-                _used_type_definitions.insert(*var.declared_type);
+                _used_type_definitions.insert(dtype);
             }
         }
 
         // 2. Check unit and displayUnit
         std::optional<std::string> unit_to_check = var.unit;
-        if (!unit_to_check.has_value() && var.declared_type.has_value())
+        if (!unit_to_check && var.declared_type)
         {
             auto it = type_definitions.find(*var.declared_type);
             if (it != type_definitions.end())
                 unit_to_check = it->second.unit;
         }
 
-        if (unit_to_check.has_value())
+        if (unit_to_check)
         {
-            if (!units.contains(*unit_to_check))
+            const auto& utcheck = *unit_to_check;
+            if (!units.contains(utcheck))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") references undefined unit \"" + *unit_to_check + "\".");
+                                        ") references undefined unit \"" + utcheck + "\".");
             }
             else
             {
                 // Only mark as used if it was directly on the variable
-                if (var.unit.has_value())
+                if (var.unit)
                     _used_units.insert(*var.unit);
 
                 // Check displayUnit if it exists on the variable
-                if (var.display_unit.has_value())
+                if (var.display_unit)
                 {
-                    const auto& unit_def = units.at(*unit_to_check);
-                    if (!unit_def.display_units.contains(*var.display_unit))
+                    const auto& dunit = *var.display_unit;
+                    const auto& unit_def = units.at(utcheck);
+                    if (!unit_def.display_units.contains(dunit))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("DisplayUnit \"" + *var.display_unit + "\" of variable \"" + var.name +
+                        test.messages.push_back("DisplayUnit \"" + dunit + "\" of variable \"" + var.name +
                                                 "\" (line " + std::to_string(var.sourceline) +
-                                                ") is not defined for unit \"" + *unit_to_check + "\".");
+                                                ") is not defined for unit \"" + utcheck + "\".");
                     }
                 }
 
                 // Check relativeQuantity vs offset
                 if (var.relative_quantity)
                 {
-                    const auto& unit_def = units.at(*unit_to_check);
-                    if (unit_def.offset.has_value())
+                    const auto& unit_def = units.at(utcheck);
+                    if (unit_def.offset)
                     {
                         if (const auto offset_val = parseNumber<double>(*unit_def.offset))
                         {
@@ -1142,7 +1149,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                     test.status = TestStatus::WARNING;
                                 test.messages.push_back(
                                     "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has relativeQuantity=\"true\" but is associated with unit \"" + *unit_to_check +
+                                    ") has relativeQuantity=\"true\" but is associated with unit \"" + utcheck +
                                     "\" which has a non-zero offset (" + *unit_def.offset + ").");
                             }
                         }
@@ -1155,38 +1162,40 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
     // Check TypeDefinition references
     for (const auto& [name, type_def] : type_definitions)
     {
-        if (type_def.unit.has_value())
+        if (type_def.unit)
         {
-            if (!units.contains(*type_def.unit))
+            const auto& tunit = *type_def.unit;
+            if (!units.contains(tunit))
             {
                 test.status = TestStatus::FAIL;
                 test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                        std::to_string(type_def.sourceline) + ") references undefined unit \"" +
-                                        *type_def.unit + "\".");
+                                        std::to_string(type_def.sourceline) + ") references undefined unit \"" + tunit +
+                                        "\".");
             }
             else
             {
                 if (_used_type_definitions.contains(name))
-                    _used_units.insert(*type_def.unit);
+                    _used_units.insert(tunit);
 
                 // Check displayUnit if it exists on the type definition
-                if (type_def.display_unit.has_value())
+                if (type_def.display_unit)
                 {
-                    const auto& unit_def = units.at(*type_def.unit);
-                    if (!unit_def.display_units.contains(*type_def.display_unit))
+                    const auto& tdunit = *type_def.display_unit;
+                    const auto& unit_def = units.at(tunit);
+                    if (!unit_def.display_units.contains(tdunit))
                     {
                         test.status = TestStatus::FAIL;
-                        test.messages.push_back("DisplayUnit \"" + *type_def.display_unit + "\" of type definition \"" +
-                                                name + "\" (line " + std::to_string(type_def.sourceline) +
-                                                ") is not defined for unit \"" + *type_def.unit + "\".");
+                        test.messages.push_back("DisplayUnit \"" + tdunit + "\" of type definition \"" + name +
+                                                "\" (line " + std::to_string(type_def.sourceline) +
+                                                ") is not defined for unit \"" + tunit + "\".");
                     }
                 }
 
                 // Check relativeQuantity vs offset
                 if (type_def.relative_quantity)
                 {
-                    const auto& unit_def = units.at(*type_def.unit);
-                    if (unit_def.offset.has_value())
+                    const auto& unit_def = units.at(tunit);
+                    if (unit_def.offset)
                     {
                         if (const auto offset_val = parseNumber<double>(*unit_def.offset))
                         {
@@ -1196,7 +1205,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                     test.status = TestStatus::WARNING;
                                 test.messages.push_back(
                                     "Type definition \"" + name + "\" (line " + std::to_string(type_def.sourceline) +
-                                    ") has relativeQuantity=\"true\" but references unit \"" + *type_def.unit +
+                                    ") has relativeQuantity=\"true\" but references unit \"" + tunit +
                                     "\" which has a non-zero offset (" + *unit_def.offset + ").");
                             }
                         }
