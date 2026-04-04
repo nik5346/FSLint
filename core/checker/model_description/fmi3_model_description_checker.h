@@ -16,25 +16,16 @@
 class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
 {
   protected:
-    /// @brief Performs FMI 3.0 specific checks.
-    /// @param doc XML document.
-    /// @param variables Extracted variables.
-    /// @param type_definitions Map of types.
-    /// @param units Map of units.
-    /// @param cert Certificate to record results.
     void performVersionSpecificChecks(xmlDocPtr doc, const std::vector<Variable>& variables,
                                       const std::map<std::string, TypeDefinition>& type_definitions,
                                       const std::map<std::string, UnitDefinition>& units,
                                       Certificate& cert) const override;
 
-    /// @brief Gets FMI version.
-    /// @return "3.0".
     std::string getFmiVersion() const override
     {
         return "3.0";
     }
 
-    // FMI3-specific implementations
     void applyDefaultInitialValues(std::vector<Variable>& variables) const override;
     void checkCausalityVariabilityInitialCombinations(const std::vector<Variable>& variables,
                                                       Certificate& cert) const override;
@@ -42,6 +33,11 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkRequiredStartValues(const std::vector<Variable>& variables, Certificate& cert) const override;
     void validateFmiVersionValue(const std::string& version, TestResult& test) const override;
     void checkIllegalStartValues(const std::vector<Variable>& variables, Certificate& cert) const override;
+
+    /// @brief Checks min/max start values.
+    /// @param variables Variables.
+    /// @param type_definitions Types.
+    /// @param cert Certificate.
     void checkMinMaxStartValues(const std::vector<Variable>& variables,
                                 const std::map<std::string, TypeDefinition>& type_definitions,
                                 Certificate& cert) const override;
@@ -63,21 +59,17 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
                                             const std::string& attr_name) const override;
 
   private:
-    // FMI3-specific variable extraction (different XML structure than FMI2)
     std::vector<Variable> extractVariables(xmlDocPtr doc) const override;
     ModelMetadata extractMetadata(xmlNodePtr root) const override;
     std::string getVariableType(xmlNodePtr node) const;
 
-    // Extract dimension information from variable node
     void extractDimensions(xmlNodePtr node, Variable& var) const;
 
-    // FMI3-specific checks
     void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkUniqueValueReferences(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkStructuralParameter(const std::vector<Variable>& variables, Certificate& cert) const;
 
-    // New: Check dimension references and array start values
     void checkDimensionReferences(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkArrayStartValues(const std::vector<Variable>& variables, Certificate& cert) const;
 
@@ -96,7 +88,6 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     std::map<std::string, UnitDefinition> extractUnitDefinitions(xmlDocPtr doc) const override;
     std::map<std::string, TypeDefinition> extractTypeDefinitions(xmlDocPtr doc) const override;
 
-    // FMI3-specific model structure checks
     void checkModelStructure(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void validateOutputs(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void validateDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
