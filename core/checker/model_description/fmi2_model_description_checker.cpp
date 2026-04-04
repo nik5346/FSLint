@@ -785,12 +785,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     // Get expected outputs alias sets
     std::set<AliasKey> expected_alias_sets;
     for (const auto& var : variables)
-    {
         if (var.causality == "output" && var.value_reference.has_value())
-        {
             expected_alias_sets.insert({get_base_type(var.type), *var.value_reference});
-        }
-    }
 
     // FMI2: Get actual outputs from ModelStructure/Outputs/Unknown (using index attribute)
     std::set<AliasKey> actual_alias_sets;
@@ -940,9 +936,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
     std::map<uint32_t, const Variable*> index_map;
     for (const auto& var : variables)
-    {
         index_map[var.index] = &var;
-    }
 
     // FMI2: Check Derivatives entries (using index attribute)
     std::set<uint32_t> actual_vrs;
@@ -1139,9 +1133,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         }
 
         if (is_mandatory)
-        {
             expected_alias_sets.insert({get_base_type(var.type), *var.value_reference});
-        }
     }
 
     // FMI2: Get actual initial unknowns (using index attribute)
@@ -1288,10 +1280,10 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         {
             if (!actual_alias_sets.contains({type, vr}))
             {
-                test.messages.push_back(std::format(
-                    "Mandatory initial unknown alias set (VR {}, type {}) is missing a representative in "
-                    "ModelStructure/InitialUnknowns.",
-                    vr, type));
+                test.messages.push_back(
+                    std::format("Mandatory initial unknown alias set (VR {}, type {}) is missing a representative in "
+                                "ModelStructure/InitialUnknowns.",
+                                vr, type));
             }
         }
 

@@ -938,14 +938,13 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
         {
             if (!actual_vrs.contains(vr))
             {
-                test.messages.push_back(std::format(
-                    "Output alias set (VR {}) is missing a representative in ModelStructure/Output.", vr));
+                test.messages.push_back(
+                    std::format("Output alias set (VR {}) is missing a representative in ModelStructure/Output.", vr));
             }
         }
 
-        test.messages.push_back(
-            "ModelStructure/Output must have exactly one representative for each alias set of "
-            "non-clocked variables with causality=\"output\".");
+        test.messages.push_back("ModelStructure/Output must have exactly one representative for each alias set of "
+                                "non-clocked variables with causality=\"output\".");
     }
 
     cert.printTestResult(test);
@@ -1072,10 +1071,8 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
     std::map<uint32_t, const Variable*> vr_map;
     for (const auto& var : variables)
-    {
         if (var.value_reference.has_value())
             vr_map[*var.value_reference] = &var;
-    }
 
     // FMI3: Check ContinuousStateDerivative entries (using valueReference attribute)
     std::set<uint32_t> actual_vrs;
@@ -1527,9 +1524,7 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         }
 
         if (is_required)
-        {
             expected_vrs.insert(*var.value_reference);
-        }
     }
 
     // FMI3: Get actual initial unknowns (using valueReference attribute)

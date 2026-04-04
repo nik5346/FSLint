@@ -418,13 +418,16 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("structure_output_extra",
                       "listed in ModelStructure/Outputs but does not have causality=\"output\"");
         validate_fail("structure_derivative_no_attr", "must be of type Real and have a \"derivative\" attribute");
-        // validate_fail("structure_derivative_missing", "must have exactly one entry"); // Removed: <Derivatives> is not exhaustive anymore
+        // validate_fail("structure_derivative_missing", "must have exactly one entry"); // Removed: <Derivatives> is
+        // not exhaustive anymore
         validate_fail("structure_derivative_duplicate", "is listed multiple times in ModelStructure/Derivatives");
         validate_fail("structure_initial_unknowns_not_ordered", "ordered according to their ScalarVariable index");
         validate_fail("structure_dependencies_not_ordered", "ordered according to magnitude");
         validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
-        validate_fail("structure_initial_unknowns_mismatch", "is missing a representative in ModelStructure/InitialUnknowns");
-        validate_fail("structure_initial_unknowns_state_approx", "is missing a representative in ModelStructure/InitialUnknowns");
+        validate_fail("structure_initial_unknowns_mismatch",
+                      "is missing a representative in ModelStructure/InitialUnknowns");
+        validate_fail("structure_initial_unknowns_state_approx",
+                      "is missing a representative in ModelStructure/InitialUnknowns");
         validate_fail("structure_dependencies_kind_invalid_initial", "is not allowed in InitialUnknowns");
         validate_fail("structure_dependencies_kind_non_real", "only allowed for Real variables");
         validate_fail("derivative_index_out_of_range", "referencing index 99 which does not exist");
@@ -668,12 +671,13 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("structure_output_duplicate", "is listed multiple times in ModelStructure/Output");
         validate_fail("structure_output_extra",
                       "listed in ModelStructure/Output but does not have causality=\"output\"");
-        validate_fail("structure_derivative_no_attr",
-                      "must have a \"derivative\" attribute");
+        validate_fail("structure_derivative_no_attr", "must have a \"derivative\" attribute");
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");
         // validate_fail("structure_derivative_missing", "must have exactly one entry"); // Removed
-        validate_fail("structure_derivative_duplicate", "is listed multiple times in ModelStructure/ContinuousStateDerivative");
-        validate_fail("structure_initial_unknowns_mismatch", "missing a representative in ModelStructure/InitialUnknown");
+        validate_fail("structure_derivative_duplicate",
+                      "is listed multiple times in ModelStructure/ContinuousStateDerivative");
+        validate_fail("structure_initial_unknowns_mismatch",
+                      "missing a representative in ModelStructure/InitialUnknown");
         validate_fail("derivative_non_continuous", "must have variability=\"continuous\"");
         validate_fail("derivative_non_float", "must be Float32 or Float64");
         validate_fail("reinit_non_state", "is not a continuous-time state");
