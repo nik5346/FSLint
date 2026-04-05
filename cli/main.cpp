@@ -172,7 +172,7 @@ int main(int argc, char** argv)
         // Default: validate FMU (without saving certificate)
         Certificate initial_cert;
         initial_cert.setContinueCallback(continue_callback);
-        Certificate cert = validator.validate(fmu_path, false, show_tree, std::move(initial_cert));
+        const Certificate cert = validator.validate(fmu_path, false, show_tree, std::move(initial_cert));
 
         return cert.isFailed() ? 1 : 0;
     }

@@ -25,7 +25,7 @@ extern "C"
                                .c_str()) != 0;
             });
 
-        Certificate cert = validator.validate(path, false, false, std::move(initial_cert));
+        const Certificate cert = validator.validate(path, false, false, std::move(initial_cert));
 
         static std::string result;
         result = cert.toJson(path);
