@@ -287,7 +287,7 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     TestResult test{"Alias Variables", TestStatus::PASS, {}};
 
     // Group variables by base type and valueReference
-    auto get_base_type = [](const std::string& type) -> std::string
+    const auto get_base_type = [](const std::string& type) -> std::string
     {
         if (type == "Integer" || type == "Enumeration")
             return "Integer/Enumeration";
@@ -773,23 +773,32 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 {
     TestResult test{"ModelStructure Outputs", TestStatus::PASS, {}};
 
-    // Get expected outputs (all variables with causality="output")
-    std::set<std::string> expected_outputs;
+    auto get_base_type = [](const std::string& type) -> std::string
+    {
+        if (type == "Integer" || type == "Enumeration")
+            return "Integer/Enumeration";
+        return type;
+    };
+
+    using AliasKey = std::pair<std::string, uint32_t>;
+
+    // Get expected outputs alias sets
+    std::set<AliasKey> expected_alias_sets;
     for (const auto& var : variables)
-        if (var.causality == "output")
-            expected_outputs.insert(var.name);
+        if (var.causality == "output" && var.value_reference.has_value())
+            expected_alias_sets.insert({get_base_type(var.type), *var.value_reference});
 
     // FMI2: Get actual outputs from ModelStructure/Outputs/Unknown (using index attribute)
-    std::set<std::string> actual_outputs;
+    std::set<AliasKey> actual_alias_sets;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Outputs/Unknown");
 
     if (xpath_obj && xpath_obj->nodesetval)
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto index_str = getXmlAttribute(node, "index");
+            const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
             {
@@ -803,20 +812,26 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         if (var.causality != "output")
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
-                                                    std::to_string(var.sourceline) +
-                                                    ") listed in ModelStructure/Outputs but does not have "
-                                                    "causality=\"output\".");
+                            test.messages.push_back(std::format("Variable \"{}\" (line {}) listed in "
+                                                                "ModelStructure/Outputs but does not have "
+                                                                "causality=\"output\".",
+                                                                var.name, var.sourceline));
                         }
 
-                        if (actual_outputs.contains(var.name))
+                        if (var.value_reference.has_value())
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name +
-                                                    "\" is listed multiple times in "
-                                                    "ModelStructure/Outputs.");
+                            const AliasKey key = {get_base_type(var.type), *var.value_reference};
+                            if (actual_alias_sets.contains(key))
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back(std::format(
+                                    "An alias of variable \"{}\" (VR {}, type {}) is already represented in "
+                                    "ModelStructure/Outputs. Exactly one representative of an alias set must be "
+                                    "listed.",
+                                    var.name, *var.value_reference, var.type));
+                            }
+                            actual_alias_sets.insert(key);
                         }
-                        actual_outputs.insert(var.name);
 
                         // Check dependencies ordering and dependenciesKind consistency
                         auto deps_str = getXmlAttribute(node, "dependencies");
@@ -893,41 +908,22 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
         xmlXPathFreeObject(xpath_obj);
     }
 
-    if (expected_outputs != actual_outputs)
+    if (expected_alias_sets != actual_alias_sets)
     {
         test.status = TestStatus::FAIL;
-        std::vector<std::string> missing;
-        std::vector<std::string> extra;
 
-        for (const auto& name : expected_outputs)
-            if (!actual_outputs.contains(name))
-                missing.push_back(name);
-
-        for (const auto& name : actual_outputs)
-            if (!expected_outputs.contains(name))
-                extra.push_back(name);
-
-        if (!missing.empty())
+        for (const auto& [type, vr] : expected_alias_sets)
         {
-            std::string msg =
-                "The following variables with causality=\"output\" are missing from ModelStructure/Outputs: ";
-            for (size_t i = 0; i < missing.size(); ++i)
-                msg += (i > 0 ? ", " : "") + missing[i];
-            msg += ".";
-            test.messages.push_back(msg);
+            if (!actual_alias_sets.contains({type, vr}))
+            {
+                test.messages.push_back(std::format("Output alias set (VR {}, type {}) is missing a representative in "
+                                                    "ModelStructure/Outputs.",
+                                                    vr, type));
+            }
         }
 
-        if (!extra.empty())
-        {
-            std::string msg = "The following variables in ModelStructure/Outputs do not have causality=\"output\": ";
-            for (size_t i = 0; i < extra.size(); ++i)
-                msg += (i > 0 ? ", " : "") + extra[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
-        test.messages.push_back(
-            "ModelStructure/Outputs must have exactly one entry for each variable with causality=\"output\".");
+        test.messages.push_back("ModelStructure/Outputs must have exactly one representative for each alias set of "
+                                "variables with causality=\"output\".");
     }
 
     cert.printTestResult(test);
@@ -938,23 +934,21 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 {
     TestResult test{"ModelStructure Derivatives", TestStatus::PASS, {}};
 
-    // Build map of variables that have derivatives
-    std::set<std::string> expected_derivatives;
+    std::map<uint32_t, const Variable*> index_map;
     for (const auto& var : variables)
-        if (var.derivative_of.has_value())
-            expected_derivatives.insert(var.name);
+        index_map[var.index] = &var;
 
     // FMI2: Check Derivatives entries (using index attribute)
-    std::set<std::string> actual_derivatives;
+    std::set<uint32_t> actual_vrs;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Derivatives/Unknown");
 
     if (xpath_obj && xpath_obj->nodesetval)
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto index_str = getXmlAttribute(node, "index");
+            const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
             {
@@ -965,22 +959,55 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     {
                         const auto& var = variables[index - 1];
 
-                        if (!expected_derivatives.contains(var.name))
+                        // 1. Must be a Real variable with a derivative attribute
+                        if (var.type != "Real" || !var.derivative_of.has_value())
                         {
                             test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
-                                                    std::to_string(var.sourceline) + ") referenced by derivative " +
-                                                    std::to_string(i + 1) + " must have the \"derivative\" attribute.");
+                            test.messages.push_back(std::format(
+                                "Variable \"{}\" (line {}) listed in ModelStructure/Derivatives must be of type Real "
+                                "and have a \"derivative\" attribute.",
+                                var.name, var.sourceline));
+                        }
+                        else
+                        {
+                            // 2. The variable that the derivative attribute points to (its state) should be Real with
+                            // variability="continuous"
+                            const uint32_t state_index = *var.derivative_of;
+                            auto it = index_map.find(state_index);
+                            if (it == index_map.end())
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back(std::format(
+                                    "Variable \"{}\" (line {}) has a \"derivative\" attribute pointing to non-existent "
+                                    "index {}.",
+                                    var.name, var.sourceline, state_index));
+                            }
+                            else
+                            {
+                                const Variable* state_var = it->second;
+                                if (state_var->type != "Real" || state_var->variability != "continuous")
+                                {
+                                    test.status = TestStatus::FAIL;
+                                    test.messages.push_back(std::format(
+                                        "Variable \"{}\" (line {}) is listed in ModelStructure/Derivatives and is a "
+                                        "derivative of \"{}\" (line {}), which must be Real and have "
+                                        "variability=\"continuous\".",
+                                        var.name, var.sourceline, state_var->name, state_var->sourceline));
+                                }
+                            }
                         }
 
-                        if (actual_derivatives.contains(var.name))
+                        if (var.value_reference.has_value())
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name +
-                                                    "\" is listed multiple times in "
-                                                    "ModelStructure/Derivatives.");
+                            if (actual_vrs.contains(*var.value_reference))
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back(std::format(
+                                    "Value reference {} is listed multiple times in ModelStructure/Derivatives.",
+                                    *var.value_reference));
+                            }
+                            actual_vrs.insert(*var.value_reference);
                         }
-                        actual_derivatives.insert(var.name);
 
                         // Check dependencies ordering and dependenciesKind consistency
                         auto deps_str = getXmlAttribute(node, "dependencies");
@@ -1057,45 +1084,6 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
         xmlXPathFreeObject(xpath_obj);
     }
 
-    if (expected_derivatives != actual_derivatives)
-    {
-        test.status = TestStatus::FAIL;
-        std::vector<std::string> missing;
-        std::vector<std::string> extra;
-
-        for (const auto& name : expected_derivatives)
-            if (!actual_derivatives.contains(name))
-                missing.push_back(name);
-
-        for (const auto& name : actual_derivatives)
-            if (!expected_derivatives.contains(name))
-                extra.push_back(name);
-
-        if (!missing.empty())
-        {
-            std::string msg =
-                "The following variables with a \"derivative\" attribute are missing from ModelStructure/Derivatives: ";
-            for (size_t i = 0; i < missing.size(); ++i)
-                msg += (i > 0 ? ", " : "") + missing[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
-        if (!extra.empty())
-        {
-            std::string msg =
-                "The following variables in ModelStructure/Derivatives do not have a \"derivative\" attribute: ";
-            for (size_t i = 0; i < extra.size(); ++i)
-                msg += (i > 0 ? ", " : "") + extra[i];
-            msg += ".";
-            test.messages.push_back(msg);
-        }
-
-        test.messages.push_back(
-            "ModelStructure/Derivatives must have exactly one entry for each variable that has a \"derivative\" "
-            "attribute.");
-    }
-
     cert.printTestResult(test);
 }
 
@@ -1104,8 +1092,17 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 {
     TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
-    // Build expected set of initial unknowns (FMI2 spec)
-    std::set<std::string> expected;
+    const auto get_base_type = [](const std::string& type) -> std::string
+    {
+        if (type == "Integer" || type == "Enumeration")
+            return "Integer/Enumeration";
+        return type;
+    };
+
+    using AliasKey = std::pair<std::string, uint32_t>;
+
+    // Build expected set of initial unknown alias sets (FMI2 spec)
+    std::set<AliasKey> expected_alias_sets;
 
     // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
     std::set<uint32_t> state_indices;
@@ -1115,24 +1112,32 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
     for (const auto& var : variables)
     {
+        if (!var.value_reference.has_value())
+            continue;
+
+        bool is_mandatory = false;
+
         // (1) Outputs with initial="approx" or "calculated"
         if (var.causality == "output" && (var.initial == "approx" || var.initial == "calculated"))
-            expected.insert(var.name);
+            is_mandatory = true;
 
         // (2) Calculated parameters
         if (var.causality == "calculatedParameter")
-            expected.insert(var.name);
+            is_mandatory = true;
 
         // (3) States and their derivatives with initial="approx" or "calculated"
         if ((state_indices.contains(var.index) || var.derivative_of.has_value()) &&
             (var.initial == "approx" || var.initial == "calculated"))
         {
-            expected.insert(var.name);
+            is_mandatory = true;
         }
+
+        if (is_mandatory)
+            expected_alias_sets.insert({get_base_type(var.type), *var.value_reference});
     }
 
     // FMI2: Get actual initial unknowns (using index attribute)
-    std::set<std::string> actual;
+    std::set<AliasKey> actual_alias_sets;
     std::vector<size_t> actual_indices;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/InitialUnknowns/Unknown");
 
@@ -1140,9 +1145,9 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto index_str = getXmlAttribute(node, "index");
+            const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
             {
@@ -1152,7 +1157,32 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                     if (index > 0 && index <= variables.size())
                     {
                         const auto& var = variables[index - 1];
-                        actual.insert(var.name);
+
+                        if (var.value_reference.has_value())
+                        {
+                            const AliasKey key = {get_base_type(var.type), *var.value_reference};
+
+                            if (actual_alias_sets.contains(key))
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back(std::format(
+                                    "An alias of variable \"{}\" (VR {}, type {}) is already represented in "
+                                    "ModelStructure/InitialUnknowns. Exactly one representative of an alias set must "
+                                    "be listed.",
+                                    var.name, *var.value_reference, var.type));
+                            }
+                            actual_alias_sets.insert(key);
+
+                            if (!expected_alias_sets.contains(key))
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back(std::format(
+                                    "Variable \"{}\" (line {}) is listed in ModelStructure/InitialUnknowns but is not "
+                                    "a mandatory unknown.",
+                                    var.name, var.sourceline));
+                            }
+                        }
+
                         actual_indices.push_back(index);
 
                         // Check dependencies ordering and dependenciesKind consistency
@@ -1242,25 +1272,23 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         }
     }
 
-    if (expected != actual)
+    if (expected_alias_sets != actual_alias_sets)
     {
         test.status = TestStatus::FAIL;
 
-        std::string expected_str;
-        for (const auto& name : expected)
-            expected_str += name + ", ";
-        if (!expected_str.empty())
-            expected_str = expected_str.substr(0, expected_str.length() - 2);
+        for (const auto& [type, vr] : expected_alias_sets)
+        {
+            if (!actual_alias_sets.contains({type, vr}))
+            {
+                test.messages.push_back(
+                    std::format("Mandatory initial unknown alias set (VR {}, type {}) is missing a representative in "
+                                "ModelStructure/InitialUnknowns.",
+                                vr, type));
+            }
+        }
 
-        std::string actual_str;
-        for (const auto& name : actual)
-            actual_str += name + ", ";
-        if (!actual_str.empty())
-            actual_str = actual_str.substr(0, actual_str.length() - 2);
-
-        test.messages.push_back("ModelStructure/InitialUnknowns does not contain the expected set of variables. "
-                                "Expected { " +
-                                expected_str + " } but was { " + actual_str + " }.");
+        test.messages.push_back(
+            "ModelStructure/InitialUnknowns must have exactly one representative for each mandatory alias set.");
     }
 
     cert.printTestResult(test);
