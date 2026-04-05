@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -17,11 +18,34 @@ enum class TestStatus : uint8_t
 };
 
 /// @brief Result of a single validation test.
+struct TestResult;
+
+/// @brief Callback function type for user-decided continuation on security issues.
+/// @return True if validation should continue, false otherwise.
+using ContinueCallback = std::function<bool(const TestResult&)>;
+
+/// @brief Result of a single validation test.
 struct TestResult
 {
     std::string test_name;             ///< Name of the test.
     TestStatus status;                 ///< Completion status.
     std::vector<std::string> messages; ///< Detailed failure or warning messages.
+    bool is_security_issue = false;    ///< True if this is a security-related test.
+
+    /// @brief Default constructor.
+    TestResult() = default;
+
+    /// @brief Constructor with automatic security issue detection.
+    /// @param name Name of the test.
+    /// @param s Completion status.
+    /// @param msgs Detailed messages.
+    TestResult(std::string name, TestStatus s, std::vector<std::string> msgs)
+        : test_name(std::move(name))
+        , status(s)
+        , messages(std::move(msgs))
+    {
+        is_security_issue = (test_name.find("[SECURITY]") != std::string::npos);
+    }
 };
 
 /// @brief Result of validation for a nested model (e.g., within resources).
@@ -75,12 +99,30 @@ class Certificate
     size_t _current_subsection_failed = 0;
     size_t _total_failed = 0;
 
+    // Abort handling
+    ContinueCallback _continue_callback;
+    bool _abort_requested = false;
+
   public:
     /// @brief Sets quiet mode.
     /// @param quiet Suppress detailed logging.
     void setQuiet(bool quiet)
     {
         _quiet = quiet;
+    }
+
+    /// @brief Sets the callback for continuing after security issues.
+    /// @param callback Callback function.
+    void setContinueCallback(ContinueCallback callback)
+    {
+        _continue_callback = std::move(callback);
+    }
+
+    /// @brief Checks if validation should abort.
+    /// @return True if abort requested.
+    bool shouldAbort() const
+    {
+        return _abort_requested;
     }
 
     /// @brief Checks if color is enabled.

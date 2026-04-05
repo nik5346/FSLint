@@ -21,9 +21,9 @@
 #include <string>
 #include <vector>
 
-Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree) const
+Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree,
+                                   Certificate cert) const
 {
-    Certificate cert;
     cert.setQuiet(quiet);
 
     if (!quiet)
@@ -125,7 +125,11 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     auto checkers = CheckerFactory::createCheckers(model_info);
 
     for (auto& checker : checkers)
+    {
+        if (cert.shouldAbort())
+            break;
         checker->validate(extract_dir, cert);
+    }
 
     if (show_tree)
         cert.printFileTree(extract_dir);
@@ -147,6 +151,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
 bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 {
     Certificate cert;
+    // For now, certificate operations also stop on security issues by default
+    // as no callback is set.
     cert.setQuiet(false);
 
     // Print header

@@ -60,19 +60,39 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
+    if (cert.shouldAbort())
+        return;
     checkModelName(metadata.modelName, cert);
+    if (cert.shouldAbort())
+        return;
     checkGuid(metadata.guid, cert);
+    if (cert.shouldAbort())
+        return;
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
+    if (cert.shouldAbort())
+        return;
     checkModelVersion(metadata.modelVersion, cert);
+    if (cert.shouldAbort())
+        return;
 
     const bool has_author = metadata.author.has_value() && !metadata.author->empty();
     const bool has_copyright = metadata.copyright.has_value() && !metadata.copyright->empty();
 
     checkCopyright(metadata.copyright, cert, !has_author);
+    if (cert.shouldAbort())
+        return;
     checkLicense(metadata.license, cert);
+    if (cert.shouldAbort())
+        return;
     checkAuthor(metadata.author, cert, !has_copyright);
+    if (cert.shouldAbort())
+        return;
     checkGenerationTool(metadata.generationTool, cert);
+    if (cert.shouldAbort())
+        return;
     checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
+    if (cert.shouldAbort())
+        return;
 
     // Perform interface checks
     std::vector<std::string> interface_elements;
@@ -83,24 +103,56 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     const auto model_identifiers = extractModelIdentifiers(doc, interface_elements);
     checkNumberOfImplementedInterfaces(model_identifiers, cert);
+    if (cert.shouldAbort())
+        return;
     for (const auto& [interface_name, model_id] : model_identifiers)
+    {
         checkModelIdentifier(model_id, interface_name, cert);
+        if (cert.shouldAbort())
+            return;
+    }
 
     checkUnits(doc, cert);
+    if (cert.shouldAbort())
+        return;
     checkTypeDefinitions(doc, cert);
+    if (cert.shouldAbort())
+        return;
     checkLogCategories(doc, cert);
+    if (cert.shouldAbort())
+        return;
     checkDefaultExperiment(doc, cert);
+    if (cert.shouldAbort())
+        return;
     checkAnnotations(doc, cert);
+    if (cert.shouldAbort())
+        return;
 
     checkUniqueVariableNames(variables, cert);
+    if (cert.shouldAbort())
+        return;
     checkLegalVariability(variables, cert);
+    if (cert.shouldAbort())
+        return;
     checkRequiredStartValues(variables, cert);
+    if (cert.shouldAbort())
+        return;
     checkCausalityVariabilityInitialCombinations(variables, cert);
+    if (cert.shouldAbort())
+        return;
     checkIllegalStartValues(variables, cert);
+    if (cert.shouldAbort())
+        return;
     checkTypeAndUnitReferences(variables, type_definitions, units, cert);
+    if (cert.shouldAbort())
+        return;
 
     checkUnusedDefinitions(type_definitions, units, cert);
+    if (cert.shouldAbort())
+        return;
     checkMinMaxStartValues(variables, type_definitions, cert);
+    if (cert.shouldAbort())
+        return;
 
     // Perform version-specific validation
     performVersionSpecificChecks(doc, variables, type_definitions, units, cert);

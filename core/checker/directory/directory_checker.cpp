@@ -121,6 +121,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     xmlFreeDoc(doc);
 
     performVersionSpecificChecks(path, cert, model_identifiers, listed_sources_in_md, needs_execution_tool);
+    if (cert.shouldAbort())
+        return;
 
     cert.printSubsectionSummary(true);
 }

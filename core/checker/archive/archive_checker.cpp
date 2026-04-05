@@ -59,20 +59,46 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
 
     // Run all validations on the entries
     checkCompressionMethods(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkVersionNeeded(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkLanguageEncodingFlag(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkEncryption(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkPathFormat(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkSymbolicLinks(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkGeneralPurposeBit3(entries, cert);
+    if (cert.shouldAbort())
+        return;
 
     // New security-focused checks
     checkZipSlip(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkZipBomb(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkDuplicateNames(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkOverlappingEntries(entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkCentralDirectoryConsistency(fmu_path, entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkEntryCountSanity(handler, entries, cert);
+    if (cert.shouldAbort())
+        return;
     checkExtraFieldsAndComments(handler, entries, cert);
 
     handler.close();

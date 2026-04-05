@@ -106,6 +106,8 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                         }
                     }
                     cert.printTestResult(export_test);
+                    if (cert.shouldAbort())
+                        return;
 
                     // 2. Binary Format, Bitness, and Architecture Check
                     TestResult format_test{
@@ -259,6 +261,8 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     }
 
                     cert.printTestResult(format_test);
+                    if (cert.shouldAbort())
+                        return;
                 }
             }
         }

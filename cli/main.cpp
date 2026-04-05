@@ -9,6 +9,17 @@
 #include <string>
 #include <string_view>
 
+#ifdef _WIN32
+#include <io.h>
+#define ISATTY _isatty
+#define FILENO _fileno
+#else
+#include <cstdio>
+#include <unistd.h>
+#define ISATTY isatty
+#define FILENO fileno
+#endif
+
 void printUsage(const std::string& program_name)
 {
     std::cout << "Usage: " << program_name << " [OPTIONS] <fmu/ssp-file>\n\n";
@@ -132,6 +143,20 @@ int main(int argc, char** argv)
         // Create validator instance
         const ModelChecker validator;
 
+        auto continue_callback = [](const TestResult& test) -> bool
+        {
+            (void)test;
+            if (!ISATTY(FILENO(stdin)))
+                return false;
+
+            std::cout << "\n[SECURITY ISSUE DETECTED] Do you want to continue validation? (y/N): ";
+            char response = 'n';
+            if (!(std::cin >> response))
+                return false;
+
+            return response == 'y' || response == 'Y';
+        };
+
         // Execute requested operation
         if (remove_cert)
             return validator.removeCertificate(fmu_path) ? 0 : 1;
@@ -145,9 +170,11 @@ int main(int argc, char** argv)
             return validator.updateCertificate(fmu_path) ? 0 : 1;
 
         // Default: validate FMU (without saving certificate)
-        validator.validate(fmu_path, false, show_tree);
+        Certificate initial_cert;
+        initial_cert.setContinueCallback(continue_callback);
+        Certificate cert = validator.validate(fmu_path, false, show_tree, std::move(initial_cert));
 
-        return 0;
+        return cert.isFailed() ? 1 : 0;
     }
     catch (const std::filesystem::filesystem_error& e)
     {

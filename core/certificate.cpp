@@ -217,6 +217,28 @@ void Certificate::printTestResult(const TestResult& test)
             log("      " + marker + test.messages[i]);
         }
     }
+
+    // Handle security-related failures
+    if (test.is_security_issue && test.status == TestStatus::FAIL && !_abort_requested)
+    {
+        if (_continue_callback)
+        {
+            if (!_continue_callback(test))
+            {
+                log("\n  [Aborting due to security issue]");
+                _abort_requested = true;
+            }
+            else
+            {
+                log("\n  [Continuing after security issue as requested by user]");
+            }
+        }
+        else
+        {
+            log("\n  [Aborting due to security issue (no continue callback set)]");
+            _abort_requested = true;
+        }
+    }
 }
 
 void Certificate::printSubsectionSummary(bool subsection_valid)
