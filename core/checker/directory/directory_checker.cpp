@@ -20,7 +20,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     cert.printSubsectionHeader("FMU DIRECTORY STRUCTURE");
 
     // Mandatory modelDescription.xml check
-    auto model_desc_path = path / "modelDescription.xml";
+    const std::filesystem::path model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
     {
         const TestResult test{"Mandatory Files",
@@ -51,12 +51,13 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     if (root)
     {
         // FMI 1.0 extraction
-        auto model_id_attr = getXmlAttribute(root, "modelIdentifier");
-        if (model_id_attr)
-        {
-            // By default ME in FMI 1.0
-            model_identifiers["ModelExchange"] = *model_id_attr;
-        }
+    const std::optional<std::string> model_id_attr = getXmlAttribute(root, "modelIdentifier");
+    if (model_id_attr.has_value())
+    {
+        // By default ME in FMI 1.0
+        const auto& id_val = *model_id_attr;
+        model_identifiers["ModelExchange"] = id_val;
+    }
 
         for (xmlNodePtr node = root->children; node; node = node->next)
         {
@@ -68,24 +69,29 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                 xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ModelExchange")) ||
                 xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")))
             {
-                auto model_id = getXmlAttribute(node, "modelIdentifier");
-                if (model_id)
+                const std::optional<std::string> model_id = getXmlAttribute(node, "modelIdentifier");
+                if (model_id.has_value())
                 {
-                    model_identifiers[reinterpret_cast<const char*>(name)] = *model_id;
+                    const auto& id_val = *model_id;
+                    model_identifiers[reinterpret_cast<const char*>(name)] = id_val;
 
                     // If we found CoSimulation in FMI 1.0, move the model identifier there
-                    if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) && model_id_attr)
+                    if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) &&
+                        model_id_attr.has_value())
                     {
+                        const auto& attr_val = *model_id_attr;
                         model_identifiers.erase("ModelExchange");
-                        model_identifiers["CoSimulation"] = *model_id_attr;
+                        model_identifiers["CoSimulation"] = attr_val;
                     }
                 }
 
                 if (!xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")))
                 {
-                    auto needs_exec = getXmlAttribute(node, "needsExecutionTool");
-                    if (needs_exec == "true")
+                    const std::optional<std::string> needs_exec = getXmlAttribute(node, "needsExecutionTool");
+                    if (needs_exec.has_value() && *needs_exec == "true")
+                    {
                         needs_execution_tool = true;
+                    }
                 }
 
                 // Check for SourceFiles inside interface (FMI 2.0)
@@ -99,9 +105,12 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                             if (file_node->type == XML_ELEMENT_NODE &&
                                 xmlStrEqual(file_node->name, reinterpret_cast<const xmlChar*>("File")))
                             {
-                                auto name_opt = getXmlAttribute(file_node, "name");
-                                if (name_opt)
-                                    listed_sources_in_md.insert(*name_opt);
+                                const std::optional<std::string> name_opt = getXmlAttribute(file_node, "name");
+                                if (name_opt.has_value())
+                                {
+                                    const auto& name_val = *name_opt;
+                                    listed_sources_in_md.insert(name_val);
+                                }
                             }
                         }
                     }
@@ -110,10 +119,11 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
             else if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("Implementation")))
             {
                 // In FMI 1.0 CS, Implementation exists but modelIdentifier is still on the root
-                if (model_id_attr)
+                if (model_id_attr.has_value())
                 {
+                    const auto& attr_val = *model_id_attr;
                     model_identifiers.erase("ModelExchange");
-                    model_identifiers["CoSimulation"] = *model_id_attr;
+                    model_identifiers["CoSimulation"] = attr_val;
                 }
             }
         }
@@ -122,7 +132,9 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
 
     performVersionSpecificChecks(path, cert, model_identifiers, listed_sources_in_md, needs_execution_tool);
     if (cert.shouldAbort())
+    {
         return;
+    }
 
     cert.printSubsectionSummary(true);
 }

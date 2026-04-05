@@ -31,7 +31,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     cert.printSubsectionHeader("MODEL DESCRIPTION VALIDATION");
     _fmu_root_path = path;
 
-    auto model_desc_path = path / "modelDescription.xml";
+    const std::filesystem::path model_desc_path = path / "modelDescription.xml";
 
     if (!std::filesystem::exists(model_desc_path))
     {
@@ -61,98 +61,207 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkModelName(metadata.modelName, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkGuid(metadata.guid, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkModelVersion(metadata.modelVersion, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
 
-    const bool has_author = metadata.author.has_value() && !metadata.author->empty();
-    const bool has_copyright = metadata.copyright.has_value() && !metadata.copyright->empty();
+    bool has_author = false;
+    if (metadata.author.has_value())
+    {
+        has_author = !metadata.author->empty();
+    }
+
+    bool has_copyright = false;
+    if (metadata.copyright.has_value())
+    {
+        has_copyright = !metadata.copyright->empty();
+    }
 
     checkCopyright(metadata.copyright, cert, !has_author);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkLicense(metadata.license, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkAuthor(metadata.author, cert, !has_copyright);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkGenerationTool(metadata.generationTool, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
 
     // Perform interface checks
     std::vector<std::string> interface_elements;
-    if (metadata.fmiVersion && metadata.fmiVersion->starts_with("2."))
+    if (metadata.fmiVersion.has_value() && metadata.fmiVersion->starts_with("2."))
         interface_elements = {"CoSimulation", "ModelExchange"};
     else
         interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
 
-    const auto model_identifiers = extractModelIdentifiers(doc, interface_elements);
+    const std::map<std::string, std::string> model_identifiers = extractModelIdentifiers(doc, interface_elements);
     checkNumberOfImplementedInterfaces(model_identifiers, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     for (const auto& [interface_name, model_id] : model_identifiers)
     {
         checkModelIdentifier(model_id, interface_name, cert);
         if (cert.shouldAbort())
+        {
+            xmlFreeDoc(doc);
+            xmlCleanupParser();
             return;
+        }
     }
 
     checkUnits(doc, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkTypeDefinitions(doc, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkLogCategories(doc, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkDefaultExperiment(doc, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkAnnotations(doc, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
 
     checkUniqueVariableNames(variables, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkLegalVariability(variables, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkRequiredStartValues(variables, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkCausalityVariabilityInitialCombinations(variables, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkIllegalStartValues(variables, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkTypeAndUnitReferences(variables, type_definitions, units, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
 
     checkUnusedDefinitions(type_definitions, units, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
     checkMinMaxStartValues(variables, type_definitions, cert);
     if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
         return;
+    }
 
     // Perform version-specific validation
     performVersionSpecificChecks(doc, variables, type_definitions, units, cert);
@@ -160,16 +269,16 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Populate ModelSummary
     ModelSummary summary;
     summary.standard = "FMI";
-    summary.modelName = metadata.modelName.value_or("");
-    summary.fmiVersion = metadata.fmiVersion.value_or("");
-    summary.modelVersion = metadata.modelVersion.value_or("");
-    summary.guid = metadata.guid.value_or("");
-    summary.author = metadata.author.value_or("");
-    summary.copyright = metadata.copyright.value_or("");
-    summary.license = metadata.license.value_or("");
-    summary.description = metadata.description.value_or("");
-    summary.generationTool = metadata.generationTool.value_or("");
-    summary.generationDateAndTime = metadata.generationDateAndTime.value_or("");
+    summary.modelName = metadata.modelName.has_value() ? *metadata.modelName : "";
+    summary.fmiVersion = metadata.fmiVersion.has_value() ? *metadata.fmiVersion : "";
+    summary.modelVersion = metadata.modelVersion.has_value() ? *metadata.modelVersion : "";
+    summary.guid = metadata.guid.has_value() ? *metadata.guid : "";
+    summary.author = metadata.author.has_value() ? *metadata.author : "";
+    summary.copyright = metadata.copyright.has_value() ? *metadata.copyright : "";
+    summary.license = metadata.license.has_value() ? *metadata.license : "";
+    summary.description = metadata.description.has_value() ? *metadata.description : "";
+    summary.generationTool = metadata.generationTool.has_value() ? *metadata.generationTool : "";
+    summary.generationDateAndTime = metadata.generationDateAndTime.has_value() ? *metadata.generationDateAndTime : "";
 
     for (const auto& [interface, id] : model_identifiers)
     {
@@ -177,12 +286,16 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         summary.interfaces.push_back(interface);
     }
 
-    const auto binaries_path = path / "binaries";
+    const std::filesystem::path binaries_path = path / "binaries";
     if (std::filesystem::exists(binaries_path))
     {
         for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
+        {
             if (entry.is_directory())
+            {
                 summary.platforms.push_back(file_utils::pathToUtf8(entry.path().filename()));
+            }
+        }
     }
 
     // Detect if this is a source code FMU
@@ -192,10 +305,12 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     bool has_source_files_in_md = false;
     xmlXPathObjectPtr sources_xpath = getXPathNodes(doc, "//SourceFiles/File");
-    if (sources_xpath)
+    if (sources_xpath != nullptr)
     {
-        if (sources_xpath->nodesetval && sources_xpath->nodesetval->nodeNr > 0)
+        if (sources_xpath->nodesetval != nullptr && sources_xpath->nodesetval->nodeNr > 0)
+        {
             has_source_files_in_md = true;
+        }
         xmlXPathFreeObject(sources_xpath);
     }
 
@@ -232,18 +347,28 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
                 std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
                 if (ext == ".c")
+                {
                     has_c = true;
+                }
                 else if (ext == ".cpp" || ext == ".cc" || ext == ".cxx")
+                {
                     has_cpp = true;
+                }
             }
         }
 
         if (has_c && has_cpp)
+        {
             summary.sourceLanguage = "C and C++";
+        }
         else if (has_c)
+        {
             summary.sourceLanguage = "C";
+        }
         else if (has_cpp)
+        {
             summary.sourceLanguage = "C++";
+        }
     }
 
     // Calculate total size
@@ -255,15 +380,21 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     // Detect layered standards (simple heuristic based on annotations)
     xmlXPathObjectPtr annotations_xpath = getXPathNodes(doc, "//VendorAnnotations/Tool");
-    if (annotations_xpath && annotations_xpath->nodesetval)
+    if (annotations_xpath != nullptr && annotations_xpath->nodesetval != nullptr)
     {
         for (int32_t i = 0; i < annotations_xpath->nodesetval->nodeNr; ++i)
         {
             xmlNodePtr node =
                 annotations_xpath->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto name = getXmlAttribute(node, "name");
-            if (name && name->find("org.fmi-standard.layered-standard") != std::string::npos)
-                summary.layeredStandards.push_back(*name);
+            const std::optional<std::string> name = getXmlAttribute(node, "name");
+            if (name.has_value())
+            {
+                const auto& name_val = *name;
+                if (name_val.find("org.fmi-standard.layered-standard") != std::string::npos)
+                {
+                    summary.layeredStandards.push_back(name_val);
+                }
+            }
         }
         xmlXPathFreeObject(annotations_xpath);
     }

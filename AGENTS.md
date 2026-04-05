@@ -6,7 +6,7 @@ This document defines the coding conventions, skills, and references for Jules w
 
 - **Standard:** Use C++20 (`std::c++20`).
 - **Formatting:** Always run `clang-format` before submitting any pull request.
-- **Linting:** Always run `clang-tidy` before submitting any pull request. Manually address any remaining warnings.
+- **Linting:** Always run `clang-tidy` before submitting any pull request. Manually address any remaining warnings. If `clang-tidy` crashes due to environment-specific header incompatibilities (common with C++20), perform a thorough manual review against the rules below.
 - **Naming:**
   - Classes/Structs: `PascalCase`
   - Functions/Methods: `camelCase`
@@ -58,7 +58,7 @@ Before completing any task, Jules **must**:
    - C++: `cmake --build build --target clang-format`
    - Web: `npm run format` in `web/`
 2. **Lint & Check:**
-   - C++: `cmake --build build --target clang-tidy` and `cmake --build build --target doxygen-check`
+   - C++: `cmake --build build --target clang-tidy` (using `clang-tidy-18` if `19` is unavailable) and `cmake --build build --target doxygen-check`
    - Web: `npm run lint`, `npm run check-types`, and `npm run format:check` in `web/`
 3. **Verify Build & Tests:**
    - C++: `ctest --output-on-failure -C Release` in `build/`

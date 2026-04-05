@@ -2,6 +2,7 @@
 #include "model_checker.h"
 
 #include <emscripten.h>
+#include <format>
 #include <string>
 
 extern "C"
@@ -19,10 +20,11 @@ extern "C"
             {
                 // We use EM_ASM_INT to call window.confirm in the browser.
                 // We pass the test name to the confirm dialog.
-                return emscripten_run_script_int(
-                           (std::string("window.confirm('SECURITY ISSUE DETECTED: ") + test.test_name +
-                            "\\n\\nDo you want to continue validation?') ? 1 : 0")
-                               .c_str()) != 0;
+                const std::string script =
+                    std::format("window.confirm('SECURITY ISSUE DETECTED: {}\\n\\nDo you want to continue "
+                                "validation?') ? 1 : 0",
+                                test.test_name);
+                return emscripten_run_script_int(script.c_str()) != 0;
             });
 
         const Certificate cert = validator.validate(path, false, false, std::move(initial_cert));

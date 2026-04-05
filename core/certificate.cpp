@@ -81,7 +81,7 @@ Certificate::Certificate()
 {
 }
 
-TestStatus Certificate::getOverallStatus() const
+TestStatus Certificate::getOverallStatus() const noexcept
 {
     if (isFailed())
         return TestStatus::FAIL;

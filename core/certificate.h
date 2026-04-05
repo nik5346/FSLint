@@ -106,42 +106,42 @@ class Certificate
   public:
     /// @brief Sets quiet mode.
     /// @param quiet Suppress detailed logging.
-    void setQuiet(bool quiet)
+    void setQuiet(const bool quiet) noexcept
     {
         _quiet = quiet;
     }
 
     /// @brief Sets the callback for continuing after security issues.
     /// @param callback Callback function.
-    void setContinueCallback(ContinueCallback callback)
+    void setContinueCallback(ContinueCallback callback) noexcept
     {
         _continue_callback = std::move(callback);
     }
 
     /// @brief Checks if validation should abort.
     /// @return True if abort requested.
-    bool shouldAbort() const
+    [[nodiscard]] bool shouldAbort() const noexcept
     {
         return _abort_requested;
     }
 
     /// @brief Checks if color is enabled.
     /// @return True if color enabled.
-    bool isColorEnabled() const
+    [[nodiscard]] bool isColorEnabled() const noexcept
     {
         return _use_color;
     }
 
     /// @brief Checks if any test failed.
     /// @return True if any failure was recorded.
-    bool isFailed() const
+    [[nodiscard]] bool isFailed() const noexcept
     {
         return _total_failed > 0;
     }
 
     /// @brief Gets overall status.
     /// @return Overall status.
-    TestStatus getOverallStatus() const;
+    [[nodiscard]] TestStatus getOverallStatus() const noexcept;
 
     /// @brief Appends a message to the report buffer.
     /// @param message Message to log.
@@ -184,21 +184,21 @@ class Certificate
 
     /// @brief Gets the full report text.
     /// @return Report string.
-    std::string getFullReport() const
+    [[nodiscard]] std::string getFullReport() const
     {
         return _report_buffer;
     }
 
     /// @brief Gets all test results.
     /// @return Vector of TestResult.
-    const std::vector<TestResult>& getResults() const
+    [[nodiscard]] const std::vector<TestResult>& getResults() const noexcept
     {
         return _results;
     }
 
     /// @brief Gets all nested model results.
     /// @return Vector of NestedModelResult.
-    const std::vector<NestedModelResult>& getNestedModels() const
+    [[nodiscard]] const std::vector<NestedModelResult>& getNestedModels() const noexcept
     {
         return _nested_models;
     }
@@ -212,7 +212,7 @@ class Certificate
 
     /// @brief Gets the model summary.
     /// @return Summary object.
-    const ModelSummary& getSummary() const
+    [[nodiscard]] const ModelSummary& getSummary() const noexcept
     {
         return _summary;
     }
@@ -220,13 +220,13 @@ class Certificate
     /// @brief Converts report data to JSON.
     /// @param root_path Optional path to normalize results against.
     /// @return JSON string.
-    std::string toJson(const std::filesystem::path& root_path = "") const;
+    [[nodiscard]] std::string toJson(const std::filesystem::path& root_path = "") const;
 
     /// @brief Sets extraction path.
     /// @param path Directory where model was extracted.
-    void setExtractionPath(const std::filesystem::path& path)
+    void setExtractionPath(std::filesystem::path path) noexcept
     {
-        _extraction_path = path;
+        _extraction_path = std::move(path);
     }
 
   private:
