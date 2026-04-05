@@ -232,7 +232,12 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - States **must** have `causality="local"` or `"output"` and `variability="continuous"`.
   - All **must** be of type `Real`.
 - **Model Structure**:
-  - `Outputs`, `Derivatives`, and `InitialUnknowns` **must** be complete (match all variables with respective causalities/attributes) and correctly ordered.
+  - `Outputs` and `InitialUnknowns` **must** be complete (containing exactly one representative from each respective alias set) and correctly ordered.
+  - Mandatory `InitialUnknowns` **must** be provided for:
+    - Outputs with `initial="calculated"` or `"approx"`.
+    - Calculated parameters.
+    - Continuous-time states and their derivatives with `initial="calculated"` or `"approx"`.
+  - `Derivatives` defines the set of continuous-time states; all listed entries **must** be Real variables with a `derivative` attribute pointing to a continuous Real state.
   - Dependencies and `dependenciesKind` **must** be consistent in size.
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 - **Prohibited Special Floats**: Attributes of type `Real` **must not** contain `NaN` or `INF`. This applies to:
@@ -311,8 +316,12 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - Clocked variables **must** be discrete and have specific causality.
   - Clock types **must** have consistent `intervalVariability` and interval attributes.
 - **Model Structure**:
-  - `Output`, `ContinuousStateDerivative`, `ClockedState`, `InitialUnknown`, and `EventIndicator` elements **must** be complete and unique.
+  - `Output` and `InitialUnknown` **must** be complete (containing exactly one representative from each respective mandatory alias set) and unique.
+  - Non-clocked variables with `causality="output"` **must** have a representative in `Output`.
   - Mandatory `InitialUnknowns` **must** be provided for non-clocked outputs, calculated parameters, and states/derivatives with `initial="approx"` or `"calculated"`.
+  - Optional clocked variables are allowed in `InitialUnknown`.
+  - `ContinuousStateDerivative` defines the set of continuous-time states; all listed entries **must** correspond to variables with a `derivative` attribute.
+  - `ClockedState` and `EventIndicator` elements **must** be complete and unique.
 - **Variable Dependencies**: `dependenciesKind` **must** be restricted to allowed types and is **not allowed** for `InitialUnknown`.
 
 ### Variable Consistency

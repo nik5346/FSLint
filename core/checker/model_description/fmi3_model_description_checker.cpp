@@ -875,9 +875,9 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto vr_str = getXmlAttribute(node, "valueReference");
+            const auto vr_str = getXmlAttribute(node, "valueReference");
 
             if (vr_str.has_value())
             {
@@ -906,7 +906,17 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                     if (var.value_reference.has_value() && *var.value_reference == vr)
                     {
                         if (var.causality == "output")
+                        {
                             is_output = true;
+                            if (var.clocks.has_value() && !var.clocks->empty())
+                            {
+                                test.status = TestStatus::FAIL;
+                                test.messages.push_back(std::format(
+                                    "Variable \"{}\" (line {}) is a clocked variable. Clocked variables must not be "
+                                    "listed in ModelStructure/Output.",
+                                    var.name, var.sourceline));
+                            }
+                        }
                         else
                         {
                             test.status = TestStatus::FAIL;
@@ -978,9 +988,9 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto vr_str = getXmlAttribute(node, "valueReference");
+            const auto vr_str = getXmlAttribute(node, "valueReference");
 
             if (vr_str.has_value())
             {
@@ -1082,9 +1092,9 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto vr_str = getXmlAttribute(node, "valueReference");
+            const auto vr_str = getXmlAttribute(node, "valueReference");
 
             if (vr_str.has_value())
             {

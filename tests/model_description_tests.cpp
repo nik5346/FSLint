@@ -833,3 +833,110 @@ TEST_CASE("FMI 2.0 Source code detection when directory is missing", "[fmi2][fai
 
     CHECK(has_source_code);
 }
+
+TEST_CASE("FMI 2.0 ModelStructure Alias and Partial Validation", "[fmi2][structure]")
+{
+    Fmi2ModelDescriptionChecker checker;
+
+    auto validate = [&](const std::string& path)
+    {
+        Certificate cert;
+        std::string full_path = "tests/data/fmi2/structure_tests/" + path;
+        checker.validate(full_path, cert);
+        if (has_fail(cert))
+        {
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
+                {
+                    std::cout << "FAIL in " << path << ": " << res.test_name << "\n";
+                    for (const auto& msg : res.messages)
+                        std::cout << "  - " << msg << "\n";
+                }
+            }
+        }
+        return cert;
+    };
+
+    SECTION("Outputs with aliases")
+    {
+        Certificate cert = validate("outputs_alias_ok");
+        CHECK_FALSE(has_fail(cert));
+
+        cert = validate("outputs_alias_duplicate");
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "already represented in ModelStructure/Outputs"));
+
+        cert = validate("outputs_missing_fail");
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "missing a representative in ModelStructure/Outputs"));
+    }
+
+    SECTION("Derivatives partial listing")
+    {
+        Certificate cert = validate("derivatives_partial_ok");
+        CHECK_FALSE(has_fail(cert));
+
+        cert = validate("derivatives_duplicate_vr_fail");
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "Value reference 1 is listed multiple times in ModelStructure/Derivatives"));
+    }
+
+    SECTION("InitialUnknowns with aliases")
+    {
+        Certificate cert = validate("initial_unknowns_alias_ok");
+        CHECK_FALSE(has_fail(cert));
+
+        cert = validate("initial_unknowns_missing_fail");
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "missing a representative in ModelStructure/InitialUnknowns"));
+    }
+}
+
+TEST_CASE("FMI 3.0 ModelStructure Alias and Partial Validation", "[fmi3][structure]")
+{
+    Fmi3ModelDescriptionChecker checker;
+
+    auto validate = [&](const std::string& path)
+    {
+        Certificate cert;
+        std::string full_path = "tests/data/fmi3/structure_tests/" + path;
+        checker.validate(full_path, cert);
+        if (has_fail(cert))
+        {
+            for (const auto& res : cert.getResults())
+            {
+                if (res.status == TestStatus::FAIL)
+                {
+                    std::cout << "FAIL in " << path << ": " << res.test_name << "\n";
+                    for (const auto& msg : res.messages)
+                        std::cout << "  - " << msg << "\n";
+                }
+            }
+        }
+        return cert;
+    };
+
+    SECTION("Output with clocked variables")
+    {
+        Certificate cert = validate("output_clocked_excluded_ok");
+        CHECK_FALSE(has_fail(cert));
+
+        cert = validate("output_clocked_fail");
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(
+            cert, "is a clocked variable. Clocked variables must not be listed in ModelStructure/Output"));
+    }
+
+    SECTION("ContinuousStateDerivative partial listing")
+    {
+        Certificate cert = validate("derivatives_partial_ok");
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("InitialUnknown with clocked variables")
+    {
+        Certificate cert = validate("initial_unknown_clocked_ok");
+        CHECK_FALSE(has_fail(cert));
+    }
+}

@@ -287,7 +287,7 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     TestResult test{"Alias Variables", TestStatus::PASS, {}};
 
     // Group variables by base type and valueReference
-    auto get_base_type = [](const std::string& type) -> std::string
+    const auto get_base_type = [](const std::string& type) -> std::string
     {
         if (type == "Integer" || type == "Enumeration")
             return "Integer/Enumeration";
@@ -796,9 +796,9 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto index_str = getXmlAttribute(node, "index");
+            const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
             {
@@ -820,7 +820,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
                         if (var.value_reference.has_value())
                         {
-                            AliasKey key = {get_base_type(var.type), *var.value_reference};
+                            const AliasKey key = {get_base_type(var.type), *var.value_reference};
                             if (actual_alias_sets.contains(key))
                             {
                                 test.status = TestStatus::FAIL;
@@ -946,9 +946,9 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto index_str = getXmlAttribute(node, "index");
+            const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
             {
@@ -1092,7 +1092,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 {
     TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
-    auto get_base_type = [](const std::string& type) -> std::string
+    const auto get_base_type = [](const std::string& type) -> std::string
     {
         if (type == "Integer" || type == "Enumeration")
             return "Integer/Enumeration";
@@ -1145,9 +1145,9 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto index_str = getXmlAttribute(node, "index");
+            const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
             {
@@ -1160,7 +1160,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
                         if (var.value_reference.has_value())
                         {
-                            AliasKey key = {get_base_type(var.type), *var.value_reference};
+                            const AliasKey key = {get_base_type(var.type), *var.value_reference};
 
                             if (actual_alias_sets.contains(key))
                             {
