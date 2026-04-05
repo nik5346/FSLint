@@ -38,14 +38,14 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
 
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-    if (xpath_context)
+    if (xpath_context != nullptr)
     {
         for (const auto& elem : interface_elements)
         {
-            const std::string xpath = "//" + elem;
-            xmlXPathObjectPtr xpath_obj =
+            const std::string xpath_query = "//" + elem;
+            const xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
+                xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath_query.c_str()), xpath_context);
             if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr && xpath_obj->nodesetval->nodeNr > 0)
             {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)

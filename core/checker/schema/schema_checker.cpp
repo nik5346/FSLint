@@ -58,7 +58,7 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
     }
 
     // Get rules from derived class
-    auto rules = getXmlRules(path);
+    const auto rules = getXmlRules(path);
 
     // Validate each XML file according to rules
     for (const auto& rule : rules)
@@ -115,12 +115,12 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
                                                                     const std::string& root_element,
                                                                     const std::string& version_attribute)
 {
-    xmlDocPtr doc = readXmlFile(xml_path);
-    if (!doc)
+    const xmlDocPtr doc = readXmlFile(xml_path);
+    if (doc == nullptr)
         return std::nullopt;
 
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    if (!root)
+    const xmlNodePtr root = xmlDocGetRootElement(doc);
+    if (root == nullptr)
     {
         xmlFreeDoc(doc);
         return std::nullopt;
@@ -137,14 +137,14 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
     // Extract version attribute
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* version = xmlGetProp(root, reinterpret_cast<const xmlChar*>(version_attribute.c_str()));
-    if (!version)
+    if (version == nullptr)
     {
         xmlFreeDoc(doc);
         return std::nullopt;
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    std::string version_str(reinterpret_cast<char*>(version));
+    const std::string version_str(reinterpret_cast<char*>(version));
     xmlFree(version);
     xmlFreeDoc(doc);
 
@@ -315,8 +315,8 @@ void SchemaCheckerBase::checkXmlSecurity(const std::filesystem::path& xml_path, 
 {
     TestResult test{validation_name + " [SECURITY] XXE Check", TestStatus::PASS, {}};
 
-    xmlDocPtr doc = readXmlFile(xml_path);
-    if (!doc)
+    const xmlDocPtr doc = readXmlFile(xml_path);
+    if (doc == nullptr)
         return;
 
     if (hasDoctype(doc))

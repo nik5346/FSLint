@@ -44,34 +44,43 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
 
     std::map<std::string, std::string> model_identifiers;
     xmlNodePtr root = xmlDocGetRootElement(doc);
-    auto model_id = getXmlAttribute(root, "modelIdentifier");
-    if (model_id)
+    const auto model_id = getXmlAttribute(root, "modelIdentifier");
+    if (model_id.has_value())
     {
         bool is_cs = false;
-        xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-        if (xpath_context)
+        const xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
+        if (xpath_context != nullptr)
         {
-            xmlXPathObjectPtr xpath_obj =
+            const xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
-            if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
+            if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr && xpath_obj->nodesetval->nodeNr > 0)
+            {
                 is_cs = true;
-            if (xpath_obj)
+            }
+            if (xpath_obj != nullptr)
+            {
                 xmlXPathFreeObject(xpath_obj);
+            }
             xmlXPathFreeContext(xpath_context);
         }
 
+        const auto& id_val = *model_id;
         if (is_cs)
-            model_identifiers["CoSimulation"] = *model_id;
+        {
+            model_identifiers["CoSimulation"] = id_val;
+        }
         else
-            model_identifiers["ModelExchange"] = *model_id;
+        {
+            model_identifiers["ModelExchange"] = id_val;
+        }
 
         // FMI 1.0 rule: modelIdentifier must match filename stem
-        if (*model_id != stem)
+        if (id_val != stem)
         {
             TestResult test{"Model Identifier Filename Match", TestStatus::FAIL, {}};
             test.messages.push_back(
-                std::format("modelIdentifier '{}' must match the FMU filename '{}'.", *model_id, stem));
+                std::format("modelIdentifier '{}' must match the FMU filename '{}'.", id_val, stem));
             cert.printTestResult(test);
         }
         else
@@ -179,7 +188,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
     // 4. Documentation
     {
         TestResult test{"Documentation", TestStatus::PASS, {}};
-        auto doc_path = path / "documentation";
+        const auto doc_path = path / "documentation";
         if (std::filesystem::exists(doc_path))
         {
             if (!std::filesystem::exists(doc_path / "_main.html"))
@@ -199,7 +208,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
     // 5. Distribution (Binaries and Sources)
     {
         TestResult test{"Binaries and Sources", TestStatus::PASS, {}};
-        bool has_binaries = false;
+        bool has_binaries_present = false;
         if (std::filesystem::exists(path / "binaries"))
         {
             std::set<std::string> unique_model_ids;
@@ -219,7 +228,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
                             if (std::filesystem::exists(entry.path() / (model_id + ext)))
                             {
                                 found_model_id = true;
-                                has_binaries = true;
+                                has_binaries_present = true;
                                 break;
                             }
                         }
@@ -237,10 +246,10 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             }
         }
 
-        auto sources_path = path / "sources";
+        const auto sources_path = path / "sources";
         const bool has_sources = std::filesystem::exists(sources_path) && !std::filesystem::is_empty(sources_path);
 
-        if (!has_binaries && !has_sources)
+        if (!has_binaries_present && !has_sources)
         {
             test.status = TestStatus::FAIL;
             test.messages.push_back(

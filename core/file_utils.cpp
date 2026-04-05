@@ -4,6 +4,7 @@
 #include <rapidjson/rapidjson.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -31,10 +32,12 @@ bool isBinary(const std::filesystem::path& path)
     buffer.resize(static_cast<size_t>(bytes_read));
 
     if (bytes_read == 0)
+    {
         return false;
+    }
 
     // Check for null bytes
-    return std::any_of(buffer.begin(), buffer.end(), [](unsigned char c) { return c == '\0'; });
+    return std::ranges::any_of(buffer, [](unsigned char c) { return c == '\0'; });
 }
 
 std::string pathToUtf8(const std::filesystem::path& path)
@@ -66,7 +69,9 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
     const std::string name = pathToUtf8(path.filename());
     const bool is_dir = std::filesystem::is_directory(path, ec);
     if (ec)
+    {
         return;
+    }
 
     const bool binary = !is_dir && isBinary(path);
 
@@ -87,8 +92,12 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
         rapidjson::Value children(rapidjson::kArrayType);
         std::vector<std::filesystem::path> entries;
         for (const auto& entry : std::filesystem::directory_iterator(path, ec))
+        {
             if (!ec)
+            {
                 entries.push_back(entry.path());
+            }
+        }
 
         std::sort(entries.begin(), entries.end(),
                   [](const auto& a, const auto& b)
@@ -98,7 +107,9 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
                       const bool a_is_dir = std::filesystem::is_directory(a, ec_a);
                       const bool b_is_dir = std::filesystem::is_directory(b, ec_b);
                       if (a_is_dir != b_is_dir)
+                      {
                           return a_is_dir;
+                      }
                       return pathToUtf8(a.filename()) < pathToUtf8(b.filename());
                   });
 
@@ -107,7 +118,9 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
             rapidjson::Value child;
             fileNodeToJson(entry, &child, &allocator);
             if (child.IsObject())
+            {
                 children.PushBack(child, allocator);
+            }
         }
         node.AddMember("children", children, allocator);
     }
@@ -120,28 +133,34 @@ std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesys
         return std::nullopt;
 
     // PNG header (8 bytes) + IHDR chunk header (4 bytes length + 4 bytes type + 8 bytes width/height)
-    unsigned char header[24];
-    file.read(reinterpret_cast<char*>(header), sizeof(header));
+    std::array<unsigned char, 24> header{};
+    file.read(reinterpret_cast<char*>(header.data()), static_cast<std::streamsize>(header.size()));
     if (file.gcount() < 24)
+    {
         return std::nullopt;
+    }
 
     // Check PNG signature: 89 50 4E 47 0D 0A 1A 0A
-    static const unsigned char signature[] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-    if (std::memcmp(header, signature, 8) != 0)
+    static constexpr std::array<unsigned char, 8> signature = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+    if (std::memcmp(header.data(), signature.data(), signature.size()) != 0)
+    {
         return std::nullopt;
+    }
 
     // Check IHDR chunk type: "IHDR"
-    if (std::memcmp(header + 12, "IHDR", 4) != 0)
+    if (std::memcmp(header.data() + 12, "IHDR", 4) != 0)
+    {
         return std::nullopt;
+    }
 
-    auto readUint32Be = [](const unsigned char* data) -> uint32_t
+    const auto readUint32Be = [](const unsigned char* data) -> uint32_t
     {
         return (static_cast<uint32_t>(data[0]) << 24) | (static_cast<uint32_t>(data[1]) << 16) |
                (static_cast<uint32_t>(data[2]) << 8) | (static_cast<uint32_t>(data[3]));
     };
 
-    const uint32_t width = readUint32Be(header + 16);
-    const uint32_t height = readUint32Be(header + 20);
+    const uint32_t width = readUint32Be(header.data() + 16);
+    const uint32_t height = readUint32Be(header.data() + 20);
 
     return std::make_pair(width, height);
 }
@@ -150,10 +169,14 @@ uint64_t getTotalSize(const std::filesystem::path& path)
 {
     std::error_code ec;
     if (!std::filesystem::exists(path, ec))
+    {
         return 0;
+    }
 
     if (std::filesystem::is_regular_file(path, ec))
+    {
         return std::filesystem::file_size(path, ec);
+    }
 
     if (std::filesystem::is_directory(path, ec))
     {
@@ -161,9 +184,13 @@ uint64_t getTotalSize(const std::filesystem::path& path)
         for (const auto& entry : std::filesystem::recursive_directory_iterator(path, ec))
         {
             if (ec)
+            {
                 break;
+            }
             if (entry.is_regular_file(ec))
+            {
                 total += entry.file_size(ec);
+            }
         }
         return total;
     }

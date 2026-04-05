@@ -5,11 +5,9 @@
 
 #include <filesystem>
 #include <format>
-#include <map>
 #include <regex>
 #include <set>
 #include <string>
-#include <string_view>
 
 void Fmi3DirectoryChecker::performVersionSpecificChecks(
     const std::filesystem::path& path, Certificate& cert, const std::map<std::string, std::string>& model_identifiers,
@@ -44,7 +42,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     // 2. Documentation
     {
         TestResult test{"Documentation", TestStatus::PASS, {}};
-        auto doc_path = path / "documentation";
+        const auto doc_path = path / "documentation";
 
         // index.html check (recommended entry point)
         if (std::filesystem::exists(doc_path))
@@ -92,13 +90,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
             if (std::filesystem::exists(diag_png_path))
             {
-                auto dimensions = file_utils::getPngDimensions(diag_png_path);
-                if (dimensions)
+                const auto dimensions = file_utils::getPngDimensions(diag_png_path);
+                if (dimensions.has_value())
                 {
                     if (dimensions->first < 100 || dimensions->second < 100)
                     {
                         if (test.status != TestStatus::FAIL)
+                        {
                             test.status = TestStatus::WARNING;
+                        }
                         test.messages.push_back(std::format(
                             "Diagram 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
                             "100x100 pixels is recommended.",
@@ -113,7 +113,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     // 3. Licenses
     {
         TestResult test{"Licenses", TestStatus::PASS, {}};
-        auto licenses_path = path / "documentation" / "licenses";
+        const auto licenses_path = path / "documentation" / "licenses";
 
         if (std::filesystem::exists(licenses_path))
         {
@@ -144,8 +144,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     // 3. Terminals and Icons Files
     {
         TestResult test{"Terminals and Icons Files", TestStatus::PASS, {}};
-        auto tai_path = path / "terminalsAndIcons";
-        auto icon_png_path = tai_path / "icon.png";
+        const auto tai_path = path / "terminalsAndIcons";
+        const auto icon_png_path = tai_path / "icon.png";
         const bool icon_png_exists = std::filesystem::exists(icon_png_path);
         const bool icon_svg_exists = std::filesystem::exists(tai_path / "icon.svg");
 
@@ -168,13 +168,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     }
                     else
                     {
-                        auto dimensions = file_utils::getPngDimensions(png_path);
-                        if (dimensions)
+                        const auto dimensions = file_utils::getPngDimensions(png_path);
+                        if (dimensions.has_value())
                         {
                             if (dimensions->first < 100 || dimensions->second < 100)
                             {
                                 if (test.status != TestStatus::FAIL)
+                                {
                                     test.status = TestStatus::WARNING;
+                                }
                                 test.messages.push_back(std::format(
                                     "Icon '{}' is small ({}x{} pixels). A size of at least 100x100 pixels is "
                                     "recommended.",
@@ -189,13 +191,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         if (icon_png_exists)
         {
-            auto dimensions = file_utils::getPngDimensions(icon_png_path);
-            if (dimensions)
+            const auto dimensions = file_utils::getPngDimensions(icon_png_path);
+            if (dimensions.has_value())
             {
                 if (dimensions->first < 100 || dimensions->second < 100)
                 {
                     if (test.status != TestStatus::FAIL)
+                    {
                         test.status = TestStatus::WARNING;
+                    }
                     test.messages.push_back(
                         std::format("Icon 'terminalsAndIcons/icon.png' is small ({}x{} pixels). A size of at least "
                                     "100x100 pixels is recommended.",
@@ -222,7 +226,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     // 4. Sources
     {
         TestResult test{"Sources", TestStatus::PASS, {}};
-        auto sources_path = path / "sources";
+        const auto sources_path = path / "sources";
         if (std::filesystem::exists(sources_path))
         {
             if (!std::filesystem::exists(sources_path / "buildDescription.xml"))
@@ -237,8 +241,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     // 5. Binaries
     {
         TestResult test{"Binaries", TestStatus::PASS, {}};
-        auto binaries_path = path / "binaries";
-        bool has_binaries = false;
+        const auto binaries_path = path / "binaries";
+        bool has_binaries_present = false;
         bool static_library_detected = false;
 
         if (std::filesystem::exists(binaries_path))
@@ -257,7 +261,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     if (!std::regex_match(tuple, match, tuple_regex))
                     {
                         if (test.status != TestStatus::FAIL)
+                        {
                             test.status = TestStatus::WARNING;
+                        }
                         test.messages.push_back(
                             std::format("Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
@@ -271,7 +277,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (!fmi3_architectures.contains(arch))
                         {
                             if (test.status != TestStatus::FAIL)
+                            {
                                 test.status = TestStatus::WARNING;
+                            }
                             test.messages.push_back(std::format(
                                 "Architecture '{}' in platform tuple '{}' is not one of the standardized FMI 3.0 "
                                 "architectures (aarch32, aarch64, riscv32, riscv64, x86, x86_64, ppc32, ppc64).",
@@ -282,7 +290,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (!fmi3_systems.contains(sys))
                         {
                             if (test.status != TestStatus::FAIL)
+                            {
                                 test.status = TestStatus::WARNING;
+                            }
                             test.messages.push_back(std::format(
                                 "Operating system '{}' in platform tuple '{}' is not one of the standardized "
                                 "FMI 3.0 systems (darwin, linux, windows).",
@@ -317,9 +327,11 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                                 std::filesystem::exists(entry.path() / model_id / (model_id + std::string(ext))))
                             {
                                 found_model_id = true;
-                                has_binaries = true;
+                                has_binaries_present = true;
                                 if (ext == ".lib" || ext == ".a")
+                                {
                                     static_library_detected = true;
+                                }
                                 break;
                             }
                         }
@@ -352,7 +364,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         // 6. Implementation Presence
         TestResult impl_test{"Implementation Presence", TestStatus::PASS, {}};
         const bool has_sources = std::filesystem::exists(path / "sources" / "buildDescription.xml");
-        if (!has_binaries && !has_sources)
+        if (!has_binaries_present && !has_sources)
         {
             impl_test.status = TestStatus::FAIL;
             impl_test.messages.push_back("FMU must contain at least one implementation (binary or source code "
@@ -364,7 +376,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
     // 7. Extra
     {
         TestResult test{"Extra", TestStatus::PASS, {}};
-        auto extra_path = path / "extra";
+        const auto extra_path = path / "extra";
         if (std::filesystem::exists(extra_path))
         {
             for (const auto& entry : std::filesystem::directory_iterator(extra_path))
@@ -378,7 +390,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     if (!std::regex_match(name, rd_regex))
                     {
                         if (test.status != TestStatus::FAIL)
+                        {
                             test.status = TestStatus::WARNING;
+                        }
                         test.messages.push_back(
                             std::format("Subdirectory '{}' in extra/ should use reverse domain name notation "
                                         "(e.g. 'com.example').",

@@ -85,16 +85,18 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
     if (!_zip_file)
         return entries;
 
-    unzFile uf = static_cast<unzFile>(_zip_file);
+    auto* const uf = static_cast<unzFile>(_zip_file);
 
     if (unzGoToFirstFile(uf) != UNZ_OK)
+    {
         return entries;
+    }
 
     // Use while loop instead of do-while to avoid the warning
     bool has_files = true;
     while (has_files)
     {
-        unz_file_info file_info;
+        unz_file_info file_info{};
         constexpr size_t MAX_FILENAME_LENGTH = 512;
         std::array<char, MAX_FILENAME_LENGTH> filename{};
 
@@ -105,7 +107,7 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
             continue;
         }
 
-        ZipFileEntry entry;
+        ZipFileEntry entry{};
         entry.filename = filename.data();
         entry.compression_method = static_cast<uint16_t>(file_info.compression_method);
         entry.version_needed = static_cast<uint16_t>(file_info.version_needed);
@@ -126,10 +128,12 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
         std::ifstream file(_zip_path, std::ios::binary);
         if (file)
         {
-            file.seekg(static_cast<std::streamoff>(pos_in_central_dir + 42), std::ios::beg);
+            file.seekg(static_cast<std::streamoff>(static_cast<uint64_t>(pos_in_central_dir) + 42ULL), std::ios::beg);
             uint32_t offset_le = 0;
             if (file.read(reinterpret_cast<char*>(&offset_le), 4))
+            {
                 entry.offset = offset_le;
+            }
         }
 
         entry.filename_length = file_info.size_filename;
@@ -158,19 +162,25 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
 bool Zipper::extractFile(const std::string& filename, std::vector<uint8_t>& output)
 {
     if (!_zip_file)
+    {
         return false;
+    }
 
-    unzFile uf = static_cast<unzFile>(_zip_file);
+    auto* const uf = static_cast<unzFile>(_zip_file);
 
     if (unzLocateFile(uf, filename.c_str(), 0) != UNZ_OK)
+    {
         return false;
+    }
 
-    unz_file_info file_info;
+    unz_file_info file_info{};
     if (unzGetCurrentFileInfo(uf, &file_info, nullptr, 0, nullptr, 0, nullptr, 0) != UNZ_OK)
         return false;
 
     if (unzOpenCurrentFile(uf) != UNZ_OK)
+    {
         return false;
+    }
 
     output.resize(file_info.uncompressed_size);
 
@@ -186,11 +196,13 @@ bool Zipper::extractFile(const std::string& filename, std::vector<uint8_t>& outp
 bool Zipper::extractAll(const std::filesystem::path& destination)
 {
     if (!_zip_file)
+    {
         return false;
+    }
 
     std::filesystem::create_directories(destination);
 
-    auto entries = getEntries();
+        const auto entries = getEntries();
     for (const auto& entry : entries)
     {
 #ifdef _WIN32
@@ -214,7 +226,9 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
         // Extract file
         std::vector<uint8_t> data;
         if (!extractFile(entry.filename, data))
+        {
             return false;
+        }
 
         // Write to disk
         std::ofstream out(file_path, std::ios::binary);
@@ -243,7 +257,7 @@ bool Zipper::addFile(const std::string& internal_path, const std::vector<uint8_t
     // Check if path contains non-ASCII characters
     constexpr unsigned char MAX_ASCII_VALUE = 127;
     const bool has_non_ascii =
-        std::any_of(internal_path.begin(), internal_path.end(), [](unsigned char c) { return c > MAX_ASCII_VALUE; });
+        std::ranges::any_of(internal_path, [](unsigned char c) { return c > MAX_ASCII_VALUE; });
 
     // Set bit 11 (Language Encoding Flag) if path contains non-ASCII characters.
     // Using zipOpenNewFileInZip4 to specify the language encoding flag.
@@ -253,11 +267,13 @@ bool Zipper::addFile(const std::string& internal_path, const std::vector<uint8_t
 
     if (zipOpenNewFileInZip4(zf, internal_path.c_str(), &zi, nullptr, 0, nullptr, 0, nullptr, method, compression_level,
                              0, -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY, nullptr, 0, 20, flag) != ZIP_OK)
+    {
         return false;
+    }
 
     if (zipWriteInFileInZip(zf, data.data(), static_cast<uint32_t>(data.size())) != ZIP_OK)
     {
-        zipCloseFileInZip(zf);
+        (void)zipCloseFileInZip(zf);
         return false;
     }
 

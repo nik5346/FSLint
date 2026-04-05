@@ -192,7 +192,8 @@ void ArchiveChecker::checkZipBomb(const std::vector<ZipFileEntry>& entries, Cert
         // Check compression ratio
         if (entry.compressed_size > 0)
         {
-            const double ratio = static_cast<double>(entry.uncompressed_size) / entry.compressed_size;
+            const double ratio =
+                static_cast<double>(entry.uncompressed_size) / static_cast<double>(entry.compressed_size);
             if (ratio > MAX_RATIO)
             {
                 test.status = TestStatus::FAIL;

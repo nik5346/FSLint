@@ -19,15 +19,17 @@
 
 void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
-    auto sources_path = path / "sources";
-    auto build_desc_path = sources_path / "buildDescription.xml";
+    const auto sources_path = path / "sources";
+    const auto build_desc_path = sources_path / "buildDescription.xml";
     if (!std::filesystem::exists(build_desc_path))
+    {
         return; // Optional
+    }
 
     cert.printSubsectionHeader("BUILD DESCRIPTION VALIDATION");
 
-    xmlDocPtr doc = readXmlFile(build_desc_path);
-    if (!doc)
+    const xmlDocPtr doc = readXmlFile(build_desc_path);
+    if (doc == nullptr)
     {
         const TestResult test{
             "Parse buildDescription.xml", TestStatus::FAIL, {"Failed to parse 'sources/buildDescription.xml'."}};
@@ -36,14 +38,14 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
         return;
     }
 
-    xmlNodePtr root = xmlDocGetRootElement(doc);
+    const xmlNodePtr root = xmlDocGetRootElement(doc);
     checkFmiVersion(root, cert);
 
-    xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
+    const xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     std::set<std::string> listed_files;
-    if (xpath_context)
+    if (xpath_context != nullptr)
     {
-        auto valid_ids = getValidModelIdentifiers(path);
+        const auto valid_ids = getValidModelIdentifiers(path);
         checkBuildConfigurationAttributes(xpath_context, valid_ids, cert);
         checkSourceFiles(xpath_context, sources_path, cert, listed_files);
         checkIncludeDirectories(xpath_context, sources_path, cert);
@@ -59,12 +61,14 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
             {
                 if (entry.is_regular_file())
                 {
-                    auto rel_path = std::filesystem::relative(entry.path(), sources_path);
+                    const auto rel_path = std::filesystem::relative(entry.path(), sources_path);
                     std::string filename = file_utils::pathToUtf8(rel_path);
                     std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
 
                     if (filename == "buildDescription.xml")
+                    {
                         continue;
+                    }
 
                     // Only check typical source files
                     static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
@@ -74,7 +78,10 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
                     {
                         if (!listed_files.contains(filename))
                         {
-                            test.status = TestStatus::WARNING;
+                            if (test.status == TestStatus::PASS)
+                            {
+                                test.status = TestStatus::WARNING;
+                            }
                             test.messages.push_back("Source file '" + filename +
                                                     "' exists in 'sources/' directory but is not listed in "
                                                     "'buildDescription.xml'.");
@@ -95,41 +102,42 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                                                std::set<std::string>& listed_files) const
 {
     TestResult test{"Build Description Source Files", TestStatus::PASS, {}};
-    xmlXPathObjectPtr sources_xpath =
+    const xmlXPathObjectPtr sources_xpath =
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFile"), xpath_context);
-    if (sources_xpath && sources_xpath->nodesetval)
+    if (sources_xpath != nullptr && sources_xpath->nodesetval != nullptr)
     {
         for (int i = 0; i < sources_xpath->nodesetval->nodeNr; ++i)
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto node = sources_xpath->nodesetval->nodeTab[i];
-            auto name_opt = getXmlAttribute(node, "name");
-            if (name_opt)
+            const xmlNodePtr node = sources_xpath->nodesetval->nodeTab[i];
+            const auto name_opt = getXmlAttribute(node, "name");
+            if (name_opt.has_value())
             {
-                if (name_opt->find("..") != std::string::npos)
+                const auto& val = *name_opt;
+                if (val.find("..") != std::string::npos)
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Source file '" + (*name_opt) +
-                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
-                                            ") contains illegal '..' sequence.");
+                    test.messages.push_back("Source file '" + val + "' listed in 'buildDescription.xml' (line " +
+                                            std::to_string(node->line) + ") contains illegal '..' sequence.");
                     continue;
                 }
 
-                listed_files.insert(*name_opt);
-                auto file_path = sources_path / (*name_opt);
+                listed_files.insert(val);
+                const auto file_path = sources_path / val;
                 if (!std::filesystem::exists(file_path))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Source file '" + (*name_opt) +
-                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
-                                            ") does not exist in 'sources/' directory.");
+                    test.messages.push_back("Source file '" + val + "' listed in 'buildDescription.xml' (line " +
+                                            std::to_string(node->line) + ") does not exist in 'sources/' directory.");
                 }
             }
         }
     }
-    if (sources_xpath)
+    if (sources_xpath != nullptr)
+    {
         xmlXPathFreeObject(sources_xpath);
+    }
     cert.printTestResult(test);
 }
 
@@ -138,40 +146,42 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                                                       Certificate& cert) const
 {
     TestResult test{"Build Description Include Directories", TestStatus::PASS, {}};
-    xmlXPathObjectPtr includes_xpath =
+    const xmlXPathObjectPtr includes_xpath =
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//IncludeDirectory"), xpath_context);
-    if (includes_xpath && includes_xpath->nodesetval)
+    if (includes_xpath != nullptr && includes_xpath->nodesetval != nullptr)
     {
         for (int i = 0; i < includes_xpath->nodesetval->nodeNr; ++i)
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto node = includes_xpath->nodesetval->nodeTab[i];
-            auto name_opt = getXmlAttribute(node, "name");
-            if (name_opt)
+            const xmlNodePtr node = includes_xpath->nodesetval->nodeTab[i];
+            const auto name_opt = getXmlAttribute(node, "name");
+            if (name_opt.has_value())
             {
-                if (name_opt->find("..") != std::string::npos)
+                const auto& val = *name_opt;
+                if (val.find("..") != std::string::npos)
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Include directory '" + (*name_opt) +
-                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
-                                            ") contains illegal '..' sequence.");
+                    test.messages.push_back("Include directory '" + val + "' listed in 'buildDescription.xml' (line " +
+                                            std::to_string(node->line) + ") contains illegal '..' sequence.");
                     continue;
                 }
 
-                auto dir_path = sources_path / (*name_opt);
+                const auto dir_path = sources_path / val;
                 if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
                 {
                     test.status = TestStatus::FAIL;
-                    test.messages.push_back("Include directory '" + (*name_opt) +
-                                            "' listed in 'buildDescription.xml' (line " + std::to_string(node->line) +
+                    test.messages.push_back("Include directory '" + val + "' listed in 'buildDescription.xml' (line " +
+                                            std::to_string(node->line) +
                                             ") does not exist or is not a directory in 'sources/' directory.");
                 }
             }
         }
     }
-    if (includes_xpath)
+    if (includes_xpath != nullptr)
+    {
         xmlXPathFreeObject(includes_xpath);
+    }
     cert.printTestResult(test);
 }
 
@@ -180,10 +190,10 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                                                                 Certificate& cert) const
 {
     TestResult test{"Build Configuration Attributes", TestStatus::PASS, {}};
-    xmlXPathObjectPtr configs_xpath =
+    const xmlXPathObjectPtr configs_xpath =
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//BuildConfiguration"), xpath_context);
-    if (configs_xpath && configs_xpath->nodesetval)
+    if (configs_xpath != nullptr && configs_xpath->nodesetval != nullptr)
     {
         // Suggested in FMI 3.0: gcc, clang++
         // Suggested in FMI 3.0: C99, C++11
@@ -195,28 +205,32 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
         for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto node = configs_xpath->nodesetval->nodeTab[i];
+            const xmlNodePtr node = configs_xpath->nodesetval->nodeTab[i];
 
-            auto model_id = getXmlAttribute(node, "modelIdentifier");
-            if (model_id && !valid_ids.empty())
+            const auto model_id = getXmlAttribute(node, "modelIdentifier");
+            if (model_id.has_value() && !valid_ids.empty())
             {
-                if (!valid_ids.contains(*model_id))
+                const auto& id_val = *model_id;
+                if (!valid_ids.contains(id_val))
                 {
                     test.status = TestStatus::FAIL;
                     test.messages.push_back("BuildConfiguration (line " + std::to_string(node->line) +
-                                            ") has modelIdentifier '" + *model_id +
+                                            ") has modelIdentifier '" + id_val +
                                             "' which does not match any modelIdentifier in modelDescription.xml.");
                 }
             }
 
-            auto lang_opt = getXmlAttribute(node, "language");
-            if (lang_opt)
+            const auto lang_opt = getXmlAttribute(node, "language");
+            if (lang_opt.has_value())
             {
-                if (!suggested_languages.contains(*lang_opt))
+                const auto& lang_val = *lang_opt;
+                if (!suggested_languages.contains(lang_val))
                 {
                     if (test.status == TestStatus::PASS)
+                    {
                         test.status = TestStatus::WARNING;
-                    test.messages.push_back("Language '" + *lang_opt + "' in BuildConfiguration (line " +
+                    }
+                    test.messages.push_back("Language '" + lang_val + "' in BuildConfiguration (line " +
                                             std::to_string(node->line) +
                                             ") is not one of the suggested values (e.g. C99, C++11).");
                 }
@@ -238,7 +252,9 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 if (!known)
                 {
                     if (test.status == TestStatus::PASS)
+                    {
                         test.status = TestStatus::WARNING;
+                    }
                     test.messages.push_back("Compiler '" + compiler + "' in BuildConfiguration (line " +
                                             std::to_string(node->line) +
                                             ") is not one of the suggested values (e.g. gcc, clang, msvc).");
@@ -246,46 +262,56 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
             }
         }
     }
-    if (configs_xpath)
+    if (configs_xpath != nullptr)
+    {
         xmlXPathFreeObject(configs_xpath);
+    }
     cert.printTestResult(test);
 }
 
 std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const std::filesystem::path& path) const
 {
     std::set<std::string> ids;
-    auto md_path = path / "modelDescription.xml";
+    const auto md_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(md_path))
+    {
         return ids;
+    }
 
-    xmlDocPtr doc = readXmlFile(md_path);
-    if (!doc)
+    const xmlDocPtr doc = readXmlFile(md_path);
+    if (doc == nullptr)
+    {
         return ids;
+    }
 
-    xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-    if (xpath_context)
+    const xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
+    if (xpath_context != nullptr)
     {
         // FMI2 and FMI3 tags
         static const std::vector<std::string> tags = {"ModelExchange", "CoSimulation", "ScheduledExecution"};
         for (const auto& tag : tags)
         {
             const std::string expr = "//" + tag;
-            xmlXPathObjectPtr xpath_obj =
+            const xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), xpath_context);
-            if (xpath_obj && xpath_obj->nodesetval)
+            if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
             {
                 for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
                 {
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                    auto node = xpath_obj->nodesetval->nodeTab[i];
-                    auto id = getXmlAttribute(node, "modelIdentifier");
-                    if (id)
+                    const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+                    const auto id = getXmlAttribute(node, "modelIdentifier");
+                    if (id.has_value())
+                    {
                         ids.insert(*id);
+                    }
                 }
             }
-            if (xpath_obj)
+            if (xpath_obj != nullptr)
+            {
                 xmlXPathFreeObject(xpath_obj);
+            }
         }
         xmlXPathFreeContext(xpath_context);
     }
@@ -296,15 +322,20 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
 std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name) const
 {
     if (!node)
+    {
         return std::nullopt;
+    }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
     if (!attr)
+    {
         return std::nullopt;
+    }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    std::string value(reinterpret_cast<char*>(attr));
+    const std::string value(reinterpret_cast<char*>(attr));
+    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
+
     xmlFree(attr);
     return value;
 }

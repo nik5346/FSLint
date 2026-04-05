@@ -30,7 +30,7 @@
 #define ISATTY _isatty
 #define FILENO _fileno
 #else
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #define ISATTY isatty
 #define FILENO fileno
@@ -115,7 +115,7 @@ void Certificate::log(const std::string& message)
 
 void Certificate::printMainHeader(const std::string& hash)
 {
-    auto timestamp = std::chrono::system_clock::now();
+    const auto timestamp = std::chrono::system_clock::now();
     const std::time_t now_c = std::chrono::system_clock::to_time_t(timestamp);
     constexpr size_t TIME_STRING_BUFFER_SIZE = 100;
     std::array<char, TIME_STRING_BUFFER_SIZE> time_str{};
@@ -296,7 +296,7 @@ static void printTree(Certificate& cert, const std::vector<NestedModelResult>& m
 
         if (!model.nested_models.empty())
         {
-            std::string next_prefix = tree_prefix;
+            auto next_prefix = tree_prefix;
             if (!is_top_level)
                 next_prefix += (is_last ? "   " : "│  ");
             printTree(cert, model.nested_models, next_prefix, false);
@@ -319,13 +319,16 @@ static void printFileTreeRecursive(Certificate& cert, const std::filesystem::pat
     for (const auto& entry : std::filesystem::directory_iterator(path))
         entries.push_back(entry);
 
-    std::sort(entries.begin(), entries.end(),
-              [](const auto& a, const auto& b)
-              {
-                  if (a.is_directory() != b.is_directory())
-                      return a.is_directory();
-                  return file_utils::pathToUtf8(a.path().filename()) < file_utils::pathToUtf8(b.path().filename());
-              });
+    std::ranges::sort(entries,
+                      [](const auto& a, const auto& b)
+                      {
+                          if (a.is_directory() != b.is_directory())
+                          {
+                              return a.is_directory();
+                          }
+                          return file_utils::pathToUtf8(a.path().filename()) <
+                                 file_utils::pathToUtf8(b.path().filename());
+                      });
 
     for (size_t i = 0; i < entries.size(); ++i)
     {

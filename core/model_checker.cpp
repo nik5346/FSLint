@@ -11,7 +11,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cstdint>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -19,7 +18,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree,
                                    Certificate cert) const
@@ -59,8 +57,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         }
 
         // Step 2: Extract to temporary directory
-        auto now = std::chrono::high_resolution_clock::now();
-        auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+        const auto now = std::chrono::high_resolution_clock::now();
+        const auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
         const std::string dir_name = "model_validation_" + std::to_string(nanos);
 #ifdef __EMSCRIPTEN__
         extract_dir = std::filesystem::current_path() / dir_name;
@@ -224,8 +222,8 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
         return false;
     }
 
-    auto checkers = CheckerFactory::createCheckers(model_info);
-    for (auto& checker : checkers)
+    const auto checkers = CheckerFactory::createCheckers(model_info);
+    for (const auto& checker : checkers)
         checker->validate(extract_dir, cert);
 
     cert.printFooter();
@@ -691,7 +689,9 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 // Skip directories and the certificate itself
                 if (entry.filename.empty() || entry.filename.back() == '/' ||
                     entry.filename == "extra/validation_certificate.txt")
+                {
                     continue;
+                }
                 names.push_back(entry.filename);
             }
             std::sort(names.begin(), names.end());

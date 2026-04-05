@@ -1,4 +1,5 @@
 #include "model_checker.h"
+#include "certificate.h"
 
 #include <cstddef>
 #include <exception>
@@ -8,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #ifdef _WIN32
 #include <io.h>
@@ -79,8 +81,8 @@ int main(int argc, char** argv)
             if (arg == "-v" || arg == "--version")
             {
                 // __DATE__ is in "Mmm dd yyyy" format (e.g., "Jan 26 2010")
-                const std::string build_date = __DATE__;
-                const std::string build_year = build_date.substr(build_date.size() - 4);
+                const std::string_view build_date = __DATE__;
+                const std::string_view build_year = build_date.substr(build_date.size() - 4);
 
                 std::cout << "FSLint " << PROJECT_VERSION << "\n";
                 std::cout << "Copyright (c) " << build_year << " FSLint Contributors\n";

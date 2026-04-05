@@ -18,12 +18,21 @@ extern "C"
         initial_cert.setContinueCallback(
             [](const TestResult& test) -> bool
             {
+                // Escape single quotes for JS string
+                std::string escaped_name = test.test_name;
+                size_t pos = 0;
+                while ((pos = escaped_name.find('\'', pos)) != std::string::npos)
+                {
+                    escaped_name.replace(pos, 1, "\\'");
+                    pos += 2;
+                }
+
                 // We use EM_ASM_INT to call window.confirm in the browser.
                 // We pass the test name to the confirm dialog.
                 const std::string script =
                     std::format("window.confirm('SECURITY ISSUE DETECTED: {}\\n\\nDo you want to continue "
                                 "validation?') ? 1 : 0",
-                                test.test_name);
+                                escaped_name);
                 return emscripten_run_script_int(script.c_str()) != 0;
             });
 

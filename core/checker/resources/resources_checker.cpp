@@ -9,7 +9,7 @@
 
 void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
-    auto resources_dir = path / "resources";
+    const auto resources_dir = path / "resources";
     if (!std::filesystem::exists(resources_dir) || !std::filesystem::is_directory(resources_dir))
         return;
 
@@ -22,7 +22,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
     {
         if (entry.is_regular_file())
         {
-            auto ext = file_utils::pathToUtf8(entry.path().extension());
+            const auto ext = file_utils::pathToUtf8(entry.path().extension());
             if (ext == ".fmu" || ext == ".ssp")
             {
                 const ModelChecker nested_checker;

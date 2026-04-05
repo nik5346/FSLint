@@ -410,7 +410,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     {
         for (int32_t i = 0; i < annotations_xpath->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
+            const xmlNodePtr node =
                 annotations_xpath->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             const std::optional<std::string> name = getXmlAttribute(node, "name");
             if (name.has_value())
@@ -785,10 +785,13 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
         else
         {
             std::string cr_lower = cr;
-            std::transform(cr_lower.begin(), cr_lower.end(), cr_lower.begin(), ::tolower);
+            std::transform(cr_lower.begin(), cr_lower.end(), cr_lower.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
-            if (cr_lower.find("copyright") == 0 || cr_lower.find("copr.") == 0)
+            if (cr_lower.starts_with("copyright") || cr_lower.starts_with("copr."))
+            {
                 has_copyright_indicator = true;
+            }
         }
 
         if (!has_copyright_indicator)
@@ -895,10 +898,10 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
 {
     TestResult test{"Log Categories Uniqueness", TestStatus::PASS, {}};
 
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//LogCategories/Category");
-    if (!xpath_obj || !xpath_obj->nodesetval)
+    const xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//LogCategories/Category");
+    if (xpath_obj == nullptr || xpath_obj->nodesetval == nullptr)
     {
-        if (xpath_obj)
+        if (xpath_obj != nullptr)
             xmlXPathFreeObject(xpath_obj);
         cert.printTestResult(test);
         return;
@@ -907,17 +910,19 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
     std::set<std::string> seen_names;
     for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
     {
-        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto name = getXmlAttribute(node, "name");
-        if (name)
+        const xmlNodePtr node =
+            xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        const auto name = getXmlAttribute(node, "name");
+        if (name.has_value())
         {
-            if (seen_names.contains(*name))
+            const auto& val = *name;
+            if (seen_names.contains(val))
             {
                 test.status = TestStatus::FAIL;
-                test.messages.push_back("Log category \"" + *name + "\" (line " + std::to_string(node->line) +
+                test.messages.push_back("Log category \"" + val + "\" (line " + std::to_string(node->line) +
                                         ") is defined multiple times.");
             }
-            seen_names.insert(*name);
+            seen_names.insert(val);
         }
     }
 
@@ -1038,16 +1043,16 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc,
 
     for (const auto& elem : interface_elements)
     {
-        xmlXPathObjectPtr xpath = getXPathNodes(doc, "//" + elem);
-        if (xpath && xpath->nodesetval && xpath->nodesetval->nodeNr > 0)
+        const xmlXPathObjectPtr xpath = getXPathNodes(doc, "//" + elem);
+        if (xpath != nullptr && xpath->nodesetval != nullptr && xpath->nodesetval->nodeNr > 0)
         {
-            auto model_id = getXmlAttribute(
+            const auto model_id = getXmlAttribute(
                 xpath->nodesetval->nodeTab[0], // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 "modelIdentifier");
             if (model_id.has_value())
                 model_identifiers[elem] = *model_id;
         }
-        if (xpath)
+        if (xpath != nullptr)
             xmlXPathFreeObject(xpath);
     }
 
@@ -1141,24 +1146,25 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     TestResult test{"Default Experiment", TestStatus::PASS, {}};
 
     // Get DefaultExperiment element
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//DefaultExperiment");
+    const xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//DefaultExperiment");
 
-    if (!xpath_obj || !xpath_obj->nodesetval || xpath_obj->nodesetval->nodeNr == 0)
+    if (xpath_obj == nullptr || xpath_obj->nodesetval == nullptr || xpath_obj->nodesetval->nodeNr == 0)
     {
         // DefaultExperiment is optional, so this is not an error
-        if (xpath_obj)
+        if (xpath_obj != nullptr)
             xmlXPathFreeObject(xpath_obj);
         cert.printTestResult(test);
         return;
     }
 
-    xmlNodePtr exp_node = xpath_obj->nodesetval->nodeTab[0]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    const xmlNodePtr exp_node =
+        xpath_obj->nodesetval->nodeTab[0]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
     // Extract attributes
-    auto start_time_str = getXmlAttribute(exp_node, "startTime");
-    auto stop_time_str = getXmlAttribute(exp_node, "stopTime");
-    auto tolerance_str = getXmlAttribute(exp_node, "tolerance");
-    auto step_size_str = getXmlAttribute(exp_node, "stepSize");
+    const auto start_time_str = getXmlAttribute(exp_node, "startTime");
+    const auto stop_time_str = getXmlAttribute(exp_node, "stopTime");
+    const auto tolerance_str = getXmlAttribute(exp_node, "tolerance");
+    const auto step_size_str = getXmlAttribute(exp_node, "stepSize");
 
     std::optional<double> start_time;
     std::optional<double> stop_time;

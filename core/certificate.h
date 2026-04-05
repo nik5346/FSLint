@@ -27,10 +27,10 @@ using ContinueCallback = std::function<bool(const TestResult&)>;
 /// @brief Result of a single validation test.
 struct TestResult
 {
-    std::string test_name;             ///< Name of the test.
-    TestStatus status;                 ///< Completion status.
-    std::vector<std::string> messages; ///< Detailed failure or warning messages.
-    bool is_security_issue = false;    ///< True if this is a security-related test.
+    std::string test_name{};           ///< Name of the test.
+    TestStatus status{TestStatus::PASS}; ///< Completion status.
+    std::vector<std::string> messages{}; ///< Detailed failure or warning messages.
+    bool is_security_issue{false};     ///< True if this is a security-related test.
 
     /// @brief Default constructor.
     TestResult() = default;
@@ -52,31 +52,31 @@ struct TestResult
 struct NestedModelResult
 {
     std::string name;                             ///< Path or name of the nested model.
-    TestStatus status;                            ///< Aggregated status.
+    TestStatus status = TestStatus::PASS;         ///< Aggregated status.
     std::vector<NestedModelResult> nested_models; ///< Recursively nested results.
 };
 
 /// @brief Summary of extracted model metadata.
 struct ModelSummary
 {
-    std::string standard;                      ///< "FMI" or "SSP".
-    std::string modelName;                     ///< Name of the model.
-    std::string fmiVersion;                    ///< FMI version (e.g., "2.0").
-    std::string modelVersion;                  ///< Model version.
-    std::string guid;                          ///< GUID or instantiationToken.
-    std::string generationTool;                ///< Generating tool.
-    std::string generationDateAndTime;         ///< Generation timestamp.
-    std::string author;                        ///< Author.
-    std::string copyright;                     ///< Copyright.
-    std::string license;                       ///< License.
-    std::string description;                   ///< Model description.
-    std::vector<std::string> platforms;        ///< Supported platforms.
-    std::vector<std::string> interfaces;       ///< Supported interfaces.
-    std::vector<std::string> layeredStandards; ///< Supported layered standards.
-    bool hasIcon = false;                      ///< True if icon present.
-    std::vector<std::string> fmuTypes;         ///< FMU types ("Binary", "Source code").
-    std::string sourceLanguage;                ///< Programming language of sources.
-    uint64_t totalSize = 0;                    ///< Total recursive size in bytes.
+    std::string standard{};                      ///< "FMI" or "SSP".
+    std::string modelName{};                     ///< Name of the model.
+    std::string fmiVersion{};                    ///< FMI version (e.g., "2.0").
+    std::string modelVersion{};                  ///< Model version.
+    std::string guid{};                          ///< GUID or instantiationToken.
+    std::string generationTool{};                ///< Generating tool.
+    std::string generationDateAndTime{};         ///< Generation timestamp.
+    std::string author{};                        ///< Author.
+    std::string copyright{};                     ///< Copyright.
+    std::string license{};                       ///< License.
+    std::string description{};                   ///< Model description.
+    std::vector<std::string> platforms{};        ///< Supported platforms.
+    std::vector<std::string> interfaces{};       ///< Supported interfaces.
+    std::vector<std::string> layeredStandards{}; ///< Supported layered standards.
+    bool hasIcon = false;                        ///< True if icon present.
+    std::vector<std::string> fmuTypes{};         ///< FMU types ("Binary", "Source code").
+    std::string sourceLanguage{};                ///< Programming language of sources.
+    uint64_t totalSize = 0;                      ///< Total recursive size in bytes.
 };
 
 /// @brief Validation report generator and result container.
@@ -143,6 +143,13 @@ class Certificate
     /// @return Overall status.
     [[nodiscard]] TestStatus getOverallStatus() const noexcept;
 
+    /// @brief Sets the extraction path.
+    /// @param path Extraction directory path.
+    void setExtractionPath(const std::filesystem::path& path)
+    {
+        _extraction_path = path;
+    }
+
     /// @brief Appends a message to the report buffer.
     /// @param message Message to log.
     void log(const std::string& message);
@@ -180,11 +187,11 @@ class Certificate
     /// @brief Saves report to file.
     /// @param path Destination path.
     /// @return True if saved.
-    bool saveToFile(const std::filesystem::path& path) const;
+    [[nodiscard]] bool saveToFile(const std::filesystem::path& path) const;
 
     /// @brief Gets the full report text.
     /// @return Report string.
-    [[nodiscard]] std::string getFullReport() const
+    [[nodiscard]] const std::string& getFullReport() const noexcept
     {
         return _report_buffer;
     }
@@ -221,13 +228,6 @@ class Certificate
     /// @param root_path Optional path to normalize results against.
     /// @return JSON string.
     [[nodiscard]] std::string toJson(const std::filesystem::path& root_path = "") const;
-
-    /// @brief Sets extraction path.
-    /// @param path Directory where model was extracted.
-    void setExtractionPath(std::filesystem::path path) noexcept
-    {
-        _extraction_path = std::move(path);
-    }
 
   private:
     std::filesystem::path _extraction_path;

@@ -88,8 +88,12 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                 if (!xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")))
                 {
                     const std::optional<std::string> needs_exec = getXmlAttribute(node, "needsExecutionTool");
-                    if (needs_exec.has_value() && *needs_exec == "true")
-                        needs_execution_tool = true;
+                    if (needs_exec.has_value())
+                    {
+                        const auto& val = *needs_exec;
+                        if (val == "true")
+                            needs_execution_tool = true;
+                    }
                 }
 
                 // Check for SourceFiles inside interface (FMI 2.0)

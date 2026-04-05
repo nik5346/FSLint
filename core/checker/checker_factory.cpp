@@ -58,21 +58,33 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir,
     if (is_fmi)
     {
         // Try to extract FMI version
-        auto version = SchemaCheckerBase::extractVersionFromXml(model_desc_path, "fmiModelDescription", "fmiVersion");
-        if (version)
+        const auto version =
+            SchemaCheckerBase::extractVersionFromXml(model_desc_path, "fmiModelDescription", "fmiVersion");
+        if (version.has_value())
         {
-            info.version = *version;
+            const auto& val = *version;
+            info.version = val;
 
             // Determine FMI1, FMI2 vs FMI3 based on version
-            if (version->starts_with("1.0"))
+            if (val.starts_with("1.0"))
+            {
                 if (SchemaCheckerBase::hasElement(model_desc_path, "Implementation"))
+                {
                     info.standard = ModelStandard::FMI1_CS;
+                }
                 else
+                {
                     info.standard = ModelStandard::FMI1_ME;
-            else if (version->starts_with("2.0"))
+                }
+            }
+            else if (val.starts_with("2.0"))
+            {
                 info.standard = ModelStandard::FMI2;
-            else if (version->starts_with("3."))
+            }
+            else if (val.starts_with("3."))
+            {
                 info.standard = ModelStandard::FMI3;
+            }
         }
 
         return info;
@@ -84,18 +96,19 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir,
 
     if (is_ssp)
     {
-        auto version =
+        const auto version =
             SchemaCheckerBase::extractVersionFromXml(system_structure_path, "SystemStructureDescription", "version");
-        if (version)
+        if (version.has_value())
         {
-            if (version->starts_with("1.0"))
+            const auto& val = *version;
+            if (val.starts_with("1.0"))
             {
-                info.version = *version;
+                info.version = val;
                 info.standard = ModelStandard::SSP1;
             }
-            else if (version->starts_with("2.0"))
+            else if (val.starts_with("2.0"))
             {
-                info.version = *version;
+                info.version = val;
                 info.standard = ModelStandard::SSP2;
             }
         }
@@ -111,30 +124,46 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     std::vector<std::unique_ptr<Checker>> checkers;
 
     if (auto checker = createSchemaChecker(info))
+    {
         checkers.push_back(std::move(checker));
+    }
 
     if (auto checker = createModelDescriptionChecker(info))
+    {
         checkers.push_back(std::move(checker));
+    }
 
     if (info.standard == ModelStandard::SSP1 || info.standard == ModelStandard::SSP2)
+    {
         checkers.push_back(std::make_unique<SspDescriptionChecker>());
+    }
 
     if (auto checker = createTerminalsAndIconsChecker(info))
+    {
         checkers.push_back(std::move(checker));
+    }
 
     if (auto checker = createBuildDescriptionChecker(info))
+    {
         checkers.push_back(std::move(checker));
+    }
 
     if (auto checker = createDirectoryChecker(info))
+    {
         checkers.push_back(std::move(checker));
+    }
 
     if (auto checker = createBinaryChecker(info))
+    {
         checkers.push_back(std::move(checker));
+    }
 
     checkers.push_back(std::make_unique<ResourcesChecker>());
 
     for (auto& checker : checkers)
+    {
         checker->setOriginalPath(info.original_path);
+    }
 
     return checkers;
 }

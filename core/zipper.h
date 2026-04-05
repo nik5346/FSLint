@@ -55,7 +55,7 @@ class Zipper
 
     /// @brief Gets list of all files in archive.
     /// @return Vector of entries.
-    std::vector<ZipFileEntry> getEntries() const;
+    [[nodiscard]] std::vector<ZipFileEntry> getEntries() const;
 
     /// @brief Extracts a single file to a memory buffer.
     /// @param filename Path in archive.
@@ -86,15 +86,15 @@ class Zipper
 
     /// @brief Gets the number of disks (spanning support).
     /// @return Disk count.
-    int32_t getDiskCount() const;
+    [[nodiscard]] int32_t getDiskCount() const;
 
     /// @brief Gets the total number of entries reported in the EOCD.
     /// @return Entry count, or -1 on error.
-    int32_t getReportedEntryCount() const;
+    [[nodiscard]] int32_t getReportedEntryCount() const;
 
     /// @brief Gets the archive comment.
     /// @return The comment string.
-    std::string getComment() const;
+    [[nodiscard]] std::string getComment() const;
 
   private:
     void* _zip_file = nullptr;   // unzFile for reading
