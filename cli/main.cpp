@@ -75,7 +75,8 @@ int main(int argc, char** argv)
                 printUsage(args[0]);
                 return 0;
             }
-            else if (arg == "-v" || arg == "--version")
+
+            if (arg == "-v" || arg == "--version")
             {
                 // __DATE__ is in "Mmm dd yyyy" format (e.g., "Jan 26 2010")
                 const std::string build_date = __DATE__;
@@ -85,18 +86,31 @@ int main(int argc, char** argv)
                 std::cout << "Copyright (c) " << build_year << " FSLint Contributors\n";
                 return 0;
             }
-            else if (arg == "-s" || arg == "--save")
+
+            if (arg == "-s" || arg == "--save")
+            {
                 save_cert = true;
+            }
             else if (arg == "-u" || arg == "--update")
+            {
                 update_cert = true;
+            }
             else if (arg == "-r" || arg == "--remove")
+            {
                 remove_cert = true;
+            }
             else if (arg == "-d" || arg == "--display")
+            {
                 display_cert = true;
+            }
             else if (arg == "-c" || arg == "--verify")
+            {
                 verify_cert = true;
+            }
             else if (arg == "-t" || arg == "--tree")
+            {
                 show_tree = true;
+            }
             else if (arg[0] != '-')
             {
                 if (fmu_path.empty())
@@ -143,10 +157,10 @@ int main(int argc, char** argv)
         // Create validator instance
         const ModelChecker validator;
 
-        auto continue_callback = [](const TestResult& test) -> bool
+        const auto continue_callback = [](const TestResult& test) -> bool
         {
             (void)test;
-            if (!ISATTY(FILENO(stdin)))
+            if (ISATTY(FILENO(stdin)) == 0)
                 return false;
 
             std::cout << "\n[SECURITY ISSUE DETECTED] Do you want to continue validation? (y/N): ";
@@ -160,13 +174,17 @@ int main(int argc, char** argv)
         // Execute requested operation
         if (remove_cert)
             return validator.removeCertificate(fmu_path) ? 0 : 1;
-        else if (display_cert)
+
+        if (display_cert)
             return validator.displayCertificate(fmu_path) ? 0 : 1;
-        else if (verify_cert)
+
+        if (verify_cert)
             return validator.verifyCertificate(fmu_path) ? 0 : 1;
-        else if (save_cert)
+
+        if (save_cert)
             return validator.addCertificate(fmu_path) ? 0 : 1;
-        else if (update_cert)
+
+        if (update_cert)
             return validator.updateCertificate(fmu_path) ? 0 : 1;
 
         // Default: validate FMU (without saving certificate)

@@ -43,8 +43,8 @@ struct TestResult
         : test_name(std::move(name))
         , status(s)
         , messages(std::move(msgs))
+        , is_security_issue(test_name.find("[SECURITY]") != std::string::npos)
     {
-        is_security_issue = (test_name.find("[SECURITY]") != std::string::npos);
     }
 };
 

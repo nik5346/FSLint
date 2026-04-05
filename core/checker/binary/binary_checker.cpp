@@ -87,7 +87,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
             const std::vector<std::string> extensions = {".dll", ".so", ".dylib"};
             for (const auto& ext : extensions)
             {
-                auto binary_file = platform_entry.path() / (model_id + ext);
+                const auto binary_file = platform_entry.path() / (model_id + ext);
                 if (std::filesystem::exists(binary_file))
                 {
                     ensure_header();

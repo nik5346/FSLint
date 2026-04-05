@@ -9,7 +9,7 @@ extern "C"
     /// @brief Entry point for WASM-based validation.
     /// @param path Path to the model file in the Emscripten filesystem.
     /// @return JSON string containing validation results.
-    EMSCRIPTEN_KEEPALIVE const char* run_validation(const char* path)
+    EMSCRIPTEN_KEEPALIVE const char* run_validation(const char* const path)
     {
         const ModelChecker validator;
         Certificate initial_cert;
