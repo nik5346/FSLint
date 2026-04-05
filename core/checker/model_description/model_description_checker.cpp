@@ -789,9 +789,7 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
                            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
             if (cr_lower.starts_with("copyright") || cr_lower.starts_with("copr."))
-            {
                 has_copyright_indicator = true;
-            }
         }
 
         if (!has_copyright_indicator)

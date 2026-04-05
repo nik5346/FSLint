@@ -27,10 +27,10 @@ using ContinueCallback = std::function<bool(const TestResult&)>;
 /// @brief Result of a single validation test.
 struct TestResult
 {
-    std::string test_name{};           ///< Name of the test.
+    std::string test_name{};             ///< Name of the test.
     TestStatus status{TestStatus::PASS}; ///< Completion status.
     std::vector<std::string> messages{}; ///< Detailed failure or warning messages.
-    bool is_security_issue{false};     ///< True if this is a security-related test.
+    bool is_security_issue{false};       ///< True if this is a security-related test.
 
     /// @brief Default constructor.
     TestResult() = default;

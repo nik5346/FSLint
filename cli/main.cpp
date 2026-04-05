@@ -1,5 +1,5 @@
-#include "model_checker.h"
 #include "certificate.h"
+#include "model_checker.h"
 
 #include <cstddef>
 #include <exception>

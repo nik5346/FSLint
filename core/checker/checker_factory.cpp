@@ -67,24 +67,14 @@ ModelInfo CheckerFactory::detectModel(const std::filesystem::path& extract_dir,
 
             // Determine FMI1, FMI2 vs FMI3 based on version
             if (val.starts_with("1.0"))
-            {
                 if (SchemaCheckerBase::hasElement(model_desc_path, "Implementation"))
-                {
                     info.standard = ModelStandard::FMI1_CS;
-                }
                 else
-                {
                     info.standard = ModelStandard::FMI1_ME;
-                }
-            }
             else if (val.starts_with("2.0"))
-            {
                 info.standard = ModelStandard::FMI2;
-            }
             else if (val.starts_with("3."))
-            {
                 info.standard = ModelStandard::FMI3;
-            }
         }
 
         return info;
@@ -124,46 +114,30 @@ std::vector<std::unique_ptr<Checker>> CheckerFactory::createCheckers(const Model
     std::vector<std::unique_ptr<Checker>> checkers;
 
     if (auto checker = createSchemaChecker(info))
-    {
         checkers.push_back(std::move(checker));
-    }
 
     if (auto checker = createModelDescriptionChecker(info))
-    {
         checkers.push_back(std::move(checker));
-    }
 
     if (info.standard == ModelStandard::SSP1 || info.standard == ModelStandard::SSP2)
-    {
         checkers.push_back(std::make_unique<SspDescriptionChecker>());
-    }
 
     if (auto checker = createTerminalsAndIconsChecker(info))
-    {
         checkers.push_back(std::move(checker));
-    }
 
     if (auto checker = createBuildDescriptionChecker(info))
-    {
         checkers.push_back(std::move(checker));
-    }
 
     if (auto checker = createDirectoryChecker(info))
-    {
         checkers.push_back(std::move(checker));
-    }
 
     if (auto checker = createBinaryChecker(info))
-    {
         checkers.push_back(std::move(checker));
-    }
 
     checkers.push_back(std::make_unique<ResourcesChecker>());
 
     for (auto& checker : checkers)
-    {
         checker->setOriginalPath(info.original_path);
-    }
 
     return checkers;
 }

@@ -88,9 +88,7 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
     auto* const uf = static_cast<unzFile>(_zip_file);
 
     if (unzGoToFirstFile(uf) != UNZ_OK)
-    {
         return entries;
-    }
 
     // Use while loop instead of do-while to avoid the warning
     bool has_files = true;
@@ -131,9 +129,7 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
             file.seekg(static_cast<std::streamoff>(static_cast<uint64_t>(pos_in_central_dir) + 42ULL), std::ios::beg);
             uint32_t offset_le = 0;
             if (file.read(reinterpret_cast<char*>(&offset_le), 4))
-            {
                 entry.offset = offset_le;
-            }
         }
 
         entry.filename_length = file_info.size_filename;
@@ -162,25 +158,19 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
 bool Zipper::extractFile(const std::string& filename, std::vector<uint8_t>& output)
 {
     if (!_zip_file)
-    {
         return false;
-    }
 
     auto* const uf = static_cast<unzFile>(_zip_file);
 
     if (unzLocateFile(uf, filename.c_str(), 0) != UNZ_OK)
-    {
         return false;
-    }
 
     unz_file_info file_info{};
     if (unzGetCurrentFileInfo(uf, &file_info, nullptr, 0, nullptr, 0, nullptr, 0) != UNZ_OK)
         return false;
 
     if (unzOpenCurrentFile(uf) != UNZ_OK)
-    {
         return false;
-    }
 
     output.resize(file_info.uncompressed_size);
 
@@ -196,13 +186,11 @@ bool Zipper::extractFile(const std::string& filename, std::vector<uint8_t>& outp
 bool Zipper::extractAll(const std::filesystem::path& destination)
 {
     if (!_zip_file)
-    {
         return false;
-    }
 
     std::filesystem::create_directories(destination);
 
-        const auto entries = getEntries();
+    const auto entries = getEntries();
     for (const auto& entry : entries)
     {
 #ifdef _WIN32
@@ -226,9 +214,7 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
         // Extract file
         std::vector<uint8_t> data;
         if (!extractFile(entry.filename, data))
-        {
             return false;
-        }
 
         // Write to disk
         std::ofstream out(file_path, std::ios::binary);
@@ -256,8 +242,7 @@ bool Zipper::addFile(const std::string& internal_path, const std::vector<uint8_t
 
     // Check if path contains non-ASCII characters
     constexpr unsigned char MAX_ASCII_VALUE = 127;
-    const bool has_non_ascii =
-        std::ranges::any_of(internal_path, [](unsigned char c) { return c > MAX_ASCII_VALUE; });
+    const bool has_non_ascii = std::ranges::any_of(internal_path, [](unsigned char c) { return c > MAX_ASCII_VALUE; });
 
     // Set bit 11 (Language Encoding Flag) if path contains non-ASCII characters.
     // Using zipOpenNewFileInZip4 to specify the language encoding flag.

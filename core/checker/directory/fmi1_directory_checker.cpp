@@ -55,25 +55,17 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
             if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr && xpath_obj->nodesetval->nodeNr > 0)
-            {
                 is_cs = true;
-            }
             if (xpath_obj != nullptr)
-            {
                 xmlXPathFreeObject(xpath_obj);
-            }
             xmlXPathFreeContext(xpath_context);
         }
 
         const auto& id_val = *model_id;
         if (is_cs)
-        {
             model_identifiers["CoSimulation"] = id_val;
-        }
         else
-        {
             model_identifiers["ModelExchange"] = id_val;
-        }
 
         // FMI 1.0 rule: modelIdentifier must match filename stem
         if (id_val != stem)

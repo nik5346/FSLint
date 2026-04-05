@@ -323,9 +323,7 @@ static void printFileTreeRecursive(Certificate& cert, const std::filesystem::pat
                       [](const auto& a, const auto& b)
                       {
                           if (a.is_directory() != b.is_directory())
-                          {
                               return a.is_directory();
-                          }
                           return file_utils::pathToUtf8(a.path().filename()) <
                                  file_utils::pathToUtf8(b.path().filename());
                       });

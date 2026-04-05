@@ -96,9 +96,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     if (dimensions->first < 100 || dimensions->second < 100)
                     {
                         if (test.status != TestStatus::FAIL)
-                        {
                             test.status = TestStatus::WARNING;
-                        }
                         test.messages.push_back(std::format(
                             "Diagram 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
                             "100x100 pixels is recommended.",
@@ -174,9 +172,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                             if (dimensions->first < 100 || dimensions->second < 100)
                             {
                                 if (test.status != TestStatus::FAIL)
-                                {
                                     test.status = TestStatus::WARNING;
-                                }
                                 test.messages.push_back(std::format(
                                     "Icon '{}' is small ({}x{} pixels). A size of at least 100x100 pixels is "
                                     "recommended.",
@@ -197,9 +193,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 if (dimensions->first < 100 || dimensions->second < 100)
                 {
                     if (test.status != TestStatus::FAIL)
-                    {
                         test.status = TestStatus::WARNING;
-                    }
                     test.messages.push_back(
                         std::format("Icon 'terminalsAndIcons/icon.png' is small ({}x{} pixels). A size of at least "
                                     "100x100 pixels is recommended.",
@@ -261,9 +255,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     if (!std::regex_match(tuple, match, tuple_regex))
                     {
                         if (test.status != TestStatus::FAIL)
-                        {
                             test.status = TestStatus::WARNING;
-                        }
                         test.messages.push_back(
                             std::format("Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
@@ -277,9 +269,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (!fmi3_architectures.contains(arch))
                         {
                             if (test.status != TestStatus::FAIL)
-                            {
                                 test.status = TestStatus::WARNING;
-                            }
                             test.messages.push_back(std::format(
                                 "Architecture '{}' in platform tuple '{}' is not one of the standardized FMI 3.0 "
                                 "architectures (aarch32, aarch64, riscv32, riscv64, x86, x86_64, ppc32, ppc64).",
@@ -290,9 +280,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         if (!fmi3_systems.contains(sys))
                         {
                             if (test.status != TestStatus::FAIL)
-                            {
                                 test.status = TestStatus::WARNING;
-                            }
                             test.messages.push_back(std::format(
                                 "Operating system '{}' in platform tuple '{}' is not one of the standardized "
                                 "FMI 3.0 systems (darwin, linux, windows).",
@@ -329,9 +317,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                                 found_model_id = true;
                                 has_binaries_present = true;
                                 if (ext == ".lib" || ext == ".a")
-                                {
                                     static_library_detected = true;
-                                }
                                 break;
                             }
                         }
@@ -390,9 +376,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     if (!std::regex_match(name, rd_regex))
                     {
                         if (test.status != TestStatus::FAIL)
-                        {
                             test.status = TestStatus::WARNING;
-                        }
                         test.messages.push_back(
                             std::format("Subdirectory '{}' in extra/ should use reverse domain name notation "
                                         "(e.g. 'com.example').",

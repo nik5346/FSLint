@@ -22,9 +22,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
     const auto sources_path = path / "sources";
     const auto build_desc_path = sources_path / "buildDescription.xml";
     if (!std::filesystem::exists(build_desc_path))
-    {
         return; // Optional
-    }
 
     cert.printSubsectionHeader("BUILD DESCRIPTION VALIDATION");
 
@@ -66,9 +64,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
                     std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
 
                     if (filename == "buildDescription.xml")
-                    {
                         continue;
-                    }
 
                     // Only check typical source files
                     static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
@@ -79,9 +75,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
                         if (!listed_files.contains(filename))
                         {
                             if (test.status == TestStatus::PASS)
-                            {
                                 test.status = TestStatus::WARNING;
-                            }
                             test.messages.push_back("Source file '" + filename +
                                                     "' exists in 'sources/' directory but is not listed in "
                                                     "'buildDescription.xml'.");
@@ -135,9 +129,7 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
         }
     }
     if (sources_xpath != nullptr)
-    {
         xmlXPathFreeObject(sources_xpath);
-    }
     cert.printTestResult(test);
 }
 
@@ -179,9 +171,7 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
         }
     }
     if (includes_xpath != nullptr)
-    {
         xmlXPathFreeObject(includes_xpath);
-    }
     cert.printTestResult(test);
 }
 
@@ -227,9 +217,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 if (!suggested_languages.contains(lang_val))
                 {
                     if (test.status == TestStatus::PASS)
-                    {
                         test.status = TestStatus::WARNING;
-                    }
                     test.messages.push_back("Language '" + lang_val + "' in BuildConfiguration (line " +
                                             std::to_string(node->line) +
                                             ") is not one of the suggested values (e.g. C99, C++11).");
@@ -252,9 +240,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 if (!known)
                 {
                     if (test.status == TestStatus::PASS)
-                    {
                         test.status = TestStatus::WARNING;
-                    }
                     test.messages.push_back("Compiler '" + compiler + "' in BuildConfiguration (line " +
                                             std::to_string(node->line) +
                                             ") is not one of the suggested values (e.g. gcc, clang, msvc).");
@@ -263,9 +249,7 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
         }
     }
     if (configs_xpath != nullptr)
-    {
         xmlXPathFreeObject(configs_xpath);
-    }
     cert.printTestResult(test);
 }
 
@@ -274,15 +258,11 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
     std::set<std::string> ids;
     const auto md_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(md_path))
-    {
         return ids;
-    }
 
     const xmlDocPtr doc = readXmlFile(md_path);
     if (doc == nullptr)
-    {
         return ids;
-    }
 
     const xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     if (xpath_context != nullptr)
@@ -303,15 +283,11 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
                     const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
                     const auto id = getXmlAttribute(node, "modelIdentifier");
                     if (id.has_value())
-                    {
                         ids.insert(*id);
-                    }
                 }
             }
             if (xpath_obj != nullptr)
-            {
                 xmlXPathFreeObject(xpath_obj);
-            }
         }
         xmlXPathFreeContext(xpath_context);
     }
@@ -322,16 +298,12 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
 std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name) const
 {
     if (!node)
-    {
         return std::nullopt;
-    }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
     if (!attr)
-    {
         return std::nullopt;
-    }
 
     const std::string value(reinterpret_cast<char*>(attr));
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
