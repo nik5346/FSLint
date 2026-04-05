@@ -1,20 +1,20 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f001}">
-    <ModelExchange modelIdentifier="Test"/>
-    <ModelVariables>
-        <ScalarVariable name="y1" valueReference="1" causality="output">
-            <Real/>
-        </ScalarVariable>
-        <ScalarVariable name="y2" valueReference="1" causality="output">
-            <Real/>
-        </ScalarVariable>
-    </ModelVariables>
-    <ModelStructure>
-        <Outputs>
-            <Unknown index="1"/>
-        </Outputs>
-        <InitialUnknowns>
-            <Unknown index="1"/>
-        </InitialUnknowns>
-    </ModelStructure>
+  <ModelExchange modelIdentifier="Test" />
+  <ModelVariables>
+    <ScalarVariable name="y1" valueReference="1" causality="output">
+      <Real />
+    </ScalarVariable>
+    <ScalarVariable name="y2" valueReference="1" causality="output">
+      <Real />
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="1" />
+    </Outputs>
+    <InitialUnknowns>
+      <Unknown index="1" />
+    </InitialUnknowns>
+  </ModelStructure>
 </fmiModelDescription>

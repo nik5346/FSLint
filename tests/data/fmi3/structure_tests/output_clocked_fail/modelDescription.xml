@@ -1,13 +1,13 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e810f-3df3-4a00-8276-176fa3c9f001}">
-    <ModelExchange modelIdentifier="Test"/>
-    <ModelVariables>
-        <Float64 name="time" valueReference="1" causality="independent" variability="continuous"/>
-        <Clock name="c" valueReference="10" causality="input" variability="discrete"/>
-        <Float64 name="y_clocked" valueReference="2" causality="output" variability="discrete" clocks="10"/>
-    </ModelVariables>
-    <ModelStructure>
-        <Output valueReference="2"/>
-        <ClockedState valueReference="2" previous="2"/>
-    </ModelStructure>
+  <ModelExchange modelIdentifier="Test" />
+  <ModelVariables>
+    <Float64 name="time" valueReference="1" causality="independent" variability="continuous" />
+    <Clock name="c" valueReference="10" causality="input" variability="discrete" />
+    <Float64 name="y_clocked" valueReference="2" causality="output" variability="discrete" clocks="10" />
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="2" />
+    <ClockedState valueReference="2" previous="2" />
+  </ModelStructure>
 </fmiModelDescription>
