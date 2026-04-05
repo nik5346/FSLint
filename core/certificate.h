@@ -106,7 +106,7 @@ class Certificate
   public:
     /// @brief Sets quiet mode.
     /// @param quiet Suppress detailed logging.
-    void setQuiet(const bool quiet) noexcept
+    void setQuiet(bool quiet) noexcept
     {
         _quiet = quiet;
     }

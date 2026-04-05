@@ -98,13 +98,15 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     bool has_author = false;
     if (metadata.author.has_value())
     {
-        has_author = !metadata.author->empty();
+        const auto& val = *metadata.author;
+        has_author = !val.empty();
     }
 
     bool has_copyright = false;
     if (metadata.copyright.has_value())
     {
-        has_copyright = !metadata.copyright->empty();
+        const auto& val = *metadata.copyright;
+        has_copyright = !val.empty();
     }
 
     checkCopyright(metadata.copyright, cert, !has_author);
@@ -269,16 +271,56 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Populate ModelSummary
     ModelSummary summary;
     summary.standard = "FMI";
-    summary.modelName = metadata.modelName.has_value() ? *metadata.modelName : "";
-    summary.fmiVersion = metadata.fmiVersion.has_value() ? *metadata.fmiVersion : "";
-    summary.modelVersion = metadata.modelVersion.has_value() ? *metadata.modelVersion : "";
-    summary.guid = metadata.guid.has_value() ? *metadata.guid : "";
-    summary.author = metadata.author.has_value() ? *metadata.author : "";
-    summary.copyright = metadata.copyright.has_value() ? *metadata.copyright : "";
-    summary.license = metadata.license.has_value() ? *metadata.license : "";
-    summary.description = metadata.description.has_value() ? *metadata.description : "";
-    summary.generationTool = metadata.generationTool.has_value() ? *metadata.generationTool : "";
-    summary.generationDateAndTime = metadata.generationDateAndTime.has_value() ? *metadata.generationDateAndTime : "";
+    if (metadata.modelName.has_value())
+    {
+        const auto& val = *metadata.modelName;
+        summary.modelName = val;
+    }
+    if (metadata.fmiVersion.has_value())
+    {
+        const auto& val = *metadata.fmiVersion;
+        summary.fmiVersion = val;
+    }
+    if (metadata.modelVersion.has_value())
+    {
+        const auto& val = *metadata.modelVersion;
+        summary.modelVersion = val;
+    }
+    if (metadata.guid.has_value())
+    {
+        const auto& val = *metadata.guid;
+        summary.guid = val;
+    }
+    if (metadata.author.has_value())
+    {
+        const auto& val = *metadata.author;
+        summary.author = val;
+    }
+    if (metadata.copyright.has_value())
+    {
+        const auto& val = *metadata.copyright;
+        summary.copyright = val;
+    }
+    if (metadata.license.has_value())
+    {
+        const auto& val = *metadata.license;
+        summary.license = val;
+    }
+    if (metadata.description.has_value())
+    {
+        const auto& val = *metadata.description;
+        summary.description = val;
+    }
+    if (metadata.generationTool.has_value())
+    {
+        const auto& val = *metadata.generationTool;
+        summary.generationTool = val;
+    }
+    if (metadata.generationDateAndTime.has_value())
+    {
+        const auto& val = *metadata.generationDateAndTime;
+        summary.generationDateAndTime = val;
+    }
 
     for (const auto& [interface, id] : model_identifiers)
     {
@@ -290,12 +332,8 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     if (std::filesystem::exists(binaries_path))
     {
         for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
-        {
             if (entry.is_directory())
-            {
                 summary.platforms.push_back(file_utils::pathToUtf8(entry.path().filename()));
-            }
-        }
     }
 
     // Detect if this is a source code FMU
@@ -308,9 +346,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     if (sources_xpath != nullptr)
     {
         if (sources_xpath->nodesetval != nullptr && sources_xpath->nodesetval->nodeNr > 0)
-        {
             has_source_files_in_md = true;
-        }
         xmlXPathFreeObject(sources_xpath);
     }
 
@@ -347,28 +383,18 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
                 std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
                 if (ext == ".c")
-                {
                     has_c = true;
-                }
                 else if (ext == ".cpp" || ext == ".cc" || ext == ".cxx")
-                {
                     has_cpp = true;
-                }
             }
         }
 
         if (has_c && has_cpp)
-        {
             summary.sourceLanguage = "C and C++";
-        }
         else if (has_c)
-        {
             summary.sourceLanguage = "C";
-        }
         else if (has_cpp)
-        {
             summary.sourceLanguage = "C++";
-        }
     }
 
     // Calculate total size
@@ -391,9 +417,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
             {
                 const auto& name_val = *name;
                 if (name_val.find("org.fmi-standard.layered-standard") != std::string::npos)
-                {
                     summary.layeredStandards.push_back(name_val);
-                }
             }
         }
         xmlXPathFreeObject(annotations_xpath);

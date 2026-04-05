@@ -21,15 +21,11 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 {
     const std::filesystem::path binaries_path = path / "binaries";
     if (!std::filesystem::exists(binaries_path))
-    {
         return;
-    }
 
     const std::filesystem::path model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
-    {
         return;
-    }
 
     xmlDocPtr doc = readXmlFile(model_desc_path);
     if (!doc)
@@ -57,23 +53,19 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     getXmlAttribute(xpath_obj->nodesetval->nodeTab[0], "modelIdentifier");
                 if (model_id.has_value())
                 {
-                    const auto& id_val = *model_id;
-                    model_identifiers.insert(id_val);
+                    const auto& val = *model_id;
+                    model_identifiers.insert(val);
                 }
             }
             if (xpath_obj != nullptr)
-            {
                 xmlXPathFreeObject(xpath_obj);
-            }
         }
         xmlXPathFreeContext(xpath_context);
     }
     xmlFreeDoc(doc);
 
     if (model_identifiers.empty())
-    {
         return;
-    }
 
     bool header_printed = false;
     auto ensure_header = [&]()
@@ -119,9 +111,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     }
                     cert.printTestResult(export_test);
                     if (cert.shouldAbort())
-                    {
                         return;
-                    }
 
                     // 2. Binary Format, Bitness, and Architecture Check
                     TestResult format_test{
@@ -276,9 +266,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
                     cert.printTestResult(format_test);
                     if (cert.shouldAbort())
-                    {
                         return;
-                    }
                 }
             }
         }

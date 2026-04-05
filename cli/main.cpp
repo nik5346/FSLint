@@ -161,16 +161,12 @@ int main(int argc, char** argv)
         {
             (void)test;
             if (ISATTY(FILENO(stdin)) == 0)
-            {
                 return false;
-            }
 
             std::cout << "\n[SECURITY ISSUE DETECTED] Do you want to continue validation? (y/N): ";
             char response = 'n';
             if (!(std::cin >> response))
-            {
                 return false;
-            }
 
             return response == 'y' || response == 'Y';
         };

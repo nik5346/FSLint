@@ -51,13 +51,13 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     if (root)
     {
         // FMI 1.0 extraction
-    const std::optional<std::string> model_id_attr = getXmlAttribute(root, "modelIdentifier");
-    if (model_id_attr.has_value())
-    {
-        // By default ME in FMI 1.0
-        const auto& id_val = *model_id_attr;
-        model_identifiers["ModelExchange"] = id_val;
-    }
+        const std::optional<std::string> model_id_attr = getXmlAttribute(root, "modelIdentifier");
+        if (model_id_attr.has_value())
+        {
+            // By default ME in FMI 1.0
+            const auto& val = *model_id_attr;
+            model_identifiers["ModelExchange"] = val;
+        }
 
         for (xmlNodePtr node = root->children; node; node = node->next)
         {
@@ -72,8 +72,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                 const std::optional<std::string> model_id = getXmlAttribute(node, "modelIdentifier");
                 if (model_id.has_value())
                 {
-                    const auto& id_val = *model_id;
-                    model_identifiers[reinterpret_cast<const char*>(name)] = id_val;
+                    const auto& val = *model_id;
+                    model_identifiers[reinterpret_cast<const char*>(name)] = val;
 
                     // If we found CoSimulation in FMI 1.0, move the model identifier there
                     if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) &&
@@ -89,9 +89,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                 {
                     const std::optional<std::string> needs_exec = getXmlAttribute(node, "needsExecutionTool");
                     if (needs_exec.has_value() && *needs_exec == "true")
-                    {
                         needs_execution_tool = true;
-                    }
                 }
 
                 // Check for SourceFiles inside interface (FMI 2.0)
@@ -108,8 +106,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                                 const std::optional<std::string> name_opt = getXmlAttribute(file_node, "name");
                                 if (name_opt.has_value())
                                 {
-                                    const auto& name_val = *name_opt;
-                                    listed_sources_in_md.insert(name_val);
+                                    const auto& val = *name_opt;
+                                    listed_sources_in_md.insert(val);
                                 }
                             }
                         }
@@ -132,9 +130,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
 
     performVersionSpecificChecks(path, cert, model_identifiers, listed_sources_in_md, needs_execution_tool);
     if (cert.shouldAbort())
-    {
         return;
-    }
 
     cert.printSubsectionSummary(true);
 }

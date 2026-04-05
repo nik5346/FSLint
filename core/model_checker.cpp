@@ -30,9 +30,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     {
         std::string filename = file_utils::pathToUtf8(path.filename());
         if (filename.empty() && path.has_parent_path())
-        {
             filename = file_utils::pathToUtf8(path.parent_path().filename());
-        }
         std::cout << "Validating: " << filename << "\n";
 
         const std::string hash = calculateSHA256(path);
@@ -56,9 +54,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         if (cert.isFailed())
         {
             if (!quiet)
-            {
                 cert.printFooter();
-            }
             return cert;
         }
 
@@ -90,9 +86,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         {
             zipper.close();
             if (std::filesystem::exists(extract_dir))
-            {
                 std::filesystem::remove_all(extract_dir);
-            }
 
             cert.printSubsectionHeader("ARCHIVE EXTRACTION");
             cert.printTestResult(
@@ -100,9 +94,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
             cert.printSubsectionSummary(false);
 
             if (!quiet)
-            {
                 cert.printFooter();
-            }
             return cert;
         }
     }
@@ -121,14 +113,10 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         cert.printSubsectionSummary(false);
 
         if (!quiet)
-        {
             cert.printFooter();
-        }
 
         if (is_temporary && std::filesystem::exists(extract_dir))
-        {
             std::filesystem::remove_all(extract_dir);
-        }
 
         return cert;
     }
@@ -139,9 +127,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     for (auto& checker : checkers)
     {
         if (cert.shouldAbort())
-        {
             break;
-        }
         checker->validate(extract_dir, cert);
     }
 
@@ -150,9 +136,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
 
 #ifndef __EMSCRIPTEN__
     if (is_temporary && std::filesystem::exists(extract_dir))
-    {
         std::filesystem::remove_all(extract_dir);
-    }
 #endif
 
     if (!quiet)

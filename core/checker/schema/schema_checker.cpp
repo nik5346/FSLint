@@ -100,16 +100,12 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
         // Validate
         validateXmlFile(xml_path, schema_path, rule.validation_name, cert);
         if (cert.shouldAbort())
-        {
             return;
-        }
 
         // Security: Check for DOCTYPE (XXE protection)
         checkXmlSecurity(xml_path, rule.validation_name, cert);
         if (cert.shouldAbort())
-        {
             return;
-        }
     }
 
     cert.printSubsectionSummary(is_valid);
