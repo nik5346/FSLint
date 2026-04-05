@@ -187,26 +187,25 @@ void Certificate::printTestResult(const TestResult& test)
 {
     _results.push_back(test);
 
-    std::stringstream ss;
+    std::string status_tag;
     if (test.status == TestStatus::PASS)
     {
-        ss << "  [✓ PASS] ";
+        status_tag = "  [✓ PASS] ";
         _current_subsection_passed++;
     }
     else if (test.status == TestStatus::FAIL)
     {
-        ss << "  [" << RED << "✗ FAIL" << RESET << "] ";
+        status_tag = std::format("  [{}{}{}] ", RED, "✗ FAIL", RESET);
         _current_subsection_failed++;
         _total_failed++;
     }
     else
     {
-        ss << "  [" << YELLOW << "⚠ WARN" << RESET << "] ";
+        status_tag = std::format("  [{}{}{}] ", YELLOW, "⚠ WARN", RESET);
         _current_subsection_passed++; // Warnings count as passed
     }
 
-    ss << test.test_name;
-    log(ss.str());
+    log(std::format("{}{}", status_tag, test.test_name));
 
     if (test.status != TestStatus::PASS)
     {
@@ -214,7 +213,7 @@ void Certificate::printTestResult(const TestResult& test)
         {
             const bool is_last = (i == test.messages.size() - 1);
             const std::string marker = is_last ? "└─ " : "├─ ";
-            log("      " + marker + test.messages[i]);
+            log(std::format("      {}{}", marker, test.messages[i]));
         }
     }
 
