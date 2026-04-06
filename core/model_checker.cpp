@@ -19,6 +19,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree,
@@ -693,7 +694,6 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
         if (zipper.open(path))
         {
             auto entries = zipper.getEntries();
-            std::vector<std::string> names;
             std::vector<std::pair<std::string, std::string>> name_pairs;
             for (const auto& entry : entries)
             {
