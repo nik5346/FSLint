@@ -13,7 +13,10 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("ASCII filename, Bit 11 not set (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"test.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "test.txt";
+        entry.raw_filename = entry.filename;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -24,7 +27,11 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("ASCII filename, Bit 11 set (WARNING)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"test.txt", 0, 20, BIT11, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "test.txt";
+        entry.raw_filename = entry.filename;
+        entry.flags = BIT11;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -36,7 +43,11 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("Non-ASCII filename, Bit 11 set (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, BIT11, 0, 0, 0, 0, 0, false, false}); // Rocket emoji
+        ZipFileEntry entry{};
+        entry.filename = "\xF0\x9F\x9A\x80.txt";
+        entry.raw_filename = entry.filename;
+        entry.flags = BIT11;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -47,7 +58,10 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("Non-ASCII filename, Bit 11 not set (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false}); // Rocket emoji
+        ZipFileEntry entry{};
+        entry.filename = "\xF0\x9F\x9A\x80.txt";
+        entry.raw_filename = entry.filename;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -59,8 +73,16 @@ TEST_CASE("Language Encoding Flag Logic", "[archive][encoding]")
     SECTION("Mixed filenames (FAIL + WARNING)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"ascii.txt", 0, 20, BIT11, 0, 0, 0, 0, 0, false, false});
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry e1{};
+        e1.filename = "ascii.txt";
+        e1.raw_filename = e1.filename;
+        e1.flags = BIT11;
+        entries.push_back(e1);
+
+        ZipFileEntry e2{};
+        e2.filename = "\xF0\x9F\x9A\x80.txt";
+        e2.raw_filename = e2.filename;
+        entries.push_back(e2);
 
         Certificate cert;
         checker.checkLanguageEncodingFlag(entries, cert);
@@ -79,8 +101,10 @@ TEST_CASE("Path Format Non-ASCII Warning Logic", "[archive][encoding]")
     SECTION("Non-ASCII filename, Bit 11 not set (WARNING)")
     {
         std::vector<ZipFileEntry> entries;
-        // Using a filename with non-ASCII and no bit 11
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "\xF0\x9F\x9A\x80.txt";
+        entry.raw_filename = entry.filename;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkPathFormat(entries, cert);
@@ -92,8 +116,11 @@ TEST_CASE("Path Format Non-ASCII Warning Logic", "[archive][encoding]")
     SECTION("Non-ASCII filename, Bit 11 set (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        // Using a filename with non-ASCII and bit 11
-        entries.push_back({"\xF0\x9F\x9A\x80.txt", 0, 20, BIT11, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "\xF0\x9F\x9A\x80.txt";
+        entry.raw_filename = entry.filename;
+        entry.flags = BIT11;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkPathFormat(entries, cert);

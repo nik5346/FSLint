@@ -317,7 +317,7 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
         {
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back("Invalid Local File Header signature at offset " +
-                                            std::to_string(entry.offset) + " for entry '" + entry.filename + "'.");
+                                            std::to_string(entry.offset) + " for entry '" + entry.raw_filename + "'.");
             continue;
         }
 
@@ -333,7 +333,7 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
         if (local_filename_len != entry.filename_length)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Filename length mismatch for '" + entry.filename +
+            test.getMessages().emplace_back("Filename length mismatch for '" + entry.raw_filename +
                                             "': Central Directory says " + std::to_string(entry.filename_length) +
                                             " but Local Header says " + std::to_string(local_filename_len) + ".");
         }
@@ -341,11 +341,12 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
         std::string local_filename(local_filename_len, '\0');
         file.read(local_filename.data(), local_filename_len);
 
-        if (local_filename != entry.filename)
+        if (local_filename != entry.raw_filename)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Filename mismatch for '" + entry.filename + "': Central Directory says '" +
-                                            entry.filename + "' but Local Header says '" + local_filename + "'.");
+            test.getMessages().emplace_back("Filename mismatch for '" + entry.raw_filename +
+                                            "': Central Directory says '" + entry.raw_filename +
+                                            "' but Local Header says '" + local_filename + "'.");
         }
 
         if (local_extra_len != entry.extra_field_length)
@@ -469,12 +470,12 @@ void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& 
     {
         const bool bit11_set = (entry.flags & LANGUAGE_ENCODING_BIT) != 0;
         const bool has_non_ascii =
-            std::ranges::any_of(entry.filename, [](unsigned char c) { return c > MAX_ASCII_VALUE; });
+            std::ranges::any_of(entry.raw_filename, [](unsigned char c) { return c > MAX_ASCII_VALUE; });
 
         if (has_non_ascii && !bit11_set)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Language encoding flag (bit 11) must be set for '" + entry.filename +
+            test.getMessages().emplace_back("Language encoding flag (bit 11) must be set for '" + entry.raw_filename +
                                             "' because it contains non-ASCII characters.");
         }
         else if (!has_non_ascii && bit11_set)
@@ -482,7 +483,7 @@ void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& 
             if (test.getStatus() != TestStatus::FAIL)
                 test.setStatus(TestStatus::WARNING);
             test.getMessages().emplace_back(
-                "Language encoding flag (bit 11) is set for '" + entry.filename +
+                "Language encoding flag (bit 11) is set for '" + entry.raw_filename +
                 "' but it only contains ASCII characters (for maximum portability, keeping this "
                 "bit at 0 is recommended).");
         }
@@ -516,7 +517,7 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
 
     for (const auto& entry : entries)
     {
-        const std::string& path = entry.filename;
+        const std::string& path = entry.raw_filename;
 
         // Check for control characters (U+0000–U+001F)
         for (const unsigned char c : path)

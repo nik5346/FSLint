@@ -14,7 +14,10 @@ TEST_CASE("Zip Slip Detection", "[archive][security]")
     SECTION("Normal path (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"modelDescription.xml", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "modelDescription.xml";
+        entry.raw_filename = entry.filename;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkZipSlip(entries, cert);
@@ -24,7 +27,10 @@ TEST_CASE("Zip Slip Detection", "[archive][security]")
     SECTION("Relative path staying in root (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"binaries/win64/model.dll", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "binaries/win64/model.dll";
+        entry.raw_filename = entry.filename;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkZipSlip(entries, cert);
@@ -34,7 +40,10 @@ TEST_CASE("Zip Slip Detection", "[archive][security]")
     SECTION("Path with .. staying in root (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"binaries/../modelDescription.xml", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "binaries/../modelDescription.xml";
+        entry.raw_filename = entry.filename;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkZipSlip(entries, cert);
@@ -44,7 +53,10 @@ TEST_CASE("Zip Slip Detection", "[archive][security]")
     SECTION("Zip Slip path escaping root (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"../../etc/passwd", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "../../etc/passwd";
+        entry.raw_filename = entry.filename;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkZipSlip(entries, cert);
@@ -56,7 +68,10 @@ TEST_CASE("Zip Slip Detection", "[archive][security]")
     SECTION("Crafted Zip Slip path (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"foo/../../etc/passwd", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "foo/../../etc/passwd";
+        entry.raw_filename = entry.filename;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkZipSlip(entries, cert);
@@ -73,8 +88,13 @@ TEST_CASE("Zip Bomb Detection", "[archive][security]")
     SECTION("Normal file ratio (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        // 1000 compressed to 500 (2:1 ratio)
-        entries.push_back({"test.txt", 8, 20, 0, 500, 1000, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "test.txt";
+        entry.raw_filename = entry.filename;
+        entry.compression_method = 8;
+        entry.compressed_size = 500;
+        entry.uncompressed_size = 1000;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkZipBomb(entries, cert);
@@ -84,8 +104,13 @@ TEST_CASE("Zip Bomb Detection", "[archive][security]")
     SECTION("High ratio file (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        // 1,000,000 compressed to 10 (100,000:1 ratio)
-        entries.push_back({"bomb.txt", 8, 20, 0, 10, 1000000, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "bomb.txt";
+        entry.raw_filename = entry.filename;
+        entry.compression_method = 8;
+        entry.compressed_size = 10;
+        entry.uncompressed_size = 1000000;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkZipBomb(entries, cert);
@@ -97,8 +122,13 @@ TEST_CASE("Zip Bomb Detection", "[archive][security]")
     SECTION("Single file too large (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        // 1.1 GB uncompressed
-        entries.push_back({"large.txt", 8, 20, 0, 500000000, 1100000000, 0, 0, 0, false, false});
+        ZipFileEntry entry{};
+        entry.filename = "large.txt";
+        entry.raw_filename = entry.filename;
+        entry.compression_method = 8;
+        entry.compressed_size = 500000000;
+        entry.uncompressed_size = 1100000000;
+        entries.push_back(entry);
 
         Certificate cert;
         checker.checkZipBomb(entries, cert);
@@ -110,11 +140,15 @@ TEST_CASE("Zip Bomb Detection", "[archive][security]")
     SECTION("Total size too large (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        // 11 files of 1 GB each = 11 GB total
         for (int i = 0; i < 11; ++i)
         {
-            entries.push_back(
-                {"file" + std::to_string(i) + ".txt", 8, 20, 0, 100000000, 1000000000, 0, 0, 0, false, false});
+            ZipFileEntry entry{};
+            entry.filename = "file" + std::to_string(i) + ".txt";
+            entry.raw_filename = entry.filename;
+            entry.compression_method = 8;
+            entry.compressed_size = 100000000;
+            entry.uncompressed_size = 1000000000;
+            entries.push_back(entry);
         }
 
         Certificate cert;
@@ -131,8 +165,13 @@ TEST_CASE("Duplicate and Case-Conflicting Names", "[archive][security]")
     SECTION("Unique names (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"file1.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
-        entries.push_back({"file2.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry e1{}, e2{};
+        e1.filename = "file1.txt";
+        e1.raw_filename = e1.filename;
+        e2.filename = "file2.txt";
+        e2.raw_filename = e2.filename;
+        entries.push_back(e1);
+        entries.push_back(e2);
 
         Certificate cert;
         checker.checkDuplicateNames(entries, cert);
@@ -142,8 +181,11 @@ TEST_CASE("Duplicate and Case-Conflicting Names", "[archive][security]")
     SECTION("Exact duplicate (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"file.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
-        entries.push_back({"file.txt", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry e1{};
+        e1.filename = "file.txt";
+        e1.raw_filename = e1.filename;
+        entries.push_back(e1);
+        entries.push_back(e1);
 
         Certificate cert;
         checker.checkDuplicateNames(entries, cert);
@@ -155,8 +197,13 @@ TEST_CASE("Duplicate and Case-Conflicting Names", "[archive][security]")
     SECTION("Case conflict (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        entries.push_back({"Model.xml", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
-        entries.push_back({"model.xml", 0, 20, 0, 0, 0, 0, 0, 0, false, false});
+        ZipFileEntry e1{}, e2{};
+        e1.filename = "Model.xml";
+        e1.raw_filename = e1.filename;
+        e2.filename = "model.xml";
+        e2.raw_filename = e2.filename;
+        entries.push_back(e1);
+        entries.push_back(e2);
 
         Certificate cert;
         checker.checkDuplicateNames(entries, cert);
@@ -173,10 +220,19 @@ TEST_CASE("Overlapping Entries", "[archive][security]")
     SECTION("Non-overlapping (PASS)")
     {
         std::vector<ZipFileEntry> entries;
-        // Entry 1 at 0, size 30+10+10 = 50
-        entries.push_back({"file1.txt", 0, 20, 0, 10, 10, 0, 10, 0, false, false});
-        // Entry 2 at 100, size 30+10+10 = 50
-        entries.push_back({"file2.txt", 0, 20, 0, 10, 10, 100, 10, 0, false, false});
+        ZipFileEntry e1{}, e2{};
+        e1.filename = "file1.txt";
+        e1.raw_filename = e1.filename;
+        e1.compressed_size = 10;
+        e1.offset = 0;
+        e1.filename_length = 10;
+        e2.filename = "file2.txt";
+        e2.raw_filename = e2.filename;
+        e2.compressed_size = 10;
+        e2.offset = 100;
+        e2.filename_length = 10;
+        entries.push_back(e1);
+        entries.push_back(e2);
 
         Certificate cert;
         checker.checkOverlappingEntries(entries, cert);
@@ -186,15 +242,66 @@ TEST_CASE("Overlapping Entries", "[archive][security]")
     SECTION("Overlapping (FAIL)")
     {
         std::vector<ZipFileEntry> entries;
-        // Entry 1 at 0, size 30+10+10 = 50
-        entries.push_back({"file1.txt", 0, 20, 0, 10, 10, 0, 10, 0, false, false});
-        // Entry 2 at 40 (overlaps Entry 1)
-        entries.push_back({"file2.txt", 0, 20, 0, 10, 10, 40, 10, 0, false, false});
+        ZipFileEntry e1{}, e2{};
+        e1.filename = "file1.txt";
+        e1.raw_filename = e1.filename;
+        e1.compressed_size = 10;
+        e1.offset = 0;
+        e1.filename_length = 10;
+        e2.filename = "file2.txt";
+        e2.raw_filename = e2.filename;
+        e2.compressed_size = 10;
+        e2.offset = 40;
+        e2.filename_length = 10;
+        entries.push_back(e1);
+        entries.push_back(e2);
 
         Certificate cert;
         checker.checkOverlappingEntries(entries, cert);
         CHECK(has_fail(cert));
         CHECK(has_error_with_text(cert, "[SECURITY] Overlapping File Entries Check"));
         CHECK(has_error_with_text(cert, "Overlapping file entries"));
+    }
+}
+
+TEST_CASE("Backslash Normalization and Validation", "[archive]")
+{
+    ArchiveChecker checker;
+
+    SECTION("Backslash in path (FAIL but normalized)")
+    {
+        std::vector<ZipFileEntry> entries;
+        ZipFileEntry entry{};
+        entry.raw_filename = "binaries\\win64\\model.dll";
+        entry.filename = "binaries/win64/model.dll";
+        entry.filename_length = static_cast<uint16_t>(entry.raw_filename.length());
+        entries.push_back(entry);
+
+        Certificate cert;
+        checker.checkPathFormat(entries, cert);
+
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "Backslash '\\' found in path 'binaries\\win64\\model.dll'"));
+
+        Certificate cert2;
+        checker.checkZipSlip(entries, cert2);
+        CHECK_FALSE(has_fail(cert2));
+    }
+
+    SECTION("Duplicate names with different separators (FAIL)")
+    {
+        std::vector<ZipFileEntry> entries;
+        ZipFileEntry e1{}, e2{};
+        e1.raw_filename = "a\\b.txt";
+        e1.filename = "a/b.txt";
+        e2.raw_filename = "a/b.txt";
+        e2.filename = "a/b.txt";
+        entries.push_back(e1);
+        entries.push_back(e2);
+
+        Certificate cert;
+        checker.checkDuplicateNames(entries, cert);
+        CHECK(has_fail(cert));
+        CHECK(has_error_with_text(cert, "Duplicate entry name found: 'a/b.txt'"));
     }
 }
