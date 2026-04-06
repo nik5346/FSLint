@@ -166,13 +166,13 @@ struct Elf64_Shdr
     uint32_t sh_name;
     uint32_t sh_type;
     uint32_t sh_flags;
-    uint32_t sh_addr;
-    uint32_t sh_offset;
-    uint32_t sh_size;
+    uint64_t sh_addr;
+    uint64_t sh_offset;
+    uint64_t sh_size;
     uint32_t sh_link;
     uint32_t sh_info;
-    uint32_t sh_addralign;
-    uint32_t sh_entsize;
+    uint64_t sh_addralign;
+    uint64_t sh_entsize;
 };
 
 struct Elf32_Shdr
@@ -581,6 +581,7 @@ static BinaryInfo parseElf64(std::ifstream& f)
     std::vector<Elf64_Dyn> dyns;
     Elf64_Dyn dyn{};
     f.seekg(static_cast<std::streamoff>(phdr.p_offset));
+
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     while (f.read(reinterpret_cast<char*>(&dyn), sizeof(dyn)) && dyn.d_tag != DT_NULL)
         dyns.push_back(dyn);
@@ -657,6 +658,7 @@ static BinaryInfo parseElf64(std::ifstream& f)
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
         f.seekg(static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint64_t>(bloom_size) * 8));
+
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets) * 4);
 
@@ -909,6 +911,7 @@ static BinaryInfo parseElf32(std::ifstream& f)
     std::vector<Elf32_Dyn> dyns;
     Elf32_Dyn dyn{};
     f.seekg(static_cast<std::streamoff>(phdr.p_offset));
+
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     while (f.read(reinterpret_cast<char*>(&dyn), sizeof(dyn)) && dyn.d_tag != DT_NULL)
         dyns.push_back(dyn);
@@ -983,6 +986,7 @@ static BinaryInfo parseElf32(std::ifstream& f)
         uint32_t max_idx = symoffset;
         std::vector<uint32_t> buckets(nbuckets);
         f.seekg(static_cast<std::streamoff>(gnu_hash_off + 16 + static_cast<uint64_t>(bloom_size) * 4));
+
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         f.read(reinterpret_cast<char*>(buckets.data()), static_cast<std::streamsize>(nbuckets) * 4);
 
@@ -1095,8 +1099,8 @@ static BinaryInfo parsePe(std::ifstream& f)
     if (!readFromFile(f, optional_hdr_off, magic))
         return info;
 
-    IMAGE_DATA_DIRECTORY export_dir_info = {0, 0};
-    IMAGE_DATA_DIRECTORY import_dir_info = {0, 0};
+    IMAGE_DATA_DIRECTORY export_dir_info = {.VirtualAddress = 0, .Size = 0};
+    IMAGE_DATA_DIRECTORY import_dir_info = {.VirtualAddress = 0, .Size = 0};
     if (magic == 0x10B) // PE32
     {
         arch.bitness = 32;
@@ -1130,6 +1134,7 @@ static BinaryInfo parsePe(std::ifstream& f)
     std::vector<IMAGE_SECTION_HEADER> sections(file_hdr.NumberOfSections);
     const uint32_t section_hdr_off = optional_hdr_off + file_hdr.SizeOfOptionalHeader;
     f.seekg(static_cast<std::streamoff>(section_hdr_off));
+
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     f.read(reinterpret_cast<char*>(sections.data()),
            static_cast<std::streamsize>(sections.size() * sizeof(IMAGE_SECTION_HEADER)));

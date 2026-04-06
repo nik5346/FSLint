@@ -19,16 +19,16 @@
 
 void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
-    auto binaries_path = path / "binaries";
+    const std::filesystem::path binaries_path = path / "binaries";
     if (!std::filesystem::exists(binaries_path))
         return;
 
-    auto model_desc_path = path / "modelDescription.xml";
+    const std::filesystem::path model_desc_path = path / "modelDescription.xml";
     if (!std::filesystem::exists(model_desc_path))
         return;
 
     xmlDocPtr doc = readXmlFile(model_desc_path);
-    if (!doc)
+    if (doc == nullptr)
     {
         cert.printSubsectionSummary(false);
         return;
@@ -38,22 +38,26 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
 
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-    if (xpath_context)
+    if (xpath_context != nullptr)
     {
         for (const auto& elem : interface_elements)
         {
-            const std::string xpath = "//" + elem;
-            xmlXPathObjectPtr xpath_obj =
+            const std::string xpath_query = "//" + elem;
+            const xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), xpath_context);
-            if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
+                xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath_query.c_str()), xpath_context);
+            if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr && xpath_obj->nodesetval->nodeNr > 0)
             {
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                auto model_id = getXmlAttribute(xpath_obj->nodesetval->nodeTab[0], "modelIdentifier");
-                if (model_id)
-                    model_identifiers.insert(*model_id);
+                const std::optional<std::string> model_id =
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    getXmlAttribute(xpath_obj->nodesetval->nodeTab[0], "modelIdentifier");
+                if (model_id.has_value())
+                {
+                    const auto& val = *model_id;
+                    model_identifiers.insert(val);
+                }
             }
-            if (xpath_obj)
+            if (xpath_obj != nullptr)
                 xmlXPathFreeObject(xpath_obj);
         }
         xmlXPathFreeContext(xpath_context);
@@ -87,7 +91,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
             const std::vector<std::string> extensions = {".dll", ".so", ".dylib"};
             for (const auto& ext : extensions)
             {
-                auto binary_file = platform_entry.path() / (model_id + ext);
+                const auto binary_file = platform_entry.path() / (model_id + ext);
                 if (std::filesystem::exists(binary_file))
                 {
                     ensure_header();
@@ -101,11 +105,14 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     {
                         if (!info.exports.contains(func))
                         {
-                            export_test.status = TestStatus::FAIL;
-                            export_test.messages.push_back("Mandatory function '" + func + "' is not exported.");
+                            export_test.setStatus(TestStatus::FAIL);
+                            export_test.getMessages().emplace_back("Mandatory function '" + func +
+                                                                   "' is not exported.");
                         }
                     }
                     cert.printTestResult(export_test);
+                    if (cert.shouldAbort())
+                        return;
 
                     // 2. Binary Format, Bitness, and Architecture Check
                     TestResult format_test{
@@ -113,20 +120,20 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
                     if (!info.isSharedLibrary && info.format != BinaryFormat::UNKNOWN)
                     {
-                        format_test.status = TestStatus::FAIL;
-                        format_test.messages.push_back("Binary is not a shared library (DLL/SO/DYLIB).");
+                        format_test.setStatus(TestStatus::FAIL);
+                        format_test.getMessages().emplace_back("Binary is not a shared library (DLL/SO/DYLIB).");
                     }
 
                     if (platform.starts_with("win"))
                     {
                         if (info.format != BinaryFormat::PE)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary format is not PE (Windows), found {}",
-                                            (info.format == BinaryFormat::ELF     ? "ELF"
-                                             : info.format == BinaryFormat::MACHO ? "Mach-O"
-                                                                                  : "unknown")));
+                                            info.format == BinaryFormat::ELF     ? "ELF"
+                                            : info.format == BinaryFormat::MACHO ? "Mach-O"
+                                                                                 : "unknown"));
                         }
 
                         bool arch_match = false;
@@ -145,22 +152,22 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
                         if (!arch_match && !info.architectures.empty())
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary does not contain a {} architecture matching platform '{}'.",
-                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                                            platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64", platform));
                         }
                     }
                     else if (platform.starts_with("linux"))
                     {
                         if (info.format != BinaryFormat::ELF)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary format is not ELF (Linux), found {}",
-                                            (info.format == BinaryFormat::PE      ? "PE"
-                                             : info.format == BinaryFormat::MACHO ? "Mach-O"
-                                                                                  : "unknown")));
+                                            info.format == BinaryFormat::PE      ? "PE"
+                                            : info.format == BinaryFormat::MACHO ? "Mach-O"
+                                                                                 : "unknown"));
                         }
 
                         bool arch_match = false;
@@ -179,22 +186,22 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
                         if (!arch_match && !info.architectures.empty())
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary does not contain a {} architecture matching platform '{}'.",
-                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                                            platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64", platform));
                         }
                     }
                     else if (platform.starts_with("darwin"))
                     {
                         if (info.format != BinaryFormat::MACHO)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary format is not Mach-O (macOS), found {}",
-                                            (info.format == BinaryFormat::PE    ? "PE"
-                                             : info.format == BinaryFormat::ELF ? "ELF"
-                                                                                : "unknown")));
+                                            info.format == BinaryFormat::PE    ? "PE"
+                                            : info.format == BinaryFormat::ELF ? "ELF"
+                                                                               : "unknown"));
                         }
 
                         bool arch_match = false;
@@ -213,10 +220,10 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
                         if (!arch_match && !info.architectures.empty())
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary does not contain a {} architecture matching platform '{}'.",
-                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                                            platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64", platform));
                         }
                     }
                     else if (platform.find('-') != std::string::npos) // FMI 3.0 platform tuples
@@ -224,18 +231,18 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                         // x86_64-windows, aarch64-linux, etc.
                         if (platform.find("windows") != std::string::npos && info.format != BinaryFormat::PE)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back("Binary format is not PE (Windows).");
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back("Binary format is not PE (Windows).");
                         }
                         else if (platform.find("linux") != std::string::npos && info.format != BinaryFormat::ELF)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back("Binary format is not ELF (Linux).");
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back("Binary format is not ELF (Linux).");
                         }
                         else if (platform.find("darwin") != std::string::npos && info.format != BinaryFormat::MACHO)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back("Binary format is not Mach-O (macOS).");
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back("Binary format is not Mach-O (macOS).");
                         }
 
                         bool arch_match = false;
@@ -243,7 +250,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                         {
                             // Robust architecture check: ensure the architecture is an exact component
                             // (e.g., 'x86' should not match 'x86_64-windows').
-                            if (platform.find(arch.architecture + "-") == 0)
+                            if (platform.starts_with(arch.architecture + "-"))
                             {
                                 arch_match = true;
                                 break;
@@ -252,13 +259,15 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
                         if (!arch_match && !info.architectures.empty())
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(std::format(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(std::format(
                                 "Binary does not contain an architecture matching platform tuple '{}'.", platform));
                         }
                     }
 
                     cert.printTestResult(format_test);
+                    if (cert.shouldAbort())
+                        return;
                 }
             }
         }
@@ -270,12 +279,12 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
 std::optional<std::string> BinaryChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
-    if (!node)
+    if (node == nullptr)
         return std::nullopt;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
-    if (!attr)
+    if (attr == nullptr)
         return std::nullopt;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)

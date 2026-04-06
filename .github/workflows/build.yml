@@ -24,19 +24,13 @@ jobs:
           sudo apt-get install -y doxygen
       - name: Check Encodings
         run: python scripts/check_encodings.py
-      - name: Install LLVM 19
+      - name: Install LLVM
         run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 19
-          sudo apt-get install -y clang-tidy-19 clang-format-19
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy clang-format
       - name: Configure CMake
         run: |
-          export CC=clang-19
-          export CXX=clang++-19
-          cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON \
-                -DCLANG_TIDY_EXE=/usr/bin/clang-tidy-19 \
-                -DCLANG_FORMAT_EXE=/usr/bin/clang-format-19
+          cmake -G Ninja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_TIDY_AS_ERRORS=ON
       - name: XML Format Check
         run: cmake --build build --target format-xml-check
       - name: Clang-Format Check

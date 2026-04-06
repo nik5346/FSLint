@@ -21,9 +21,9 @@
 #include <string>
 #include <vector>
 
-Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree) const
+Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree,
+                                   Certificate cert) const
 {
-    Certificate cert;
     cert.setQuiet(quiet);
 
     if (!quiet)
@@ -59,8 +59,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         }
 
         // Step 2: Extract to temporary directory
-        auto now = std::chrono::high_resolution_clock::now();
-        auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+        const auto now = std::chrono::high_resolution_clock::now();
+        const auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
         const std::string dir_name = "model_validation_" + std::to_string(nanos);
 #ifdef __EMSCRIPTEN__
         extract_dir = std::filesystem::current_path() / dir_name;
@@ -125,7 +125,11 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     auto checkers = CheckerFactory::createCheckers(model_info);
 
     for (auto& checker : checkers)
+    {
+        if (cert.shouldAbort())
+            break;
         checker->validate(extract_dir, cert);
+    }
 
     if (show_tree)
         cert.printFileTree(extract_dir);
@@ -147,6 +151,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
 bool ModelChecker::addCertificate(const std::filesystem::path& path) const
 {
     Certificate cert;
+    // For now, certificate operations also stop on security issues by default
+    // as no callback is set.
     cert.setQuiet(false);
 
     // Print header
@@ -218,8 +224,8 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
         return false;
     }
 
-    auto checkers = CheckerFactory::createCheckers(model_info);
-    for (auto& checker : checkers)
+    const auto checkers = CheckerFactory::createCheckers(model_info);
+    for (const auto& checker : checkers)
         checker->validate(extract_dir, cert);
 
     cert.printFooter();
@@ -277,7 +283,9 @@ bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
 
     if (std::filesystem::is_directory(path))
     {
-        removeCertificate(path);
+        const auto result = removeCertificate(path);
+        if (!result)
+            return false;
         return addCertificate(path);
     }
 
@@ -602,7 +610,7 @@ bool ModelChecker::package(const std::filesystem::path& extract_dir, const std::
                 std::string internal_path = file_utils::pathToUtf8(rel_path);
 
                 // Convert backslashes to forward slashes for ZIP compatibility
-                std::replace(internal_path.begin(), internal_path.end(), '\\', '/');
+                std::ranges::replace(internal_path, '\\', '/');
 
                 if (!zip_handler.addFileFromDisk(internal_path, entry.path()))
                 {
@@ -643,7 +651,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
             {
                 auto rel_path = std::filesystem::relative(entry.path(), path);
                 std::string rel_path_str = file_utils::pathToUtf8(rel_path);
-                std::replace(rel_path_str.begin(), rel_path_str.end(), '\\', '/');
+                std::ranges::replace(rel_path_str, '\\', '/');
 
                 if (rel_path_str == "extra/validation_certificate.txt")
                     continue;
@@ -651,12 +659,12 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 files.push_back(rel_path);
             }
         }
-        std::sort(files.begin(), files.end());
+        std::ranges::sort(files);
 
         for (const auto& rel_path : files)
         {
             std::string rel_path_str = file_utils::pathToUtf8(rel_path);
-            std::replace(rel_path_str.begin(), rel_path_str.end(), '\\', '/');
+            std::ranges::replace(rel_path_str, '\\', '/');
 
             // Hash path to include structure in hash
             hasher.process(rel_path_str.begin(), rel_path_str.end());
@@ -685,10 +693,12 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 // Skip directories and the certificate itself
                 if (entry.filename.empty() || entry.filename.back() == '/' ||
                     entry.filename == "extra/validation_certificate.txt")
+                {
                     continue;
+                }
                 names.push_back(entry.filename);
             }
-            std::sort(names.begin(), names.end());
+            std::ranges::sort(names);
 
             for (const auto& name : names)
             {

@@ -65,13 +65,13 @@ bool Zipper::create(const std::filesystem::path& zip_path)
 
 void Zipper::close()
 {
-    if (_zip_file)
+    if (_zip_file != nullptr)
     {
         unzClose(static_cast<unzFile>(_zip_file));
         _zip_file = nullptr;
     }
 
-    if (_zip_writer)
+    if (_zip_writer != nullptr)
     {
         zipClose(static_cast<zipFile>(_zip_writer), nullptr);
         _zip_writer = nullptr;
@@ -82,10 +82,10 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
 {
     std::vector<ZipFileEntry> entries;
 
-    if (!_zip_file)
+    if (_zip_file == nullptr)
         return entries;
 
-    unzFile uf = static_cast<unzFile>(_zip_file);
+    auto* const uf = static_cast<unzFile>(_zip_file);
 
     if (unzGoToFirstFile(uf) != UNZ_OK)
         return entries;
@@ -94,7 +94,7 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
     bool has_files = true;
     while (has_files)
     {
-        unz_file_info file_info;
+        unz_file_info file_info{};
         constexpr size_t MAX_FILENAME_LENGTH = 512;
         std::array<char, MAX_FILENAME_LENGTH> filename{};
 
@@ -105,7 +105,7 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
             continue;
         }
 
-        ZipFileEntry entry;
+        ZipFileEntry entry{};
         entry.filename = filename.data();
         entry.compression_method = static_cast<uint16_t>(file_info.compression_method);
         entry.version_needed = static_cast<uint16_t>(file_info.version_needed);
@@ -126,8 +126,10 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
         std::ifstream file(_zip_path, std::ios::binary);
         if (file)
         {
-            file.seekg(static_cast<std::streamoff>(pos_in_central_dir + 42), std::ios::beg);
+            file.seekg(static_cast<std::streamoff>(static_cast<uint64_t>(pos_in_central_dir) + 42ULL), std::ios::beg);
             uint32_t offset_le = 0;
+
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             if (file.read(reinterpret_cast<char*>(&offset_le), 4))
                 entry.offset = offset_le;
         }
@@ -143,7 +145,7 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
         constexpr uint16_t FILE_TYPE_SHIFT = 12;
         constexpr uint16_t SYMLINK_TYPE = 0xA;
 
-        const uint16_t unix_mode = static_cast<uint16_t>((file_info.external_fa >> UNIX_MODE_SHIFT) & UNIX_MODE_MASK);
+        const auto unix_mode = static_cast<uint16_t>((file_info.external_fa >> UNIX_MODE_SHIFT) & UNIX_MODE_MASK);
         const uint16_t file_type = (unix_mode & FILE_TYPE_MASK) >> FILE_TYPE_SHIFT;
         entry.is_symlink = (file_type == SYMLINK_TYPE);
 
@@ -157,15 +159,15 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
 
 bool Zipper::extractFile(const std::string& filename, std::vector<uint8_t>& output)
 {
-    if (!_zip_file)
+    if (_zip_file == nullptr)
         return false;
 
-    unzFile uf = static_cast<unzFile>(_zip_file);
+    auto* const uf = static_cast<unzFile>(_zip_file);
 
     if (unzLocateFile(uf, filename.c_str(), 0) != UNZ_OK)
         return false;
 
-    unz_file_info file_info;
+    unz_file_info file_info{};
     if (unzGetCurrentFileInfo(uf, &file_info, nullptr, 0, nullptr, 0, nullptr, 0) != UNZ_OK)
         return false;
 
@@ -174,6 +176,7 @@ bool Zipper::extractFile(const std::string& filename, std::vector<uint8_t>& outp
 
     output.resize(file_info.uncompressed_size);
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     const int32_t bytes_read = unzReadCurrentFile(uf, output.data(), static_cast<uint32_t>(output.size()));
     unzCloseCurrentFile(uf);
 
@@ -185,16 +188,17 @@ bool Zipper::extractFile(const std::string& filename, std::vector<uint8_t>& outp
 
 bool Zipper::extractAll(const std::filesystem::path& destination)
 {
-    if (!_zip_file)
+    if (_zip_file == nullptr)
         return false;
 
     std::filesystem::create_directories(destination);
 
-    auto entries = getEntries();
+    const auto entries = getEntries();
     for (const auto& entry : entries)
     {
 #ifdef _WIN32
         const std::filesystem::path file_path =
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             destination / std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(entry.filename.data()),
                                                               entry.filename.size()));
 #else
@@ -221,7 +225,7 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
         if (!out)
             return false;
 
-        // Use reinterpret_cast to avoid casting through void
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         out.write(reinterpret_cast<const char*>(data.data()), static_cast<int64_t>(data.size()));
     }
 
@@ -230,10 +234,10 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
 
 bool Zipper::addFile(const std::string& internal_path, const std::vector<uint8_t>& data, int32_t compression_level)
 {
-    if (!_zip_writer)
+    if (_zip_writer == nullptr)
         return false;
 
-    zipFile zf = static_cast<zipFile>(_zip_writer);
+    auto zf = static_cast<zipFile>(_zip_writer);
 
     const zip_fileinfo zi{};
 
@@ -242,8 +246,7 @@ bool Zipper::addFile(const std::string& internal_path, const std::vector<uint8_t
 
     // Check if path contains non-ASCII characters
     constexpr unsigned char MAX_ASCII_VALUE = 127;
-    const bool has_non_ascii =
-        std::any_of(internal_path.begin(), internal_path.end(), [](unsigned char c) { return c > MAX_ASCII_VALUE; });
+    const bool has_non_ascii = std::ranges::any_of(internal_path, [](unsigned char c) { return c > MAX_ASCII_VALUE; });
 
     // Set bit 11 (Language Encoding Flag) if path contains non-ASCII characters.
     // Using zipOpenNewFileInZip4 to specify the language encoding flag.
@@ -253,11 +256,13 @@ bool Zipper::addFile(const std::string& internal_path, const std::vector<uint8_t
 
     if (zipOpenNewFileInZip4(zf, internal_path.c_str(), &zi, nullptr, 0, nullptr, 0, nullptr, method, compression_level,
                              0, -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY, nullptr, 0, 20, flag) != ZIP_OK)
+    {
         return false;
+    }
 
     if (zipWriteInFileInZip(zf, data.data(), static_cast<uint32_t>(data.size())) != ZIP_OK)
     {
-        zipCloseFileInZip(zf);
+        (void)zipCloseFileInZip(zf);
         return false;
     }
 
@@ -275,7 +280,8 @@ bool Zipper::addFileFromDisk(const std::string& internal_path, const std::filesy
     file.seekg(0, std::ios::beg);
 
     std::vector<uint8_t> buffer(static_cast<size_t>(size));
-    // Use reinterpret_cast to avoid casting through void
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
         return false;
 
@@ -305,6 +311,7 @@ int32_t Zipper::getDiskCount() const
     file.seekg(-static_cast<std::streamoff>(EOCD_MIN_SIZE), std::ios::end);
 
     std::vector<uint8_t> buffer(EOCD_MIN_SIZE);
+
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     file.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(EOCD_MIN_SIZE));
 
@@ -335,6 +342,7 @@ int32_t Zipper::getDiskCount() const
 
         file.seekg(-static_cast<std::streamoff>(search_size), std::ios::end);
         std::vector<uint8_t> search_buffer(search_size);
+
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         file.read(reinterpret_cast<char*>(search_buffer.data()), static_cast<std::streamsize>(search_size));
 
@@ -386,6 +394,7 @@ int32_t Zipper::getReportedEntryCount() const
 
     file.seekg(-static_cast<std::streamoff>(search_size), std::ios::end);
     std::vector<uint8_t> search_buffer(search_size);
+
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     file.read(reinterpret_cast<char*>(search_buffer.data()), static_cast<std::streamsize>(search_size));
 
@@ -439,6 +448,7 @@ std::string Zipper::getComment() const
 
     file.seekg(-static_cast<std::streamoff>(search_size), std::ios::end);
     std::vector<uint8_t> search_buffer(search_size);
+
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     file.read(reinterpret_cast<char*>(search_buffer.data()), static_cast<std::streamsize>(search_size));
 
@@ -465,8 +475,8 @@ std::string Zipper::getComment() const
             const uint16_t comment_length = readInteger16(search_buffer.data(), i + EOCD_COMMENT_LENGTH_OFFSET);
             if (comment_length > 0 && i + EOCD_MIN_SIZE + comment_length <= search_buffer.size())
             {
-                return std::string(reinterpret_cast<const char*>(search_buffer.data() + i + EOCD_MIN_SIZE),
-                                   comment_length);
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                return {reinterpret_cast<const char*>(search_buffer.data() + i + EOCD_MIN_SIZE), comment_length};
             }
             break;
         }

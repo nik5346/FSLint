@@ -2,11 +2,11 @@
 Checks: >
   cert-*,
   bugprone-*,
-  cppcoreguidelines-*
+  cppcoreguidelines-*,
   modernize-*,
   performance-*,
-  misc-include-cleaner,
   misc-const-correctness,
+  misc-include-cleaner,
   misc-redundant-expression,
   misc-definitions-in-headers,
   misc-non-private-member-variables-in-classes,

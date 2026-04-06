@@ -1,3 +1,4 @@
+#include "certificate.h"
 #include "model_checker.h"
 
 #include <cstddef>
@@ -8,6 +9,20 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
+
+// NOLINTBEGIN(misc-include-cleaner)
+#ifdef _WIN32
+#include <io.h>
+#define ISATTY _isatty
+#define FILENO _fileno
+#else
+#include <cstdio>
+#include <unistd.h>
+#define ISATTY isatty
+#define FILENO fileno
+#endif
+// NOLINTEND(misc-include-cleaner)
 
 void printUsage(const std::string& program_name)
 {
@@ -64,28 +79,42 @@ int main(int argc, char** argv)
                 printUsage(args[0]);
                 return 0;
             }
-            else if (arg == "-v" || arg == "--version")
+
+            if (arg == "-v" || arg == "--version")
             {
                 // __DATE__ is in "Mmm dd yyyy" format (e.g., "Jan 26 2010")
-                const std::string build_date = __DATE__;
-                const std::string build_year = build_date.substr(build_date.size() - 4);
+                const std::string_view build_date = __DATE__;
+                const std::string_view build_year = build_date.substr(build_date.size() - 4);
 
                 std::cout << "FSLint " << PROJECT_VERSION << "\n";
                 std::cout << "Copyright (c) " << build_year << " FSLint Contributors\n";
                 return 0;
             }
-            else if (arg == "-s" || arg == "--save")
+
+            if (arg == "-s" || arg == "--save")
+            {
                 save_cert = true;
+            }
             else if (arg == "-u" || arg == "--update")
+            {
                 update_cert = true;
+            }
             else if (arg == "-r" || arg == "--remove")
+            {
                 remove_cert = true;
+            }
             else if (arg == "-d" || arg == "--display")
+            {
                 display_cert = true;
+            }
             else if (arg == "-c" || arg == "--verify")
+            {
                 verify_cert = true;
+            }
             else if (arg == "-t" || arg == "--tree")
+            {
                 show_tree = true;
+            }
             else if (arg[0] != '-')
             {
                 if (fmu_path.empty())
@@ -132,20 +161,55 @@ int main(int argc, char** argv)
         // Create validator instance
         const ModelChecker validator;
 
+        const auto continue_callback = [](const TestResult& test) -> bool
+        {
+            (void)test;
+            if (ISATTY(FILENO(stdin)) == 0)
+                return false;
+
+            std::cout << "\n[SECURITY ISSUE DETECTED] Do you want to continue validation? (y/N): ";
+            char response = 'n';
+            if (!(std::cin >> response))
+                return false;
+
+            return response == 'y' || response == 'Y';
+        };
+
         // Execute requested operation
         if (remove_cert)
-            return validator.removeCertificate(fmu_path) ? 0 : 1;
-        else if (display_cert)
-            return validator.displayCertificate(fmu_path) ? 0 : 1;
-        else if (verify_cert)
-            return validator.verifyCertificate(fmu_path) ? 0 : 1;
-        else if (save_cert)
-            return validator.addCertificate(fmu_path) ? 0 : 1;
-        else if (update_cert)
-            return validator.updateCertificate(fmu_path) ? 0 : 1;
+        {
+            (void)validator.removeCertificate(fmu_path);
+            return 0;
+        }
+
+        if (display_cert)
+        {
+            (void)validator.displayCertificate(fmu_path);
+            return 0;
+        }
+
+        if (verify_cert)
+        {
+            (void)validator.verifyCertificate(fmu_path);
+            return 0;
+        }
+
+        if (save_cert)
+        {
+            (void)validator.addCertificate(fmu_path);
+            return 0;
+        }
+
+        if (update_cert)
+        {
+            (void)validator.updateCertificate(fmu_path);
+            return 0;
+        }
 
         // Default: validate FMU (without saving certificate)
-        validator.validate(fmu_path, false, show_tree);
+        Certificate initial_cert;
+        initial_cert.setContinueCallback(continue_callback);
+        (void)validator.validate(fmu_path, false, show_tree, std::move(initial_cert));
 
         return 0;
     }

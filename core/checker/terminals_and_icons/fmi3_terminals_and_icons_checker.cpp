@@ -21,8 +21,8 @@ void Fmi3TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& 
     const auto version_attr = getXmlAttribute(root, "fmiVersion");
     if (!version_attr)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
     }
 }
 
@@ -76,6 +76,7 @@ Fmi3TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
             var.causality = getXmlAttribute(node, "causality").value_or("local");
             var.variability = getXmlAttribute(node, "variability").value_or("");
             var.sourceline = node->line;
+
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             var.type = reinterpret_cast<const char*>(node->name);
 

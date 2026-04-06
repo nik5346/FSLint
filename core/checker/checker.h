@@ -35,7 +35,7 @@ class Checker
   protected:
     /// @brief Gets the original file path.
     /// @return Original path.
-    const std::filesystem::path& getOriginalPath() const
+    [[nodiscard]] const std::filesystem::path& getOriginalPath() const
     {
         return _original_path;
     }

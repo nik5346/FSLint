@@ -2,6 +2,7 @@
 #include "model_checker.h"
 
 #include <emscripten.h>
+#include <format>
 #include <string>
 
 extern "C"
@@ -9,10 +10,33 @@ extern "C"
     /// @brief Entry point for WASM-based validation.
     /// @param path Path to the model file in the Emscripten filesystem.
     /// @return JSON string containing validation results.
-    EMSCRIPTEN_KEEPALIVE const char* run_validation(const char* path)
+    EMSCRIPTEN_KEEPALIVE const char* run_validation(const char* const path)
     {
         const ModelChecker validator;
-        Certificate cert = validator.validate(path);
+        Certificate initial_cert;
+
+        initial_cert.setContinueCallback(
+            [](const TestResult& test) -> bool
+            {
+                // Escape single quotes for JS string
+                std::string escaped_name = test.getName();
+                size_t pos = 0;
+                while ((pos = escaped_name.find('\'', pos)) != std::string::npos)
+                {
+                    escaped_name.replace(pos, 1, "\\'");
+                    pos += 2;
+                }
+
+                // We use EM_ASM_INT to call window.confirm in the browser.
+                // We pass the test name to the confirm dialog.
+                const std::string script =
+                    std::format("window.confirm('SECURITY ISSUE DETECTED: {}\\n\\nDo you want to continue "
+                                "validation?') ? 1 : 0",
+                                escaped_name);
+                return emscripten_run_script_int(script.c_str()) != 0;
+            });
+
+        const Certificate cert = validator.validate(path, false, false, std::move(initial_cert));
 
         static std::string result;
         result = cert.toJson(path);

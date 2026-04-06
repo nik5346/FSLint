@@ -63,9 +63,9 @@ void Fmi2ModelDescriptionChecker::checkEnumerationVariables(const std::vector<Va
     {
         if (var.type == "Enumeration" && !var.declared_type.has_value())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") is of type Enumeration and must have a declaredType attribute.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                            ") is of type Enumeration and must have a declaredType attribute.");
         }
     }
 
@@ -91,16 +91,19 @@ void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
         {
             if (!state_indices.contains(var.index))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has 'reinit' attribute but is not a continuous-time state.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " +
+                                                std::to_string(var.sourceline) +
+                                                ") has 'reinit' attribute but is not a continuous-time state.");
             }
 
             if (!has_me && has_cs)
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has 'reinit' attribute which is not allowed for Co-Simulation only FMUs.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " +
+                                                std::to_string(var.sourceline) +
+                                                ") has 'reinit' attribute which is not allowed for Co-Simulation only "
+                                                "FMUs.");
             }
         }
     }
@@ -122,16 +125,17 @@ void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const
         {
             if (var.causality != "input")
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has 'canHandleMultipleSetPerTimeInstant' but causality is '" +
-                                        var.causality + "' (expected 'input').");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " +
+                                                std::to_string(var.sourceline) +
+                                                ") has 'canHandleMultipleSetPerTimeInstant' but causality is '" +
+                                                var.causality + "' (expected 'input').");
             }
 
             if (!has_me && has_cs)
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back(
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
                     "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
                     ") has 'canHandleMultipleSetPerTimeInstant' which is not allowed for Co-Simulation only FMUs.");
             }
@@ -163,16 +167,18 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
         {
             if (var.causality != "local" && var.causality != "output")
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Continuous-time state \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) + ") must have causality 'local' or 'output'.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Continuous-time state \"" + var.name + "\" (line " +
+                                                std::to_string(var.sourceline) +
+                                                ") must have causality 'local' or 'output'.");
             }
 
             if (var.variability != "continuous")
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Continuous-time state \"" + var.name + "\" (line " +
-                                        std::to_string(var.sourceline) + ") must have variability=\"continuous\".");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Continuous-time state \"" + var.name + "\" (line " +
+                                                std::to_string(var.sourceline) +
+                                                ") must have variability=\"continuous\".");
             }
         }
 
@@ -181,9 +187,10 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
         {
             if (var.variability != "continuous")
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") is a derivative and must have variability=\"continuous\".");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " +
+                                                std::to_string(var.sourceline) +
+                                                ") is a derivative and must have variability=\"continuous\".");
             }
 
             const uint32_t ref_index = *var.derivative_of;
@@ -191,21 +198,21 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
 
             if (it == index_map.end())
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") has derivative attribute referencing index " + std::to_string(ref_index) +
-                                        " which does not exist.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " +
+                                                std::to_string(var.sourceline) +
+                                                ") has derivative attribute referencing index " +
+                                                std::to_string(ref_index) + " which does not exist.");
             }
             else
             {
                 const Variable* state_var = it->second;
                 if (state_var->variability != "continuous")
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                            ") is derivative of \"" + state_var->name + "\" which has variability \"" +
-                                            state_var->variability +
-                                            "\". Continuous-time states must have variability=\"continuous\".");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(std::format(
+                        R"(Variable "{}" (line {}) is derivative of "{}" which has variability "{}". Continuous-time states must have variability="continuous".)",
+                        var.name, var.sourceline, state_var->name, state_var->variability));
                 }
             }
         }
@@ -215,10 +222,10 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
         {
             if (var.type != "Real")
             {
-                test.status = TestStatus::FAIL;
+                test.setStatus(TestStatus::FAIL);
                 const std::string role = var.derivative_of.has_value() ? "State derivative" : "Continuous-time state";
-                test.messages.push_back(role + " \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") must be of type Real.");
+                test.getMessages().emplace_back(role + " \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                                ") must be of type Real.");
             }
         }
     }
@@ -237,45 +244,46 @@ void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
     {
         if (var.causality == "independent")
         {
-            if (!independent_var)
+            if (independent_var == nullptr)
                 independent_var = &var;
             else
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back(
-                    "At most one ScalarVariable can be defined as \"independent\". Found multiple: " +
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    R"(At most one ScalarVariable can be defined as "independent". Found multiple: )" +
                     independent_var->name + ", " + var.name);
             }
         }
     }
 
-    if (independent_var)
+    if (independent_var != nullptr)
     {
         if (independent_var->type != "Real")
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Independent variable \"" + independent_var->name + "\" must be of type \"Real\".");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(R"(Independent variable ")" + independent_var->name +
+                                            R"(" must be of type "Real".)");
         }
 
         if (independent_var->start.has_value())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Independent variable \"" + independent_var->name +
-                                    "\" is not allowed to have a \"start\" attribute.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(R"(Independent variable ")" + independent_var->name +
+                                            R"(" is not allowed to have a "start" attribute.)");
         }
 
         if (!independent_var->initial.empty())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Independent variable \"" + independent_var->name +
-                                    "\" is not allowed to define \"initial\".");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(R"(Independent variable ")" + independent_var->name +
+                                            R"(" is not allowed to define "initial".)");
         }
 
         if (independent_var->variability != "continuous")
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Independent variable \"" + independent_var->name +
-                                    "\" must have variability=\"continuous\".");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(R"(Independent variable ")" + independent_var->name +
+                                            R"(" must have variability="continuous".)");
         }
     }
 
@@ -304,8 +312,8 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         if (alias_set.size() <= 1)
             continue;
 
-        const bool has_non_constant = std::any_of(alias_set.begin(), alias_set.end(),
-                                                  [](const Variable* v) { return v->variability != "constant"; });
+        const bool has_non_constant =
+            std::ranges::any_of(alias_set, [](const Variable* v) { return v->variability != "constant"; });
 
         const Variable* first_constant = nullptr;
 
@@ -330,7 +338,7 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         {
             if (var->variability == "constant")
             {
-                if (!first_constant)
+                if (first_constant == nullptr)
                     first_constant = var;
             }
 
@@ -341,12 +349,12 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         // Rule 1: Cannot both be set with fmi2SetXXX
         if (settable_vars.size() > 1)
         {
-            test.status = TestStatus::FAIL;
+            test.setStatus(TestStatus::FAIL);
             std::string vars;
             for (size_t i = 0; i < settable_vars.size(); ++i)
                 vars += (i > 0 ? ", " : "") + std::format("\"{}\"", settable_vars[i]->name);
 
-            test.messages.push_back(
+            test.getMessages().emplace_back(
                 std::format("All variables in an alias set (VR {}) must have at most one variable that can be set with "
                             "fmi2SetXXX. Found: {}.",
                             key.second, vars));
@@ -363,12 +371,12 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 
             if (non_constant_with_start.size() > 1)
             {
-                test.status = TestStatus::FAIL;
+                test.setStatus(TestStatus::FAIL);
                 std::string vars;
                 for (size_t i = 0; i < non_constant_with_start.size(); ++i)
                     vars += (i > 0 ? ", " : "") + std::format("\"{}\"", non_constant_with_start[i]->name);
 
-                test.messages.push_back(std::format(
+                test.getMessages().emplace_back(std::format(
                     "All variables in an alias set (VR {}) must have at most one non-constant variable with a start "
                     "attribute. Found: {}.",
                     key.second, vars));
@@ -377,14 +385,14 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 
         // Rule 3: A variable with variability="constant" can only be aliased to another variable with
         // variability="constant"
-        if (first_constant)
+        if (first_constant != nullptr)
         {
             for (const auto* var : alias_set)
             {
                 if (var->variability != "constant")
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back(std::format(
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(std::format(
                         "All variables in an alias set (VR {}) must have the same variability. Variable \"{}\" is "
                         "{} but \"{}\" is constant. Constants can only be aliased to other constants.",
                         key.second, var->name, var->variability, first_constant->name));
@@ -394,8 +402,8 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                     // start values must be identical
                     if (var->start != first_constant->start)
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back(std::format(
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(std::format(
                             "All variables in an alias set (VR {}) must have the same start values if they are "
                             "constant. Variable \"{}\" has start=\"{}\" but \"{}\" has start=\"{}\".",
                             key.second, var->name, var->start.value_or("(none)"), first_constant->name,
@@ -412,8 +420,8 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             const Variable* var = alias_set[i];
             if (var->unit != first_var->unit)
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back(
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
                     std::format("All variables in an alias set (VR {}) must have the same unit. Variable \"{}\" has "
                                 "unit \"{}\" but \"{}\" has unit \"{}\".",
                                 key.second, var->name, var->unit.value_or("(none)"), first_var->name,
@@ -431,11 +439,11 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
     // FMI2 uses ModelVariables/ScalarVariable structure
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelVariables/ScalarVariable");
-    if (!xpath_obj)
+    if (xpath_obj == nullptr)
         return variables;
 
     xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
+    if (nodes == nullptr)
     {
         xmlXPathFreeObject(xpath_obj);
         return variables;
@@ -443,7 +451,8 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr scalar_var_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr scalar_var_node = nodes->nodeTab[i];
         Variable var;
 
         // Get attributes from ScalarVariable element
@@ -464,13 +473,13 @@ std::vector<Variable> Fmi2ModelDescriptionChecker::extractVariables(xmlDocPtr do
             var.value_reference = parseNumber<uint32_t>(*vr);
 
         // FMI2: The type element (Real, Integer, Boolean, String, Enumeration) is a child of ScalarVariable
-        for (xmlNodePtr child = scalar_var_node->children; child; child = child->next)
+        for (xmlNodePtr child = scalar_var_node->children; child != nullptr; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            const std::string elem_name =
-                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            const std::string elem_name = reinterpret_cast<const char*>(child->name);
 
             if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" || elem_name == "String" ||
                 elem_name == "Enumeration")
@@ -583,19 +592,21 @@ void Fmi2ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
         // FMI2: Only Real types can be continuous
         if (var.type != "Real" && var.variability == "continuous")
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") is of type " + var.type + " and cannot have variability \"continuous\".");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                std::format(R"(Variable "{}" (line {}) is of type {} and cannot have variability "continuous".)",
+                            var.name, var.sourceline, var.type));
         }
 
         // FMI2: causality="parameter" or "calculatedParameter" must have variability="fixed" or "tunable"
         if ((var.causality == "parameter" || var.causality == "calculatedParameter") &&
             (var.variability != "fixed" && var.variability != "tunable"))
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has causality=\"" + var.causality + "\" but variability=\"" + var.variability +
-                                    "\". Parameters must be \"fixed\" or \"tunable\".");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(
+                R"(Variable "{}" (line {}) has causality="{}" but variability="{}". Parameters must be "fixed" or "tunable".)",
+                var.name, var.sourceline, var.causality, var.variability));
+            ;
         }
     }
 
@@ -607,8 +618,8 @@ void Fmi2ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
     // FMI 2.0: must be exactly "2.0"
     if (version != "2.0")
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("version \"" + version + "\" is invalid (must be exactly \"2.0\").");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back(std::format(R"(version "{}" is invalid (must be exactly "2.0").)", version));
     }
 }
 
@@ -635,9 +646,9 @@ void Fmi2ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
 
         if (needs_start && !var.start.has_value())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") must have a start value.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                            ") must have a start value.");
         }
     }
 
@@ -694,10 +705,11 @@ void Fmi2ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
 
         if (!legal_combinations.contains(combination))
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has illegal combination: causality=\"" + var.causality + "\", variability=\"" +
-                                    var.variability + "\", initial=\"" + initial + "\".");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(
+                R"(Variable "{}" (line {}) has illegal combination: causality="{}", variability="{}", initial="{}".)",
+                var.name, var.sourceline, var.causality, var.variability, initial));
+            ;
         }
     }
 
@@ -714,17 +726,19 @@ void Fmi2ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         // Variables with initial="calculated" should not have start values
         if (var.initial == "calculated" && var.start.has_value())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has initial=\"calculated\" but provides a start value.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                std::format(R"(Variable "{}" (line {}) has initial="calculated" but provides a start value.)", var.name,
+                            var.sourceline));
         }
 
         // FMI2: Independent variables should not have start values
         if (var.causality == "independent" && var.start.has_value())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has causality=\"independent\" but provides a start value.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                std::format(R"(Variable "{}" (line {}) has causality="independent" but provides a start value.)",
+                            var.name, var.sourceline));
         }
     }
 
@@ -792,12 +806,12 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     std::set<AliasKey> actual_alias_sets;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Outputs/Unknown");
 
-    if (xpath_obj && xpath_obj->nodesetval)
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            const xmlNodePtr node =
-                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
@@ -811,11 +825,11 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         const auto& var = variables[index - 1];
                         if (var.causality != "output")
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back(std::format("Variable \"{}\" (line {}) listed in "
-                                                                "ModelStructure/Outputs but does not have "
-                                                                "causality=\"output\".",
-                                                                var.name, var.sourceline));
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(std::format("Variable \"{}\" (line {}) listed in "
+                                                                        "ModelStructure/Outputs but does not have "
+                                                                        "causality=\"output\".",
+                                                                        var.name, var.sourceline));
                         }
 
                         if (var.value_reference.has_value())
@@ -823,8 +837,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             const AliasKey key = {get_base_type(var.type), *var.value_reference};
                             if (actual_alias_sets.contains(key))
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back(std::format(
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(std::format(
                                     "An alias of variable \"{}\" (VR {}, type {}) is already represented in "
                                     "ModelStructure/Outputs. Exactly one representative of an alias set must be "
                                     "listed.",
@@ -850,8 +864,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             {
                                 if (deps[j] <= deps[j - 1])
                                 {
-                                    test.status = TestStatus::FAIL;
-                                    test.messages.push_back(
+                                    test.setStatus(TestStatus::FAIL);
+                                    test.getMessages().emplace_back(
                                         "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/Outputs has dependencies that are not ordered "
                                         "according to magnitude.");
@@ -863,15 +877,16 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                const auto& dk_val = *deps_kind_str; // NOLINT(bugprone-unchecked-optional-access)
+                                std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
-                                    kinds.push_back(kind);
+                                    kinds.emplace_back(kind);
 
                                 if (kinds.size() != deps.size())
                                 {
-                                    test.status = TestStatus::FAIL;
-                                    test.messages.push_back(
+                                    test.setStatus(TestStatus::FAIL);
+                                    test.getMessages().emplace_back(
                                         "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/Outputs must have the same number of list elements in "
                                         "dependencies and dependenciesKind.");
@@ -883,8 +898,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                     {
                                         if (var.type != "Real")
                                         {
-                                            test.status = TestStatus::FAIL;
-                                            test.messages.push_back(
+                                            test.setStatus(TestStatus::FAIL);
+                                            test.getMessages().emplace_back(
                                                 "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                                 ") in ModelStructure/Outputs has dependenciesKind=\"" + k +
                                                 "\" which is only allowed for Real variables.");
@@ -895,11 +910,11 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         }
                         else if (deps_kind_str.has_value())
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
-                                                    std::to_string(node->line) +
-                                                    ") in ModelStructure/Outputs: If 'dependenciesKind' is present, "
-                                                    "'dependencies' must be present.");
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " +
+                                                            std::to_string(node->line) +
+                                                            ") in ModelStructure/Outputs: If 'dependenciesKind' is "
+                                                            "present, 'dependencies' must be present.");
                         }
                     }
                 }
@@ -910,20 +925,22 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
     if (expected_alias_sets != actual_alias_sets)
     {
-        test.status = TestStatus::FAIL;
+        test.setStatus(TestStatus::FAIL);
 
         for (const auto& [type, vr] : expected_alias_sets)
         {
             if (!actual_alias_sets.contains({type, vr}))
             {
-                test.messages.push_back(std::format("Output alias set (VR {}, type {}) is missing a representative in "
-                                                    "ModelStructure/Outputs.",
-                                                    vr, type));
+                test.getMessages().emplace_back(
+                    std::format("Output alias set (VR {}, type {}) is missing a representative in "
+                                "ModelStructure/Outputs.",
+                                vr, type));
             }
         }
 
-        test.messages.push_back("ModelStructure/Outputs must have exactly one representative for each alias set of "
-                                "variables with causality=\"output\".");
+        test.getMessages().emplace_back(
+            "ModelStructure/Outputs must have exactly one representative for each alias set of "
+            "variables with causality=\"output\".");
     }
 
     cert.printTestResult(test);
@@ -942,12 +959,12 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
     std::set<uint32_t> actual_vrs;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Derivatives/Unknown");
 
-    if (xpath_obj && xpath_obj->nodesetval)
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            const xmlNodePtr node =
-                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
@@ -962,8 +979,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         // 1. Must be a Real variable with a derivative attribute
                         if (var.type != "Real" || !var.derivative_of.has_value())
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back(std::format(
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(std::format(
                                 "Variable \"{}\" (line {}) listed in ModelStructure/Derivatives must be of type Real "
                                 "and have a \"derivative\" attribute.",
                                 var.name, var.sourceline));
@@ -976,8 +993,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             auto it = index_map.find(state_index);
                             if (it == index_map.end())
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back(std::format(
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(std::format(
                                     "Variable \"{}\" (line {}) has a \"derivative\" attribute pointing to non-existent "
                                     "index {}.",
                                     var.name, var.sourceline, state_index));
@@ -987,8 +1004,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                 const Variable* state_var = it->second;
                                 if (state_var->type != "Real" || state_var->variability != "continuous")
                                 {
-                                    test.status = TestStatus::FAIL;
-                                    test.messages.push_back(std::format(
+                                    test.setStatus(TestStatus::FAIL);
+                                    test.getMessages().emplace_back(std::format(
                                         "Variable \"{}\" (line {}) is listed in ModelStructure/Derivatives and is a "
                                         "derivative of \"{}\" (line {}), which must be Real and have "
                                         "variability=\"continuous\".",
@@ -1001,8 +1018,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         {
                             if (actual_vrs.contains(*var.value_reference))
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back(std::format(
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(std::format(
                                     "Value reference {} is listed multiple times in ModelStructure/Derivatives.",
                                     *var.value_reference));
                             }
@@ -1026,8 +1043,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             {
                                 if (deps[j] <= deps[j - 1])
                                 {
-                                    test.status = TestStatus::FAIL;
-                                    test.messages.push_back(
+                                    test.setStatus(TestStatus::FAIL);
+                                    test.getMessages().emplace_back(
                                         "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/Derivatives has dependencies that are not ordered "
                                         "according to magnitude.");
@@ -1039,15 +1056,16 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                const auto& dk_val = *deps_kind_str;
+                                std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
-                                    kinds.push_back(kind);
+                                    kinds.emplace_back(kind);
 
                                 if (kinds.size() != deps.size())
                                 {
-                                    test.status = TestStatus::FAIL;
-                                    test.messages.push_back(
+                                    test.setStatus(TestStatus::FAIL);
+                                    test.getMessages().emplace_back(
                                         "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/Derivatives must have the same number of list elements "
                                         "in dependencies and dependenciesKind.");
@@ -1059,8 +1077,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                     {
                                         if (var.type != "Real")
                                         {
-                                            test.status = TestStatus::FAIL;
-                                            test.messages.push_back(
+                                            test.setStatus(TestStatus::FAIL);
+                                            test.getMessages().emplace_back(
                                                 "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                                 ") in ModelStructure/Derivatives has dependenciesKind=\"" + k +
                                                 "\" which is only allowed for Real variables.");
@@ -1071,11 +1089,11 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         }
                         else if (deps_kind_str.has_value())
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Variable \"" + var.name + "\" (line " +
-                                                    std::to_string(node->line) +
-                                                    ") in ModelStructure/Derivatives: If 'dependenciesKind' is "
-                                                    "present, 'dependencies' must be present.");
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " +
+                                                            std::to_string(node->line) +
+                                                            ") in ModelStructure/Derivatives: If 'dependenciesKind' is "
+                                                            "present, 'dependencies' must be present.");
                         }
                     }
                 }
@@ -1141,12 +1159,12 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     std::vector<size_t> actual_indices;
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/InitialUnknowns/Unknown");
 
-    if (xpath_obj && xpath_obj->nodesetval)
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
     {
         for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
-            const xmlNodePtr node =
-                xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
             const auto index_str = getXmlAttribute(node, "index");
 
             if (index_str.has_value())
@@ -1164,8 +1182,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
                             if (actual_alias_sets.contains(key))
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back(std::format(
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(std::format(
                                     "An alias of variable \"{}\" (VR {}, type {}) is already represented in "
                                     "ModelStructure/InitialUnknowns. Exactly one representative of an alias set must "
                                     "be listed.",
@@ -1175,8 +1193,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
                             if (!expected_alias_sets.contains(key))
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back(std::format(
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(std::format(
                                     "Variable \"{}\" (line {}) is listed in ModelStructure/InitialUnknowns but is not "
                                     "a mandatory unknown.",
                                     var.name, var.sourceline));
@@ -1202,8 +1220,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             {
                                 if (deps[j] <= deps[j - 1])
                                 {
-                                    test.status = TestStatus::FAIL;
-                                    test.messages.push_back(
+                                    test.setStatus(TestStatus::FAIL);
+                                    test.getMessages().emplace_back(
                                         "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/InitialUnknowns has dependencies that are not ordered "
                                         "according to magnitude.");
@@ -1222,8 +1240,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
                                 if (kinds.size() != deps.size())
                                 {
-                                    test.status = TestStatus::FAIL;
-                                    test.messages.push_back(
+                                    test.setStatus(TestStatus::FAIL);
+                                    test.getMessages().emplace_back(
                                         "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                         ") in ModelStructure/InitialUnknowns must have the same number of list "
                                         "elements in dependencies and dependenciesKind.");
@@ -1233,8 +1251,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                                 {
                                     if (k == "fixed" || k == "tunable" || k == "discrete")
                                     {
-                                        test.status = TestStatus::FAIL;
-                                        test.messages.push_back(
+                                        test.setStatus(TestStatus::FAIL);
+                                        test.getMessages().emplace_back(
                                             "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                             ") in ModelStructure/InitialUnknowns has dependenciesKind=\"" + k +
                                             "\" which is not allowed in InitialUnknowns.");
@@ -1243,8 +1261,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                                     {
                                         if (var.type != "Real")
                                         {
-                                            test.status = TestStatus::FAIL;
-                                            test.messages.push_back(
+                                            test.setStatus(TestStatus::FAIL);
+                                            test.getMessages().emplace_back(
                                                 "Variable \"" + var.name + "\" (line " + std::to_string(node->line) +
                                                 ") in ModelStructure/InitialUnknowns has dependenciesKind=\"" + k +
                                                 "\" which is only allowed for Real variables.");
@@ -1265,29 +1283,29 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     {
         if (actual_indices[i] <= actual_indices[i - 1])
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("ModelStructure/InitialUnknowns must be ordered according to their "
-                                    "ScalarVariable index.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("ModelStructure/InitialUnknowns must be ordered according to their "
+                                            "ScalarVariable index.");
             break;
         }
     }
 
     if (expected_alias_sets != actual_alias_sets)
     {
-        test.status = TestStatus::FAIL;
+        test.setStatus(TestStatus::FAIL);
 
         for (const auto& [type, vr] : expected_alias_sets)
         {
             if (!actual_alias_sets.contains({type, vr}))
             {
-                test.messages.push_back(
+                test.getMessages().emplace_back(
                     std::format("Mandatory initial unknown alias set (VR {}, type {}) is missing a representative in "
                                 "ModelStructure/InitialUnknowns.",
                                 vr, type));
             }
         }
 
-        test.messages.push_back(
+        test.getMessages().emplace_back(
             "ModelStructure/InitialUnknowns must have exactly one representative for each mandatory alias set.");
     }
 
@@ -1299,11 +1317,11 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
     std::map<std::string, TypeDefinition> type_definitions;
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/SimpleType");
-    if (!xpath_obj)
+    if (xpath_obj == nullptr)
         return type_definitions;
 
     xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
+    if (nodes == nullptr)
     {
         xmlXPathFreeObject(xpath_obj);
         return type_definitions;
@@ -1311,7 +1329,8 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr simple_type_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr simple_type_node = nodes->nodeTab[i];
         TypeDefinition type_def;
 
         // Get name attribute
@@ -1319,13 +1338,13 @@ std::map<std::string, TypeDefinition> Fmi2ModelDescriptionChecker::extractTypeDe
         type_def.sourceline = simple_type_node->line;
 
         // Find the type element (Real, Integer, Boolean, String, Enumeration)
-        for (xmlNodePtr child = simple_type_node->children; child; child = child->next)
+        for (xmlNodePtr child = simple_type_node->children; child != nullptr; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            const std::string elem_name =
-                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            const std::string elem_name = reinterpret_cast<const char*>(child->name);
 
             if (elem_name == "Real" || elem_name == "Integer" || elem_name == "Boolean" || elem_name == "String" ||
                 elem_name == "Enumeration")
@@ -1361,37 +1380,37 @@ void Fmi2ModelDescriptionChecker::validateVariableSpecialFloat(TestResult& test,
                                                                const std::string& val,
                                                                const std::string& attr_name) const
 {
-    test.status = TestStatus::FAIL;
-    test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                            "): " + attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
-                            ", which is not allowed.");
+    test.setStatus(TestStatus::FAIL);
+    test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                    "): " + attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
+                                    ", which is not allowed.");
 }
 
 void Fmi2ModelDescriptionChecker::validateDefaultExperimentSpecialFloat(TestResult& test, const std::string& val,
                                                                         const std::string& attr_name) const
 {
-    test.status = TestStatus::FAIL;
-    test.messages.push_back(attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
-                            ", which is not allowed.");
+    test.setStatus(TestStatus::FAIL);
+    test.getMessages().emplace_back(attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
+                                    ", which is not allowed.");
 }
 
 void Fmi2ModelDescriptionChecker::validateUnitSpecialFloat(TestResult& test, const std::string& val,
                                                            const std::string& attr_name, const std::string& context,
                                                            size_t line) const
 {
-    test.status = TestStatus::FAIL;
-    test.messages.push_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
-                            "\" is " + getSpecialFloatDescription(val) + ", which is not allowed.");
+    test.setStatus(TestStatus::FAIL);
+    test.getMessages().emplace_back(context + " (line " + std::to_string(line) + "): " + attr_name + " value \"" + val +
+                                    "\" is " + getSpecialFloatDescription(val) + ", which is not allowed.");
 }
 
 void Fmi2ModelDescriptionChecker::validateTypeDefinitionSpecialFloat(TestResult& test, const TypeDefinition& type_def,
                                                                      const std::string& val,
                                                                      const std::string& attr_name) const
 {
-    test.status = TestStatus::FAIL;
-    test.messages.push_back("Type definition \"" + type_def.name + "\" (line " + std::to_string(type_def.sourceline) +
-                            "): " + attr_name + " value \"" + val + "\" is " + getSpecialFloatDescription(val) +
-                            ", which is not allowed.");
+    test.setStatus(TestStatus::FAIL);
+    test.getMessages().emplace_back("Type definition \"" + type_def.name + "\" (line " +
+                                    std::to_string(type_def.sourceline) + "): " + attr_name + " value \"" + val +
+                                    "\" is " + getSpecialFloatDescription(val) + ", which is not allowed.");
 }
 
 void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificate& cert) const
@@ -1399,14 +1418,14 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
     TestResult test{"Type Definitions", TestStatus::PASS, {}};
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//TypeDefinitions/SimpleType");
-    if (!xpath_obj)
+    if (xpath_obj == nullptr)
     {
         cert.printTestResult(test);
         return;
     }
 
     xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
+    if (nodes == nullptr)
     {
         xmlXPathFreeObject(xpath_obj);
         cert.printTestResult(test);
@@ -1417,7 +1436,8 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr type_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr type_node = nodes->nodeTab[i];
 
         if (type_node->type != XML_ELEMENT_NODE)
             continue;
@@ -1429,21 +1449,21 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
         {
             if (seen_names.contains(*name_opt))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Type definition \"" + *name_opt + "\" (line " +
-                                        std::to_string(type_node->line) + ") is defined multiple times.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Type definition \"" + *name_opt + "\" (line " +
+                                                std::to_string(type_node->line) + ") is defined multiple times.");
             }
             seen_names.insert(*name_opt);
         }
 
         // Check types
-        for (xmlNodePtr child = type_node->children; child; child = child->next)
+        for (xmlNodePtr child = type_node->children; child != nullptr; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            const std::string elem_name =
-                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            const std::string elem_name = reinterpret_cast<const char*>(child->name);
 
             auto min_str = getXmlAttribute(child, "min");
             auto max_str = getXmlAttribute(child, "max");
@@ -1476,17 +1496,18 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                         {
                             if (*max_val < *min_val)
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                        std::to_string(child->line) + "): max (" + *max_str +
-                                                        ") must be >= min (" + *min_str + ").");
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back("Type definition \"" + name + "\" (line " +
+                                                                std::to_string(child->line) + "): max (" + *max_str +
+                                                                ") must be >= min (" + *min_str + ").");
                             }
                         }
                         else
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                    std::to_string(child->line) + "): Failed to parse min/max values.");
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back("Type definition \"" + name + "\" (line " +
+                                                            std::to_string(child->line) +
+                                                            "): Failed to parse min/max values.");
                         }
                     }
                     else if (elem_name == "Integer" || elem_name == "Enumeration")
@@ -1497,17 +1518,18 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                         {
                             if (*max_val < *min_val)
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                        std::to_string(child->line) + "): max (" + *max_str +
-                                                        ") must be >= min (" + *min_str + ").");
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back("Type definition \"" + name + "\" (line " +
+                                                                std::to_string(child->line) + "): max (" + *max_str +
+                                                                ") must be >= min (" + *min_str + ").");
                             }
                         }
                         else
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                                    std::to_string(child->line) + "): Failed to parse min/max values.");
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back("Type definition \"" + name + "\" (line " +
+                                                            std::to_string(child->line) +
+                                                            "): Failed to parse min/max values.");
                         }
                     }
                 }
@@ -1519,7 +1541,7 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                 std::set<int32_t> item_values;
                 std::set<std::string> item_names;
 
-                for (xmlNodePtr item = child->children; item; item = item->next)
+                for (xmlNodePtr item = child->children; item != nullptr; item = item->next)
                 {
                     if (item->type != XML_ELEMENT_NODE)
                         continue;
@@ -1536,10 +1558,10 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                         {
                             if (item_names.contains(*item_name))
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back("Enumeration type \"" + name + "\" (line " +
-                                                        std::to_string(child->line) + ") has multiple items named \"" +
-                                                        *item_name + "\".");
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back("Enumeration type \"" + name + "\" (line " +
+                                                                std::to_string(child->line) +
+                                                                ") has multiple items named \"" + *item_name + "\".");
                             }
                             item_names.insert(*item_name);
                         }
@@ -1550,8 +1572,8 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                             {
                                 if (item_values.contains(*val))
                                 {
-                                    test.status = TestStatus::FAIL;
-                                    test.messages.push_back(
+                                    test.setStatus(TestStatus::FAIL);
+                                    test.getMessages().emplace_back(
                                         "Enumeration type \"" + name + "\" (line " + std::to_string(child->line) +
                                         ") has multiple items with value " + *item_value_str +
                                         ". Item values must be unique within the same enumeration.");
@@ -1564,9 +1586,9 @@ void Fmi2ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
 
                 if (!has_items)
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Enumeration type \"" + name + "\" (line " + std::to_string(child->line) +
-                                            ") must have at least one Item.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("Enumeration type \"" + name + "\" (line " +
+                                                    std::to_string(child->line) + ") must have at least one Item.");
                 }
             }
         }
@@ -1581,9 +1603,9 @@ void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
     TestResult test{"Vendor Annotations Uniqueness", TestStatus::PASS, {}};
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//VendorAnnotations/Tool");
-    if (!xpath_obj || !xpath_obj->nodesetval)
+    if (xpath_obj == nullptr || xpath_obj->nodesetval == nullptr)
     {
-        if (xpath_obj)
+        if (xpath_obj != nullptr)
             xmlXPathFreeObject(xpath_obj);
         cert.printTestResult(test);
         return;
@@ -1592,15 +1614,16 @@ void Fmi2ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
     std::set<std::string> seen_names;
     for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
     {
-        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
         auto name = getXmlAttribute(node, "name");
         if (name)
         {
             if (seen_names.contains(*name))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Vendor annotation tool \"" + *name + "\" (line " + std::to_string(node->line) +
-                                        ") is defined multiple times.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Vendor annotation tool \"" + *name + "\" (line " +
+                                                std::to_string(node->line) + ") is defined multiple times.");
             }
             seen_names.insert(*name);
         }
@@ -1622,22 +1645,22 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
 
     if (!guid_opt.has_value())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("guid attribute is missing.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("guid attribute is missing.");
         cert.printTestResult(test);
         return;
     }
 
     if (guid_opt->empty())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("guid attribute is empty.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("guid attribute is empty.");
         cert.printTestResult(test);
         return;
     }
 
-    if (test.status != TestStatus::PASS)
-        test.messages.push_back("GUID: " + *guid_opt);
+    if (test.getStatus() != TestStatus::PASS)
+        test.getMessages().emplace_back("GUID: " + *guid_opt);
 
     const std::string& guid = *guid_opt;
     const std::regex guid_pattern(
@@ -1645,9 +1668,9 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
 
     if (!std::regex_match(guid, guid_pattern))
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("guid \"" + guid +
-                                "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back(
+            "guid \"" + guid + "\" does not match expected GUID format ({xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx})");
     }
 
     cert.printTestResult(test);
@@ -1680,14 +1703,14 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
     TestResult test{"Unit Definitions", TestStatus::PASS, {}};
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
-    if (!xpath_obj)
+    if (xpath_obj == nullptr)
     {
         cert.printTestResult(test);
         return;
     }
 
     xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
+    if (nodes == nullptr)
     {
         xmlXPathFreeObject(xpath_obj);
         cert.printTestResult(test);
@@ -1705,7 +1728,8 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr unit_node = nodes->nodeTab[i];
         auto name_opt = getXmlAttribute(unit_node, "name");
         const std::string name = name_opt.value_or("unnamed");
         std::set<std::string> unit_display_names;
@@ -1714,20 +1738,20 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
         {
             if (seen_names.contains(*name_opt))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Unit \"" + *name_opt + "\" (line " + std::to_string(unit_node->line) +
-                                        ") is defined multiple times.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("Unit \"" + *name_opt + "\" (line " + std::to_string(unit_node->line) +
+                                                ") is defined multiple times.");
             }
             seen_names.insert(*name_opt);
         }
 
-        for (xmlNodePtr child = unit_node->children; child; child = child->next)
+        for (xmlNodePtr child = unit_node->children; child != nullptr; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            const std::string elem_name =
-                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            const std::string elem_name = reinterpret_cast<const char*>(child->name);
 
             if (elem_name == "BaseUnit")
             {
@@ -1743,15 +1767,15 @@ void Fmi2ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
                 {
                     if (unit_display_names.contains(*du_name_opt))
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back(
-                            std::format("DisplayUnit \"{}\" (line {}) is defined multiple times for unit \"{}\".",
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(
+                            std::format(R"(DisplayUnit "{}" (line {}) is defined multiple times for unit "{}".)",
                                         *du_name_opt, child->line, name));
                     }
                     unit_display_names.insert(*du_name_opt);
                 }
 
-                const std::string context = std::format("Unit \"{}\" DisplayUnit \"{}\"", name, du_name);
+                const std::string context = std::format(R"(Unit "{}" DisplayUnit "{}")", name, du_name);
                 checkSpecial(getXmlAttribute(child, "factor"), "factor", context, child->line);
                 checkSpecial(getXmlAttribute(child, "offset"), "offset", context, child->line);
             }
@@ -1767,11 +1791,11 @@ std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDe
     std::map<std::string, UnitDefinition> units;
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//UnitDefinitions/Unit");
-    if (!xpath_obj)
+    if (xpath_obj == nullptr)
         return units;
 
     xmlNodeSetPtr nodes = xpath_obj->nodesetval;
-    if (!nodes)
+    if (nodes == nullptr)
     {
         xmlXPathFreeObject(xpath_obj);
         return units;
@@ -1779,7 +1803,8 @@ std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDe
 
     for (int32_t i = 0; i < nodes->nodeNr; ++i)
     {
-        xmlNodePtr unit_node = nodes->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr unit_node = nodes->nodeTab[i];
         UnitDefinition unit_def;
 
         unit_def.name = getXmlAttribute(unit_node, "name").value_or("");
@@ -1788,13 +1813,13 @@ std::map<std::string, UnitDefinition> Fmi2ModelDescriptionChecker::extractUnitDe
         if (unit_def.name.empty())
             continue;
 
-        for (xmlNodePtr child = unit_node->children; child; child = child->next)
+        for (xmlNodePtr child = unit_node->children; child != nullptr; child = child->next)
         {
             if (child->type != XML_ELEMENT_NODE)
                 continue;
 
-            const std::string elem_name =
-                reinterpret_cast<const char*>(child->name); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            const std::string elem_name = reinterpret_cast<const char*>(child->name);
 
             if (elem_name == "BaseUnit")
             {
@@ -1832,7 +1857,7 @@ void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certif
     TestResult test{"Source Files Semantic Validation", TestStatus::PASS, {}};
 
     xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//SourceFiles/File");
-    if (xpath_obj && xpath_obj->nodesetval)
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
@@ -1844,15 +1869,15 @@ void Fmi2ModelDescriptionChecker::checkSourceFilesSemantic(xmlDocPtr doc, Certif
                 auto file_path = getFmuRootPath() / "sources" / (*name_opt);
                 if (!std::filesystem::exists(file_path))
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Source file '" + (*name_opt) +
-                                            "' listed in 'modelDescription.xml' (line " + std::to_string(node->line) +
-                                            ") does not exist in 'sources/' directory.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        "Source file '" + (*name_opt) + "' listed in 'modelDescription.xml' (line " +
+                        std::to_string(node->line) + ") does not exist in 'sources/' directory.");
                 }
             }
         }
     }
-    if (xpath_obj)
+    if (xpath_obj != nullptr)
         xmlXPathFreeObject(xpath_obj);
 
     cert.printTestResult(test);

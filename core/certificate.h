@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -17,42 +18,117 @@ enum class TestStatus : uint8_t
 };
 
 /// @brief Result of a single validation test.
-struct TestResult
+class TestResult;
+
+/// @brief Callback function type for user-decided continuation on security issues.
+/// @return True if validation should continue, false otherwise.
+using ContinueCallback = std::function<bool(const TestResult&)>;
+
+/// @brief Result of a single validation test.
+class TestResult
 {
-    std::string test_name;             ///< Name of the test.
-    TestStatus status;                 ///< Completion status.
-    std::vector<std::string> messages; ///< Detailed failure or warning messages.
+  public:
+    /// @brief Default constructor.
+    TestResult() = default;
+
+    /// @brief Constructor with automatic security issue detection.
+    /// @param name Name of the test.
+    /// @param s Completion status.
+    /// @param msgs Detailed messages.
+    TestResult(std::string name, TestStatus s, std::vector<std::string> msgs)
+        : _test_name(std::move(name))
+        , _status(s)
+        , _messages(std::move(msgs))
+        , _is_security_issue(_test_name.find("[SECURITY]") != std::string::npos)
+    {
+    }
+
+    /// @brief Get the name of the test.
+    /// @return Const reference to the test name.
+    [[nodiscard]] const std::string& getName() const noexcept
+    {
+        return _test_name;
+    }
+
+    /// @brief Set the name of the test.
+    /// @param name The name to set (automatically detects [SECURITY] tag).
+    void setName(std::string name)
+    {
+        _test_name = std::move(name);
+        _is_security_issue = _test_name.find("[SECURITY]") != std::string::npos;
+    }
+
+    /// @brief Get the status of the test result.
+    /// @return The test status (PASS, FAIL, or WARNING).
+    [[nodiscard]] TestStatus getStatus() const noexcept
+    {
+        return _status;
+    }
+
+    /// @brief Set the status of the test result.
+    /// @param status The status to set.
+    void setStatus(TestStatus status) noexcept
+    {
+        _status = status;
+    }
+
+    /// @brief Get the failure or warning messages.
+    /// @return Const reference to the messages vector.
+    [[nodiscard]] const std::vector<std::string>& getMessages() const noexcept
+    {
+        return _messages;
+    }
+
+    /// @brief Get the failure or warning messages (mutable).
+    /// @return Mutable reference to the messages vector.
+    [[nodiscard]] std::vector<std::string>& getMessages() noexcept
+    {
+        return _messages;
+    }
+
+    /// @brief Check if this test result is a security-related issue.
+    /// @return True if test name contains "[SECURITY]" tag.
+    [[nodiscard]] bool isSecurityIssue() const noexcept
+    {
+        return _is_security_issue;
+    }
+
+  private:
+    std::string _test_name{};             ///< Name of the test.
+    TestStatus _status{TestStatus::PASS}; ///< Completion status.
+    std::vector<std::string> _messages{}; ///< Detailed failure or warning messages.
+    bool _is_security_issue{false};       ///< True if this is a security-related test.
 };
 
 /// @brief Result of validation for a nested model (e.g., within resources).
 struct NestedModelResult
 {
     std::string name;                             ///< Path or name of the nested model.
-    TestStatus status;                            ///< Aggregated status.
+    TestStatus status = TestStatus::PASS;         ///< Aggregated status.
     std::vector<NestedModelResult> nested_models; ///< Recursively nested results.
 };
 
 /// @brief Summary of extracted model metadata.
 struct ModelSummary
 {
-    std::string standard;                      ///< "FMI" or "SSP".
-    std::string modelName;                     ///< Name of the model.
-    std::string fmiVersion;                    ///< FMI version (e.g., "2.0").
-    std::string modelVersion;                  ///< Model version.
-    std::string guid;                          ///< GUID or instantiationToken.
-    std::string generationTool;                ///< Generating tool.
-    std::string generationDateAndTime;         ///< Generation timestamp.
-    std::string author;                        ///< Author.
-    std::string copyright;                     ///< Copyright.
-    std::string license;                       ///< License.
-    std::string description;                   ///< Model description.
-    std::vector<std::string> platforms;        ///< Supported platforms.
-    std::vector<std::string> interfaces;       ///< Supported interfaces.
-    std::vector<std::string> layeredStandards; ///< Supported layered standards.
-    bool hasIcon = false;                      ///< True if icon present.
-    std::vector<std::string> fmuTypes;         ///< FMU types ("Binary", "Source code").
-    std::string sourceLanguage;                ///< Programming language of sources.
-    uint64_t totalSize = 0;                    ///< Total recursive size in bytes.
+    std::string standard{};                      ///< "FMI" or "SSP".
+    std::string modelName{};                     ///< Name of the model.
+    std::string fmiVersion{};                    ///< FMI version (e.g., "2.0").
+    std::string modelVersion{};                  ///< Model version.
+    std::string guid{};                          ///< GUID or instantiationToken.
+    std::string generationTool{};                ///< Generating tool.
+    std::string generationDateAndTime{};         ///< Generation timestamp.
+    std::string author{};                        ///< Author.
+    std::string copyright{};                     ///< Copyright.
+    std::string license{};                       ///< License.
+    std::string description{};                   ///< Model description.
+    std::vector<std::string> platforms{};        ///< Supported platforms.
+    std::vector<std::string> interfaces{};       ///< Supported interfaces.
+    std::vector<std::string> layeredStandards{}; ///< Supported layered standards.
+    bool hasIcon = false;                        ///< True if icon present.
+    std::vector<std::string> fmuTypes{};         ///< FMU types ("Binary", "Source code").
+    std::string sourceLanguage{};                ///< Programming language of sources.
+    uint64_t totalSize = 0;                      ///< Total recursive size in bytes.
 };
 
 /// @brief Validation report generator and result container.
@@ -75,31 +151,56 @@ class Certificate
     size_t _current_subsection_failed = 0;
     size_t _total_failed = 0;
 
+    // Abort handling
+    ContinueCallback _continue_callback;
+    bool _abort_requested = false;
+
   public:
     /// @brief Sets quiet mode.
     /// @param quiet Suppress detailed logging.
-    void setQuiet(bool quiet)
+    void setQuiet(bool quiet) noexcept
     {
         _quiet = quiet;
     }
 
+    /// @brief Sets the callback for continuing after security issues.
+    /// @param callback Callback function.
+    void setContinueCallback(ContinueCallback callback) noexcept
+    {
+        _continue_callback = std::move(callback);
+    }
+
+    /// @brief Checks if validation should abort.
+    /// @return True if abort requested.
+    [[nodiscard]] bool shouldAbort() const noexcept
+    {
+        return _abort_requested;
+    }
+
     /// @brief Checks if color is enabled.
     /// @return True if color enabled.
-    bool isColorEnabled() const
+    [[nodiscard]] bool isColorEnabled() const noexcept
     {
         return _use_color;
     }
 
     /// @brief Checks if any test failed.
     /// @return True if any failure was recorded.
-    bool isFailed() const
+    [[nodiscard]] bool isFailed() const noexcept
     {
         return _total_failed > 0;
     }
 
     /// @brief Gets overall status.
     /// @return Overall status.
-    TestStatus getOverallStatus() const;
+    [[nodiscard]] TestStatus getOverallStatus() const noexcept;
+
+    /// @brief Sets the extraction path.
+    /// @param path Extraction directory path.
+    void setExtractionPath(const std::filesystem::path& path)
+    {
+        _extraction_path = path;
+    }
 
     /// @brief Appends a message to the report buffer.
     /// @param message Message to log.
@@ -138,25 +239,25 @@ class Certificate
     /// @brief Saves report to file.
     /// @param path Destination path.
     /// @return True if saved.
-    bool saveToFile(const std::filesystem::path& path) const;
+    [[nodiscard]] bool saveToFile(const std::filesystem::path& path) const;
 
     /// @brief Gets the full report text.
     /// @return Report string.
-    std::string getFullReport() const
+    [[nodiscard]] const std::string& getFullReport() const noexcept
     {
         return _report_buffer;
     }
 
     /// @brief Gets all test results.
     /// @return Vector of TestResult.
-    const std::vector<TestResult>& getResults() const
+    [[nodiscard]] const std::vector<TestResult>& getResults() const noexcept
     {
         return _results;
     }
 
     /// @brief Gets all nested model results.
     /// @return Vector of NestedModelResult.
-    const std::vector<NestedModelResult>& getNestedModels() const
+    [[nodiscard]] const std::vector<NestedModelResult>& getNestedModels() const noexcept
     {
         return _nested_models;
     }
@@ -170,7 +271,7 @@ class Certificate
 
     /// @brief Gets the model summary.
     /// @return Summary object.
-    const ModelSummary& getSummary() const
+    [[nodiscard]] const ModelSummary& getSummary() const noexcept
     {
         return _summary;
     }
@@ -178,14 +279,7 @@ class Certificate
     /// @brief Converts report data to JSON.
     /// @param root_path Optional path to normalize results against.
     /// @return JSON string.
-    std::string toJson(const std::filesystem::path& root_path = "") const;
-
-    /// @brief Sets extraction path.
-    /// @param path Directory where model was extracted.
-    void setExtractionPath(const std::filesystem::path& path)
-    {
-        _extraction_path = path;
-    }
+    [[nodiscard]] std::string toJson(const std::filesystem::path& root_path = "") const;
 
   private:
     std::filesystem::path _extraction_path;

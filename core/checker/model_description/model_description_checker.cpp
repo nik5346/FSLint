@@ -12,18 +12,19 @@
 #include <libxml/xpath.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <ctime>
 #include <filesystem>
+#include <format>
 #include <map>
 #include <optional>
 #include <regex>
 #include <set>
 #include <string>
-#include <time.h>
 #include <vector>
 
 void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Certificate& cert) const
@@ -31,7 +32,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     cert.printSubsectionHeader("MODEL DESCRIPTION VALIDATION");
     _fmu_root_path = path;
 
-    auto model_desc_path = path / "modelDescription.xml";
+    const std::filesystem::path model_desc_path = path / "modelDescription.xml";
 
     if (!std::filesystem::exists(model_desc_path))
     {
@@ -42,7 +43,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     }
 
     xmlDocPtr doc = readXmlFile(model_desc_path);
-    if (!doc)
+    if (doc == nullptr)
     {
         const TestResult test{"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}};
         cert.printTestResult(test);
@@ -60,47 +61,210 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     // Run common validation checks
     checkFmiVersion(metadata.fmiVersion, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkModelName(metadata.modelName, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkGuid(metadata.guid, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkModelVersion(metadata.modelVersion, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
 
-    const bool has_author = metadata.author.has_value() && !metadata.author->empty();
-    const bool has_copyright = metadata.copyright.has_value() && !metadata.copyright->empty();
+    bool has_author = false;
+    if (metadata.author.has_value())
+    {
+        const auto& val = *metadata.author;
+        has_author = !val.empty();
+    }
+
+    bool has_copyright = false;
+    if (metadata.copyright.has_value())
+    {
+        const auto& val = *metadata.copyright;
+        has_copyright = !val.empty();
+    }
 
     checkCopyright(metadata.copyright, cert, !has_author);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkLicense(metadata.license, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkAuthor(metadata.author, cert, !has_copyright);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkGenerationTool(metadata.generationTool, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
 
     // Perform interface checks
     std::vector<std::string> interface_elements;
-    if (metadata.fmiVersion && metadata.fmiVersion->starts_with("2."))
+    if (metadata.fmiVersion.has_value() && metadata.fmiVersion->starts_with("2."))
         interface_elements = {"CoSimulation", "ModelExchange"};
     else
         interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
 
-    const auto model_identifiers = extractModelIdentifiers(doc, interface_elements);
+    const std::map<std::string, std::string> model_identifiers = extractModelIdentifiers(doc, interface_elements);
     checkNumberOfImplementedInterfaces(model_identifiers, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     for (const auto& [interface_name, model_id] : model_identifiers)
+    {
         checkModelIdentifier(model_id, interface_name, cert);
+        if (cert.shouldAbort())
+        {
+            xmlFreeDoc(doc);
+            xmlCleanupParser();
+            return;
+        }
+    }
 
     checkUnits(doc, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkTypeDefinitions(doc, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkLogCategories(doc, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkDefaultExperiment(doc, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkAnnotations(doc, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
 
     checkUniqueVariableNames(variables, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkLegalVariability(variables, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkRequiredStartValues(variables, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkCausalityVariabilityInitialCombinations(variables, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkIllegalStartValues(variables, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkTypeAndUnitReferences(variables, type_definitions, units, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
 
     checkUnusedDefinitions(type_definitions, units, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
     checkMinMaxStartValues(variables, type_definitions, cert);
+    if (cert.shouldAbort())
+    {
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        return;
+    }
 
     // Perform version-specific validation
     performVersionSpecificChecks(doc, variables, type_definitions, units, cert);
@@ -108,16 +272,56 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Populate ModelSummary
     ModelSummary summary;
     summary.standard = "FMI";
-    summary.modelName = metadata.modelName.value_or("");
-    summary.fmiVersion = metadata.fmiVersion.value_or("");
-    summary.modelVersion = metadata.modelVersion.value_or("");
-    summary.guid = metadata.guid.value_or("");
-    summary.author = metadata.author.value_or("");
-    summary.copyright = metadata.copyright.value_or("");
-    summary.license = metadata.license.value_or("");
-    summary.description = metadata.description.value_or("");
-    summary.generationTool = metadata.generationTool.value_or("");
-    summary.generationDateAndTime = metadata.generationDateAndTime.value_or("");
+    if (metadata.modelName.has_value())
+    {
+        const auto& val = *metadata.modelName;
+        summary.modelName = val;
+    }
+    if (metadata.fmiVersion.has_value())
+    {
+        const auto& val = *metadata.fmiVersion;
+        summary.fmiVersion = val;
+    }
+    if (metadata.modelVersion.has_value())
+    {
+        const auto& val = *metadata.modelVersion;
+        summary.modelVersion = val;
+    }
+    if (metadata.guid.has_value())
+    {
+        const auto& val = *metadata.guid;
+        summary.guid = val;
+    }
+    if (metadata.author.has_value())
+    {
+        const auto& val = *metadata.author;
+        summary.author = val;
+    }
+    if (metadata.copyright.has_value())
+    {
+        const auto& val = *metadata.copyright;
+        summary.copyright = val;
+    }
+    if (metadata.license.has_value())
+    {
+        const auto& val = *metadata.license;
+        summary.license = val;
+    }
+    if (metadata.description.has_value())
+    {
+        const auto& val = *metadata.description;
+        summary.description = val;
+    }
+    if (metadata.generationTool.has_value())
+    {
+        const auto& val = *metadata.generationTool;
+        summary.generationTool = val;
+    }
+    if (metadata.generationDateAndTime.has_value())
+    {
+        const auto& val = *metadata.generationDateAndTime;
+        summary.generationDateAndTime = val;
+    }
 
     for (const auto& [interface, id] : model_identifiers)
     {
@@ -125,7 +329,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         summary.interfaces.push_back(interface);
     }
 
-    const auto binaries_path = path / "binaries";
+    const std::filesystem::path binaries_path = path / "binaries";
     if (std::filesystem::exists(binaries_path))
     {
         for (const auto& entry : std::filesystem::directory_iterator(binaries_path))
@@ -140,9 +344,9 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     bool has_source_files_in_md = false;
     xmlXPathObjectPtr sources_xpath = getXPathNodes(doc, "//SourceFiles/File");
-    if (sources_xpath)
+    if (sources_xpath != nullptr)
     {
-        if (sources_xpath->nodesetval && sources_xpath->nodesetval->nodeNr > 0)
+        if (sources_xpath->nodesetval != nullptr && sources_xpath->nodesetval->nodeNr > 0)
             has_source_files_in_md = true;
         xmlXPathFreeObject(sources_xpath);
     }
@@ -150,13 +354,13 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     const bool has_binaries = !summary.platforms.empty();
 
     if (has_sources_dir || has_build_description || has_source_files_in_md)
-        summary.fmuTypes.push_back("Source code");
+        summary.fmuTypes.emplace_back("Source code");
 
     if (has_binaries)
-        summary.fmuTypes.push_back("Binary");
+        summary.fmuTypes.emplace_back("Binary");
 
     if (summary.fmuTypes.empty())
-        summary.fmuTypes.push_back("Unknown");
+        summary.fmuTypes.emplace_back("Unknown");
 
     summary.hasIcon = std::filesystem::exists(path / "model.png") || std::filesystem::exists(path / "model.svg");
 
@@ -177,7 +381,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
             if (entry.is_regular_file())
             {
                 std::string ext = file_utils::pathToUtf8(entry.path().extension());
-                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                std::ranges::transform(ext, ext.begin(), ::tolower);
 
                 if (ext == ".c")
                     has_c = true;
@@ -203,15 +407,19 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     // Detect layered standards (simple heuristic based on annotations)
     xmlXPathObjectPtr annotations_xpath = getXPathNodes(doc, "//VendorAnnotations/Tool");
-    if (annotations_xpath && annotations_xpath->nodesetval)
+    if (annotations_xpath != nullptr && annotations_xpath->nodesetval != nullptr)
     {
         for (int32_t i = 0; i < annotations_xpath->nodesetval->nodeNr; ++i)
         {
-            xmlNodePtr node =
-                annotations_xpath->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto name = getXmlAttribute(node, "name");
-            if (name && name->find("org.fmi-standard.layered-standard") != std::string::npos)
-                summary.layeredStandards.push_back(*name);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = annotations_xpath->nodesetval->nodeTab[i];
+            const std::optional<std::string> name = getXmlAttribute(node, "name");
+            if (name.has_value())
+            {
+                const auto& name_val = *name;
+                if (name_val.find("org.fmi-standard.layered-standard") != std::string::npos)
+                    summary.layeredStandards.emplace_back(name_val);
+            }
         }
         xmlXPathFreeObject(annotations_xpath);
     }
@@ -235,9 +443,9 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
     {
         if (seen_names.contains(var.name))
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable name \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") is not unique.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                std::format(R"(Variable name "{}" (line {}) is not unique.)", var.name, var.sourceline));
         }
         seen_names.insert(var.name);
     }
@@ -251,22 +459,22 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
 
     if (!model_name.has_value())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("modelName attribute is missing.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("modelName attribute is missing.");
         cert.printTestResult(test);
         return;
     }
 
     if (model_name->empty())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("modelName attribute is empty.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("modelName attribute is empty.");
         cert.printTestResult(test);
         return;
     }
 
-    if (test.status != TestStatus::PASS)
-        test.messages.push_back("Name: " + *model_name);
+    if (test.getStatus() != TestStatus::PASS)
+        test.getMessages().emplace_back("Name: " + *model_name);
 
     cert.printTestResult(test);
 }
@@ -286,33 +494,36 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             // carriage return (U+000D), line feed (U+000A), or tab (U+0009).
             if (var.name.empty())
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable name (line " + std::to_string(var.sourceline) + ") is empty.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(R"(Variable name (line {}) is empty.)", var.sourceline));
                 is_valid = false;
             }
 
             if (var.name.find('\r') != std::string::npos)
             {
-                test.status = TestStatus::FAIL;
+                test.setStatus(TestStatus::FAIL);
                 const std::string escaped_name = std::regex_replace(var.name, std::regex("\r"), "\\\\r");
-                test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") contains illegal carriage return character (U+000D).");
+                test.getMessages().emplace_back(
+                    std::format(R"(Variable "{}" (line {}) contains illegal carriage return character (U+000D).)",
+                                escaped_name, var.sourceline));
                 is_valid = false;
             }
             if (var.name.find('\n') != std::string::npos)
             {
-                test.status = TestStatus::FAIL;
+                test.setStatus(TestStatus::FAIL);
                 const std::string escaped_name = std::regex_replace(var.name, std::regex("\n"), "\\\\n");
-                test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") contains illegal line feed character (U+000A).");
+                test.getMessages().emplace_back(
+                    std::format(R"(Variable "{}" (line {}) contains illegal line feed character (U+000A).)",
+                                escaped_name, var.sourceline));
                 is_valid = false;
             }
             if (var.name.find('\t') != std::string::npos)
             {
-                test.status = TestStatus::FAIL;
+                test.setStatus(TestStatus::FAIL);
                 const std::string escaped_name = std::regex_replace(var.name, std::regex("\t"), "\\\\t");
-                test.messages.push_back("Variable \"" + escaped_name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") contains illegal tab character (U+0009).");
+                test.getMessages().emplace_back(
+                    std::format(R"(Variable "{}" (line {}) contains illegal tab character (U+0009).)", escaped_name,
+                                var.sourceline));
                 is_valid = false;
             }
         }
@@ -322,9 +533,10 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
 
             if (!is_valid)
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("\"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") is not a legal variable name for naming convention \"structured\".");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    R"(Variable "{}" (line {}) is not a legal variable name for naming convention "structured".)",
+                    var.name, var.sourceline));
             }
         }
     }
@@ -339,8 +551,8 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
     if (!generation_date_time.has_value())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Providing 'generationDateAndTime' is recommended.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back("Providing 'generationDateAndTime' is recommended.");
         cert.printTestResult(test);
         return;
     }
@@ -349,8 +561,8 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
     if (dt.empty())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("The 'generationDateAndTime' attribute is empty.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back("The 'generationDateAndTime' attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -359,9 +571,9 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
     if (!parsed)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Generation date and time \"" + dt +
-                                "\" is invalid or does not match ISO 8601 format.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back(
+            std::format(R"(Generation date and time "{}" is invalid or does not match ISO 8601 format.)", dt));
         cert.printTestResult(test);
         return;
     }
@@ -371,9 +583,10 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     {
         if (value != -1 && (value < min || value > max))
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back(name + " value " + std::to_string(value) + " is out of range (" +
-                                    std::to_string(min) + "-" + std::to_string(max) + ").");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(R"({} value {} is out of range ({}-{}).)", name,
+                                                        std::to_string(value), std::to_string(min),
+                                                        std::to_string(max)));
         }
     };
 
@@ -388,7 +601,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (parsed->second != -1)
         check_range(parsed->second, 0, 60, "Second"); // Allow leap seconds
 
-    if (test.status == TestStatus::FAIL)
+    if (test.getStatus() == TestStatus::FAIL)
     {
         cert.printTestResult(test);
         return;
@@ -404,15 +617,18 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     tm_time.tm_sec = (parsed->second != -1) ? parsed->second : 0;
 
 #ifdef _WIN32
+    // NOLINTNEXTLINE(misc-include-cleaner)
     std::time_t generation_time = _mkgmtime(&tm_time);
 #else
+    // NOLINTNEXTLINE(misc-include-cleaner)
     std::time_t generation_time = timegm(&tm_time);
 #endif
 
     if (generation_time == -1)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Generation date and time \"" + dt + "\" resulted in an invalid timestamp.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back(
+            std::format(R"(Generation date and time "{}" resulted in an invalid timestamp.)", dt));
         cert.printTestResult(test);
         return;
     }
@@ -426,7 +642,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
 
     if (generation_time > current_time)
     {
-        test.status = TestStatus::FAIL;
+        test.setStatus(TestStatus::FAIL);
         std::tm current_tm = {};
 #ifdef _WIN32
         if (gmtime_s(&current_tm, &current_time) != 0)
@@ -435,10 +651,10 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         if (gmtime_r(&current_time, &current_tm) == nullptr)
             return;
 #endif
-        char buf[64];
-        (void)std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &current_tm);
-        test.messages.push_back("Generation date and time \"" + dt +
-                                "\" is in the future (current time: " + std::string(buf) + ").");
+        std::array<char, 64> buf{};
+        (void)std::strftime(buf.data(), buf.size(), "%Y-%m-%dT%H:%M:%SZ", &current_tm);
+        test.getMessages().emplace_back(std::format(
+            R"(Generation date and time "{}" is in the future (current time: {}).)", dt, std::string(buf.data())));
     }
 
     checkGenerationDateReleaseYear(dt, generation_time, test);
@@ -471,10 +687,10 @@ void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::
 
     if (generation_time < fmi_release_time)
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Generation date and time \"" + dt + "\" is before the " + fmi_version +
-                                " standard release (" + std::to_string(release_year) + "). " +
-                                "This is unusual and may indicate an incorrect timestamp.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back(std::format(
+            R"(Generation date and time "{}" is before the {} standard release ({}). This is unusual and may indicate an incorrect timestamp.)",
+            dt, fmi_version, std::to_string(release_year)));
     }
 }
 
@@ -485,19 +701,19 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
 
     if (!fmi_version.has_value())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("version attribute is missing.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("version attribute is missing.");
         cert.printTestResult(test);
         return;
     }
 
-    if (test.status != TestStatus::PASS)
-        test.messages.push_back("Version: " + fmi_version.value_or("[missing]"));
+    if (test.getStatus() != TestStatus::PASS)
+        test.getMessages().emplace_back(std::format(R"(Version: {})", fmi_version.value_or("[missing]")));
 
     if (fmi_version->empty())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("version attribute is empty.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("version attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -513,13 +729,13 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
 
     if (!version.has_value())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Providing a model version is recommended.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back("Providing a model version is recommended.");
     }
     else if (version->empty())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Attribute 'version' is empty.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back("Attribute 'version' is empty.");
     }
     else
     {
@@ -529,9 +745,10 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
 
         if (!std::regex_match(*version, semver_pattern))
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Model version \"" + *version +
-                                    "\" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back(std::format(
+                R"(Model version "{}" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).)",
+                *version));
         }
     }
 
@@ -547,16 +764,16 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
     {
         if (mandatory)
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Providing a copyright notice is recommended.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Providing a copyright notice is recommended.");
         }
     }
     else if (copyright->empty())
     {
         if (mandatory)
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("The 'copyright' attribute is empty.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("The 'copyright' attribute is empty.");
         }
     }
     else
@@ -571,23 +788,25 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
         else if (cr.find("(c)") != std::string::npos || cr.find("(C)") != std::string::npos)
         {
             has_copyright_indicator = true;
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Copyright notice uses (c) or (C) instead of the © symbol - consider using © for "
-                                    "international recognition");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back(
+                "Copyright notice uses (c) or (C) instead of the © symbol - consider using © for "
+                "international recognition");
         }
         else
         {
             std::string cr_lower = cr;
-            std::transform(cr_lower.begin(), cr_lower.end(), cr_lower.begin(), ::tolower);
+            std::ranges::transform(cr_lower, cr_lower.begin(),
+                                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
-            if (cr_lower.find("copyright") == 0 || cr_lower.find("copr.") == 0)
+            if (cr_lower.starts_with("copyright") || cr_lower.starts_with("copr."))
                 has_copyright_indicator = true;
         }
 
         if (!has_copyright_indicator)
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Copyright notice should begin with ©, 'Copyright', or 'Copr.'.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Copyright notice should begin with ©, 'Copyright', or 'Copr.'.");
         }
 
         const std::regex year_pattern(R"(\b(19|20)\d{2}\b)");
@@ -595,8 +814,8 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
 
         if (!std::regex_search(cr, year_match, year_pattern))
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Copyright notice should include the year of publication (e.g., 2026).");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Copyright notice should include the year of publication (e.g., 2026).");
         }
 
         std::string name_check = cr;
@@ -611,12 +830,12 @@ void ModelDescriptionCheckerBase::checkCopyright(const std::optional<std::string
 
         if (name_check.empty())
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Copyright notice should include the name of the copyright holder.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Copyright notice should include the name of the copyright holder.");
         }
 
-        if (test.status == TestStatus::WARNING && !test.messages.empty())
-            test.messages.push_back("Recommended format: © [Year] [Holder] or Copyright [Year] [Holder]");
+        if (test.getStatus() == TestStatus::WARNING && !test.getMessages().empty())
+            test.getMessages().emplace_back("Recommended format: © [Year] [Holder] or Copyright [Year] [Holder]");
     }
 
     cert.printTestResult(test);
@@ -628,13 +847,13 @@ void ModelDescriptionCheckerBase::checkLicense(const std::optional<std::string>&
 
     if (!license.has_value())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Providing a license is recommended.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back("Providing a license is recommended.");
     }
     else if (license->empty())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("The 'license' attribute is empty.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back("The 'license' attribute is empty.");
     }
 
     cert.printTestResult(test);
@@ -649,16 +868,16 @@ void ModelDescriptionCheckerBase::checkAuthor(const std::optional<std::string>& 
     {
         if (mandatory)
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Providing the author name is recommended.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Providing the author name is recommended.");
         }
     }
     else if (author->empty())
     {
         if (mandatory)
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("The 'author' attribute is empty.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("The 'author' attribute is empty.");
         }
     }
 
@@ -671,14 +890,14 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
 
     if (!tool.has_value())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back(
-            "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back(
+            R"(Providing the generation tool name is recommended. For manually created FMUs, use "Handmade".)");
     }
     else if (tool->empty())
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("The 'generationTool' attribute is empty.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back("The 'generationTool' attribute is empty.");
     }
 
     cert.printTestResult(test);
@@ -688,10 +907,10 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
 {
     TestResult test{"Log Categories Uniqueness", TestStatus::PASS, {}};
 
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//LogCategories/Category");
-    if (!xpath_obj || !xpath_obj->nodesetval)
+    const xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//LogCategories/Category");
+    if (xpath_obj == nullptr || xpath_obj->nodesetval == nullptr)
     {
-        if (xpath_obj)
+        if (xpath_obj != nullptr)
             xmlXPathFreeObject(xpath_obj);
         cert.printTestResult(test);
         return;
@@ -700,17 +919,19 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
     std::set<std::string> seen_names;
     for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
     {
-        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto name = getXmlAttribute(node, "name");
-        if (name)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+        const auto name = getXmlAttribute(node, "name");
+        if (name.has_value())
         {
-            if (seen_names.contains(*name))
+            const auto& val = *name;
+            if (seen_names.contains(val))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Log category \"" + *name + "\" (line " + std::to_string(node->line) +
-                                        ") is defined multiple times.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format(R"(Log category "{}" (line {}) is defined multiple times.)", val, node->line));
             }
-            seen_names.insert(*name);
+            seen_names.insert(val);
         }
     }
 
@@ -724,9 +945,9 @@ void ModelDescriptionCheckerBase::checkNumberOfImplementedInterfaces(
     TestResult test{"Number of Implemented Interfaces", TestStatus::FAIL, {}};
 
     if (!model_identifiers.empty())
-        test.status = TestStatus::PASS;
+        test.setStatus(TestStatus::PASS);
     else
-        test.messages.push_back("At least one interface must be implemented.");
+        test.getMessages().emplace_back("At least one interface must be implemented.");
 
     cert.printTestResult(test);
 }
@@ -734,12 +955,12 @@ void ModelDescriptionCheckerBase::checkNumberOfImplementedInterfaces(
 void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_identifier,
                                                        const std::string& interface_name, Certificate& cert) const
 {
-    TestResult test{"Model Identifier Format for Interface \"" + interface_name + "\"", TestStatus::PASS, {}};
+    TestResult test{std::format(R"(Model Identifier Format for Interface "{}")", interface_name), TestStatus::PASS, {}};
 
     if (model_identifier.empty())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Model identifier attribute is empty.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Model identifier attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -750,19 +971,20 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
 
     if (!std::regex_match(model_identifier, c_identifier_pattern))
     {
-        test.status = TestStatus::FAIL;
+        test.setStatus(TestStatus::FAIL);
 
         // Provide helpful error message
         const char first_char = model_identifier[0];
         if (first_char >= '0' && first_char <= '9')
         {
-            test.messages.push_back("Model identifier \"" + model_identifier + "\" cannot start with a digit.");
+            test.getMessages().emplace_back(
+                std::format(R"(Model identifier "{}" cannot start with a digit.)", model_identifier));
         }
         else
         {
-            test.messages.push_back(
-                "Model identifier \"" + model_identifier +
-                "\" contains invalid characters (only letters, digits, and underscores are allowed).");
+            test.getMessages().emplace_back(std::format(
+                R"(Model identifier "{}" contains invalid characters (only letters, digits, and underscores are allowed).)",
+                model_identifier));
         }
     }
 
@@ -772,18 +994,17 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
 
     if (model_identifier.length() > ABSOLUTE_MAX_LENGTH)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Model identifier \"" + model_identifier + "\" is too long (" +
-                                std::to_string(model_identifier.length()) + " characters). Maximum length is " +
-                                std::to_string(ABSOLUTE_MAX_LENGTH) +
-                                " characters to ensure cross-platform compatibility.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back(std::format(
+            R"(Model identifier "{}" is too long ({} characters). Maximum length is {} characters to ensure cross-platform compatibility.)",
+            model_identifier, model_identifier.length(), ABSOLUTE_MAX_LENGTH));
     }
     else if (model_identifier.length() > RECOMMENDED_MAX_LENGTH)
     {
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Model identifier \"" + model_identifier + "\" is longer than recommended (" +
-                                std::to_string(model_identifier.length()) + " characters). Consider keeping it under " +
-                                std::to_string(RECOMMENDED_MAX_LENGTH) + " characters for better portability.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back(std::format(
+            R"(Model identifier "{}" is longer than recommended ({} characters). Consider keeping it under {} characters for better portability.)",
+            model_identifier, model_identifier.length(), RECOMMENDED_MAX_LENGTH));
     }
 
     cert.printTestResult(test);
@@ -831,16 +1052,15 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc,
 
     for (const auto& elem : interface_elements)
     {
-        xmlXPathObjectPtr xpath = getXPathNodes(doc, "//" + elem);
-        if (xpath && xpath->nodesetval && xpath->nodesetval->nodeNr > 0)
+        const xmlXPathObjectPtr xpath = getXPathNodes(doc, "//" + elem);
+        if (xpath != nullptr && xpath->nodesetval != nullptr && xpath->nodesetval->nodeNr > 0)
         {
-            auto model_id = getXmlAttribute(
-                xpath->nodesetval->nodeTab[0], // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                "modelIdentifier");
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const auto model_id = getXmlAttribute(xpath->nodesetval->nodeTab[0], "modelIdentifier");
             if (model_id.has_value())
                 model_identifiers[elem] = *model_id;
         }
-        if (xpath)
+        if (xpath != nullptr)
             xmlXPathFreeObject(xpath);
     }
 
@@ -850,16 +1070,16 @@ ModelDescriptionCheckerBase::extractModelIdentifiers(xmlDocPtr doc,
 std::optional<std::string> ModelDescriptionCheckerBase::getXmlAttribute(xmlNodePtr node,
                                                                         const std::string& attr_name) const
 {
-    if (!node)
+    if (node == nullptr)
         return std::nullopt;
 
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
-    if (!attr)
+    if (attr == nullptr)
         return std::nullopt;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::string value(reinterpret_cast<char*>(attr));
-    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
     xmlFree(attr);
     return value;
@@ -878,8 +1098,7 @@ std::string ModelDescriptionCheckerBase::normalizeFloatString(const std::string&
         return "";
 
     std::string lower = s;
-    std::transform(lower.begin(), lower.end(), lower.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    std::ranges::transform(lower, lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return lower;
 }
 
@@ -918,12 +1137,11 @@ std::string ModelDescriptionCheckerBase::getSpecialFloatDescription(const std::s
 xmlXPathObjectPtr ModelDescriptionCheckerBase::getXPathNodes(xmlDocPtr doc, const std::string& xpath) const
 {
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
-    if (!context)
+    if (context == nullptr)
         return nullptr;
 
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlXPathObjectPtr result = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath.c_str()), context);
-    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
     xmlXPathFreeContext(context);
     return result;
@@ -934,24 +1152,25 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
     TestResult test{"Default Experiment", TestStatus::PASS, {}};
 
     // Get DefaultExperiment element
-    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//DefaultExperiment");
+    const xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//DefaultExperiment");
 
-    if (!xpath_obj || !xpath_obj->nodesetval || xpath_obj->nodesetval->nodeNr == 0)
+    if (xpath_obj == nullptr || xpath_obj->nodesetval == nullptr || xpath_obj->nodesetval->nodeNr == 0)
     {
         // DefaultExperiment is optional, so this is not an error
-        if (xpath_obj)
+        if (xpath_obj != nullptr)
             xmlXPathFreeObject(xpath_obj);
         cert.printTestResult(test);
         return;
     }
 
-    xmlNodePtr exp_node = xpath_obj->nodesetval->nodeTab[0]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    const xmlNodePtr exp_node = xpath_obj->nodesetval->nodeTab[0];
 
     // Extract attributes
-    auto start_time_str = getXmlAttribute(exp_node, "startTime");
-    auto stop_time_str = getXmlAttribute(exp_node, "stopTime");
-    auto tolerance_str = getXmlAttribute(exp_node, "tolerance");
-    auto step_size_str = getXmlAttribute(exp_node, "stepSize");
+    const auto start_time_str = getXmlAttribute(exp_node, "startTime");
+    const auto stop_time_str = getXmlAttribute(exp_node, "stopTime");
+    const auto tolerance_str = getXmlAttribute(exp_node, "tolerance");
+    const auto step_size_str = getXmlAttribute(exp_node, "stepSize");
 
     std::optional<double> start_time;
     std::optional<double> stop_time;
@@ -974,15 +1193,16 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             // Check for invalid values (already checked for special values above)
             if (*start_time < 0.0 && !std::isnan(*start_time) && !std::isinf(*start_time))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("startTime (" + std::to_string(*start_time) + ") must be non-negative.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("startTime (" + std::to_string(*start_time) +
+                                                ") must be non-negative.");
             }
         }
         else
         {
             // Schema should have caught this, but just in case
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("startTime \"" + *start_time_str + "\" is not a valid number.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(R"(startTime "{}" is not a valid number.)", *start_time_str));
         }
     }
 
@@ -996,26 +1216,27 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             // Check for invalid values - NaN is invalid, but infinity is valid (means run indefinitely)
             if (*stop_time < 0.0 && !std::isnan(*stop_time) && !std::isinf(*stop_time))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("stopTime (" + std::to_string(*stop_time) + ") must be non-negative.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format(R"(stopTime "{}" must be non-negative.)", std::to_string(*stop_time)));
             }
         }
         else
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("stopTime \"" + *stop_time_str + "\" is not a valid number.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(R"(stopTime "{}" is not a valid number.)", *stop_time_str));
         }
     }
 
     // Check stopTime > startTime if both are present and finite
-    if (start_time.has_value() && stop_time.has_value() && test.status == TestStatus::PASS)
+    if (start_time.has_value() && stop_time.has_value() && test.getStatus() == TestStatus::PASS)
     {
         // If stopTime is infinite, the comparison is automatically valid
         if (!std::isinf(*stop_time) && *stop_time <= *start_time)
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("stopTime (" + std::to_string(*stop_time) + ") must be greater than startTime (" +
-                                    std::to_string(*start_time) + ").");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(R"(stopTime "{}" must be greater than startTime "{}".)",
+                                                        std::to_string(*stop_time), std::to_string(*start_time)));
         }
     }
 
@@ -1029,14 +1250,15 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             // Check for invalid values
             if (*tolerance <= 0.0 && !std::isnan(*tolerance) && !std::isinf(*tolerance))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("tolerance (" + std::to_string(*tolerance) + ") must be greater than 0.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format(R"(tolerance "{}" must be greater than 0.)", std::to_string(*tolerance)));
             }
         }
         else
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("tolerance \"" + *tolerance_str + "\" is not a valid number.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(R"(tolerance "{}" is not a valid number.)", *tolerance_str));
         }
     }
 
@@ -1050,14 +1272,15 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             // Check for invalid values
             if (*step_size <= 0.0 && !std::isnan(*step_size) && !std::isinf(*step_size))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("stepSize (" + std::to_string(*step_size) + ") must be greater than 0.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format(R"(stepSize "{}" must be greater than 0.)", std::to_string(*step_size)));
             }
         }
         else
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("stepSize \"" + *step_size_str + "\" is not a valid number.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(R"(stepSize "{}" is not a valid number.)", *step_size_str));
         }
     }
 
@@ -1082,9 +1305,10 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
         {
             if (!type_definitions.contains(*var.declared_type))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") references undefined type \"" + *var.declared_type + "\".");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format(R"(Variable "{}" (line {}) references undefined type "{}".)", var.name, var.sourceline,
+                                *var.declared_type));
             }
             else
             {
@@ -1105,9 +1329,10 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
         {
             if (!units.contains(*unit_to_check))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                        ") references undefined unit \"" + *unit_to_check + "\".");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format(R"(Variable "{}" (line {}) references undefined unit "{}".)", var.name, var.sourceline,
+                                *unit_to_check));
             }
             else
             {
@@ -1121,10 +1346,10 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                     const auto& unit_def = units.at(*unit_to_check);
                     if (!unit_def.display_units.contains(*var.display_unit))
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("DisplayUnit \"" + *var.display_unit + "\" of variable \"" + var.name +
-                                                "\" (line " + std::to_string(var.sourceline) +
-                                                ") is not defined for unit \"" + *unit_to_check + "\".");
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(
+                            std::format(R"(DisplayUnit "{}" of variable "{}" (line {}) is not defined for unit "{}".)",
+                                        *var.display_unit, var.name, var.sourceline, *unit_to_check));
                     }
                 }
 
@@ -1138,12 +1363,12 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                         {
                             if (*offset_val != 0.0)
                             {
-                                if (test.status == TestStatus::PASS)
-                                    test.status = TestStatus::WARNING;
-                                test.messages.push_back(
-                                    "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    ") has relativeQuantity=\"true\" but is associated with unit \"" + *unit_to_check +
-                                    "\" which has a non-zero offset (" + *unit_def.offset + ").");
+                                if (test.getStatus() == TestStatus::PASS)
+                                    test.setStatus(TestStatus::WARNING);
+                                test.getMessages().emplace_back(
+                                    std::format(R"(Variable "{}" (line {}) has relativeQuantity="true" but is "
+                                                R"(associated with unit "{}" which has a non-zero offset ({}).)",
+                                                var.name, var.sourceline, *unit_to_check, *unit_def.offset));
                             }
                         }
                     }
@@ -1159,10 +1384,10 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
         {
             if (!units.contains(*type_def.unit))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("Type definition \"" + name + "\" (line " +
-                                        std::to_string(type_def.sourceline) + ") references undefined unit \"" +
-                                        *type_def.unit + "\".");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format(R"(Type definition "{}" (line {}) references undefined unit "{}".)", name,
+                                type_def.sourceline, *type_def.unit));
             }
             else
             {
@@ -1175,10 +1400,10 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                     const auto& unit_def = units.at(*type_def.unit);
                     if (!unit_def.display_units.contains(*type_def.display_unit))
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("DisplayUnit \"" + *type_def.display_unit + "\" of type definition \"" +
-                                                name + "\" (line " + std::to_string(type_def.sourceline) +
-                                                ") is not defined for unit \"" + *type_def.unit + "\".");
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(std::format(
+                            R"(DisplayUnit "{}" of type definition "{}" (line {}) is not defined for unit "{}".)",
+                            *type_def.display_unit, name, type_def.sourceline, *type_def.unit));
                     }
                 }
 
@@ -1192,12 +1417,12 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                         {
                             if (*offset_val != 0.0)
                             {
-                                if (test.status == TestStatus::PASS)
-                                    test.status = TestStatus::WARNING;
-                                test.messages.push_back(
-                                    "Type definition \"" + name + "\" (line " + std::to_string(type_def.sourceline) +
-                                    ") has relativeQuantity=\"true\" but references unit \"" + *type_def.unit +
-                                    "\" which has a non-zero offset (" + *unit_def.offset + ").");
+                                if (test.getStatus() == TestStatus::PASS)
+                                    test.setStatus(TestStatus::WARNING);
+                                test.getMessages().emplace_back(
+                                    std::format(R"(Type definition "{}" (line {}) has relativeQuantity="true" but "
+                                                R"(references unit "{}" which has a non-zero offset ({}).)",
+                                                name, type_def.sourceline, *type_def.unit, *unit_def.offset));
                             }
                         }
                     }
@@ -1219,10 +1444,10 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
     {
         if (!_used_type_definitions.contains(name))
         {
-            if (test.status == TestStatus::PASS)
-                test.status = TestStatus::WARNING;
-            test.messages.push_back("Type definition \"" + name + "\" (line " + std::to_string(type_def.sourceline) +
-                                    ") is unused.");
+            if (test.getStatus() == TestStatus::PASS)
+                test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back(
+                std::format(R"(Type definition "{}" (line {}) is unused.)", name, type_def.sourceline));
         }
     }
 
@@ -1230,10 +1455,10 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
     {
         if (!_used_units.contains(name))
         {
-            if (test.status == TestStatus::PASS)
-                test.status = TestStatus::WARNING;
-            test.messages.push_back("Unit \"" + name + "\" (line " + std::to_string(unit_def.sourceline) +
-                                    ") is unused.");
+            if (test.getStatus() == TestStatus::PASS)
+                test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back(
+                std::format(R"(Unit "{}" (line {}) is unused.)", name, unit_def.sourceline));
         }
     }
 

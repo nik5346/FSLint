@@ -47,19 +47,19 @@ class SchemaCheckerBase : public Checker
     /// @brief Gets the list of XML file rules to validate.
     /// @param path Model root directory.
     /// @return Vector of XmlFileRule objects.
-    virtual std::vector<XmlFileRule> getXmlRules(const std::filesystem::path& path) const = 0;
+    [[nodiscard]] virtual std::vector<XmlFileRule> getXmlRules(const std::filesystem::path& path) const = 0;
 
     /// @brief Gets the standard name (e.g., "fmi" or "ssp").
     /// @return Standard name.
-    virtual std::string getStandardName() const = 0;
+    [[nodiscard]] virtual std::string getStandardName() const = 0;
 
     /// @brief Gets the standard version (e.g., "3.0").
     /// @return Version string.
-    virtual std::string getStandardVersion() const = 0;
+    [[nodiscard]] virtual std::string getStandardVersion() const = 0;
 
     /// @brief Hook to specify if UTF-8 is strictly required for XML files.
     /// @return True if UTF-8 is mandatory.
-    virtual bool isUtf8Required() const
+    [[nodiscard]] virtual bool isUtf8Required() const
     {
         return true;
     }
@@ -68,8 +68,8 @@ class SchemaCheckerBase : public Checker
     /// @param schema_filename Filename of the schema.
     /// @param version_override Optional version directory to look in.
     /// @return The filesystem path to the schema.
-    std::filesystem::path findSchemaPath(const std::string& schema_filename,
-                                         const std::string& version_override = "") const;
+    [[nodiscard]] std::filesystem::path findSchemaPath(const std::string& schema_filename,
+                                                       const std::string& version_override = "") const;
 
     /// @brief Validates a specific XML file against a schema.
     /// @param xml_path Path to the XML file.

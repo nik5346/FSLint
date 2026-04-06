@@ -5,7 +5,7 @@
 #include <filesystem>
 
 struct _xmlDoc;
-typedef struct _xmlDoc* xmlDocPtr;
+using xmlDocPtr = struct _xmlDoc*;
 
 /// @brief Reads an XML file into a libxml2 document.
 /// @param path XML file path.

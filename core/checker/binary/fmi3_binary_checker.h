@@ -11,5 +11,5 @@ class Fmi3BinaryChecker : public BinaryChecker
   protected:
     /// @brief Gets mandatory FMI 3.0 functions.
     /// @return List of functions.
-    std::vector<std::string> getExpectedFunctions() const override;
+    [[nodiscard]] std::vector<std::string> getExpectedFunctions() const override;
 };

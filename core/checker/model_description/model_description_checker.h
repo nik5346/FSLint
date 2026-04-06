@@ -280,7 +280,7 @@ class ModelDescriptionCheckerBase : public Checker
     /// @param mandatory True if mandatory.
     void checkAuthor(const std::optional<std::string>& author, Certificate& cert, bool mandatory = true) const;
 
-    /// @brief Checks generationTool attribute.
+    /// @brief Checks generation tool attribute.
     /// @param tool Tool name.
     /// @param cert Certificate to record results.
     void checkGenerationTool(const std::optional<std::string>& tool, Certificate& cert) const;
@@ -516,10 +516,10 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         const auto val = parseNumber<T>(*str_opt);
         if (!val)
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                    "): Failed to parse numeric value of " + attr_name + " with value '" + *str_opt +
-                                    "'");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
+                                            "): Failed to parse numeric value of " + attr_name + " with value '" +
+                                            *str_opt + "'");
             return std::nullopt;
         }
         return val;
@@ -535,7 +535,7 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     // 1. Check: max >= min
     if (min_val.has_value() && max_val.has_value() && max_val.value() < min_val.value())
     {
-        test.status = TestStatus::FAIL;
+        test.setStatus(TestStatus::FAIL);
         std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (";
         if (effective_max.has_value())
             msg += effective_max.value();
@@ -543,14 +543,14 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         if (effective_min.has_value())
             msg += effective_min.value();
         msg += ").";
-        test.messages.push_back(msg);
+        test.getMessages().emplace_back(msg);
         success = false;
     }
 
     // 2. Check: start >= min
     if (start_val.has_value() && min_val.has_value() && start_val.value() < min_val.value())
     {
-        test.status = TestStatus::FAIL;
+        test.setStatus(TestStatus::FAIL);
         std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
         if (var.start.has_value())
             msg += var.start.value();
@@ -561,14 +561,14 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         if (!var.min && var.declared_type)
             msg += " (min inherited from type '" + *var.declared_type + "')";
         msg += ".";
-        test.messages.push_back(msg);
+        test.getMessages().emplace_back(msg);
         success = false;
     }
 
     // 3. Check: start <= max
     if (start_val.has_value() && max_val.has_value() && start_val.value() > max_val.value())
     {
-        test.status = TestStatus::FAIL;
+        test.setStatus(TestStatus::FAIL);
         std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
         if (var.start.has_value())
             msg += var.start.value();
@@ -579,7 +579,7 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         if (!var.max && var.declared_type)
             msg += " (max inherited from type '" + *var.declared_type + "')";
         msg += ".";
-        test.messages.push_back(msg);
+        test.getMessages().emplace_back(msg);
         success = false;
     }
 

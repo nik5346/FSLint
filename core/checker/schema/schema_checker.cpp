@@ -58,7 +58,7 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
     }
 
     // Get rules from derived class
-    auto rules = getXmlRules(path);
+    const auto rules = getXmlRules(path);
 
     // Validate each XML file according to rules
     for (const auto& rule : rules)
@@ -99,9 +99,13 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
 
         // Validate
         validateXmlFile(xml_path, schema_path, rule.validation_name, cert);
+        if (cert.shouldAbort())
+            return;
 
         // Security: Check for DOCTYPE (XXE protection)
         checkXmlSecurity(xml_path, rule.validation_name, cert);
+        if (cert.shouldAbort())
+            return;
     }
 
     cert.printSubsectionSummary(is_valid);
@@ -111,12 +115,12 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
                                                                     const std::string& root_element,
                                                                     const std::string& version_attribute)
 {
-    xmlDocPtr doc = readXmlFile(xml_path);
-    if (!doc)
+    const xmlDocPtr doc = readXmlFile(xml_path);
+    if (doc == nullptr)
         return std::nullopt;
 
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-    if (!root)
+    const xmlNodePtr root = xmlDocGetRootElement(doc);
+    if (root == nullptr)
     {
         xmlFreeDoc(doc);
         return std::nullopt;
@@ -133,7 +137,7 @@ std::optional<std::string> SchemaCheckerBase::extractVersionFromXml(const std::f
     // Extract version attribute
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* version = xmlGetProp(root, reinterpret_cast<const xmlChar*>(version_attribute.c_str()));
-    if (!version)
+    if (version == nullptr)
     {
         xmlFreeDoc(doc);
         return std::nullopt;
@@ -155,8 +159,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     std::ifstream file(xml_path, std::ios::binary);
     if (!file.is_open())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to open file for encoding check.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Failed to open file for encoding check.");
         cert.printTestResult(test);
         return false;
     }
@@ -165,13 +169,13 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     constexpr size_t XML_DECL_BUFFER_SIZE = 512;
     std::vector<char> buffer(XML_DECL_BUFFER_SIZE);
     file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
-    const size_t bytes_read = static_cast<size_t>(file.gcount());
+    const auto bytes_read = static_cast<size_t>(file.gcount());
     file.close();
 
     if (bytes_read == 0)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("File is empty.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("File is empty.");
         cert.printTestResult(test);
         return false;
     }
@@ -192,10 +196,10 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     std::string first_line = (line_end != std::string::npos) ? first_part.substr(0, line_end) : first_part;
 
     // Check if first line contains XML declaration
-    if (first_line.find("<?xml") != 0)
+    if (!first_line.starts_with("<?xml"))
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Missing XML declaration on first line.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Missing XML declaration on first line.");
         cert.printTestResult(test);
         return false;
     }
@@ -204,8 +208,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     const size_t version_pos = first_line.find("version");
     if (version_pos == std::string::npos)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("XML declaration missing version attribute.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("XML declaration missing version attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -214,8 +218,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     const size_t version_quote_start = first_line.find_first_of("\"'", version_pos);
     if (version_quote_start == std::string::npos)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Malformed version attribute.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Malformed version attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -224,8 +228,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     const size_t version_quote_end = first_line.find(version_quote_char, version_quote_start + 1);
     if (version_quote_end == std::string::npos)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Malformed version attribute.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Malformed version attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -235,8 +239,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     // Check if version is 1.0
     if (version != "1.0")
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("XML version must be 1.0, found: " + version);
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("XML version must be 1.0, found: " + version);
         cert.printTestResult(test);
         return false;
     }
@@ -245,8 +249,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     const size_t encoding_pos = first_line.find("encoding");
     if (encoding_pos == std::string::npos)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("XML declaration missing encoding attribute.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("XML declaration missing encoding attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -255,8 +259,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     const size_t quote_start = first_line.find_first_of("\"'", encoding_pos);
     if (quote_start == std::string::npos)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Malformed encoding attribute.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Malformed encoding attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -265,8 +269,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     const size_t quote_end = first_line.find(quote_char, quote_start + 1);
     if (quote_end == std::string::npos)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Malformed encoding attribute.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Malformed encoding attribute.");
         cert.printTestResult(test);
         return false;
     }
@@ -274,21 +278,21 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     std::string encoding = first_line.substr(quote_start + 1, quote_end - quote_start - 1);
 
     // Convert to uppercase for comparison
-    std::transform(encoding.begin(), encoding.end(), encoding.begin(), ::toupper);
+    std::ranges::transform(encoding, encoding.begin(), ::toupper);
 
     // Check if encoding is UTF-8
     if (encoding != "UTF-8")
     {
         if (isUtf8Required())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Encoding must be UTF-8, found: " + encoding);
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("Encoding must be UTF-8, found: " + encoding);
             cert.printTestResult(test);
             return false;
         }
 
-        test.status = TestStatus::WARNING;
-        test.messages.push_back("Encoding is " + encoding + ". It is recommended to use UTF-8.");
+        test.setStatus(TestStatus::WARNING);
+        test.getMessages().emplace_back("Encoding is " + encoding + ". It is recommended to use UTF-8.");
         cert.printTestResult(test);
         return true;
     }
@@ -296,8 +300,8 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     // Validate actual file content is valid UTF-8
     if (!isValidUtf8File(xml_path))
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("File content is not valid UTF-8.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("File content is not valid UTF-8.");
         cert.printTestResult(test);
         return false;
     }
@@ -311,14 +315,14 @@ void SchemaCheckerBase::checkXmlSecurity(const std::filesystem::path& xml_path, 
 {
     TestResult test{validation_name + " [SECURITY] XXE Check", TestStatus::PASS, {}};
 
-    xmlDocPtr doc = readXmlFile(xml_path);
-    if (!doc)
+    const xmlDocPtr doc = readXmlFile(xml_path);
+    if (doc == nullptr)
         return;
 
     if (hasDoctype(doc))
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("XML document must not contain a DOCTYPE declaration (potential XXE attack).");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("XML document must not contain a DOCTYPE declaration (potential XXE attack).");
     }
 
     xmlFreeDoc(doc);
@@ -334,11 +338,11 @@ bool SchemaCheckerBase::isValidUtf8File(const std::filesystem::path& file_path)
     constexpr size_t UTF8_CHECK_BUFFER_SIZE = 4096;
     std::vector<unsigned char> buffer(UTF8_CHECK_BUFFER_SIZE);
 
-    while (file.read(reinterpret_cast<char*>(buffer.data()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
-                     static_cast<std::streamsize>(buffer.size())) ||
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    while (file.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(buffer.size())) ||
            file.gcount() > 0)
     {
-        const size_t bytes_read = static_cast<size_t>(file.gcount());
+        const auto bytes_read = static_cast<size_t>(file.gcount());
         if (!isValidUtf8(buffer.data(), bytes_read))
             return false;
     }
@@ -459,6 +463,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     std::filesystem::path bin_dir;
 
 #ifdef _WIN32
+    // NOLINTNEXTLINE(misc-include-cleaner)
     std::array<wchar_t, MAX_PATH> path{};
     // NOLINTNEXTLINE(misc-include-cleaner)
     auto length = GetModuleFileNameW(nullptr, path.data(), static_cast<unsigned long>(path.size()));
@@ -468,8 +473,9 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
 #elif defined(__linux__)
     std::array<char, PATH_MAX> path{};
     const ssize_t len = readlink("/proc/self/exe", path.data(), path.size() - 1);
-    if (len != -1)
+    if (len != -1 && static_cast<size_t>(len) < path.size())
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         path[static_cast<size_t>(len)] = '\0';
         bin_dir = std::filesystem::path(path.data()).parent_path();
     }
@@ -553,7 +559,7 @@ std::filesystem::path SchemaCheckerBase::findSchemaPath(const std::string& schem
     }
 #endif
 
-    return std::filesystem::path();
+    return {};
 }
 
 bool SchemaCheckerBase::hasElement(const std::filesystem::path& xml_path, const std::string& element_name)
@@ -597,8 +603,8 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     xmlDocPtr schema_doc = readXmlFile(schema_path);
     if (!schema_doc)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to read schema file: " + file_utils::pathToUtf8(schema_path));
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Failed to read schema file: " + file_utils::pathToUtf8(schema_path));
         cert.printTestResult(test);
         xmlCleanupParser();
         return;
@@ -607,18 +613,18 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     xmlSchemaParserCtxtPtr parser_ctx = xmlSchemaNewDocParserCtxt(schema_doc);
     if (!parser_ctx)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to create schema parser context.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Failed to create schema parser context.");
         cert.printTestResult(test);
         xmlFreeDoc(schema_doc);
         xmlCleanupParser();
         return;
     }
 
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlSchemaSetParserErrors(parser_ctx, reinterpret_cast<xmlSchemaValidityErrorFunc>(errorCallback),
+                             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                              reinterpret_cast<xmlSchemaValidityWarningFunc>(warningCallback), &test);
-    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
     xmlSchemaPtr schema = xmlSchemaParse(parser_ctx);
     xmlSchemaFreeParserCtxt(parser_ctx);
@@ -626,10 +632,10 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
 
     if (!schema)
     {
-        if (test.messages.empty())
+        if (test.getMessages().empty())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Failed to parse schema.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("Failed to parse schema.");
         }
         cert.printTestResult(test);
         xmlCleanupParser();
@@ -640,8 +646,8 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     xmlSchemaValidCtxtPtr valid_ctx = xmlSchemaNewValidCtxt(schema);
     if (!valid_ctx)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to create validation context.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Failed to create validation context.");
         cert.printTestResult(test);
         xmlSchemaFree(schema);
         xmlCleanupParser();
@@ -657,8 +663,8 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     xmlDocPtr xml_doc = readXmlFile(xml_path);
     if (!xml_doc)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Failed to read XML file: " + file_utils::pathToUtf8(xml_path));
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Failed to read XML file: " + file_utils::pathToUtf8(xml_path));
         cert.printTestResult(test);
         xmlSchemaFreeValidCtxt(valid_ctx);
         xmlSchemaFree(schema);
@@ -670,10 +676,10 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
 
     if (valid_result != 0)
     {
-        if (test.messages.empty())
+        if (test.getMessages().empty())
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Schema validation failed.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("Schema validation failed.");
         }
     }
 
@@ -694,14 +700,17 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
     va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     va_start(args, msg);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     const std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     va_end(args);
 
     if (written < 0)
     {
-        test->messages.push_back("Error formatting validation message.");
-        test->status = TestStatus::FAIL;
+        test->getMessages().emplace_back("Error formatting validation message.");
+        test->setStatus(TestStatus::FAIL);
         return;
     }
 
@@ -712,8 +721,8 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
     if (!error.empty() && error.back() != '.')
         error += ".";
 
-    test->messages.push_back(error);
-    test->status = TestStatus::FAIL;
+    test->getMessages().emplace_back(error);
+    test->setStatus(TestStatus::FAIL);
 }
 
 // NOLINTNEXTLINE(cert-dcl50-cpp)
@@ -724,13 +733,16 @@ void SchemaCheckerBase::warningCallback(void* ctx, const char* msg, ...)
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
     va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     va_start(args, msg);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     const std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     va_end(args);
 
     if (written < 0)
     {
-        test->messages.push_back("Warning: Error formatting validation message.");
+        test->getMessages().emplace_back("Warning: Error formatting validation message.");
         return;
     }
 
@@ -741,7 +753,7 @@ void SchemaCheckerBase::warningCallback(void* ctx, const char* msg, ...)
     if (!warning.empty() && warning.back() != '.')
         warning += ".";
 
-    test->messages.push_back(warning);
-    if (test->status == TestStatus::PASS)
-        test->status = TestStatus::WARNING;
+    test->getMessages().emplace_back(warning);
+    if (test->getStatus() == TestStatus::PASS)
+        test->setStatus(TestStatus::WARNING);
 }

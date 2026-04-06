@@ -27,10 +27,10 @@ TEST_CASE("FMI 2.0 Terminals and Icons Validation", "[terminals][icons][fmi2]")
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -76,10 +76,10 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }

@@ -88,6 +88,7 @@ class Cursor
     /// @return Character or null.
     [[nodiscard]] char peek(int n = 0) const noexcept
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         return (_p + n < _e) ? _p[n] : '\0';
     }
 
@@ -95,6 +96,7 @@ class Cursor
     /// @return Character.
     char get() noexcept
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         return *_p++;
     }
 
@@ -103,8 +105,10 @@ class Cursor
     /// @return True if matched.
     bool eat(char c) noexcept
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (_p < _e && *_p == c)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             ++_p;
             return true;
         }
@@ -129,6 +133,7 @@ class Cursor
     /// @param n Count.
     void skip(int n) noexcept
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         _p += n;
     }
 

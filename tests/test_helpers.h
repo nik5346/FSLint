@@ -10,14 +10,14 @@ inline bool has_fail(const Certificate& cert)
 {
     const auto& results = cert.getResults();
     return std::any_of(results.begin(), results.end(),
-                       [](const TestResult& r) { return r.status == TestStatus::FAIL; });
+                       [](const TestResult& r) { return r.getStatus() == TestStatus::FAIL; });
 }
 
 inline bool has_warning(const Certificate& cert)
 {
     const auto& results = cert.getResults();
     return std::any_of(results.begin(), results.end(),
-                       [](const TestResult& r) { return r.status == TestStatus::WARNING; });
+                       [](const TestResult& r) { return r.getStatus() == TestStatus::WARNING; });
 }
 
 inline bool has_error_with_text(const Certificate& cert, const std::string& text)
@@ -25,11 +25,11 @@ inline bool has_error_with_text(const Certificate& cert, const std::string& text
     const auto& results = cert.getResults();
     for (const auto& r : results)
     {
-        if (r.status != TestStatus::FAIL)
+        if (r.getStatus() != TestStatus::FAIL)
             continue;
-        if (r.test_name.find(text) != std::string::npos)
+        if (r.getName().find(text) != std::string::npos)
             return true;
-        for (const auto& msg : r.messages)
+        for (const auto& msg : r.getMessages())
             if (msg.find(text) != std::string::npos)
                 return true;
     }
@@ -41,11 +41,11 @@ inline bool has_warning_with_text(const Certificate& cert, const std::string& te
     const auto& results = cert.getResults();
     for (const auto& r : results)
     {
-        if (r.status != TestStatus::WARNING && r.status != TestStatus::FAIL)
+        if (r.getStatus() != TestStatus::WARNING && r.getStatus() != TestStatus::FAIL)
             continue;
-        if (r.test_name.find(text) != std::string::npos)
+        if (r.getName().find(text) != std::string::npos)
             return true;
-        for (const auto& msg : r.messages)
+        for (const auto& msg : r.getMessages())
             if (msg.find(text) != std::string::npos)
                 return true;
     }

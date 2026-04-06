@@ -4,6 +4,7 @@
 #include <rapidjson/rapidjson.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -26,6 +27,8 @@ bool isBinary(const std::filesystem::path& path)
 
     // Read up to 8KB to check for null bytes and UTF-8 validity
     std::vector<unsigned char> buffer(8192);
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     file.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(buffer.size()));
     const std::streamsize bytes_read = file.gcount();
     buffer.resize(static_cast<size_t>(bytes_read));
@@ -34,14 +37,16 @@ bool isBinary(const std::filesystem::path& path)
         return false;
 
     // Check for null bytes
-    return std::any_of(buffer.begin(), buffer.end(), [](unsigned char c) { return c == '\0'; });
+    return std::ranges::any_of(buffer, [](unsigned char c) { return c == '\0'; });
 }
 
 std::string pathToUtf8(const std::filesystem::path& path)
 {
 #ifdef _WIN32
     const std::u8string u8_path = path.u8string();
-    return std::string(reinterpret_cast<const char*>(u8_path.data()), u8_path.size());
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    return {reinterpret_cast<const char*>(u8_path.data()), u8_path.size()};
 #else
     return path.string();
 #endif
@@ -50,17 +55,30 @@ std::string pathToUtf8(const std::filesystem::path& path)
 std::filesystem::path utf8ToPath(const std::string& utf8)
 {
 #ifdef _WIN32
-    return std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(utf8.data()), utf8.size()));
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    return std::u8string(reinterpret_cast<const char8_t*>(utf8.data()), utf8.size());
 #else
-    return std::filesystem::path(utf8);
+    return {utf8};
 #endif
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* allocator_ptr)
 {
-    auto& node = *reinterpret_cast<rapidjson::Value*>(node_ptr);
-    auto& allocator = *reinterpret_cast<rapidjson::Document::AllocatorType*>(allocator_ptr);
+
+    auto& node =
+        *reinterpret_cast /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast) */ /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                                                                                     */
+        /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast) */ /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                                                                   */
+        /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast) */<rapidjson::Value*>(node_ptr);
+
+    auto& allocator =
+        *reinterpret_cast /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast) */ /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                                                                                     */
+        /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast) */ /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                                                                   */
+        /* NOLINT(cppcoreguidelines-pro-type-reinterpret-cast) */<rapidjson::Document::AllocatorType*>(allocator_ptr);
 
     std::error_code ec;
     const std::string name = pathToUtf8(path.filename());
@@ -90,17 +108,17 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
             if (!ec)
                 entries.push_back(entry.path());
 
-        std::sort(entries.begin(), entries.end(),
-                  [](const auto& a, const auto& b)
-                  {
-                      std::error_code ec_a;
-                      std::error_code ec_b;
-                      const bool a_is_dir = std::filesystem::is_directory(a, ec_a);
-                      const bool b_is_dir = std::filesystem::is_directory(b, ec_b);
-                      if (a_is_dir != b_is_dir)
-                          return a_is_dir;
-                      return pathToUtf8(a.filename()) < pathToUtf8(b.filename());
-                  });
+        std::ranges::sort(entries,
+                          [](const auto& a, const auto& b)
+                          {
+                              std::error_code ec_a;
+                              std::error_code ec_b;
+                              const bool a_is_dir = std::filesystem::is_directory(a, ec_a);
+                              const bool b_is_dir = std::filesystem::is_directory(b, ec_b);
+                              if (a_is_dir != b_is_dir)
+                                  return a_is_dir;
+                              return pathToUtf8(a.filename()) < pathToUtf8(b.filename());
+                          });
 
         for (const auto& entry : entries)
         {
@@ -120,28 +138,32 @@ std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesys
         return std::nullopt;
 
     // PNG header (8 bytes) + IHDR chunk header (4 bytes length + 4 bytes type + 8 bytes width/height)
-    unsigned char header[24];
-    file.read(reinterpret_cast<char*>(header), sizeof(header));
+    std::array<unsigned char, 24> header{};
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    file.read(reinterpret_cast<char*>(header.data()), static_cast<std::streamsize>(header.size()));
     if (file.gcount() < 24)
         return std::nullopt;
 
     // Check PNG signature: 89 50 4E 47 0D 0A 1A 0A
-    static const unsigned char signature[] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-    if (std::memcmp(header, signature, 8) != 0)
+    static constexpr std::array<unsigned char, 8> signature = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+    if (std::memcmp(header.data(), signature.data(), signature.size()) != 0)
         return std::nullopt;
 
     // Check IHDR chunk type: "IHDR"
-    if (std::memcmp(header + 12, "IHDR", 4) != 0)
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    if (std::memcmp(header.data() + 12, "IHDR", 4) != 0)
         return std::nullopt;
 
-    auto readUint32Be = [](const unsigned char* data) -> uint32_t
+    const auto readUint32Be = [](const unsigned char* data) -> uint32_t
     {
         return (static_cast<uint32_t>(data[0]) << 24) | (static_cast<uint32_t>(data[1]) << 16) |
                (static_cast<uint32_t>(data[2]) << 8) | (static_cast<uint32_t>(data[3]));
     };
 
-    const uint32_t width = readUint32Be(header + 16);
-    const uint32_t height = readUint32Be(header + 20);
+    const uint32_t width = readUint32Be(header.data() + 16);
+    const uint32_t height = readUint32Be(header.data() + 20);
+    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
     return std::make_pair(width, height);
 }

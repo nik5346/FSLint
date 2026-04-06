@@ -11,7 +11,10 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
     std::vector<XmlFileRule> rules;
 
     // 1. SystemStructure.ssd (mandatory)
-    rules.push_back({"SystemStructure.ssd", "SystemStructureDescription.xsd", true, "SystemStructure.ssd"});
+    rules.push_back({.relative_path = "SystemStructure.ssd",
+                     .schema_filename = "SystemStructureDescription.xsd",
+                     .is_mandatory = true,
+                     .validation_name = "SystemStructure.ssd"});
 
     // 2. All other .ssd files in root directory
     for (const auto& entry : std::filesystem::directory_iterator(path))
@@ -19,8 +22,10 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
         if (entry.is_regular_file() && entry.path().extension() == ".ssd" &&
             entry.path().filename() != "SystemStructure.ssd")
         {
-            rules.push_back({entry.path().filename(), "SystemStructureDescription.xsd", false,
-                             file_utils::pathToUtf8(entry.path().filename())});
+            rules.push_back({.relative_path = entry.path().filename(),
+                             .schema_filename = "SystemStructureDescription.xsd",
+                             .is_mandatory = false,
+                             .validation_name = file_utils::pathToUtf8(entry.path().filename())});
         }
     }
 
@@ -30,8 +35,10 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
         if (entry.is_regular_file() && entry.path().extension() == ".ssm")
         {
             auto rel_path = std::filesystem::relative(entry.path(), path);
-            rules.push_back({rel_path, "SystemStructureParameterMapping.xsd", false,
-                             file_utils::pathToUtf8(entry.path().filename())});
+            rules.push_back({.relative_path = rel_path,
+                             .schema_filename = "SystemStructureParameterMapping.xsd",
+                             .is_mandatory = false,
+                             .validation_name = file_utils::pathToUtf8(entry.path().filename())});
         }
     }
 
@@ -41,8 +48,10 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
         if (entry.is_regular_file() && entry.path().extension() == ".ssv")
         {
             auto rel_path = std::filesystem::relative(entry.path(), path);
-            rules.push_back({rel_path, "SystemStructureParameterValues.xsd", false,
-                             file_utils::pathToUtf8(entry.path().filename())});
+            rules.push_back({.relative_path = rel_path,
+                             .schema_filename = "SystemStructureParameterValues.xsd",
+                             .is_mandatory = false,
+                             .validation_name = file_utils::pathToUtf8(entry.path().filename())});
         }
     }
 
@@ -52,8 +61,10 @@ std::vector<XmlFileRule> Ssp2SchemaChecker::getXmlRules(const std::filesystem::p
         if (entry.is_regular_file() && entry.path().extension() == ".ssb")
         {
             auto rel_path = std::filesystem::relative(entry.path(), path);
-            rules.push_back({rel_path, "SystemStructureSignalDictionary.xsd", false,
-                             file_utils::pathToUtf8(entry.path().filename())});
+            rules.push_back({.relative_path = rel_path,
+                             .schema_filename = "SystemStructureSignalDictionary.xsd",
+                             .is_mandatory = false,
+                             .validation_name = file_utils::pathToUtf8(entry.path().filename())});
         }
     }
 

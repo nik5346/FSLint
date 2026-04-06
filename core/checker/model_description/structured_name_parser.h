@@ -28,12 +28,12 @@ class StructuredNameParser
     }
 
     // Character access helpers
-    char current() const
+    [[nodiscard]] char current() const
     {
         return _pos < _input.size() ? _input[_pos] : '\0';
     }
 
-    char peek(size_t offset = 1) const
+    [[nodiscard]] char peek(size_t offset = 1) const
     {
         const size_t peek_pos = _pos + offset;
         return peek_pos < _input.size() ? _input[peek_pos] : '\0';
@@ -45,7 +45,7 @@ class StructuredNameParser
             ++_pos;
     }
 
-    bool isAtEnd() const
+    [[nodiscard]] bool isAtEnd() const
     {
         return _pos >= _input.size();
     }
@@ -241,13 +241,13 @@ class StructuredNameParser
     // Character classification helpers
 
     // nondigit = "_" | letters "a" to "z" | letters "A" to "Z"
-    bool isNondigit(char c) const
+    [[nodiscard]] bool isNondigit(char c) const
     {
         return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     }
 
     // digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-    bool isDigit(char c) const
+    [[nodiscard]] bool isDigit(char c) const
     {
         return c >= '0' && c <= '9';
     }
@@ -255,7 +255,7 @@ class StructuredNameParser
     // Q-char = nondigit | digit | "!" | "#" | "$" | "%" | "&" | "(" | ")" |
     //          "*" | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | ">" |
     //          "=" | "?" | "@" | "[" | "]" | "^" | "{" | "}" | "|" | "~" | " "
-    bool isQChar(char c) const
+    [[nodiscard]] bool isQChar(char c) const
     {
         if (isNondigit(c) || isDigit(c))
             return true;

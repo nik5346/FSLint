@@ -30,7 +30,7 @@ class BuildDescriptionChecker : public Checker
   protected:
     /// @brief Gets the configured FMI version.
     /// @return Version string.
-    const std::string& getFmiVersion() const
+    [[nodiscard]] const std::string& getFmiVersion() const
     {
         return _fmi_version;
     }
@@ -71,7 +71,7 @@ class BuildDescriptionChecker : public Checker
     /// @brief Gets all model identifiers from modelDescription.xml.
     /// @param path FMU root directory.
     /// @return Set of identifiers.
-    std::set<std::string> getValidModelIdentifiers(const std::filesystem::path& path) const;
+    [[nodiscard]] std::set<std::string> getValidModelIdentifiers(const std::filesystem::path& path) const;
 
   private:
     std::string _fmi_version;
