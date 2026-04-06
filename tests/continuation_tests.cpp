@@ -12,8 +12,7 @@
 class MockModelChecker : public ModelChecker
 {
   public:
-    Certificate validate(const std::filesystem::path& path, bool quiet, bool show_tree,
-                         Certificate cert) const override
+    Certificate validate(const std::filesystem::path& path, bool quiet, bool show_tree, Certificate cert) const override
     {
         (void)path;
         (void)show_tree;
