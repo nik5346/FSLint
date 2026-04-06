@@ -168,8 +168,8 @@ int main(int argc, char** argv)
                 return false;
 
             std::cout << "\n[SECURITY ISSUE DETECTED] Do you want to continue validation? (y/N): ";
-            const char response = 'n';
-            if (!(std::cin >> const_cast<char&>(response)))
+            char response = 'n';
+            if (!(std::cin >> response))
                 return false;
 
             return response == 'y' || response == 'Y';
@@ -207,8 +207,8 @@ int main(int argc, char** argv)
         }
 
         // Default: validate FMU (without saving certificate)
-        const Certificate initial_cert;
-        const_cast<Certificate&>(initial_cert).setContinueCallback(continue_callback);
+        Certificate initial_cert;
+        initial_cert.setContinueCallback(continue_callback);
         (void)validator.validate(fmu_path, false, show_tree, std::move(initial_cert));
 
         return 0;
