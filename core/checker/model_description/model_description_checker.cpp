@@ -1406,7 +1406,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                 if (test.getStatus() == TestStatus::PASS)
                                     test.setStatus(TestStatus::WARNING);
                                 test.getMessages().emplace_back(
-                                    std::format(R"(Variable "{}" (line {}) has relativeQuantity="true" but is "
+                                    std::format(R"(Variable "{}" (line {}) has relativeQuantity="true" but is )"
                                                 R"(associated with unit "{}" which has a non-zero offset ({}).)",
                                                 var.name, var.sourceline, *unit_to_check, *unit_def.offset));
                             }
@@ -1460,7 +1460,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                 if (test.getStatus() == TestStatus::PASS)
                                     test.setStatus(TestStatus::WARNING);
                                 test.getMessages().emplace_back(
-                                    std::format(R"(Type definition "{}" (line {}) has relativeQuantity="true" but "
+                                    std::format(R"(Type definition "{}" (line {}) has relativeQuantity="true" but )"
                                                 R"(references unit "{}" which has a non-zero offset ({}).)",
                                                 name, type_def.sourceline, *type_def.unit, *unit_def.offset));
                             }

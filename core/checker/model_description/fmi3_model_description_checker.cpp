@@ -677,8 +677,8 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    R"(All variables in an alias set (VR {}) must have the same unit. Variable "{}" has "
-                     "unit "{}" but "{}" has unit "{}".)",
+                    R"(All variables in an alias set (VR {}) must have the same unit. Variable "{}" has )"
+                    R"(unit "{}" but "{}" has unit "{}".)",
                     vr, var->name, var->unit.value_or("(none)"), first->name, first->unit.value_or("(none)")));
             }
             if (var->display_unit != first->display_unit)
@@ -937,8 +937,8 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(std::format(
-                        R"(Value reference {} is listed in ModelStructure/Output does not correspond to any output "
-                        "variable.)",
+                        R"(Value reference {} is listed in ModelStructure/Output but does not correspond to any )"
+                        "output variable.",
                         vr));
                 }
             }
