@@ -8,7 +8,8 @@
 /// @brief Metadata for a single file entry in a ZIP archive.
 struct ZipFileEntry
 {
-    std::string filename;        ///< Path within the archive.
+    std::string filename;        ///< Normalized path within the archive (always uses /).
+    std::string raw_filename;    ///< Original path within the archive (may use \).
     uint16_t compression_method; ///< Method used (e.g., 8 for Deflate).
     uint16_t version_needed;     ///< Minimum ZIP version to extract.
     uint16_t flags;              ///< General purpose bit flags.

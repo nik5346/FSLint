@@ -694,6 +694,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
         {
             auto entries = zipper.getEntries();
             std::vector<std::string> names;
+            std::vector<std::pair<std::string, std::string>> name_pairs;
             for (const auto& entry : entries)
             {
                 // Skip directories and the certificate itself
@@ -702,18 +703,22 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 {
                     continue;
                 }
-                names.push_back(entry.filename);
+                name_pairs.emplace_back(entry.filename, entry.raw_filename);
             }
-            std::ranges::sort(names);
+            // Sort by normalized filename for consistent hashing
+            std::ranges::sort(name_pairs, [](const auto& a, const auto& b) { return a.first < b.first; });
 
-            for (const auto& name : names)
+            for (const auto& pair : name_pairs)
             {
-                // Hash filename
-                hasher.process(name.begin(), name.end());
+                const auto& normalized_name = pair.first;
+                const auto& raw_name = pair.second;
+
+                // Hash filename (use normalized name for consistency)
+                hasher.process(normalized_name.begin(), normalized_name.end());
 
                 // Hash content
                 std::vector<uint8_t> data;
-                if (zipper.extractFile(name, data))
+                if (zipper.extractFile(raw_name, data))
                     hasher.process(data.begin(), data.end());
             }
             zipper.close();

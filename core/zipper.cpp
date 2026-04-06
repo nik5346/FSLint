@@ -106,7 +106,10 @@ std::vector<ZipFileEntry> Zipper::getEntries() const
         }
 
         ZipFileEntry entry{};
-        entry.filename = filename.data();
+        entry.raw_filename = filename.data();
+        entry.filename = entry.raw_filename;
+        std::ranges::replace(entry.filename, '\\', '/');
+
         entry.compression_method = static_cast<uint16_t>(file_info.compression_method);
         entry.version_needed = static_cast<uint16_t>(file_info.version_needed);
         entry.flags = static_cast<uint16_t>(file_info.flag);
@@ -217,7 +220,7 @@ bool Zipper::extractAll(const std::filesystem::path& destination)
 
         // Extract file
         std::vector<uint8_t> data;
-        if (!extractFile(entry.filename, data))
+        if (!extractFile(entry.raw_filename, data))
             return false;
 
         // Write to disk
