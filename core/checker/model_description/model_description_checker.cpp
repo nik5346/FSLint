@@ -277,50 +277,90 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         const auto& val = *metadata.model_name;
         summary.model_name = val;
     }
+    else
+    {
+        summary.model_name = "";
+    }
     if (metadata.fmi_version.has_value())
     {
         const auto& val = *metadata.fmi_version;
         summary.fmi_version = val;
+    }
+    else
+    {
+        summary.fmi_version = "";
     }
     if (metadata.model_version.has_value())
     {
         const auto& val = *metadata.model_version;
         summary.model_version = val;
     }
+    else
+    {
+        summary.model_version = "";
+    }
     if (metadata.guid.has_value())
     {
         const auto& val = *metadata.guid;
         summary.guid = val;
+    }
+    else
+    {
+        summary.guid = "";
     }
     if (metadata.author.has_value())
     {
         const auto& val = *metadata.author;
         summary.author = val;
     }
+    else
+    {
+        summary.author = "";
+    }
     if (metadata.copyright.has_value())
     {
         const auto& val = *metadata.copyright;
         summary.copyright = val;
+    }
+    else
+    {
+        summary.copyright = "";
     }
     if (metadata.license.has_value())
     {
         const auto& val = *metadata.license;
         summary.license = val;
     }
+    else
+    {
+        summary.license = "";
+    }
     if (metadata.description.has_value())
     {
         const auto& val = *metadata.description;
         summary.description = val;
+    }
+    else
+    {
+        summary.description = "";
     }
     if (metadata.generation_tool.has_value())
     {
         const auto& val = *metadata.generation_tool;
         summary.generation_tool = val;
     }
+    else
+    {
+        summary.generation_tool = "";
+    }
     if (metadata.generation_date_and_time.has_value())
     {
         const auto& val = *metadata.generation_date_and_time;
         summary.generation_date_and_time = val;
+    }
+    else
+    {
+        summary.generation_date_and_time = "";
     }
 
     for (const auto& [interface, id] : model_identifiers)
