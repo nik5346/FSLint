@@ -61,6 +61,28 @@ jobs:
       - name: Format Check
         run: npm run format:check
 
+  compliance:
+    name: AGENTS.md Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - name: Install Web Dependencies
+        run: cd web && npm install
+      - name: Run Agent Verification
+        run: python3 scripts/agent_verify.py
+
   build:
     name: Build on ${{ matrix.os }} (${{ matrix.arch }})
     needs: lint

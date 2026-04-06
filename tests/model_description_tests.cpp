@@ -35,8 +35,8 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("metadata/guid_empty", "guid attribute is empty");
         validate_fail("metadata/guid_invalid", "does not match expected GUID format");
 
-        validate_fail("model_name_missing", "modelName attribute is missing");
-        validate_fail("model_name_empty", "modelName attribute is empty");
+        validate_fail("model_name_missing", "model_name attribute is missing");
+        validate_fail("model_name_empty", "model_name attribute is empty");
 
         validate_fail("date_invalid", "out of range");
         validate_fail("date_future", "is in the future");
@@ -162,7 +162,7 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         validate_warning("warn/license_missing", "Providing a license is recommended.");
         validate_warning("warn/copyright_missing", "Providing a copyright notice is recommended.");
         validate_warning("warn/model_version_missing", "Providing a model version is recommended.");
-        validate_warning("warn/generation_date_missing", "Providing 'generationDateAndTime' is recommended.");
+        validate_warning("warn/generation_date_missing", "Providing 'generation_date_and_time' is recommended.");
     }
 
     SECTION("Unused Definitions")
@@ -280,8 +280,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("fmi_version_invalid", "is invalid (must be exactly \"2.0\")");
         validate_fail("fmi_version_patch", "is invalid (must be exactly \"2.0\")");
 
-        validate_fail("model_name_missing", "modelName attribute is missing");
-        validate_fail("model_name_empty", "modelName attribute is empty");
+        validate_fail("model_name_missing", "model_name attribute is missing");
+        validate_fail("model_name_empty", "model_name attribute is empty");
 
         validate_fail("guid_missing", "guid attribute is missing");
         validate_fail("guid_empty", "guid attribute is empty");
@@ -475,7 +475,7 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning(
             "generation_tool_missing",
             "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
-        validate_warning("generation_tool_empty", "The 'generationTool' attribute is empty.");
+        validate_warning("generation_tool_empty", "The 'generation_tool' attribute is empty.");
         validate_warning("license_missing", "Providing a license is recommended.");
         validate_warning("license_empty", "The 'license' attribute is empty.");
         validate_warning("copyright_format_no_symbol", "should begin with ©, 'Copyright', or 'Copr.'");
@@ -483,8 +483,8 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
         validate_warning("copyright_format_no_holder", "should include the name of the copyright holder");
         validate_warning("model_version_missing", "Providing a model version is recommended.");
         validate_warning("model_version_empty", "Attribute 'version' is empty.");
-        validate_warning("generation_date_and_time_missing", "Providing 'generationDateAndTime' is recommended.");
-        validate_warning("generation_date_and_time_empty", "The 'generationDateAndTime' attribute is empty.");
+        validate_warning("generation_date_and_time_missing", "Providing 'generation_date_and_time' is recommended.");
+        validate_warning("generation_date_and_time_empty", "The 'generation_date_and_time' attribute is empty.");
         validate_warning("generation_date_and_time_old", "is before the 2.0 standard release (2014)");
         validate_warning("generation_date_and_time_too_old", "is before the 2.0 standard release (2014)");
     }
@@ -743,7 +743,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
         validate_warning("model_version_missing", "Providing a model version is recommended.");
         validate_warning("model_version_empty", "Attribute 'version' is empty.");
 
-        validate_warning("generation_date_and_time_missing", "Providing 'generationDateAndTime' is recommended.");
+        validate_warning("generation_date_and_time_missing", "Providing 'generation_date_and_time' is recommended.");
         validate_warning("generation_date_and_time_old", "is before the 3.0 standard release (2022)");
         validate_warning("generation_date_and_time_too_old", "is before the 3.0 standard release (2022)");
 
@@ -830,7 +830,7 @@ TEST_CASE("FMI 2.0 Source code detection when directory is missing", "[fmi2][fai
     checker.validate("tests/data/fmi2/fail/source_code_missing_dir", cert);
 
     auto summary = cert.getSummary();
-    bool has_source_code = std::ranges::find(summary.fmuTypes, "Source code") != summary.fmuTypes.end();
+    bool has_source_code = std::ranges::find(summary.fmu_types, "Source code") != summary.fmu_types.end();
 
     CHECK(has_source_code);
 }

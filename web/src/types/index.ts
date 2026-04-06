@@ -110,17 +110,17 @@ export interface ModelSummary {
   /** The standard used (e.g., 'FMI'). */
   standard: string;
   /** The model name. */
-  modelName: string;
+  model_name: string;
   /** The FMI version. */
-  fmiVersion: string;
+  fmi_version: string;
   /** The model version. */
-  modelVersion: string;
+  model_version: string;
   /** The model's unique identifier (GUID or UUID). */
   guid: string;
   /** The tool used to generate the FMU. */
-  generationTool: string;
+  generation_tool: string;
   /** When the FMU was generated. */
-  generationDateAndTime: string;
+  generation_date_and_time: string;
   /** The author of the model. */
   author: string;
   /** Copyright information. */
@@ -134,15 +134,15 @@ export interface ModelSummary {
   /** List of supported interfaces (e.g., Co-Simulation). */
   interfaces: string[];
   /** List of supported layered standards. */
-  layeredStandards: string[];
+  layered_standards: string[];
   /** Whether the FMU includes an icon. */
-  hasIcon: boolean;
+  has_icon: boolean;
   /** List of supported FMU types. */
-  fmuTypes: string[];
+  fmu_types: string[];
   /** The language used for the source code. */
-  sourceLanguage: string;
+  source_language: string;
   /** The total recursive size of the FMU. */
-  totalSize: number;
+  total_size: number;
 }
 
 /**

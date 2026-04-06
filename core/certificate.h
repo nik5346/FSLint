@@ -111,24 +111,24 @@ struct NestedModelResult
 /// @brief Summary of extracted model metadata.
 struct ModelSummary
 {
-    std::string standard{};                      ///< "FMI" or "SSP".
-    std::string modelName{};                     ///< Name of the model.
-    std::string fmiVersion{};                    ///< FMI version (e.g., "2.0").
-    std::string modelVersion{};                  ///< Model version.
-    std::string guid{};                          ///< GUID or instantiationToken.
-    std::string generationTool{};                ///< Generating tool.
-    std::string generationDateAndTime{};         ///< Generation timestamp.
-    std::string author{};                        ///< Author.
-    std::string copyright{};                     ///< Copyright.
-    std::string license{};                       ///< License.
-    std::string description{};                   ///< Model description.
-    std::vector<std::string> platforms{};        ///< Supported platforms.
-    std::vector<std::string> interfaces{};       ///< Supported interfaces.
-    std::vector<std::string> layeredStandards{}; ///< Supported layered standards.
-    bool hasIcon = false;                        ///< True if icon present.
-    std::vector<std::string> fmuTypes{};         ///< FMU types ("Binary", "Source code").
-    std::string sourceLanguage{};                ///< Programming language of sources.
-    uint64_t totalSize = 0;                      ///< Total recursive size in bytes.
+    std::string standard{};                       ///< "FMI" or "SSP".
+    std::string model_name{};                     ///< Name of the model.
+    std::string fmi_version{};                    ///< FMI version (e.g., "2.0").
+    std::string model_version{};                  ///< Model version.
+    std::string guid{};                           ///< GUID or instantiationToken.
+    std::string generation_tool{};                ///< Generating tool.
+    std::string generation_date_and_time{};       ///< Generation timestamp.
+    std::string author{};                         ///< Author.
+    std::string copyright{};                      ///< Copyright.
+    std::string license{};                        ///< License.
+    std::string description{};                    ///< Model description.
+    std::vector<std::string> platforms{};         ///< Supported platforms.
+    std::vector<std::string> interfaces{};        ///< Supported interfaces.
+    std::vector<std::string> layered_standards{}; ///< Supported layered standards.
+    bool has_icon = false;                        ///< True if icon present.
+    std::vector<std::string> fmu_types{};         ///< FMU types ("Binary", "Source code").
+    std::string source_language{};                ///< Programming language of sources.
+    uint64_t total_size = 0;                      ///< Total recursive size in bytes.
 };
 
 /// @brief Validation report generator and result container.

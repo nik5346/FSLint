@@ -60,14 +60,14 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     const auto units = extractUnitDefinitions(doc);
 
     // Run common validation checks
-    checkFmiVersion(metadata.fmiVersion, cert);
+    checkFmiVersion(metadata.fmi_version, cert);
     if (cert.shouldAbort())
     {
         xmlFreeDoc(doc);
         xmlCleanupParser();
         return;
     }
-    checkModelName(metadata.modelName, cert);
+    checkModelName(metadata.model_name, cert);
     if (cert.shouldAbort())
     {
         xmlFreeDoc(doc);
@@ -81,14 +81,14 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         xmlCleanupParser();
         return;
     }
-    checkGenerationDateAndTime(metadata.generationDateAndTime, cert);
+    checkGenerationDateAndTime(metadata.generation_date_and_time, cert);
     if (cert.shouldAbort())
     {
         xmlFreeDoc(doc);
         xmlCleanupParser();
         return;
     }
-    checkModelVersion(metadata.modelVersion, cert);
+    checkModelVersion(metadata.model_version, cert);
     if (cert.shouldAbort())
     {
         xmlFreeDoc(doc);
@@ -131,14 +131,14 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         xmlCleanupParser();
         return;
     }
-    checkGenerationTool(metadata.generationTool, cert);
+    checkGenerationTool(metadata.generation_tool, cert);
     if (cert.shouldAbort())
     {
         xmlFreeDoc(doc);
         xmlCleanupParser();
         return;
     }
-    checkVariableNamingConvention(variables, metadata.variableNamingConvention, cert);
+    checkVariableNamingConvention(variables, metadata.variable_naming_convention, cert);
     if (cert.shouldAbort())
     {
         xmlFreeDoc(doc);
@@ -148,7 +148,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
 
     // Perform interface checks
     std::vector<std::string> interface_elements;
-    if (metadata.fmiVersion.has_value() && metadata.fmiVersion->starts_with("2."))
+    if (metadata.fmi_version.has_value() && metadata.fmi_version->starts_with("2."))
         interface_elements = {"CoSimulation", "ModelExchange"};
     else
         interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
@@ -272,20 +272,20 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     // Populate ModelSummary
     ModelSummary summary;
     summary.standard = "FMI";
-    if (metadata.modelName.has_value())
+    if (metadata.model_name.has_value())
     {
-        const auto& val = *metadata.modelName;
-        summary.modelName = val;
+        const auto& val = *metadata.model_name;
+        summary.model_name = val;
     }
-    if (metadata.fmiVersion.has_value())
+    if (metadata.fmi_version.has_value())
     {
-        const auto& val = *metadata.fmiVersion;
-        summary.fmiVersion = val;
+        const auto& val = *metadata.fmi_version;
+        summary.fmi_version = val;
     }
-    if (metadata.modelVersion.has_value())
+    if (metadata.model_version.has_value())
     {
-        const auto& val = *metadata.modelVersion;
-        summary.modelVersion = val;
+        const auto& val = *metadata.model_version;
+        summary.model_version = val;
     }
     if (metadata.guid.has_value())
     {
@@ -312,15 +312,15 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         const auto& val = *metadata.description;
         summary.description = val;
     }
-    if (metadata.generationTool.has_value())
+    if (metadata.generation_tool.has_value())
     {
-        const auto& val = *metadata.generationTool;
-        summary.generationTool = val;
+        const auto& val = *metadata.generation_tool;
+        summary.generation_tool = val;
     }
-    if (metadata.generationDateAndTime.has_value())
+    if (metadata.generation_date_and_time.has_value())
     {
-        const auto& val = *metadata.generationDateAndTime;
-        summary.generationDateAndTime = val;
+        const auto& val = *metadata.generation_date_and_time;
+        summary.generation_date_and_time = val;
     }
 
     for (const auto& [interface, id] : model_identifiers)
@@ -354,20 +354,20 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
     const bool has_binaries = !summary.platforms.empty();
 
     if (has_sources_dir || has_build_description || has_source_files_in_md)
-        summary.fmuTypes.emplace_back("Source code");
+        summary.fmu_types.emplace_back("Source code");
 
     if (has_binaries)
-        summary.fmuTypes.emplace_back("Binary");
+        summary.fmu_types.emplace_back("Binary");
 
-    if (summary.fmuTypes.empty())
-        summary.fmuTypes.emplace_back("Unknown");
+    if (summary.fmu_types.empty())
+        summary.fmu_types.emplace_back("Unknown");
 
-    summary.hasIcon = std::filesystem::exists(path / "model.png") || std::filesystem::exists(path / "model.svg");
+    summary.has_icon = std::filesystem::exists(path / "model.png") || std::filesystem::exists(path / "model.svg");
 
-    if (summary.fmiVersion.starts_with("3.0"))
+    if (summary.fmi_version.starts_with("3.0"))
     {
-        summary.hasIcon = summary.hasIcon || std::filesystem::exists(path / "terminalsAndIcons/icon.png") ||
-                          std::filesystem::exists(path / "terminalsAndIcons/icon.svg");
+        summary.has_icon = summary.has_icon || std::filesystem::exists(path / "terminalsAndIcons/icon.png") ||
+                           std::filesystem::exists(path / "terminalsAndIcons/icon.svg");
     }
 
     // Detect source language if it's a source code FMU
@@ -391,19 +391,19 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
         }
 
         if (has_c && has_cpp)
-            summary.sourceLanguage = "C and C++";
+            summary.source_language = "C and C++";
         else if (has_c)
-            summary.sourceLanguage = "C";
+            summary.source_language = "C";
         else if (has_cpp)
-            summary.sourceLanguage = "C++";
+            summary.source_language = "C++";
     }
 
     // Calculate total size
     const auto& original_path = getOriginalPath();
     if (!original_path.empty() && std::filesystem::exists(original_path))
-        summary.totalSize = file_utils::getTotalSize(original_path);
+        summary.total_size = file_utils::getTotalSize(original_path);
     else
-        summary.totalSize = file_utils::getTotalSize(path);
+        summary.total_size = file_utils::getTotalSize(path);
 
     // Detect layered standards (simple heuristic based on annotations)
     xmlXPathObjectPtr annotations_xpath = getXPathNodes(doc, "//VendorAnnotations/Tool");
@@ -418,7 +418,7 @@ void ModelDescriptionCheckerBase::validate(const std::filesystem::path& path, Ce
             {
                 const auto& name_val = *name;
                 if (name_val.find("org.fmi-standard.layered-standard") != std::string::npos)
-                    summary.layeredStandards.emplace_back(name_val);
+                    summary.layered_standards.emplace_back(name_val);
             }
         }
         xmlXPathFreeObject(annotations_xpath);
@@ -460,7 +460,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     if (!model_name.has_value())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("modelName attribute is missing.");
+        test.getMessages().emplace_back("model_name attribute is missing.");
         cert.printTestResult(test);
         return;
     }
@@ -468,7 +468,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     if (model_name->empty())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("modelName attribute is empty.");
+        test.getMessages().emplace_back("model_name attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -552,7 +552,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (!generation_date_time.has_value())
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back("Providing 'generationDateAndTime' is recommended.");
+        test.getMessages().emplace_back("Providing 'generation_date_and_time' is recommended.");
         cert.printTestResult(test);
         return;
     }
@@ -562,7 +562,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (dt.empty())
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back("The 'generationDateAndTime' attribute is empty.");
+        test.getMessages().emplace_back("The 'generation_date_and_time' attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -897,7 +897,7 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
     else if (tool->empty())
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back("The 'generationTool' attribute is empty.");
+        test.getMessages().emplace_back("The 'generation_tool' attribute is empty.");
     }
 
     cert.printTestResult(test);

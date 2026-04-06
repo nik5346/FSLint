@@ -1679,21 +1679,21 @@ void Fmi2ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
 ModelMetadata Fmi2ModelDescriptionChecker::extractMetadata(xmlNodePtr root) const
 {
     ModelMetadata metadata;
-    metadata.fmiVersion = getXmlAttribute(root, "fmiVersion");
-    metadata.modelName = getXmlAttribute(root, "modelName");
+    metadata.fmi_version = getXmlAttribute(root, "fmiVersion");
+    metadata.model_name = getXmlAttribute(root, "modelName");
     metadata.guid = getXmlAttribute(root, "guid");
-    metadata.modelVersion = getXmlAttribute(root, "version");
+    metadata.model_version = getXmlAttribute(root, "version");
     metadata.author = getXmlAttribute(root, "author");
     metadata.copyright = getXmlAttribute(root, "copyright");
     metadata.license = getXmlAttribute(root, "license");
     metadata.description = getXmlAttribute(root, "description");
-    metadata.generationTool = getXmlAttribute(root, "generationTool");
-    metadata.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime");
-    metadata.variableNamingConvention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
+    metadata.generation_tool = getXmlAttribute(root, "generationTool");
+    metadata.generation_date_and_time = getXmlAttribute(root, "generationDateAndTime");
+    metadata.variable_naming_convention = getXmlAttribute(root, "variableNamingConvention").value_or("flat");
 
     auto num_event_ind = getXmlAttribute(root, "numberOfEventIndicators");
     if (num_event_ind)
-        metadata.numberOfEventIndicators = parseNumber<uint32_t>(*num_event_ind);
+        metadata.number_of_event_indicators = parseNumber<uint32_t>(*num_event_ind);
 
     return metadata;
 }

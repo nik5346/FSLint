@@ -17,10 +17,10 @@ class Fmi2TerminalsAndIconsChecker : public TerminalsAndIconsCheckerBase
     /// @brief Extracts variables.
     /// @param path FMU root directory.
     /// @param cert Certificate to record results.
-    /// @param fmiVersion Output version string.
+    /// @param fmi_version Output version string.
     /// @return Map of variables.
     std::map<std::string, TerminalVariableInfo> extractVariables(const std::filesystem::path& path, Certificate& cert,
-                                                                 std::string& fmiVersion) const override;
+                                                                 std::string& fmi_version) const override;
 
     /// @brief Validates terminalsAndIcons.xml version.
     /// @param root XML node.
