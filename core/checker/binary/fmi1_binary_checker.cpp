@@ -27,7 +27,7 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
     }
 
     xmlDocPtr doc = readXmlFile(model_desc_path);
-    if (!doc)
+    if (doc == nullptr)
     {
         cert.printSubsectionSummary(false);
         return;
@@ -39,14 +39,15 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
 
     bool is_cs = false;
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-    if (xpath_context)
+    if (xpath_context != nullptr)
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathObjectPtr xpath_obj =
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Implementation"), xpath_context);
-        if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
+        if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr && xpath_obj->nodesetval->nodeNr > 0)
             is_cs = true;
-        if (xpath_obj)
+        if (xpath_obj != nullptr)
             xmlXPathFreeObject(xpath_obj);
         xmlXPathFreeContext(xpath_context);
     }
@@ -140,9 +141,9 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
                         const std::string prefixed_func = std::format("{}_{}", model_id, func);
                         if (!info.exports.contains(prefixed_func))
                         {
-                            export_test.status = TestStatus::FAIL;
-                            export_test.messages.push_back("Mandatory function '" + prefixed_func +
-                                                           "' is not exported.");
+                            export_test.setStatus(TestStatus::FAIL);
+                            export_test.getMessages().emplace_back("Mandatory function '" + prefixed_func +
+                                                                   "' is not exported.");
                         }
                     }
                     cert.printTestResult(export_test);
@@ -153,16 +154,16 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
 
                     if (!info.isSharedLibrary && info.format != BinaryFormat::UNKNOWN)
                     {
-                        format_test.status = TestStatus::FAIL;
-                        format_test.messages.push_back("Binary is not a shared library (DLL/SO/DYLIB).");
+                        format_test.setStatus(TestStatus::FAIL);
+                        format_test.getMessages().emplace_back("Binary is not a shared library (DLL/SO/DYLIB).");
                     }
 
                     if (platform.starts_with("win"))
                     {
                         if (info.format != BinaryFormat::PE)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back("Binary format is not PE (Windows).");
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back("Binary format is not PE (Windows).");
                         }
 
                         bool arch_match = false;
@@ -181,18 +182,18 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
 
                         if (!arch_match && !info.architectures.empty())
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary does not contain a {} architecture matching platform '{}'.",
-                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                                            platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64", platform));
                         }
                     }
                     else if (platform.starts_with("linux"))
                     {
                         if (info.format != BinaryFormat::ELF)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back("Binary format is not ELF (Linux).");
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back("Binary format is not ELF (Linux).");
                         }
 
                         bool arch_match = false;
@@ -211,18 +212,18 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
 
                         if (!arch_match && !info.architectures.empty())
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary does not contain a {} architecture matching platform '{}'.",
-                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                                            platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64", platform));
                         }
                     }
                     else if (platform.starts_with("darwin"))
                     {
                         if (info.format != BinaryFormat::MACHO)
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back("Binary format is not Mach-O (macOS).");
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back("Binary format is not Mach-O (macOS).");
                         }
 
                         bool arch_match = false;
@@ -241,10 +242,10 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
 
                         if (!arch_match && !info.architectures.empty())
                         {
-                            format_test.status = TestStatus::FAIL;
-                            format_test.messages.push_back(
+                            format_test.setStatus(TestStatus::FAIL);
+                            format_test.getMessages().emplace_back(
                                 std::format("Binary does not contain a {} architecture matching platform '{}'.",
-                                            (platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64"), platform));
+                                            platform.ends_with("32") ? "32-bit x86" : "64-bit x86_64", platform));
                         }
                     }
 

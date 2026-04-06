@@ -23,7 +23,7 @@ struct ArchInfo
 };
 
 /// @brief Metadata about a binary file.
-struct BinaryInfo
+struct BinaryInfo // NOLINT(bugprone-exception-escape)
 {
     BinaryFormat format = BinaryFormat::UNKNOWN; ///< Format of the binary.
     bool isSharedLibrary = false;                ///< True if it is a shared library.

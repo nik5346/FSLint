@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -18,6 +19,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree,
                                    Certificate cert) const
@@ -281,6 +283,7 @@ bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
 
     if (std::filesystem::is_directory(path))
     {
+        // NOLINTNEXTLINE(clang-diagnostic-unused-result)
         removeCertificate(path);
         return addCertificate(path);
     }
@@ -606,7 +609,7 @@ bool ModelChecker::package(const std::filesystem::path& extract_dir, const std::
                 std::string internal_path = file_utils::pathToUtf8(rel_path);
 
                 // Convert backslashes to forward slashes for ZIP compatibility
-                std::replace(internal_path.begin(), internal_path.end(), '\\', '/');
+                std::ranges::replace(internal_path, '\\', '/');
 
                 if (!zip_handler.addFileFromDisk(internal_path, entry.path()))
                 {
@@ -647,7 +650,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
             {
                 auto rel_path = std::filesystem::relative(entry.path(), path);
                 std::string rel_path_str = file_utils::pathToUtf8(rel_path);
-                std::replace(rel_path_str.begin(), rel_path_str.end(), '\\', '/');
+                std::ranges::replace(rel_path_str, '\\', '/');
 
                 if (rel_path_str == "extra/validation_certificate.txt")
                     continue;
@@ -655,12 +658,12 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 files.push_back(rel_path);
             }
         }
-        std::sort(files.begin(), files.end());
+        std::ranges::sort(files);
 
         for (const auto& rel_path : files)
         {
             std::string rel_path_str = file_utils::pathToUtf8(rel_path);
-            std::replace(rel_path_str.begin(), rel_path_str.end(), '\\', '/');
+            std::ranges::replace(rel_path_str, '\\', '/');
 
             // Hash path to include structure in hash
             hasher.process(rel_path_str.begin(), rel_path_str.end());
@@ -694,7 +697,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 }
                 names.push_back(entry.filename);
             }
-            std::sort(names.begin(), names.end());
+            std::ranges::sort(names);
 
             for (const auto& name : names)
             {

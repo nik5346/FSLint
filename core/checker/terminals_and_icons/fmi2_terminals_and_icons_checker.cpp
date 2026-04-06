@@ -18,8 +18,8 @@ void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& 
     const auto version_attr = getXmlAttribute(root, "fmiVersion");
     if (!version_attr)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
     }
 }
 
@@ -37,7 +37,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
     }
 
     xmlDocPtr doc = readXmlFile(model_desc_path);
-    if (!doc)
+    if (doc == nullptr)
     {
         cert.printTestResult({"Parse Model Description", TestStatus::FAIL, {"Failed to parse modelDescription.xml."}});
         return variables;
@@ -62,7 +62,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//ModelVariables/ScalarVariable"), context);
 
-    if (xpath_obj && xpath_obj->nodesetval)
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
     {
         for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
         {
@@ -74,7 +74,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
             var.variability = getXmlAttribute(node, "variability").value_or("");
             var.sourceline = node->line;
 
-            for (xmlNodePtr child = node->children; child; child = child->next)
+            for (xmlNodePtr child = node->children; child != nullptr; child = child->next)
             {
                 if (child->type == XML_ELEMENT_NODE)
                 {
@@ -94,7 +94,7 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
         }
     }
 
-    if (xpath_obj)
+    if (xpath_obj != nullptr)
         xmlXPathFreeObject(xpath_obj);
     xmlXPathFreeContext(context);
     xmlFreeDoc(doc);

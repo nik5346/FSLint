@@ -12,17 +12,25 @@ std::vector<XmlFileRule> Fmi3SchemaChecker::getXmlRules(const std::filesystem::p
     std::vector<XmlFileRule> rules;
 
     // 1. modelDescription.xml (mandatory)
-    rules.push_back({"modelDescription.xml", "fmi3ModelDescription.xsd", true, "modelDescription.xml"});
+    rules.push_back({.relative_path = "modelDescription.xml",
+                     .schema_filename = "fmi3ModelDescription.xsd",
+                     .is_mandatory = true,
+                     .validation_name = "modelDescription.xml"});
 
     // 2. buildDescription.xml (optional)
     if (std::filesystem::exists(path / "sources" / "buildDescription.xml"))
-        rules.push_back({"sources/buildDescription.xml", "fmi3BuildDescription.xsd", false, "buildDescription.xml"});
+        rules.push_back({.relative_path = "sources/buildDescription.xml",
+                         .schema_filename = "fmi3BuildDescription.xsd",
+                         .is_mandatory = false,
+                         .validation_name = "buildDescription.xml"});
 
     // 3. terminalsAndIcons.xml (optional)
     if (std::filesystem::exists(path / "terminalsAndIcons" / "terminalsAndIcons.xml"))
     {
-        rules.push_back(
-            {"terminalsAndIcons/terminalsAndIcons.xml", "fmi3TerminalsAndIcons.xsd", false, "terminalsAndIcons.xml"});
+        rules.push_back({.relative_path = "terminalsAndIcons/terminalsAndIcons.xml",
+                         .schema_filename = "fmi3TerminalsAndIcons.xsd",
+                         .is_mandatory = false,
+                         .validation_name = "terminalsAndIcons.xml"});
     }
 
     // 4. All fmi-ls-manifest.xml files in extra/ (optional)
@@ -34,7 +42,10 @@ std::vector<XmlFileRule> Fmi3SchemaChecker::getXmlRules(const std::filesystem::p
             if (entry.is_regular_file() && entry.path().filename() == "fmi-ls-manifest.xml")
             {
                 auto rel_path = std::filesystem::relative(entry.path(), path);
-                rules.push_back({rel_path, "fmi3LayeredStandardManifest.xsd", false, file_utils::pathToUtf8(rel_path)});
+                rules.push_back({.relative_path = file_utils::pathToUtf8(rel_path),
+                                 .schema_filename = "fmi3LayeredStandardManifest.xsd",
+                                 .is_mandatory = false,
+                                 .validation_name = file_utils::pathToUtf8(rel_path)});
             }
         }
     }

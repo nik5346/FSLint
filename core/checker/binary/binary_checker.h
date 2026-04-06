@@ -21,7 +21,7 @@ class BinaryChecker : public Checker
   protected:
     /// @brief Gets the list of mandatory C functions.
     /// @return A vector of function names.
-    virtual std::vector<std::string> getExpectedFunctions() const = 0;
+    [[nodiscard]] virtual std::vector<std::string> getExpectedFunctions() const = 0;
 
     /// @brief Extracts a string attribute from an XML node.
     /// @param node XML node.

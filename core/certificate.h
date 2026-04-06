@@ -18,20 +18,16 @@ enum class TestStatus : uint8_t
 };
 
 /// @brief Result of a single validation test.
-struct TestResult;
+class TestResult;
 
 /// @brief Callback function type for user-decided continuation on security issues.
 /// @return True if validation should continue, false otherwise.
 using ContinueCallback = std::function<bool(const TestResult&)>;
 
 /// @brief Result of a single validation test.
-struct TestResult
+class TestResult
 {
-    std::string test_name{};             ///< Name of the test.
-    TestStatus status{TestStatus::PASS}; ///< Completion status.
-    std::vector<std::string> messages{}; ///< Detailed failure or warning messages.
-    bool is_security_issue{false};       ///< True if this is a security-related test.
-
+  public:
     /// @brief Default constructor.
     TestResult() = default;
 
@@ -40,12 +36,51 @@ struct TestResult
     /// @param s Completion status.
     /// @param msgs Detailed messages.
     TestResult(std::string name, TestStatus s, std::vector<std::string> msgs)
-        : test_name(std::move(name))
-        , status(s)
-        , messages(std::move(msgs))
-        , is_security_issue(test_name.find("[SECURITY]") != std::string::npos)
+        : _test_name(std::move(name))
+        , _status(s)
+        , _messages(std::move(msgs))
+        , _is_security_issue(_test_name.find("[SECURITY]") != std::string::npos)
     {
     }
+
+    [[nodiscard]] const std::string& getName() const noexcept
+    {
+        return _test_name;
+    }
+    void setName(std::string name)
+    {
+        _test_name = std::move(name);
+        _is_security_issue = _test_name.find("[SECURITY]") != std::string::npos;
+    }
+
+    [[nodiscard]] TestStatus getStatus() const noexcept
+    {
+        return _status;
+    }
+    void setStatus(TestStatus status) noexcept
+    {
+        _status = status;
+    }
+
+    [[nodiscard]] const std::vector<std::string>& getMessages() const noexcept
+    {
+        return _messages;
+    }
+    [[nodiscard]] std::vector<std::string>& getMessages() noexcept
+    {
+        return _messages;
+    }
+
+    [[nodiscard]] bool isSecurityIssue() const noexcept
+    {
+        return _is_security_issue;
+    }
+
+  private:
+    std::string _test_name{};             ///< Name of the test.
+    TestStatus _status{TestStatus::PASS}; ///< Completion status.
+    std::vector<std::string> _messages{}; ///< Detailed failure or warning messages.
+    bool _is_security_issue{false};       ///< True if this is a security-related test.
 };
 
 /// @brief Result of validation for a nested model (e.g., within resources).

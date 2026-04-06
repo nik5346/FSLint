@@ -61,7 +61,7 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
                 {
                     const auto rel_path = std::filesystem::relative(entry.path(), sources_path);
                     std::string filename = file_utils::pathToUtf8(rel_path);
-                    std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
+                    std::ranges::replace(filename, '\\', '/'); // Normalize paths
 
                     if (filename == "buildDescription.xml")
                         continue;
@@ -74,11 +74,11 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
                     {
                         if (!listed_files.contains(filename))
                         {
-                            if (test.status == TestStatus::PASS)
-                                test.status = TestStatus::WARNING;
-                            test.messages.push_back("Source file '" + filename +
-                                                    "' exists in 'sources/' directory but is not listed in "
-                                                    "'buildDescription.xml'.");
+                            if (test.getStatus() == TestStatus::PASS)
+                                test.setStatus(TestStatus::WARNING);
+                            test.getMessages().emplace_back("Source file '" + filename +
+                                                            "' exists in 'sources/' directory but is not listed in "
+                                                            "'buildDescription.xml'.");
                         }
                     }
                 }
@@ -111,9 +111,10 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                 const auto& val = *name_opt;
                 if (val.find("..") != std::string::npos)
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Source file '" + val + "' listed in 'buildDescription.xml' (line " +
-                                            std::to_string(node->line) + ") contains illegal '..' sequence.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("Source file '" + val +
+                                                    "' listed in 'buildDescription.xml' (line " +
+                                                    std::to_string(node->line) + ") contains illegal '..' sequence.");
                     continue;
                 }
 
@@ -121,9 +122,10 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                 const auto file_path = sources_path / val;
                 if (!std::filesystem::exists(file_path))
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Source file '" + val + "' listed in 'buildDescription.xml' (line " +
-                                            std::to_string(node->line) + ") does not exist in 'sources/' directory.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        "Source file '" + val + "' listed in 'buildDescription.xml' (line " +
+                        std::to_string(node->line) + ") does not exist in 'sources/' directory.");
                 }
             }
         }
@@ -153,19 +155,20 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                 const auto& val = *name_opt;
                 if (val.find("..") != std::string::npos)
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Include directory '" + val + "' listed in 'buildDescription.xml' (line " +
-                                            std::to_string(node->line) + ") contains illegal '..' sequence.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("Include directory '" + val +
+                                                    "' listed in 'buildDescription.xml' (line " +
+                                                    std::to_string(node->line) + ") contains illegal '..' sequence.");
                     continue;
                 }
 
                 const auto dir_path = sources_path / val;
                 if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Include directory '" + val + "' listed in 'buildDescription.xml' (line " +
-                                            std::to_string(node->line) +
-                                            ") does not exist or is not a directory in 'sources/' directory.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        "Include directory '" + val + "' listed in 'buildDescription.xml' (line " +
+                        std::to_string(node->line) + ") does not exist or is not a directory in 'sources/' directory.");
                 }
             }
         }
@@ -203,10 +206,10 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 const auto& id_val = *model_id;
                 if (!valid_ids.contains(id_val))
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("BuildConfiguration (line " + std::to_string(node->line) +
-                                            ") has modelIdentifier '" + id_val +
-                                            "' which does not match any modelIdentifier in modelDescription.xml.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        "BuildConfiguration (line " + std::to_string(node->line) + ") has modelIdentifier '" + id_val +
+                        "' which does not match any modelIdentifier in modelDescription.xml.");
                 }
             }
 
@@ -216,11 +219,11 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 const auto& lang_val = *lang_opt;
                 if (!suggested_languages.contains(lang_val))
                 {
-                    if (test.status == TestStatus::PASS)
-                        test.status = TestStatus::WARNING;
-                    test.messages.push_back("Language '" + lang_val + "' in BuildConfiguration (line " +
-                                            std::to_string(node->line) +
-                                            ") is not one of the suggested values (e.g. C99, C++11).");
+                    if (test.getStatus() == TestStatus::PASS)
+                        test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back("Language '" + lang_val + "' in BuildConfiguration (line " +
+                                                    std::to_string(node->line) +
+                                                    ") is not one of the suggested values (e.g. C99, C++11).");
                 }
             }
 
@@ -239,11 +242,11 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 }
                 if (!known)
                 {
-                    if (test.status == TestStatus::PASS)
-                        test.status = TestStatus::WARNING;
-                    test.messages.push_back("Compiler '" + compiler + "' in BuildConfiguration (line " +
-                                            std::to_string(node->line) +
-                                            ") is not one of the suggested values (e.g. gcc, clang, msvc).");
+                    if (test.getStatus() == TestStatus::PASS)
+                        test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back("Compiler '" + compiler + "' in BuildConfiguration (line " +
+                                                    std::to_string(node->line) +
+                                                    ") is not one of the suggested values (e.g. gcc, clang, msvc).");
                 }
             }
         }
@@ -297,17 +300,16 @@ std::set<std::string> BuildDescriptionChecker::getValidModelIdentifiers(const st
 
 std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name) const
 {
-    if (!node)
+    if (node == nullptr)
         return std::nullopt;
 
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
-    if (!attr)
+    if (attr == nullptr)
         return std::nullopt;
 
-    const std::string value(reinterpret_cast<char*>(attr));
-    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
-
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    std::string value(reinterpret_cast<char*>(attr));
     xmlFree(attr);
     return value;
 }

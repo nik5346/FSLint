@@ -19,7 +19,7 @@ extern "C"
             [](const TestResult& test) -> bool
             {
                 // Escape single quotes for JS string
-                std::string escaped_name = test.test_name;
+                std::string escaped_name = test.getName();
                 size_t pos = 0;
                 while ((pos = escaped_name.find('\'', pos)) != std::string::npos)
                 {

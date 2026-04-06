@@ -5,9 +5,11 @@
 
 #include <filesystem>
 #include <format>
+#include <map>
 #include <regex>
 #include <set>
 #include <string>
+#include <string_view>
 
 void Fmi3DirectoryChecker::performVersionSpecificChecks(
     const std::filesystem::path& path, Certificate& cert, const std::map<std::string, std::string>& model_identifiers,
@@ -25,15 +27,15 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             const std::string name = file_utils::pathToUtf8(entry.path().filename());
             if (!fmi3_standard_entries.contains(name))
             {
-                test.status = TestStatus::WARNING;
+                test.setStatus(TestStatus::WARNING);
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
+                test.getMessages().emplace_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
             }
 
             if (entry.is_directory() && fmi3_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
             {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Standard directory '" + name + "' is empty.");
+                test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("Standard directory '" + name + "' is empty.");
             }
         }
         cert.printTestResult(test);
@@ -49,20 +51,20 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         {
             if (isEffectivelyEmpty(doc_path))
             {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Standard directory 'documentation' is empty.");
+                test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("Standard directory 'documentation' is empty.");
             }
 
             if (!std::filesystem::exists(doc_path / "index.html"))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("The documentation entry point 'documentation/index.html' is missing.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("The documentation entry point 'documentation/index.html' is missing.");
             }
         }
         else
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Providing documentation is recommended.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Providing documentation is recommended.");
         }
 
         // externalDependencies check (must be present even if documentation/ is missing)
@@ -71,9 +73,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             if (!std::filesystem::exists(doc_path / "externalDependencies.txt") &&
                 !std::filesystem::exists(doc_path / "externalDependencies.html"))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("needsExecutionTool is true, but "
-                                        "'documentation/externalDependencies.{txt|html}' is missing.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("needsExecutionTool is true, but "
+                                                "'documentation/externalDependencies.{txt|html}' is missing.");
             }
         }
 
@@ -83,9 +85,10 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             auto diag_png_path = doc_path / "diagram.png";
             if (std::filesystem::exists(doc_path / "diagram.svg") && !std::filesystem::exists(diag_png_path))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("diagram.svg exists in documentation/ but diagram.png is missing (required "
-                                        "if diagram.svg is provided).");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    "diagram.svg exists in documentation/ but diagram.png is missing (required "
+                    "if diagram.svg is provided).");
             }
 
             if (std::filesystem::exists(diag_png_path))
@@ -95,9 +98,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 {
                     if (dimensions->first < 100 || dimensions->second < 100)
                     {
-                        if (test.status != TestStatus::FAIL)
-                            test.status = TestStatus::WARNING;
-                        test.messages.push_back(std::format(
+                        if (test.getStatus() != TestStatus::FAIL)
+                            test.setStatus(TestStatus::WARNING);
+                        test.getMessages().emplace_back(std::format(
                             "Diagram 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
                             "100x100 pixels is recommended.",
                             dimensions->first, dimensions->second));
@@ -119,22 +122,22 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                 !std::filesystem::exists(licenses_path / "license.txt") &&
                 !std::filesystem::exists(licenses_path / "license.html"))
             {
-                test.status = TestStatus::FAIL;
+                test.setStatus(TestStatus::FAIL);
                 if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
                 {
-                    test.messages.push_back("Standard directory 'documentation/licenses' is empty.");
+                    test.getMessages().emplace_back("Standard directory 'documentation/licenses' is empty.");
                 }
                 else
                 {
-                    test.messages.push_back(
+                    test.getMessages().emplace_back(
                         "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
                 }
             }
         }
         else
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
         }
         cert.printTestResult(test);
     }
@@ -157,8 +160,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     png_path.replace_extension(".png");
                     if (!std::filesystem::exists(png_path))
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back(
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(
                             std::format("'{}' exists in terminalsAndIcons/ but '{}' is missing (required as "
                                         "fallback).",
                                         file_utils::pathToUtf8(entry.path().filename()),
@@ -171,9 +174,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         {
                             if (dimensions->first < 100 || dimensions->second < 100)
                             {
-                                if (test.status != TestStatus::FAIL)
-                                    test.status = TestStatus::WARNING;
-                                test.messages.push_back(std::format(
+                                if (test.getStatus() != TestStatus::FAIL)
+                                    test.setStatus(TestStatus::WARNING);
+                                test.getMessages().emplace_back(std::format(
                                     "Icon '{}' is small ({}x{} pixels). A size of at least 100x100 pixels is "
                                     "recommended.",
                                     file_utils::pathToUtf8(png_path.filename()), dimensions->first,
@@ -192,9 +195,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 if (dimensions->first < 100 || dimensions->second < 100)
                 {
-                    if (test.status != TestStatus::FAIL)
-                        test.status = TestStatus::WARNING;
-                    test.messages.push_back(
+                    if (test.getStatus() != TestStatus::FAIL)
+                        test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back(
                         std::format("Icon 'terminalsAndIcons/icon.png' is small ({}x{} pixels). A size of at least "
                                     "100x100 pixels is recommended.",
                                     dimensions->first, dimensions->second));
@@ -204,14 +207,14 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         if (!icon_png_exists && !icon_svg_exists)
         {
-            if (test.status != TestStatus::FAIL)
-                test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended file 'terminalsAndIcons/icon.png' is missing.");
+            if (test.getStatus() != TestStatus::FAIL)
+                test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Recommended file 'terminalsAndIcons/icon.png' is missing.");
         }
         else if (icon_svg_exists && !icon_png_exists)
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back(
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
                 "terminalsAndIcons/icon.svg exists but icon.png is missing (required as fallback).");
         }
         cert.printTestResult(test);
@@ -225,8 +228,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         {
             if (!std::filesystem::exists(sources_path / "buildDescription.xml"))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("'sources/' directory exists but 'sources/buildDescription.xml' is missing.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    "'sources/' directory exists but 'sources/buildDescription.xml' is missing.");
             }
         }
         cert.printTestResult(test);
@@ -254,9 +258,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     std::smatch match;
                     if (!std::regex_match(tuple, match, tuple_regex))
                     {
-                        if (test.status != TestStatus::FAIL)
-                            test.status = TestStatus::WARNING;
-                        test.messages.push_back(
+                        if (test.getStatus() != TestStatus::FAIL)
+                            test.setStatus(TestStatus::WARNING);
+                        test.getMessages().emplace_back(
                             std::format("Platform tuple '{}' does not follow the <arch>-<sys>[-<abi>] format.", tuple));
                     }
                     else
@@ -268,9 +272,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                             "aarch32", "aarch64", "riscv32", "riscv64", "x86", "x86_64", "ppc32", "ppc64"};
                         if (!fmi3_architectures.contains(arch))
                         {
-                            if (test.status != TestStatus::FAIL)
-                                test.status = TestStatus::WARNING;
-                            test.messages.push_back(std::format(
+                            if (test.getStatus() != TestStatus::FAIL)
+                                test.setStatus(TestStatus::WARNING);
+                            test.getMessages().emplace_back(std::format(
                                 "Architecture '{}' in platform tuple '{}' is not one of the standardized FMI 3.0 "
                                 "architectures (aarch32, aarch64, riscv32, riscv64, x86, x86_64, ppc32, ppc64).",
                                 arch, tuple));
@@ -279,9 +283,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         static const std::set<std::string> fmi3_systems = {"darwin", "linux", "windows"};
                         if (!fmi3_systems.contains(sys))
                         {
-                            if (test.status != TestStatus::FAIL)
-                                test.status = TestStatus::WARNING;
-                            test.messages.push_back(std::format(
+                            if (test.getStatus() != TestStatus::FAIL)
+                                test.setStatus(TestStatus::WARNING);
+                            test.getMessages().emplace_back(std::format(
                                 "Operating system '{}' in platform tuple '{}' is not one of the standardized "
                                 "FMI 3.0 systems (darwin, linux, windows).",
                                 sys, tuple));
@@ -295,8 +299,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                         const std::regex abi_regex("^[a-z][a-z0-9_]*$");
                         if (!std::regex_match(abi, abi_regex))
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back(std::format(
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(std::format(
                                 "ABI name '{}' in platform tuple '{}' is invalid (must start with lowercase "
                                 "letter and contain only lowercase letters, digits, or underscores).",
                                 abi, tuple));
@@ -324,8 +328,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
                         if (!found_model_id)
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back(
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(
                                 std::format("Platform directory '{}' does not contain a binary matching "
                                             "modelIdentifier '{}'.",
                                             tuple, model_id));
@@ -340,8 +344,8 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             if (!std::filesystem::exists(path / "documentation" / "staticLinking.txt") &&
                 !std::filesystem::exists(path / "documentation" / "staticLinking.html"))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back(
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
                     "Static library detected, but 'documentation/staticLinking.{txt|html}' is missing.");
             }
         }
@@ -352,9 +356,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         const bool has_sources = std::filesystem::exists(path / "sources" / "buildDescription.xml");
         if (!has_binaries_present && !has_sources)
         {
-            impl_test.status = TestStatus::FAIL;
-            impl_test.messages.push_back("FMU must contain at least one implementation (binary or source code "
-                                         "with buildDescription.xml).");
+            impl_test.setStatus(TestStatus::FAIL);
+            impl_test.getMessages().emplace_back("FMU must contain at least one implementation (binary or source code "
+                                                 "with buildDescription.xml).");
         }
         cert.printTestResult(impl_test);
     }
@@ -375,9 +379,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     const std::regex rd_regex("^[a-z0-9]+(\\.[a-z0-9]+)+$");
                     if (!std::regex_match(name, rd_regex))
                     {
-                        if (test.status != TestStatus::FAIL)
-                            test.status = TestStatus::WARNING;
-                        test.messages.push_back(
+                        if (test.getStatus() != TestStatus::FAIL)
+                            test.setStatus(TestStatus::WARNING);
+                        test.getMessages().emplace_back(
                             std::format("Subdirectory '{}' in extra/ should use reverse domain name notation "
                                         "(e.g. 'com.example').",
                                         name));

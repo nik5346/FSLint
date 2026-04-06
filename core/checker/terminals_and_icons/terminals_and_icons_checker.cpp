@@ -43,12 +43,12 @@ void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, C
 std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNodePtr node,
                                                                          const std::string& attr_name) const
 {
-    if (!node)
+    if (node == nullptr)
         return std::nullopt;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
-    if (!attr)
+    if (attr == nullptr)
         return std::nullopt;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -75,7 +75,7 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     bool all_passed = true;
     const auto print_test = [&](const TestResult& test)
     {
-        if (test.status == TestStatus::FAIL)
+        if (test.getStatus() == TestStatus::FAIL)
             all_passed = false;
         cert.printTestResult(test);
     };
@@ -85,9 +85,8 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
     std::string prefix = "";
     if (root != nullptr && root->ns != nullptr && root->ns->href != nullptr)
     {
-        // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathRegisterNs(context, reinterpret_cast<const xmlChar*>("f"), root->ns->href);
-        // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
         prefix = "f:";
     }
 
@@ -156,9 +155,9 @@ void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr c
                     const auto& val = *name;
                     if (seen_names.contains(val))
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Terminal name \"" + val + "\" (line " + std::to_string(child->line) +
-                                                ") is not unique at its level.");
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back("Terminal name \"" + val + "\" (line " +
+                                                        std::to_string(child->line) + ") is not unique at its level.");
                     }
                     seen_names.insert(val);
                 }
@@ -168,8 +167,9 @@ void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr c
     };
 
     const std::string expr = "/" + prefix + "fmiTerminalsAndIcons/" + prefix + "Terminals";
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+
     const xmlXPathObjectPtr terminals_elem =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
     if (terminals_elem != nullptr && terminals_elem->nodesetval != nullptr && terminals_elem->nodesetval->nodeNr > 0)
     {
@@ -185,8 +185,9 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                                                            TestResult& test) const
 {
     std::string expr = "//" + prefix + "TerminalMemberVariable";
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+
     const xmlXPathObjectPtr member_vars =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
     if (member_vars != nullptr && member_vars->nodesetval != nullptr)
     {
@@ -203,9 +204,9 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                 const auto it = variables.find(name_val);
                 if (it == variables.end())
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("TerminalMemberVariable (line " + std::to_string(node->line) +
-                                            ") references non-existent variable \"" + name_val + "\".");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("TerminalMemberVariable (line " + std::to_string(node->line) +
+                                                    ") references non-existent variable \"" + name_val + "\".");
                 }
                 else
                 {
@@ -218,11 +219,11 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                             if (var_info.causality != "input" && var_info.causality != "output" &&
                                 var_info.causality != "parameter" && var_info.causality != "calculatedParameter")
                             {
-                                test.status = TestStatus::FAIL;
-                                test.messages.push_back("Variable \"" + name_val + "\" used as '" + kind_val +
-                                                        "' in terminal (line " + std::to_string(node->line) +
-                                                        ") must have causality 'input', 'output', 'parameter', or "
-                                                        "'calculatedParameter'.");
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(
+                                    std::format("Variable \"{}\" used as '{}' in terminal (line {}): must have "
+                                                "causality 'input', 'output', 'parameter', or 'calculatedParameter'.",
+                                                name_val, kind_val, node->line));
                             }
                         }
                     }
@@ -234,8 +235,8 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
         xmlXPathFreeObject(member_vars);
 
     expr = "//" + prefix + "TerminalStreamMemberVariable";
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     const xmlXPathObjectPtr stream_vars =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
     if (stream_vars != nullptr && stream_vars->nodesetval != nullptr)
     {
@@ -252,17 +253,17 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                 const auto it = variables.find(in_val);
                 if (it == variables.end())
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("TerminalStreamMemberVariable (line " + std::to_string(node->line) +
-                                            ") references non-existent variable \"" + in_val +
-                                            "\" in inStreamVariableName.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("TerminalStreamMemberVariable (line " + std::to_string(node->line) +
+                                                    ") references non-existent variable \"" + in_val +
+                                                    "\" in inStreamVariableName.");
                 }
                 else if (it->second.causality != "input" && it->second.causality != "parameter")
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Variable \"" + in_val + "\" used in inStreamVariableName (line " +
-                                            std::to_string(node->line) +
-                                            ") must have causality 'input' or 'parameter'.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("Variable \"" + in_val + "\" used in inStreamVariableName (line " +
+                                                    std::to_string(node->line) +
+                                                    ") must have causality 'input' or 'parameter'.");
                 }
             }
 
@@ -275,10 +276,10 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                 {
                     if (it_in->second.dimensions != it_out->second.dimensions)
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("TerminalStreamMemberVariable (line " + std::to_string(node->line) +
-                                                ") has mismatched dimensions for \"" + *in_stream + "\" and \"" +
-                                                *out_stream + "\".");
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(
+                            "TerminalStreamMemberVariable (line " + std::to_string(node->line) +
+                            ") has mismatched dimensions for \"" + *in_stream + "\" and \"" + *out_stream + "\".");
                     }
                 }
             }
@@ -289,17 +290,17 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                 const auto it = variables.find(out_val);
                 if (it == variables.end())
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("TerminalStreamMemberVariable (line " + std::to_string(node->line) +
-                                            ") references non-existent variable \"" + out_val +
-                                            "\" in outStreamVariableName.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("TerminalStreamMemberVariable (line " + std::to_string(node->line) +
+                                                    ") references non-existent variable \"" + out_val +
+                                                    "\" in outStreamVariableName.");
                 }
                 else if (it->second.causality != "output" && it->second.causality != "calculatedParameter")
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("Variable \"" + out_val + "\" used in outStreamVariableName (line " +
-                                            std::to_string(node->line) +
-                                            ") must have causality 'output' or 'calculatedParameter'.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        "Variable \"" + out_val + "\" used in outStreamVariableName (line " +
+                        std::to_string(node->line) + ") must have causality 'output' or 'calculatedParameter'.");
                 }
             }
         }
@@ -330,18 +331,19 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
                         const auto& val = *member_name;
                         if (seen_members.contains(val))
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Member name \"" + val + "\" is not unique in terminal (line " +
-                                                    std::to_string(child->line) + ").");
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back("Member name \"" + val +
+                                                            "\" is not unique in terminal (line " +
+                                                            std::to_string(child->line) + ").");
                         }
                         seen_members.insert(val);
                     }
                     else if (matching_rule == "plug" || matching_rule == "bus")
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("TerminalMemberVariable (line " + std::to_string(child->line) +
-                                                ") is missing mandatory 'memberName' for matchingRule '" +
-                                                matching_rule + "'.");
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back("TerminalMemberVariable (line " + std::to_string(child->line) +
+                                                        ") is missing mandatory 'memberName' for matchingRule '" +
+                                                        matching_rule + "'.");
                     }
                 }
                 else if (elem_name == "TerminalStreamMemberVariable")
@@ -353,10 +355,10 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
                         const auto& in_val = *in_member;
                         if (seen_members.contains(in_val))
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Stream member name \"" + in_val +
-                                                    "\" is not unique in terminal (line " +
-                                                    std::to_string(child->line) + ").");
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back("Stream member name \"" + in_val +
+                                                            "\" is not unique in terminal (line " +
+                                                            std::to_string(child->line) + ").");
                         }
                         seen_members.insert(in_val);
                     }
@@ -365,10 +367,10 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
                         const auto& out_val = *out_member;
                         if (seen_members.contains(out_val))
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back("Stream member name \"" + out_val +
-                                                    "\" is not unique in terminal (line " +
-                                                    std::to_string(child->line) + ").");
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back("Stream member name \"" + out_val +
+                                                            "\" is not unique in terminal (line " +
+                                                            std::to_string(child->line) + ").");
                         }
                         seen_members.insert(out_val);
                     }
@@ -382,8 +384,9 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
     };
 
     const std::string expr = "/" + prefix + "fmiTerminalsAndIcons/" + prefix + "Terminals//" + prefix + "Terminal";
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+
     const xmlXPathObjectPtr terminals_elem =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
     if (terminals_elem != nullptr && terminals_elem->nodesetval != nullptr)
     {
@@ -402,6 +405,7 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                                                                 TestResult& test) const
 {
     const std::string expr = "//" + prefix + "TerminalGraphicalRepresentation";
+
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     const xmlXPathObjectPtr xpath_obj = xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
 
@@ -415,17 +419,15 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
 
             if (icon_base.has_value())
             {
-                // RFC 3986 relative URI constraints for iconBaseName:
-                // excluding relative URIs that move beyond the baseURI (i.e. go "up" a level via ..)
-                // no absolute URIs (start with /), no schemes (contains :)
                 const auto& base_val = *icon_base;
                 if (base_val.find("..") != std::string::npos || base_val.starts_with("/") ||
                     base_val.find(":") != std::string::npos)
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("iconBaseName \"" + base_val + "\" (line " + std::to_string(node->line) +
-                                            ") must be a relative URI and must not contain \"..\", \":\" or start with "
-                                            "\"/\".");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        "iconBaseName \"" + base_val + "\" (line " + std::to_string(node->line) +
+                        ") must be a relative URI and must not contain \"..\", \":\" or start with "
+                        "\"/\".");
                 }
                 else
                 {
@@ -433,9 +435,10 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                     const auto png_path = path / "terminalsAndIcons" / (base_val + ".png");
                     if (!std::filesystem::exists(png_path))
                     {
-                        test.status = TestStatus::FAIL;
-                        test.messages.push_back("Terminal icon PNG file \"" + file_utils::pathToUtf8(png_path) +
-                                                "\" (referenced line " + std::to_string(node->line) + ") not found.");
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back("Terminal icon PNG file \"" + file_utils::pathToUtf8(png_path) +
+                                                        "\" (referenced line " + std::to_string(node->line) +
+                                                        ") not found.");
                     }
                     else
                     {
@@ -444,9 +447,9 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                         {
                             if (dimensions->first < 100 || dimensions->second < 100)
                             {
-                                if (test.status != TestStatus::FAIL)
-                                    test.status = TestStatus::WARNING;
-                                test.messages.push_back(std::format(
+                                if (test.getStatus() != TestStatus::FAIL)
+                                    test.setStatus(TestStatus::WARNING);
+                                test.getMessages().emplace_back(std::format(
                                     "Terminal icon '{}' (referenced line {}) is small ({}x{} pixels). A size of at "
                                     "least 100x100 pixels is recommended.",
                                     file_utils::pathToUtf8(png_path.filename()), node->line, dimensions->first,
@@ -458,16 +461,14 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
             }
             else
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("TerminalGraphicalRepresentation (line " + std::to_string(node->line) +
-                                        ") is missing mandatory 'iconBaseName'.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("TerminalGraphicalRepresentation (line " + std::to_string(node->line) +
+                                                ") is missing mandatory 'iconBaseName'.");
             }
 
             const auto connection_color = getXmlAttribute(node, "defaultConnectionColor");
             if (connection_color.has_value())
             {
-                // defaultConnectionColor should be RGB values from 0 to 255.
-                // It is a list of 3 unsigned bytes.
                 const auto& color_val = *connection_color;
                 std::stringstream ss(color_val);
                 std::string part;
@@ -476,9 +477,9 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                     count++;
                 if (count != 3)
                 {
-                    test.status = TestStatus::FAIL;
-                    test.messages.push_back("defaultConnectionColor \"" + color_val + "\" (line " +
-                                            std::to_string(node->line) + ") must have exactly 3 RGB values.");
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("defaultConnectionColor \"" + color_val + "\" (line " +
+                                                    std::to_string(node->line) + ") must have exactly 3 RGB values.");
                 }
             }
         }
@@ -525,17 +526,18 @@ void TerminalsAndIconsCheckerBase::checkStreamFlowConstraints(xmlXPathContextPtr
 
         if (has_stream && flow_count > 1)
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Terminal \"" + getXmlAttribute(terminal, "name").value_or("unnamed") +
-                                    "\" (line " + std::to_string(terminal->line) +
-                                    ") has multiple inflow/outflow variables and a stream variable. Only one "
-                                    "inflow/outflow variable is allowed when a stream variable is present.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("Terminal \"" + getXmlAttribute(terminal, "name").value_or("unnamed") +
+                                            "\" (line " + std::to_string(terminal->line) +
+                                            ") has multiple inflow/outflow variables and a stream variable. Only one "
+                                            "inflow/outflow variable is allowed when a stream variable is present.");
         }
     };
 
     const std::string expr = "/" + prefix + "fmiTerminalsAndIcons/" + prefix + "Terminals//" + prefix + "Terminal";
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+
     const xmlXPathObjectPtr terminals_elem =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(expr.c_str()), context);
     if (terminals_elem != nullptr && terminals_elem->nodesetval != nullptr)
     {

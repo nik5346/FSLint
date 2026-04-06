@@ -17,11 +17,15 @@ namespace
 {
 std::optional<std::string> getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
-    if (!node)
+    if (node == nullptr)
         return std::nullopt;
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
-    if (!attr)
+    if (attr == nullptr)
         return std::nullopt;
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::string value(reinterpret_cast<char*>(attr));
     xmlFree(attr);
     return value;

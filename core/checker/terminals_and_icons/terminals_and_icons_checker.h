@@ -36,7 +36,7 @@ struct TerminalVariableInfo
     std::string causality;                     ///< Causality.
     std::string variability;                   ///< Variability.
     std::string type;                          ///< Type.
-    int sourceline;                            ///< XML line number.
+    int sourceline{0};                         ///< XML line number.
     std::vector<TerminalDimension> dimensions; ///< Dimensions.
 };
 

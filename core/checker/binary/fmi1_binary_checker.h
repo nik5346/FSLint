@@ -20,7 +20,7 @@ class Fmi1BinaryChecker : public BinaryChecker
   protected:
     /// @brief Gets expected functions (not used for FMI 1.0).
     /// @return Empty vector.
-    std::vector<std::string> getExpectedFunctions() const override
+    [[nodiscard]] std::vector<std::string> getExpectedFunctions() const override
     {
         return {}; // Not used because we override validate
     }

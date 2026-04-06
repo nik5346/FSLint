@@ -13,18 +13,18 @@ class Fmi2SchemaChecker : public SchemaCheckerBase
     /// @brief Gets XML validation rules.
     /// @param path FMU root directory.
     /// @return Rules.
-    std::vector<XmlFileRule> getXmlRules(const std::filesystem::path& path) const override;
+    [[nodiscard]] std::vector<XmlFileRule> getXmlRules(const std::filesystem::path& path) const override;
 
     /// @brief Gets standard name.
     /// @return "fmi".
-    std::string getStandardName() const override
+    [[nodiscard]] std::string getStandardName() const override
     {
         return "fmi";
     }
 
     /// @brief Gets standard version.
     /// @return "2.0".
-    std::string getStandardVersion() const override
+    [[nodiscard]] std::string getStandardVersion() const override
     {
         return "2.0";
     }

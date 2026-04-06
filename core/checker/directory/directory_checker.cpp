@@ -48,7 +48,7 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
     bool needs_execution_tool = false;
 
     xmlNodePtr root = xmlDocGetRootElement(doc);
-    if (root)
+    if (root != nullptr)
     {
         // FMI 1.0 extraction
         const std::optional<std::string> model_id_attr = getXmlAttribute(root, "modelIdentifier");
@@ -59,24 +59,28 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
             model_identifiers["ModelExchange"] = val;
         }
 
-        for (xmlNodePtr node = root->children; node; node = node->next)
+        for (xmlNodePtr node = root->children; node != nullptr; node = node->next)
         {
             if (node->type != XML_ELEMENT_NODE)
                 continue;
 
             const xmlChar* name = node->name;
-            if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) ||
-                xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ModelExchange")) ||
-                xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")))
+            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+            if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) != 0 ||
+                xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ModelExchange")) != 0 ||
+                xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")) != 0)
+            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
             {
                 const std::optional<std::string> model_id = getXmlAttribute(node, "modelIdentifier");
                 if (model_id.has_value())
                 {
                     const auto& val = *model_id;
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     model_identifiers[reinterpret_cast<const char*>(name)] = val;
 
                     // If we found CoSimulation in FMI 1.0, move the model identifier there
-                    if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) &&
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                    if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("CoSimulation")) != 0 &&
                         model_id_attr.has_value())
                     {
                         const auto& attr_val = *model_id_attr;
@@ -85,7 +89,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                     }
                 }
 
-                if (!xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")))
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")) == 0)
                 {
                     const std::optional<std::string> needs_exec = getXmlAttribute(node, "needsExecutionTool");
                     if (needs_exec.has_value())
@@ -97,15 +102,17 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                 }
 
                 // Check for SourceFiles inside interface (FMI 2.0)
-                for (xmlNodePtr child = node->children; child; child = child->next)
+                for (xmlNodePtr child = node->children; child != nullptr; child = child->next)
                 {
                     if (child->type == XML_ELEMENT_NODE &&
-                        xmlStrEqual(child->name, reinterpret_cast<const xmlChar*>("SourceFiles")))
+                        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                        xmlStrEqual(child->name, reinterpret_cast<const xmlChar*>("SourceFiles")) != 0)
                     {
-                        for (xmlNodePtr file_node = child->children; file_node; file_node = file_node->next)
+                        for (xmlNodePtr file_node = child->children; file_node != nullptr; file_node = file_node->next)
                         {
                             if (file_node->type == XML_ELEMENT_NODE &&
-                                xmlStrEqual(file_node->name, reinterpret_cast<const xmlChar*>("File")))
+                                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                                xmlStrEqual(file_node->name, reinterpret_cast<const xmlChar*>("File")) != 0)
                             {
                                 const std::optional<std::string> name_opt = getXmlAttribute(file_node, "name");
                                 if (name_opt.has_value())
@@ -118,7 +125,8 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                     }
                 }
             }
-            else if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("Implementation")))
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            else if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("Implementation")) != 0)
             {
                 // In FMI 1.0 CS, Implementation exists but modelIdentifier is still on the root
                 if (model_id_attr.has_value())
@@ -141,12 +149,12 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
 
 std::optional<std::string> DirectoryChecker::getXmlAttribute(xmlNodePtr node, const std::string& attr_name)
 {
-    if (!node)
+    if (node == nullptr)
         return std::nullopt;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     xmlChar* attr = xmlGetProp(node, reinterpret_cast<const xmlChar*>(attr_name.c_str()));
-    if (!attr)
+    if (attr == nullptr)
         return std::nullopt;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -170,10 +178,11 @@ void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, C
             const std::string filename = file_utils::pathToUtf8(entry.path().filename());
             if (headers.contains(filename))
             {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Standard FMI header file '" + filename +
-                                        "' found in 'sources/' directory. This is not recommended as these headers "
-                                        "should be provided by the environment.");
+                test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("Standard FMI header file '" + filename +
+                                                "' found in 'sources/' directory. This is not recommended as these "
+                                                "headers "
+                                                "should be provided by the environment.");
             }
         }
     }

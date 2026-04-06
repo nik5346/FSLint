@@ -11,6 +11,7 @@
 #include <string_view>
 #include <utility>
 
+// NOLINTBEGIN(misc-include-cleaner)
 #ifdef _WIN32
 #include <io.h>
 #define ISATTY _isatty
@@ -21,6 +22,7 @@
 #define ISATTY isatty
 #define FILENO fileno
 #endif
+// NOLINTEND(misc-include-cleaner)
 
 void printUsage(const std::string& program_name)
 {

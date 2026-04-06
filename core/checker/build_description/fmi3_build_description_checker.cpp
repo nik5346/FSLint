@@ -10,14 +10,14 @@ void Fmi3BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& 
     auto bd_fmi_version = getXmlAttribute(root, "fmiVersion");
     if (!bd_fmi_version)
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("Missing 'fmiVersion' attribute in 'buildDescription.xml'.");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("Missing 'fmiVersion' attribute in 'buildDescription.xml'.");
     }
     else if (*bd_fmi_version != getFmiVersion())
     {
-        test.status = TestStatus::FAIL;
-        test.messages.push_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
-                                ") does not match FMU version (" + getFmiVersion() + ").");
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
+                                        ") does not match FMU version (" + getFmiVersion() + ").");
     }
     cert.printTestResult(test);
 }

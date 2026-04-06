@@ -828,8 +828,7 @@ TEST_CASE("FMI 2.0 Source code detection when directory is missing", "[fmi2][fai
     checker.validate("tests/data/fmi2/fail/source_code_missing_dir", cert);
 
     auto summary = cert.getSummary();
-    bool has_source_code =
-        std::find(summary.fmuTypes.begin(), summary.fmuTypes.end(), "Source code") != summary.fmuTypes.end();
+    bool has_source_code = std::ranges::find(summary.fmuTypes, "Source code") != summary.fmuTypes.end();
 
     CHECK(has_source_code);
 }

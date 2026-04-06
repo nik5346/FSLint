@@ -28,15 +28,15 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             const std::string name = file_utils::pathToUtf8(entry.path().filename());
             if (!fmi2_standard_entries.contains(name))
             {
-                test.status = TestStatus::WARNING;
+                test.setStatus(TestStatus::WARNING);
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
+                test.getMessages().emplace_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
             }
 
             if (entry.is_directory() && fmi2_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
             {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Standard directory '" + name + "' is empty.");
+                test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("Standard directory '" + name + "' is empty.");
             }
         }
         cert.printTestResult(test);
@@ -48,8 +48,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         auto png_path = path / "model.png";
         if (!std::filesystem::exists(png_path))
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended file 'model.png' is missing from the FMU root.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Recommended file 'model.png' is missing from the FMU root.");
         }
         else
         {
@@ -58,8 +58,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             {
                 if (dimensions->first < 100 || dimensions->second < 100)
                 {
-                    test.status = TestStatus::WARNING;
-                    test.messages.push_back(
+                    test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back(
                         std::format("Icon 'model.png' is small ({}x{} pixels). A size of at least 100x100 pixels is "
                                     "recommended.",
                                     dimensions->first, dimensions->second));
@@ -78,14 +78,14 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         {
             if (!std::filesystem::exists(doc_path / "index.html"))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("The documentation entry point 'documentation/index.html' is missing.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("The documentation entry point 'documentation/index.html' is missing.");
             }
         }
         else
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Providing documentation is recommended.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Providing documentation is recommended.");
         }
 
         if (needs_execution_tool)
@@ -93,10 +93,10 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             if (!std::filesystem::exists(doc_path / "externalDependencies.txt") &&
                 !std::filesystem::exists(doc_path / "externalDependencies.html"))
             {
-                if (test.status != TestStatus::FAIL)
-                    test.status = TestStatus::WARNING;
-                test.messages.push_back("needsExecutionTool is true, but "
-                                        "'documentation/externalDependencies.{txt|html}' is missing.");
+                if (test.getStatus() != TestStatus::FAIL)
+                    test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("needsExecutionTool is true, but "
+                                                "'documentation/externalDependencies.{txt|html}' is missing.");
             }
         }
         cert.printTestResult(test);
@@ -112,22 +112,22 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             if (!std::filesystem::exists(licenses_path / "license.txt") &&
                 !std::filesystem::exists(licenses_path / "license.html"))
             {
-                test.status = TestStatus::FAIL;
+                test.setStatus(TestStatus::FAIL);
                 if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
                 {
-                    test.messages.push_back("Standard directory 'documentation/licenses' is empty.");
+                    test.getMessages().emplace_back("Standard directory 'documentation/licenses' is empty.");
                 }
                 else
                 {
-                    test.messages.push_back(
+                    test.getMessages().emplace_back(
                         "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
                 }
             }
         }
         else
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
         }
         cert.printTestResult(test);
     }
@@ -155,9 +155,9 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                                                                          "linux64", "darwin32", "darwin64"};
                     if (!fmi2_platforms.contains(platform))
                     {
-                        if (test.status != TestStatus::FAIL)
-                            test.status = TestStatus::WARNING;
-                        test.messages.push_back(
+                        if (test.getStatus() != TestStatus::FAIL)
+                            test.setStatus(TestStatus::WARNING);
+                        test.getMessages().emplace_back(
                             std::format("Platform directory '{}' is not one of the standardized FMI 2.0 platform "
                                         "names (win32, win64, linux32, linux64, darwin32, darwin64).",
                                         platform));
@@ -178,8 +178,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
                         if (!found_model_id)
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back(
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(
                                 std::format("Platform directory '{}' does not contain a binary matching "
                                             "modelIdentifier '{}'.",
                                             platform, model_id));
@@ -196,8 +196,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         if (!has_binaries && !has_sources)
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back(
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
                 "FMU must contain either a precompiled binary for at least one platform or source code.");
         }
         cert.printTestResult(test);
@@ -211,9 +211,10 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
 
         if (has_physical_sources && !has_sources_in_md)
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back("Source code FMU contains a 'sources/' directory, but no <SourceFiles> are listed "
-                                    "in 'modelDescription.xml'.");
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                "Source code FMU contains a 'sources/' directory, but no <SourceFiles> are listed "
+                "in 'modelDescription.xml'.");
         }
         else if (has_physical_sources && !has_build_description)
         {
@@ -223,7 +224,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 {
                     auto rel_path = std::filesystem::relative(entry.path(), sources_path);
                     std::string filename = file_utils::pathToUtf8(rel_path);
-                    std::replace(filename.begin(), filename.end(), '\\', '/'); // Normalize paths
+                    std::ranges::replace(filename, '\\', '/'); // Normalize paths
 
                     // Only check typical source files
                     static const std::set<std::string> source_extensions = {".c", ".cc", ".cpp", ".cxx", ".C", ".c++"};
@@ -233,8 +234,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                     {
                         if (!listed_sources_in_md.contains(filename))
                         {
-                            test.status = TestStatus::WARNING;
-                            test.messages.push_back(
+                            test.setStatus(TestStatus::WARNING);
+                            test.getMessages().emplace_back(
                                 std::format("Source file '{}' exists in 'sources/' directory but is not listed in "
                                             "'modelDescription.xml'.",
                                             filename));
@@ -257,16 +258,17 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             TestResult test{"2.0.4 Compatibility", TestStatus::PASS, {}};
             if ((has_physical_sources || has_sources_in_md) && !has_build_description_anywhere)
             {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Providing a 'buildDescription.xml' is recommended for source code FMUs (FMI "
-                                        "2.0.4+).");
+                test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back(
+                    "Providing a 'buildDescription.xml' is recommended for source code FMUs (FMI "
+                    "2.0.4+).");
             }
             else if (!has_sources_in_md && has_build_description_anywhere)
             {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Source code FMU only contains buildDescription.xml. For backwards "
-                                        "compatibility with older importers, it is recommended to also provide "
-                                        "<SourceFiles> in modelDescription.xml.");
+                test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("Source code FMU only contains buildDescription.xml. For backwards "
+                                                "compatibility with older importers, it is recommended to also provide "
+                                                "<SourceFiles> in modelDescription.xml.");
             }
             cert.printTestResult(test);
         }

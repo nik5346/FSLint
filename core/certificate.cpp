@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+// NOLINTBEGIN(misc-include-cleaner)
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #else
@@ -36,6 +37,7 @@
 #define FILENO fileno
 #endif
 #endif
+// NOLINTEND(misc-include-cleaner)
 
 namespace
 {
@@ -87,7 +89,7 @@ TestStatus Certificate::getOverallStatus() const noexcept
         return TestStatus::FAIL;
 
     for (const auto& result : _results)
-        if (result.status == TestStatus::WARNING)
+        if (result.getStatus() == TestStatus::WARNING)
             return TestStatus::WARNING;
 
     for (const auto& nested : _nested_models)
@@ -188,12 +190,12 @@ void Certificate::printTestResult(const TestResult& test)
     _results.push_back(test);
 
     std::string status_tag;
-    if (test.status == TestStatus::PASS)
+    if (test.getStatus() == TestStatus::PASS)
     {
         status_tag = "  [✓ PASS] ";
         _current_subsection_passed++;
     }
-    else if (test.status == TestStatus::FAIL)
+    else if (test.getStatus() == TestStatus::FAIL)
     {
         status_tag = std::format("  [{}{}{}] ", RED, "✗ FAIL", RESET);
         _current_subsection_failed++;
@@ -205,20 +207,20 @@ void Certificate::printTestResult(const TestResult& test)
         _current_subsection_passed++; // Warnings count as passed
     }
 
-    log(std::format("{}{}", status_tag, test.test_name));
+    log(std::format("{}{}", status_tag, test.getName()));
 
-    if (test.status != TestStatus::PASS)
+    if (test.getStatus() != TestStatus::PASS)
     {
-        for (size_t i = 0; i < test.messages.size(); ++i)
+        for (size_t i = 0; i < test.getMessages().size(); ++i)
         {
-            const bool is_last = (i == test.messages.size() - 1);
+            const bool is_last = (i == test.getMessages().size() - 1);
             const std::string marker = is_last ? "└─ " : "├─ ";
-            log(std::format("      {}{}", marker, test.messages[i]));
+            log(std::format("      {}{}", marker, test.getMessages()[i]));
         }
     }
 
     // Handle security-related failures
-    if (test.is_security_issue && test.status == TestStatus::FAIL && !_abort_requested)
+    if (test.isSecurityIssue() && test.getStatus() == TestStatus::FAIL && !_abort_requested)
     {
         if (_continue_callback)
         {
@@ -498,10 +500,10 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
     for (const auto& res : _results)
     {
         rapidjson::Value obj(rapidjson::kObjectType);
-        obj.AddMember("test_name", rapidjson::Value(res.test_name.c_str(), allocator).Move(), allocator);
+        obj.AddMember("test_name", rapidjson::Value(res.getName().c_str(), allocator).Move(), allocator);
 
         std::string status;
-        switch (res.status)
+        switch (res.getStatus())
         {
         case TestStatus::PASS:
             status = "PASS";
@@ -519,7 +521,7 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
         obj.AddMember("status", rapidjson::Value(status.c_str(), allocator).Move(), allocator);
 
         rapidjson::Value messages(rapidjson::kArrayType);
-        for (const auto& msg : res.messages)
+        for (const auto& msg : res.getMessages())
             messages.PushBack(rapidjson::Value(msg.c_str(), allocator).Move(), allocator);
         obj.AddMember("messages", messages, allocator);
 

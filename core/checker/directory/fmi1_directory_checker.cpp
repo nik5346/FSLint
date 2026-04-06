@@ -33,7 +33,7 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
     }
 
     xmlDocPtr doc = readXmlFile(model_desc_path);
-    if (!doc)
+    if (doc == nullptr)
     {
         const TestResult test{
             "Parse modelDescription.xml", TestStatus::FAIL, {"Failed to parse 'modelDescription.xml'."}};
@@ -71,7 +71,7 @@ void Fmi1DirectoryChecker::validate(const std::filesystem::path& path, Certifica
         if (id_val != stem)
         {
             TestResult test{"Model Identifier Filename Match", TestStatus::FAIL, {}};
-            test.messages.push_back(
+            test.getMessages().emplace_back(
                 std::format("modelIdentifier '{}' must match the FMU filename '{}'.", id_val, stem));
             cert.printTestResult(test);
         }
@@ -106,15 +106,15 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
 
             if (!fmi1_standard_entries.contains(name))
             {
-                test.status = TestStatus::WARNING;
+                test.setStatus(TestStatus::WARNING);
                 const std::string type = entry.is_directory() ? "directory" : "file";
-                test.messages.push_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
+                test.getMessages().emplace_back(std::format("Unknown {} in FMU root: '{}'.", type, name));
             }
 
             if (entry.is_directory() && fmi1_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
             {
-                test.status = TestStatus::WARNING;
-                test.messages.push_back("Standard directory '" + name + "' is empty.");
+                test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("Standard directory '" + name + "' is empty.");
             }
         }
         cert.printTestResult(test);
@@ -130,22 +130,22 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             if (!std::filesystem::exists(licenses_path / "license.txt") &&
                 !std::filesystem::exists(licenses_path / "license.html"))
             {
-                test.status = TestStatus::FAIL;
+                test.setStatus(TestStatus::FAIL);
                 if (std::filesystem::is_directory(licenses_path) && isEffectivelyEmpty(licenses_path))
                 {
-                    test.messages.push_back("Standard directory 'documentation/licenses' is empty.");
+                    test.getMessages().emplace_back("Standard directory 'documentation/licenses' is empty.");
                 }
                 else
                 {
-                    test.messages.push_back(
+                    test.getMessages().emplace_back(
                         "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
                 }
             }
         }
         else
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
         }
         cert.printTestResult(test);
     }
@@ -156,8 +156,8 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         auto png_path = path / "model.png";
         if (!std::filesystem::exists(png_path))
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Recommended file 'model.png' is missing from the FMU root.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Recommended file 'model.png' is missing from the FMU root.");
         }
         else
         {
@@ -166,8 +166,8 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             {
                 if (dimensions->first < 100 || dimensions->second < 100)
                 {
-                    test.status = TestStatus::WARNING;
-                    test.messages.push_back(
+                    test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back(
                         std::format("Icon 'model.png' is small ({}x{} pixels). A size of at least 100x100 pixels is "
                                     "recommended.",
                                     dimensions->first, dimensions->second));
@@ -185,14 +185,14 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         {
             if (!std::filesystem::exists(doc_path / "_main.html"))
             {
-                test.status = TestStatus::FAIL;
-                test.messages.push_back("The documentation entry point 'documentation/_main.html' is missing.");
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("The documentation entry point 'documentation/_main.html' is missing.");
             }
         }
         else
         {
-            test.status = TestStatus::WARNING;
-            test.messages.push_back("Providing documentation is recommended.");
+            test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back("Providing documentation is recommended.");
         }
         cert.printTestResult(test);
     }
@@ -227,8 +227,8 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
 
                         if (!found_model_id)
                         {
-                            test.status = TestStatus::FAIL;
-                            test.messages.push_back(
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(
                                 std::format("Platform directory '{}' does not contain a binary matching "
                                             "modelIdentifier '{}'.",
                                             platform, model_id));
@@ -243,8 +243,8 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
 
         if (!has_binaries_present && !has_sources)
         {
-            test.status = TestStatus::FAIL;
-            test.messages.push_back(
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
                 "FMU must contain either a precompiled binary for at least one platform or source code.");
         }
         cert.printTestResult(test);
