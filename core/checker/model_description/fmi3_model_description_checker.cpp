@@ -596,7 +596,7 @@ void Fmi3ModelDescriptionChecker::checkCanHandleMultipleSet(const std::vector<Va
         {
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(std::format(
-                R"(Variable "{}" (line {}) has 'canHandleMultipleSetPerTimeInstant' attribute but causality is "{}".)",
+                R"(Variable "{}" (line {}) has 'canHandleMultipleSetPerTimeInstant' but causality is '{}' (must be 'input').)",
                 var.name, var.sourceline, var.causality));
         }
     }
@@ -632,7 +632,7 @@ void Fmi3ModelDescriptionChecker::checkReinitAttribute(const std::vector<Variabl
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    R"(Variable "{}" (line {}) has 'reinit' attribute but is of type "{}". Must be Float32 or Float64.)",
+                    R"(Variable "{}" (line {}) has 'reinit' attribute but is of type "{}". It must be Float32 or Float64.)",
                     var.name, var.sourceline, var.type));
             }
         }
@@ -919,8 +919,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             {
                                 test.setStatus(TestStatus::FAIL);
                                 test.getMessages().emplace_back(std::format(
-                                    R"(Variable "{}" (line {}) is a clocked variable. Clocked variables must not be "
-                                    "listed in ModelStructure/Output.)",
+                                    R"(Variable "{}" (line {}) is a clocked variable. Clocked variables must not be listed in ModelStructure/Output.)",
                                     var.name, var.sourceline));
                             }
                         }
@@ -928,8 +927,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         {
                             test.setStatus(TestStatus::FAIL);
                             test.getMessages().emplace_back(std::format(
-                                R"(Variable "{}" (line {}) is listed in ModelStructure/Output but does not have "
-                                "causality=\"output\".)",
+                                R"(Variable "{}" (line {}) is listed in ModelStructure/Output but does not have causality="output".)",
                                 var.name, var.sourceline));
                         }
                     }
@@ -962,8 +960,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
         }
 
         test.getMessages().emplace_back(
-            R"(ModelStructure/Output must have exactly one representative for each alias set of "
-            "non-clocked variables with causality="output".)");
+            R"(ModelStructure/Output must have exactly one representative for each alias set of non-clocked variables with causality="output".)");
     }
 
     cert.printTestResult(test);
@@ -1137,10 +1134,9 @@ void Fmi3ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                     if (!var.derivative_of.has_value())
                     {
                         test.setStatus(TestStatus::FAIL);
-                        test.getMessages().emplace_back(
-                            std::format(R"(Variable "{}" (VR {}) listed in ModelStructure/ContinuousStateDerivative "
-                                        "must have a "derivative" attribute.)",
-                                        var.name, vr));
+                        test.getMessages().emplace_back(std::format(
+                            R"(Variable "{}" (VR {}) listed in ModelStructure/ContinuousStateDerivative must have a "derivative" attribute.)",
+                            var.name, vr));
                     }
                 }
             }
@@ -1190,8 +1186,7 @@ void Fmi3ModelDescriptionChecker::checkDerivativeDimensions(const std::vector<Va
                 const std::string state_dims = formatDimensions(*state_var);
 
                 test.getMessages().emplace_back(std::format(
-                    R"(Variable "{}" (line {}) is derivative of "{}" (line {}) but has different dimensions. "
-                    "Derivative dimensions: {}, State dimensions: {}.)",
+                    R"(Variable "{}" (line {}) is derivative of "{}" (line {}) but has different dimensions. Derivative dimensions: {}, State dimensions: {}.)",
                     var.name, var.sourceline, state_var->name, state_var->sourceline, derivative_dims, state_dims));
             }
         }
@@ -1437,8 +1432,8 @@ void Fmi3ModelDescriptionChecker::validateEventIndicators(xmlDocPtr doc, const s
                 if (seen_vrs.contains(vr))
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(std::format(R"({} (VR {}) has duplicate valueReference \"{}\".)",
-                                                                "ModelStructure/EventIndicator", i + 1, vr));
+                    test.getMessages().emplace_back(std::format(
+                        R"(Value reference {} is listed multiple times in ModelStructure/EventIndicator.)", vr));
                 }
                 seen_vrs.insert(vr);
 
@@ -1981,8 +1976,7 @@ void Fmi3ModelDescriptionChecker::checkClockReferences(const std::vector<Variabl
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    R"(Variable "{}" (line {}): Clock variable cannot reference itself in clocks attribute.)", var.name,
-                    var.sourceline));
+                    R"(Variable "{}" (line {}): Clock cannot reference itself.)", var.name, var.sourceline));
                 continue;
             }
 
@@ -2334,7 +2328,7 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     if (guid_opt->empty())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("instantiationToken attribute is empty.");
+        test.getMessages().emplace_back("instantiationToken attribute is empty");
         cert.printTestResult(test);
         return;
     }
