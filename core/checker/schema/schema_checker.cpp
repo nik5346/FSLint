@@ -698,7 +698,7 @@ void SchemaCheckerBase::errorCallback(void* ctx, const char* msg, ...)
 
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
-    va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
+    va_list args;        // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
     va_start(args, msg); // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     const std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
     va_end(args); // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
@@ -728,7 +728,7 @@ void SchemaCheckerBase::warningCallback(void* ctx, const char* msg, ...)
 
     constexpr size_t ERROR_BUFFER_SIZE = 1024;
     std::array<char, ERROR_BUFFER_SIZE> buffer{};
-    va_list args; // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
+    va_list args;        // NOLINT(cppcoreguidelines-pro-type-vararg, cppcoreguidelines-init-variables)
     va_start(args, msg); // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     const std::int32_t written = vsnprintf(buffer.data(), buffer.size(), msg, args);
     va_end(args); // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
