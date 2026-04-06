@@ -10,6 +10,9 @@
 class ModelChecker
 {
   public:
+    /// @brief Virtual destructor for base class with virtual methods.
+    virtual ~ModelChecker() = default;
+
     /// @brief Validates a model.
     /// @param path Model path.
     /// @param quiet Suppress logging.
