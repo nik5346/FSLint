@@ -877,7 +877,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                const auto& dk_val = *deps_kind_str;
+                                const auto& dk_val = *deps_kind_str; // NOLINT(bugprone-unchecked-optional-access)
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)

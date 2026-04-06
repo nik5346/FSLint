@@ -620,6 +620,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     // NOLINTNEXTLINE(misc-include-cleaner)
     std::time_t generation_time = _mkgmtime(&tm_time);
 #else
+    // NOLINTNEXTLINE(misc-include-cleaner)
     std::time_t generation_time = timegm(&tm_time);
 #endif
 
