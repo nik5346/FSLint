@@ -10,14 +10,47 @@
 class ModelChecker
 {
   public:
+    /// @brief Virtual destructor for base class with virtual methods.
+    virtual ~ModelChecker() = default;
+
+    /// @brief Default constructor.
+    ModelChecker() = default;
+
+    /// @brief Copy constructor.
+    /// @param other Instance to copy from.
+    ModelChecker(const ModelChecker& other) = default;
+
+    /// @brief Move constructor.
+    /// @param other Instance to move from.
+    ModelChecker(ModelChecker&& other) noexcept = default;
+
+    /// @brief Copy assignment operator.
+    /// @param other Instance to copy from.
+    /// @return Reference to this instance.
+    ModelChecker& operator=(const ModelChecker& other) = default;
+
+    /// @brief Move assignment operator.
+    /// @param other Instance to move from.
+    /// @return Reference to this instance.
+    ModelChecker& operator=(ModelChecker&& other) noexcept = default;
+
+    /// @brief Check if this checker can handle a specific model.
+    /// @param path Path to the model.
+    /// @return True if handleable.
+    [[nodiscard]] virtual bool canHandle(const std::filesystem::path& path) const
+    {
+        (void)path;
+        return true;
+    }
+
     /// @brief Validates a model.
     /// @param path Model path.
     /// @param quiet Suppress logging.
     /// @param show_tree Show file tree.
     /// @param cert Optional certificate to use for results.
     /// @return Certificate.
-    [[nodiscard]] Certificate validate(const std::filesystem::path& path, bool quiet = false, bool show_tree = false,
-                                       Certificate cert = Certificate()) const;
+    [[nodiscard]] virtual Certificate validate(const std::filesystem::path& path, bool quiet = false,
+                                               bool show_tree = false, Certificate cert = Certificate()) const;
 
   public:
     /// @brief Adds certificate to model.
