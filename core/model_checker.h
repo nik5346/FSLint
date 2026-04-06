@@ -13,11 +13,26 @@ class ModelChecker
     /// @brief Virtual destructor for base class with virtual methods.
     virtual ~ModelChecker() = default;
 
+    /// @brief Default constructor.
     ModelChecker() = default;
-    ModelChecker(const ModelChecker&) = default;
-    ModelChecker(ModelChecker&&) noexcept = default;
-    ModelChecker& operator=(const ModelChecker&) = default;
-    ModelChecker& operator=(ModelChecker&&) noexcept = default;
+
+    /// @brief Copy constructor.
+    /// @param other Instance to copy from.
+    ModelChecker(const ModelChecker& other) = default;
+
+    /// @brief Move constructor.
+    /// @param other Instance to move from.
+    ModelChecker(ModelChecker&& other) noexcept = default;
+
+    /// @brief Copy assignment operator.
+    /// @param other Instance to copy from.
+    /// @return Reference to this instance.
+    ModelChecker& operator=(const ModelChecker& other) = default;
+
+    /// @brief Move assignment operator.
+    /// @param other Instance to move from.
+    /// @return Reference to this instance.
+    ModelChecker& operator=(ModelChecker&& other) noexcept = default;
 
     /// @brief Check if this checker can handle a specific model.
     /// @param path Path to the model.
