@@ -681,7 +681,7 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
         {
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(std::format(
-                R"(Attribute "{}" (line {}) references missing file in FMU: "{}".)", attr_name, line, relative_path));
+                R"(Attribute "{}" (line {}) references missing file in FMU: "{}")", attr_name, line, relative_path));
         }
     }
 }

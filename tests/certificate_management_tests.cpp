@@ -11,12 +11,12 @@ TEST_CASE("Certificate Management on Directories", "[certificate][directory]")
     ModelChecker checker;
 
     // Ensure clean state before starting
-    checker.removeCertificate(test_dir);
+    (void)checker.removeCertificate(test_dir);
 
     SECTION("Validation")
     {
         // Should not throw and should complete
-        checker.validate(test_dir);
+        (void)checker.validate(test_dir);
     }
 
     SECTION("Certificate Operations")
@@ -42,7 +42,7 @@ TEST_CASE("Certificate Management on Directories", "[certificate][directory]")
     }
 
     // Final cleanup to ensure no side effects on other tests
-    checker.removeCertificate(test_dir);
+    (void)checker.removeCertificate(test_dir);
 }
 
 TEST_CASE("Certificate Verification", "[certificate][verification]")
