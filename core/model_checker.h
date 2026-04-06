@@ -13,6 +13,21 @@ class ModelChecker
     /// @brief Virtual destructor for base class with virtual methods.
     virtual ~ModelChecker() = default;
 
+    ModelChecker() = default;
+    ModelChecker(const ModelChecker&) = default;
+    ModelChecker(ModelChecker&&) noexcept = default;
+    ModelChecker& operator=(const ModelChecker&) = default;
+    ModelChecker& operator=(ModelChecker&&) noexcept = default;
+
+    /// @brief Check if this checker can handle a specific model.
+    /// @param path Path to the model.
+    /// @return True if handleable.
+    [[nodiscard]] virtual bool canHandle(const std::filesystem::path& path) const
+    {
+        (void)path;
+        return true;
+    }
+
     /// @brief Validates a model.
     /// @param path Model path.
     /// @param quiet Suppress logging.
