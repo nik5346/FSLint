@@ -16,8 +16,8 @@ class ModelChecker
     /// @param show_tree Show file tree.
     /// @param cert Optional certificate to use for results.
     /// @return Certificate.
-    [[nodiscard]] Certificate validate(const std::filesystem::path& path, bool quiet = false, bool show_tree = false,
-                                       Certificate cert = Certificate()) const;
+    [[nodiscard]] virtual Certificate validate(const std::filesystem::path& path, bool quiet = false,
+                                               bool show_tree = false, Certificate cert = Certificate()) const;
 
   public:
     /// @brief Adds certificate to model.

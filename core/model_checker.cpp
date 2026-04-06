@@ -51,7 +51,7 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         const ArchiveChecker archive_checker;
         archive_checker.validate(path, cert);
 
-        if (cert.isFailed())
+        if (cert.shouldAbort())
         {
             if (!quiet)
                 cert.printFooter();
@@ -176,6 +176,12 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
         // Step 1: Archive validation
         const ArchiveChecker archive_checker;
         archive_checker.validate(path, cert);
+
+        if (cert.shouldAbort())
+        {
+            cert.printFooter();
+            return false;
+        }
 
         // Step 2: Extract to temporary directory
         const std::string dir_name = "model_cert_add_" + std::to_string(std::time(nullptr));
