@@ -43,34 +43,51 @@ class TestResult
     {
     }
 
+    /// @brief Get the name of the test.
+    /// @return Const reference to the test name.
     [[nodiscard]] const std::string& getName() const noexcept
     {
         return _test_name;
     }
+
+    /// @brief Set the name of the test.
+    /// @param name The name to set (automatically detects [SECURITY] tag).
     void setName(std::string name)
     {
         _test_name = std::move(name);
         _is_security_issue = _test_name.find("[SECURITY]") != std::string::npos;
     }
 
+    /// @brief Get the status of the test result.
+    /// @return The test status (PASS, FAIL, or WARNING).
     [[nodiscard]] TestStatus getStatus() const noexcept
     {
         return _status;
     }
+
+    /// @brief Set the status of the test result.
+    /// @param status The status to set.
     void setStatus(TestStatus status) noexcept
     {
         _status = status;
     }
 
+    /// @brief Get the failure or warning messages.
+    /// @return Const reference to the messages vector.
     [[nodiscard]] const std::vector<std::string>& getMessages() const noexcept
     {
         return _messages;
     }
+
+    /// @brief Get the failure or warning messages (mutable).
+    /// @return Mutable reference to the messages vector.
     [[nodiscard]] std::vector<std::string>& getMessages() noexcept
     {
         return _messages;
     }
 
+    /// @brief Check if this test result is a security-related issue.
+    /// @return True if test name contains "[SECURITY]" tag.
     [[nodiscard]] bool isSecurityIssue() const noexcept
     {
         return _is_security_issue;

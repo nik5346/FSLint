@@ -138,9 +138,10 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
-                UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
-                for (const auto& msg : res.messages)
+                    (res.getStatus() == TestStatus::PASS ? "PASS"
+                                                         : (res.getStatus() == TestStatus::FAIL ? "FAIL" : "WARN"));
+                UNSCOPED_INFO("  " << status_str << ": " << res.getName());
+                for (const auto& msg : res.getMessages())
                     UNSCOPED_INFO("    - " << msg);
             }
         }
@@ -254,10 +255,10 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -454,9 +455,10 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
-                UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
-                for (const auto& msg : res.messages)
+                    (res.getStatus() == TestStatus::PASS ? "PASS"
+                                                         : (res.getStatus() == TestStatus::FAIL ? "FAIL" : "WARN"));
+                UNSCOPED_INFO("  " << status_str << ": " << res.getName());
+                for (const auto& msg : res.getMessages())
                     UNSCOPED_INFO("    - " << msg);
             }
         }
@@ -537,10 +539,10 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -714,10 +716,10 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::WARNING)
+                if (res.getStatus() == TestStatus::WARNING)
                 {
-                    UNSCOPED_INFO("  WARN: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  WARN: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -846,10 +848,10 @@ TEST_CASE("FMI 2.0 ModelStructure Alias and Partial Validation", "[fmi2][structu
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    std::cout << "FAIL in " << path << ": " << res.test_name << "\n";
-                    for (const auto& msg : res.messages)
+                    std::cout << "FAIL in " << path << ": " << res.getName() << "\n";
+                    for (const auto& msg : res.getMessages())
                         std::cout << "  - " << msg << "\n";
                 }
             }
@@ -905,10 +907,10 @@ TEST_CASE("FMI 3.0 ModelStructure Alias and Partial Validation", "[fmi3][structu
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    std::cout << "FAIL in " << path << ": " << res.test_name << "\n";
-                    for (const auto& msg : res.messages)
+                    std::cout << "FAIL in " << path << ": " << res.getName() << "\n";
+                    for (const auto& msg : res.getMessages())
                         std::cout << "  - " << msg << "\n";
                 }
             }

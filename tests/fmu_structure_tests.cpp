@@ -41,10 +41,10 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::WARNING)
+                if (res.getStatus() == TestStatus::WARNING)
                 {
-                    std::cout << "WARN in FMI 1.0 clean_me: " << res.test_name << std::endl;
-                    for (const auto& msg : res.messages)
+                    std::cout << "WARN in FMI 1.0 clean_me: " << res.getName() << std::endl;
+                    for (const auto& msg : res.getMessages())
                         std::cout << "  - " << msg << std::endl;
                 }
             }
@@ -64,9 +64,9 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                 // We check that there are no FAILs other than the expected ones if any
                 for (const auto& res : cert.getResults())
                 {
-                    if (res.status == TestStatus::FAIL)
+                    if (res.getStatus() == TestStatus::FAIL)
                     {
-                        for (const auto& msg : res.messages)
+                        for (const auto& msg : res.getMessages())
                             if (msg.find("_main.html") == std::string::npos &&
                                 msg.find("documentation/licenses") == std::string::npos)
                                 FAIL("Unexpected failure in reference FMU " << file_utils::pathToUtf8(path) << ": "
@@ -122,10 +122,10 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
                 UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
                 for (const auto& res : cert.getResults())
                 {
-                    if (res.status == TestStatus::WARNING)
+                    if (res.getStatus() == TestStatus::WARNING)
                     {
-                        UNSCOPED_INFO("  WARN: " << res.test_name);
-                        for (const auto& msg : res.messages)
+                        UNSCOPED_INFO("  WARN: " << res.getName());
+                        for (const auto& msg : res.getMessages())
                             UNSCOPED_INFO("    - " << msg);
                     }
                 }
@@ -184,10 +184,10 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -212,11 +212,11 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL || res.status == TestStatus::WARNING)
+                if (res.getStatus() == TestStatus::FAIL || res.getStatus() == TestStatus::WARNING)
                 {
-                    std::string status_str = (res.status == TestStatus::FAIL ? "FAIL" : "WARN");
-                    UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    std::string status_str = (res.getStatus() == TestStatus::FAIL ? "FAIL" : "WARN");
+                    UNSCOPED_INFO("  " << status_str << ": " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -225,10 +225,10 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::WARNING)
+                if (res.getStatus() == TestStatus::WARNING)
                 {
-                    std::cout << "WARN in " << file_utils::pathToUtf8(path) << ": " << res.test_name << std::endl;
-                    for (const auto& msg : res.messages)
+                    std::cout << "WARN in " << file_utils::pathToUtf8(path) << ": " << res.getName() << std::endl;
+                    for (const auto& msg : res.getMessages())
                         std::cout << "  - " << msg << std::endl;
                 }
             }
@@ -248,9 +248,10 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
-                UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
-                for (const auto& msg : res.messages)
+                    (res.getStatus() == TestStatus::PASS ? "PASS"
+                                                         : (res.getStatus() == TestStatus::FAIL ? "FAIL" : "WARN"));
+                UNSCOPED_INFO("  " << status_str << ": " << res.getName());
+                for (const auto& msg : res.getMessages())
                     UNSCOPED_INFO("    - " << msg);
             }
         }
@@ -269,9 +270,10 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
-                UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
-                for (const auto& msg : res.messages)
+                    (res.getStatus() == TestStatus::PASS ? "PASS"
+                                                         : (res.getStatus() == TestStatus::FAIL ? "FAIL" : "WARN"));
+                UNSCOPED_INFO("  " << status_str << ": " << res.getName());
+                for (const auto& msg : res.getMessages())
                     UNSCOPED_INFO("    - " << msg);
             }
         }
@@ -350,10 +352,10 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -378,11 +380,11 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL || res.status == TestStatus::WARNING)
+                if (res.getStatus() == TestStatus::FAIL || res.getStatus() == TestStatus::WARNING)
                 {
-                    std::string status_str = (res.status == TestStatus::FAIL ? "FAIL" : "WARN");
-                    UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    std::string status_str = (res.getStatus() == TestStatus::FAIL ? "FAIL" : "WARN");
+                    UNSCOPED_INFO("  " << status_str << ": " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -402,9 +404,10 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
-                UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
-                for (const auto& msg : res.messages)
+                    (res.getStatus() == TestStatus::PASS ? "PASS"
+                                                         : (res.getStatus() == TestStatus::FAIL ? "FAIL" : "WARN"));
+                UNSCOPED_INFO("  " << status_str << ": " << res.getName());
+                for (const auto& msg : res.getMessages())
                     UNSCOPED_INFO("    - " << msg);
             }
         }
@@ -423,9 +426,10 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
             for (const auto& res : cert.getResults())
             {
                 std::string status_str =
-                    (res.status == TestStatus::PASS ? "PASS" : (res.status == TestStatus::FAIL ? "FAIL" : "WARN"));
-                UNSCOPED_INFO("  " << status_str << ": " << res.test_name);
-                for (const auto& msg : res.messages)
+                    (res.getStatus() == TestStatus::PASS ? "PASS"
+                                                         : (res.getStatus() == TestStatus::FAIL ? "FAIL" : "WARN"));
+                UNSCOPED_INFO("  " << status_str << ": " << res.getName());
+                for (const auto& msg : res.getMessages())
                     UNSCOPED_INFO("    - " << msg);
             }
         }
@@ -481,10 +485,10 @@ TEST_CASE("Build Description Validation", "[build_description]")
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -502,10 +506,10 @@ TEST_CASE("Build Description Validation", "[build_description]")
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -524,10 +528,10 @@ TEST_CASE("Build Description Validation", "[build_description]")
             UNSCOPED_INFO("Expected warning '" << expected_warning << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::WARNING)
+                if (res.getStatus() == TestStatus::WARNING)
                 {
-                    UNSCOPED_INFO("  WARN: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  WARN: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -585,10 +589,10 @@ TEST_CASE("FMI 2.0 Build Description Validation", "[build_description][fmi2]")
         {
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -606,10 +610,10 @@ TEST_CASE("FMI 2.0 Build Description Validation", "[build_description][fmi2]")
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }
@@ -643,10 +647,10 @@ TEST_CASE("FMI 2.0 legacy source files validation", "[fmi2][sources]")
             UNSCOPED_INFO("Expected error '" << expected_error << "' not found in results:");
             for (const auto& res : cert.getResults())
             {
-                if (res.status == TestStatus::FAIL)
+                if (res.getStatus() == TestStatus::FAIL)
                 {
-                    UNSCOPED_INFO("  FAIL: " << res.test_name);
-                    for (const auto& msg : res.messages)
+                    UNSCOPED_INFO("  FAIL: " << res.getName());
+                    for (const auto& msg : res.getMessages())
                         UNSCOPED_INFO("    - " << msg);
                 }
             }

@@ -30,9 +30,9 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
         INFO("Checking results for " << file_utils::pathToUtf8(test_data_root));
         for (const auto& res : cert.getResults())
         {
-            if (res.status == TestStatus::FAIL)
-                for (const auto& msg : res.messages)
-                    UNSCOPED_INFO("FAIL: " << res.test_name << ": " << msg);
+            if (res.getStatus() == TestStatus::FAIL)
+                for (const auto& msg : res.getMessages())
+                    UNSCOPED_INFO("FAIL: " << res.getName() << ": " << msg);
         }
 
         CHECK_FALSE(has_fail(cert));

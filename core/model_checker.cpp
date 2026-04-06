@@ -283,8 +283,9 @@ bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
 
     if (std::filesystem::is_directory(path))
     {
-        // NOLINTNEXTLINE(clang-diagnostic-unused-result)
-        removeCertificate(path);
+        const auto result = removeCertificate(path);
+        if (!result)
+            return false;
         return addCertificate(path);
     }
 
