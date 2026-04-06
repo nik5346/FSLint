@@ -19,13 +19,13 @@ void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& 
     if (!version_attr)
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
+        test.getMessages().emplace_back("terminalsAndIcons.xml is missing 'fmi_version' attribute.");
     }
 }
 
 std::map<std::string, TerminalVariableInfo>
 Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path, Certificate& cert,
-                                               std::string& fmiVersion) const
+                                               std::string& fmi_version) const
 {
     std::map<std::string, TerminalVariableInfo> variables;
     auto model_desc_path = path / "modelDescription.xml";
@@ -47,12 +47,12 @@ Fmi2TerminalsAndIconsChecker::extractVariables(const std::filesystem::path& path
     auto version_attr = getXmlAttribute(root, "fmiVersion");
     if (version_attr)
     {
-        fmiVersion = *version_attr;
+        fmi_version = *version_attr;
     }
     else
     {
         cert.printTestResult(
-            {"Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmiVersion' attribute."}});
+            {"Version", TestStatus::FAIL, {"modelDescription.xml is missing 'fmi_version' attribute."}});
         xmlFreeDoc(doc);
         return variables;
     }

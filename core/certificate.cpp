@@ -458,25 +458,27 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
     // 2. Summary
     rapidjson::Value summary(rapidjson::kObjectType);
     summary.AddMember("standard", rapidjson::Value(_summary.standard.c_str(), allocator).Move(), allocator);
-    summary.AddMember("modelName", rapidjson::Value(_summary.modelName.c_str(), allocator).Move(), allocator);
-    summary.AddMember("fmiVersion", rapidjson::Value(_summary.fmiVersion.c_str(), allocator).Move(), allocator);
-    summary.AddMember("modelVersion", rapidjson::Value(_summary.modelVersion.c_str(), allocator).Move(), allocator);
+    summary.AddMember("model_name", rapidjson::Value(_summary.model_name.c_str(), allocator).Move(), allocator);
+    summary.AddMember("fmi_version", rapidjson::Value(_summary.fmi_version.c_str(), allocator).Move(), allocator);
+    summary.AddMember("model_version", rapidjson::Value(_summary.model_version.c_str(), allocator).Move(), allocator);
     summary.AddMember("guid", rapidjson::Value(_summary.guid.c_str(), allocator).Move(), allocator);
-    summary.AddMember("generationTool", rapidjson::Value(_summary.generationTool.c_str(), allocator).Move(), allocator);
-    summary.AddMember("generationDateAndTime",
-                      rapidjson::Value(_summary.generationDateAndTime.c_str(), allocator).Move(), allocator);
+    summary.AddMember("generation_tool", rapidjson::Value(_summary.generation_tool.c_str(), allocator).Move(),
+                      allocator);
+    summary.AddMember("generation_date_and_time",
+                      rapidjson::Value(_summary.generation_date_and_time.c_str(), allocator).Move(), allocator);
     summary.AddMember("author", rapidjson::Value(_summary.author.c_str(), allocator).Move(), allocator);
     summary.AddMember("copyright", rapidjson::Value(_summary.copyright.c_str(), allocator).Move(), allocator);
     summary.AddMember("license", rapidjson::Value(_summary.license.c_str(), allocator).Move(), allocator);
     summary.AddMember("description", rapidjson::Value(_summary.description.c_str(), allocator).Move(), allocator);
-    summary.AddMember("hasIcon", _summary.hasIcon, allocator);
-    summary.AddMember("sourceLanguage", rapidjson::Value(_summary.sourceLanguage.c_str(), allocator).Move(), allocator);
-    summary.AddMember("totalSize", _summary.totalSize, allocator);
+    summary.AddMember("has_icon", _summary.has_icon, allocator);
+    summary.AddMember("source_language", rapidjson::Value(_summary.source_language.c_str(), allocator).Move(),
+                      allocator);
+    summary.AddMember("total_size", _summary.total_size, allocator);
 
-    rapidjson::Value fmuTypes(rapidjson::kArrayType);
-    for (const auto& t : _summary.fmuTypes)
-        fmuTypes.PushBack(rapidjson::Value(t.c_str(), allocator).Move(), allocator);
-    summary.AddMember("fmuTypes", fmuTypes, allocator);
+    rapidjson::Value fmu_types(rapidjson::kArrayType);
+    for (const auto& t : _summary.fmu_types)
+        fmu_types.PushBack(rapidjson::Value(t.c_str(), allocator).Move(), allocator);
+    summary.AddMember("fmu_types", fmu_types, allocator);
 
     rapidjson::Value platforms(rapidjson::kArrayType);
     for (const auto& p : _summary.platforms)
@@ -488,10 +490,10 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
         interfaces.PushBack(rapidjson::Value(i.c_str(), allocator).Move(), allocator);
     summary.AddMember("interfaces", interfaces, allocator);
 
-    rapidjson::Value layeredStandards(rapidjson::kArrayType);
-    for (const auto& s : _summary.layeredStandards)
-        layeredStandards.PushBack(rapidjson::Value(s.c_str(), allocator).Move(), allocator);
-    summary.AddMember("layeredStandards", layeredStandards, allocator);
+    rapidjson::Value layered_standards(rapidjson::kArrayType);
+    for (const auto& s : _summary.layered_standards)
+        layered_standards.PushBack(rapidjson::Value(s.c_str(), allocator).Move(), allocator);
+    summary.AddMember("layered_standards", layered_standards, allocator);
 
     doc.AddMember("summary", summary, allocator);
 
@@ -546,7 +548,7 @@ std::string Certificate::toJson(const std::filesystem::path& root_path) const
         // Rename the root node to the model name (if available) or filename
         if (tree.IsObject() && tree.HasMember("name"))
         {
-            std::string label = _summary.modelName;
+            std::string label = _summary.model_name;
             if (label.empty() && !root_path.empty())
                 label = file_utils::pathToUtf8(root_path.filename());
 

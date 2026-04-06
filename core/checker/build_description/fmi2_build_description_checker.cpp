@@ -15,7 +15,7 @@ void Fmi2BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& 
     }
     else if (*bd_fmi_version != "3.0")
     {
-        // For FMI 2.x, it's a backport from FMI 3.0 and the fmiVersion attribute is fixed to "3.0".
+        // For FMI 2.x, it's a backport from FMI 3.0 and the fmi_version attribute is fixed to "3.0".
         test.setStatus(TestStatus::FAIL);
         test.getMessages().emplace_back("fmiVersion in 'buildDescription.xml' must be '3.0' for FMI 2.x FMUs (found '" +
                                         *bd_fmi_version + "').");

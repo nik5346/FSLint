@@ -76,7 +76,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
   const [iconUrl, setIconUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!summary.hasIcon || !module || !result.file_tree) {
+    if (!summary.has_icon || !module || !result.file_tree) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIconUrl(null);
       return;
@@ -123,7 +123,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [summary.hasIcon, module, result.file_tree]);
+  }, [summary.has_icon, module, result.file_tree]);
 
   /**
    * Formats a size in bytes into a human-readable string.
@@ -152,19 +152,19 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
      */
     mono?: boolean;
   }[] = [
-    { label: 'Model Name', value: summary.modelName },
+    { label: 'Model Name', value: summary.model_name },
     {
       label: summary.standard === 'SSP' ? 'SSP Version' : 'FMI Version',
-      value: summary.fmiVersion,
+      value: summary.fmi_version,
     },
-    { label: 'Model Version', value: summary.modelVersion },
+    { label: 'Model Version', value: summary.model_version },
     { label: 'Author', value: summary.author },
     { label: 'Copyright', value: summary.copyright },
     { label: 'License', value: summary.license },
-    { label: 'Generation Tool', value: summary.generationTool },
-    { label: 'Generation Date', value: summary.generationDateAndTime },
-    { label: 'Source Language', value: summary.sourceLanguage },
-    { label: 'Total Size', value: summary.totalSize ? formatSize(summary.totalSize) : '' },
+    { label: 'Generation Tool', value: summary.generation_tool },
+    { label: 'Generation Date', value: summary.generation_date_and_time },
+    { label: 'Source Language', value: summary.source_language },
+    { label: 'Total Size', value: summary.total_size ? formatSize(summary.total_size) : '' },
   ].filter((item) => item.value);
 
   return (
@@ -209,7 +209,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
           flexWrap: 'wrap',
         }}
       >
-        {summary.hasIcon && iconUrl && (
+        {summary.has_icon && iconUrl && (
           <div
             style={{
               width: '128px',
@@ -233,7 +233,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         <div style={{ flex: 1, minWidth: '300px' }}>
           <div style={{ marginBottom: '20px' }}>
             <h2 style={{ fontSize: '1.8em', margin: '0 0 8px 0', fontWeight: 'bold' }}>
-              {summary.modelName || 'Unnamed Model'}
+              {summary.model_name || 'Unnamed Model'}
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span
@@ -307,8 +307,8 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
                     FMU Type:
                   </span>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {summary.fmuTypes.length > 0 ? (
-                      summary.fmuTypes.map((t) => (
+                    {summary.fmu_types.length > 0 ? (
+                      summary.fmu_types.map((t) => (
                         <span
                           key={t}
                           style={{
@@ -383,10 +383,10 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
             </Section>
           )}
 
-          {summary.standard !== 'UNKNOWN' && summary.layeredStandards.length > 0 && (
+          {summary.standard !== 'UNKNOWN' && summary.layered_standards.length > 0 && (
             <Section title="Layered Standards" theme={theme}>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {summary.layeredStandards.map((s) => (
+                {summary.layered_standards.map((s) => (
                   <span
                     key={s}
                     style={{

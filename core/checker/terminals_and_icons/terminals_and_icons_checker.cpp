@@ -90,7 +90,7 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
         prefix = "f:";
     }
 
-    // 1. Check fmiVersion consistency
+    // 1. Check fmi_version consistency
     {
         TestResult test{"Terminals and Icons Version", TestStatus::PASS, {}};
         checkFmiVersion(root, test);

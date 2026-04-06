@@ -65,10 +65,10 @@ class TerminalsAndIconsCheckerBase : public Checker
     /// @brief Extracts variables for matching.
     /// @param path FMU root.
     /// @param cert Certificate.
-    /// @param fmiVersion Output FMI version.
+    /// @param fmi_version Output FMI version.
     /// @return Map of variables.
     virtual std::map<std::string, TerminalVariableInfo>
-    extractVariables(const std::filesystem::path& path, Certificate& cert, std::string& fmiVersion) const = 0;
+    extractVariables(const std::filesystem::path& path, Certificate& cert, std::string& fmi_version) const = 0;
 
     /// @brief Core validation logic for terminalsAndIcons.xml.
     /// @param path FMU root.

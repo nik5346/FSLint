@@ -158,7 +158,7 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         validate_warning("warn/author_empty", "The 'author' attribute is empty.");
         validate_warning(
             "warn/generation_tool_missing",
-            "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
+            "Providing the generationTool name is recommended. For manually created FMUs, use \"Handmade\".");
         validate_warning("warn/license_missing", "Providing a license is recommended.");
         validate_warning("warn/copyright_missing", "Providing a copyright notice is recommended.");
         validate_warning("warn/model_version_missing", "Providing a model version is recommended.");
@@ -275,8 +275,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
     SECTION("Metadata")
     {
-        validate_fail("fmi_version_missing", "attribute is missing");
-        validate_fail("fmi_version_empty", "attribute is empty");
+        validate_fail("fmi_version_missing", "fmiVersion attribute is missing");
+        validate_fail("fmi_version_empty", "fmiVersion attribute is empty");
         validate_fail("fmi_version_invalid", "is invalid (must be exactly \"2.0\")");
         validate_fail("fmi_version_patch", "is invalid (must be exactly \"2.0\")");
 
@@ -474,7 +474,7 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
         validate_warning(
             "generation_tool_missing",
-            "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
+            "Providing the generationTool name is recommended. For manually created FMUs, use \"Handmade\".");
         validate_warning("generation_tool_empty", "The 'generationTool' attribute is empty.");
         validate_warning("license_missing", "Providing a license is recommended.");
         validate_warning("license_empty", "The 'license' attribute is empty.");
@@ -559,8 +559,8 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Metadata")
     {
-        validate_fail("fmi_version_missing", "attribute is missing");
-        validate_fail("fmi_version_empty", "attribute is empty");
+        validate_fail("fmi_version_missing", "fmiVersion attribute is missing");
+        validate_fail("fmi_version_empty", "fmiVersion attribute is empty");
 
         validate_fail("instantiation_token_missing", "instantiationToken attribute is missing");
         validate_fail("instantiation_token_empty", "instantiationToken attribute is empty");
@@ -737,7 +737,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
         validate_warning(
             "metadata_missing",
-            "Providing the generation tool name is recommended. For manually created FMUs, use \"Handmade\".");
+            "Providing the generationTool name is recommended. For manually created FMUs, use \"Handmade\".");
         validate_warning("metadata_missing", "Providing a license is recommended.");
 
         validate_warning("model_version_missing", "Providing a model version is recommended.");
@@ -830,7 +830,7 @@ TEST_CASE("FMI 2.0 Source code detection when directory is missing", "[fmi2][fai
     checker.validate("tests/data/fmi2/fail/source_code_missing_dir", cert);
 
     auto summary = cert.getSummary();
-    bool has_source_code = std::ranges::find(summary.fmuTypes, "Source code") != summary.fmuTypes.end();
+    bool has_source_code = std::ranges::find(summary.fmu_types, "Source code") != summary.fmu_types.end();
 
     CHECK(has_source_code);
 }

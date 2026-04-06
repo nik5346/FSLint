@@ -52,25 +52,25 @@ void SspDescriptionChecker::validate(const std::filesystem::path& path, Certific
 
     ModelSummary summary = cert.getSummary();
     summary.standard = "SSP";
-    summary.modelName = getXmlAttribute(root, "name").value_or("");
-    summary.fmiVersion = getXmlAttribute(root, "version").value_or(""); // Standard version
+    summary.model_name = getXmlAttribute(root, "name").value_or("");
+    summary.fmi_version = getXmlAttribute(root, "version").value_or(""); // Standard version
     summary.author = getXmlAttribute(root, "author").value_or("");
     summary.copyright = getXmlAttribute(root, "copyright").value_or("");
     summary.license = getXmlAttribute(root, "license").value_or("");
     summary.description = getXmlAttribute(root, "description").value_or("");
-    summary.generationTool = getXmlAttribute(root, "generationTool").value_or("");
-    summary.generationDateAndTime = getXmlAttribute(root, "generationDateAndTime").value_or("");
-    summary.fmuTypes.clear();
+    summary.generation_tool = getXmlAttribute(root, "generationTool").value_or("");
+    summary.generation_date_and_time = getXmlAttribute(root, "generationDateAndTime").value_or("");
+    summary.fmu_types.clear();
 
     // SSP has no top-level icon
-    summary.hasIcon = false;
+    summary.has_icon = false;
 
     // Calculate total size
     const auto& original_path = getOriginalPath();
     if (!original_path.empty() && std::filesystem::exists(original_path))
-        summary.totalSize = file_utils::getTotalSize(original_path);
+        summary.total_size = file_utils::getTotalSize(original_path);
     else
-        summary.totalSize = file_utils::getTotalSize(path);
+        summary.total_size = file_utils::getTotalSize(path);
 
     cert.setSummary(summary);
 

@@ -95,18 +95,18 @@ struct TypeDefinition
 /// @brief Metadata from modelDescription.xml root.
 struct ModelMetadata
 {
-    std::optional<std::string> fmiVersion;            ///< FMI version.
-    std::optional<std::string> modelName;             ///< Model name.
-    std::optional<std::string> guid;                  ///< GUID.
-    std::optional<std::string> modelVersion;          ///< Model version.
-    std::optional<std::string> author;                ///< Author.
-    std::optional<std::string> copyright;             ///< Copyright.
-    std::optional<std::string> license;               ///< License.
-    std::optional<std::string> description;           ///< Description.
-    std::optional<std::string> generationTool;        ///< Generation tool.
-    std::optional<std::string> generationDateAndTime; ///< Generation timestamp.
-    std::string variableNamingConvention = "flat";    ///< Naming convention.
-    std::optional<uint32_t> numberOfEventIndicators;  ///< Number of event indicators.
+    std::optional<std::string> fmi_version;              ///< FMI version.
+    std::optional<std::string> model_name;               ///< Model name.
+    std::optional<std::string> guid;                     ///< GUID.
+    std::optional<std::string> model_version;            ///< Model version.
+    std::optional<std::string> author;                   ///< Author.
+    std::optional<std::string> copyright;                ///< Copyright.
+    std::optional<std::string> license;                  ///< License.
+    std::optional<std::string> description;              ///< Description.
+    std::optional<std::string> generation_tool;          ///< Generation tool.
+    std::optional<std::string> generation_date_and_time; ///< Generation timestamp.
+    std::string variable_naming_convention = "flat";     ///< Naming convention.
+    std::optional<uint32_t> number_of_event_indicators;  ///< Number of event indicators.
 };
 
 /// @brief Base class for semantic model description validation.
@@ -238,7 +238,7 @@ class ModelDescriptionCheckerBase : public Checker
     /// @param cert Certificate to record results.
     void checkGenerationDateAndTime(const std::optional<std::string>& generation_date_time, Certificate& cert) const;
 
-    /// @brief Checks fmiVersion attribute presence.
+    /// @brief Checks fmi_version attribute presence.
     /// @param fmi_version Version string.
     /// @param cert Certificate to record results.
     virtual void checkFmiVersion(const std::optional<std::string>& fmi_version, Certificate& cert) const;
@@ -248,7 +248,7 @@ class ModelDescriptionCheckerBase : public Checker
     /// @param test Result to update.
     virtual void validateFmiVersionValue(const std::string& version, TestResult& test) const = 0;
 
-    /// @brief Checks modelName attribute.
+    /// @brief Checks model_name attribute.
     /// @param model_name Name.
     /// @param cert Certificate to record results.
     void checkModelName(const std::optional<std::string>& model_name, Certificate& cert) const;
@@ -258,7 +258,7 @@ class ModelDescriptionCheckerBase : public Checker
     /// @param cert Certificate to record results.
     virtual void checkGuid(const std::optional<std::string>& guid, Certificate& cert) const = 0;
 
-    /// @brief Checks modelVersion attribute.
+    /// @brief Checks model_version attribute.
     /// @param version Version.
     /// @param cert Certificate to record results.
     void checkModelVersion(const std::optional<std::string>& version, Certificate& cert) const;

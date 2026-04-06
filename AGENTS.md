@@ -61,6 +61,6 @@ Before completing any task, Jules **must**:
    - C++: `cmake --build build --target clang-tidy` and `cmake --build build --target doxygen-check`
    - Web: `npm run lint`, `npm run check-types`, and `npm run format:check` in `web/`
 3. **Verify Build & Tests:**
-   - C++: `ctest --output-on-failure -C Release` in `build/`
-   - Web: `npm run build` in `web/`
+   - C++: `ctest --output-on-failure -C Release` in `build/`. All tests must pass.
+   - Web: `npm run build` in `web/`. All tests (lint, types) must pass.
 4. **Reflect:** Check if any new files or logic adhere to the architectural patterns of the project (e.g., using `CheckerFactory`, following the `SchemaCheckerBase` pattern).
