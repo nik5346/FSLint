@@ -460,7 +460,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     if (!model_name.has_value())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("model_name attribute is missing.");
+        test.getMessages().emplace_back("modelName attribute is missing.");
         cert.printTestResult(test);
         return;
     }
@@ -468,7 +468,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     if (model_name->empty())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("model_name attribute is empty.");
+        test.getMessages().emplace_back("modelName attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -552,7 +552,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (!generation_date_time.has_value())
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back("Providing 'generation_date_and_time' is recommended.");
+        test.getMessages().emplace_back("Providing 'generationDateAndTime' is recommended.");
         cert.printTestResult(test);
         return;
     }
@@ -562,7 +562,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     if (dt.empty())
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back("The 'generation_date_and_time' attribute is empty.");
+        test.getMessages().emplace_back("The 'generationDateAndTime' attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -702,7 +702,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     if (!fmi_version.has_value())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("version attribute is missing.");
+        test.getMessages().emplace_back("fmiVersion attribute is missing.");
         cert.printTestResult(test);
         return;
     }
@@ -713,7 +713,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     if (fmi_version->empty())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("version attribute is empty.");
+        test.getMessages().emplace_back("fmiVersion attribute is empty.");
         cert.printTestResult(test);
         return;
     }
@@ -892,12 +892,12 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
     {
         test.setStatus(TestStatus::WARNING);
         test.getMessages().emplace_back(
-            R"(Providing the generation tool name is recommended. For manually created FMUs, use "Handmade".)");
+            R"(Providing the generationTool name is recommended. For manually created FMUs, use "Handmade".)");
     }
     else if (tool->empty())
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back("The 'generation_tool' attribute is empty.");
+        test.getMessages().emplace_back("The 'generationTool' attribute is empty.");
     }
 
     cert.printTestResult(test);

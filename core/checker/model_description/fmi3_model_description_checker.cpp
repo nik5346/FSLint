@@ -2328,7 +2328,7 @@ void Fmi3ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     if (guid_opt->empty())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("instantiationToken attribute is empty");
+        test.getMessages().emplace_back("instantiationToken attribute is empty.");
         cert.printTestResult(test);
         return;
     }
