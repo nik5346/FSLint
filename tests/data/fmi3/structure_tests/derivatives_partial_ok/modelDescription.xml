@@ -3,16 +3,13 @@
   <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
     <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
-    <Float64 name="x" valueReference="1" causality="local" variability="continuous" />
-    <Float64 name="der_x" valueReference="2" causality="local" variability="continuous" derivative="1" />
-    <Float64 name="z" valueReference="3" causality="local" variability="continuous" />
-    <Float64 name="der_z" valueReference="4" causality="local" variability="continuous" derivative="3" />
+    <Float64 name="x" valueReference="1" causality="local" variability="continuous" initial="exact" start="0.0" />
+    <Float64 name="der_x" valueReference="2" causality="local" variability="continuous" derivative="1" initial="calculated" />
+    <Float64 name="z" valueReference="3" causality="local" variability="continuous" initial="exact" start="0.0" />
+    <Float64 name="der_z" valueReference="4" causality="local" variability="continuous" derivative="3" initial="exact" start="0.0" />
   </ModelVariables>
   <ModelStructure>
     <ContinuousStateDerivative valueReference="2" />
-    <InitialUnknown valueReference="1" />
     <InitialUnknown valueReference="2" />
-    <InitialUnknown valueReference="3" />
-    <InitialUnknown valueReference="4" />
   </ModelStructure>
 </fmiModelDescription>

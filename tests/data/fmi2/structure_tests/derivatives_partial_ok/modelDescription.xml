@@ -2,20 +2,20 @@
 <fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f001}">
   <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
-    <ScalarVariable name="x" valueReference="1" causality="local" variability="continuous">
-      <Real />
+    <ScalarVariable name="x" valueReference="1" causality="local" variability="continuous" initial="exact">
+      <Real start="0.0" />
     </ScalarVariable>
-    <ScalarVariable name="der_x" valueReference="2" causality="local" variability="continuous">
+    <ScalarVariable name="der_x" valueReference="2" causality="local" variability="continuous" initial="calculated">
       <Real derivative="1" />
     </ScalarVariable>
-    <ScalarVariable name="der_x_alias" valueReference="2" causality="local" variability="continuous">
+    <ScalarVariable name="der_x_alias" valueReference="2" causality="local" variability="continuous" initial="calculated">
       <Real derivative="1" />
     </ScalarVariable>
-    <ScalarVariable name="z" valueReference="3" causality="local" variability="continuous">
-      <Real />
+    <ScalarVariable name="z" valueReference="3" causality="local" variability="continuous" initial="exact">
+      <Real start="0.0" />
     </ScalarVariable>
-    <ScalarVariable name="der_z" valueReference="4" causality="local" variability="continuous">
-      <Real derivative="4" />
+    <ScalarVariable name="der_z" valueReference="4" causality="local" variability="continuous" initial="exact">
+      <Real derivative="4" start="0.0" />
     </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
@@ -23,10 +23,7 @@
       <Unknown index="2" />
     </Derivatives>
     <InitialUnknowns>
-      <Unknown index="1" />
       <Unknown index="2" />
-      <Unknown index="4" />
-      <Unknown index="5" />
     </InitialUnknowns>
   </ModelStructure>
 </fmiModelDescription>
