@@ -656,8 +656,12 @@ void Fmi3ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
                 if (const auto vr_opt = parseNumber<uint32_t>(*vr_str))
                 {
                     auto it = vr_to_var.find(*vr_opt);
-                    if (it != vr_to_var.end() && it->second->derivative_of.has_value())
-                        state_vrs.insert(*it->second->derivative_of);
+                    if (it != vr_to_var.end())
+                    {
+                        const auto& var_ref = *it->second;
+                        if (var_ref.derivative_of.has_value())
+                            state_vrs.insert(var_ref.derivative_of.value());
+                    }
                 }
             }
         }
@@ -1595,17 +1599,13 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         // (1) Outputs with initial="approx" or "calculated" (not clocked)
         // (2) Calculated parameters
         // (3) Active state derivatives with initial="approx" or "calculated"
+        // (4) Active states with initial="approx" or "calculated"
         if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
              (!var.clocks.has_value() || var.clocks->empty())) ||
             (var.causality == "calculatedParameter") ||
-            (active_derivative_vrs.contains(*var.value_reference) &&
+            ((active_derivative_vrs.contains(*var.value_reference) ||
+              active_state_vrs.contains(*var.value_reference)) &&
              (var.initial == "approx" || var.initial == "calculated")))
-        {
-            is_required = true;
-        }
-        // (4) Active states with initial="approx" or "calculated"
-        else if (active_state_vrs.contains(*var.value_reference) &&
-                 (var.initial == "approx" || var.initial == "calculated"))
         {
             is_required = true;
         }

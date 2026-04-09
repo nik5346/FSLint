@@ -1316,7 +1316,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                const auto& dk_val = *deps_kind_str;
+                                std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);
