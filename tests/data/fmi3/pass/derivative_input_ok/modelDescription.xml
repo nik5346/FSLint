@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e810f-3df3-4a00-8276-176fa3c9f001}">
+  <ModelExchange modelIdentifier="Test" />
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+    <Float64 name="u" valueReference="1" causality="input" variability="continuous" start="0.0" />
+    <Float64 name="v" valueReference="2" causality="input" variability="continuous" derivative="1" start="0.0" />
+  </ModelVariables>
+  <ModelStructure />
+</fmiModelDescription>

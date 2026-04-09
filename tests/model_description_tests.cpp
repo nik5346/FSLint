@@ -436,6 +436,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("reinit_non_state", "but is not a continuous-time state");
         validate_fail("reinit_cs_only", "not allowed for Co-Simulation only FMUs");
         validate_fail("derivative_variability", "must have variability=\"continuous\"");
+        validate_fail("structure/derivative_input_fail",
+                      "Continuous-time state 'x' (line 5) must have causality 'local' or 'output'.");
     }
 }
 
@@ -785,6 +787,12 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
         CHECK_FALSE(has_fail(cert));
     }
 
+    SECTION("FMI 3.0 Derivative Input OK")
+    {
+        checker.validate("tests/data/fmi3/pass/derivative_input_ok", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
     SECTION("FMI 3.0 Patch Version")
     {
         checker.validate("tests/data/fmi3/pass/fmi_version_patch", cert);
@@ -892,6 +900,12 @@ TEST_CASE("FMI 2.0 ModelStructure Alias and Partial Validation", "[fmi2][structu
         CHECK(has_fail(cert));
         CHECK(has_error_with_text(cert, "missing a representative in 'ModelStructure/InitialUnknowns'."));
     }
+
+    SECTION("Derivatives shared state and non-CSD derivatives")
+    {
+        Certificate cert = validate("derivative_shared_state_ok");
+        CHECK_FALSE(has_fail(cert));
+    }
 }
 
 TEST_CASE("FMI 3.0 ModelStructure Alias and Partial Validation", "[fmi3][structure]")
@@ -938,6 +952,12 @@ TEST_CASE("FMI 3.0 ModelStructure Alias and Partial Validation", "[fmi3][structu
     SECTION("InitialUnknown with clocked variables")
     {
         Certificate cert = validate("initial_unknown_clocked_ok");
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("Derivatives shared state and non-CSD derivatives")
+    {
+        Certificate cert = validate("derivative_shared_state_ok");
         CHECK_FALSE(has_fail(cert));
     }
 }

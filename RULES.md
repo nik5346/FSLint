@@ -228,15 +228,15 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Reinit Attribute**: Allowed **only** for continuous-time states; **not allowed** in Co-Simulation only FMUs.
 - **Multiple Set Attribute**: `canHandleMultipleSetPerTimeInstant` **only** allowed for inputs; **not allowed** in Co-Simulation only FMUs.
 - **Continuous-time States and Derivatives**:
-  - Derivatives **must** have `variability="continuous"`.
-  - States **must** have `causality="local"` or `"output"` and `variability="continuous"`.
-  - All **must** be of type `Real`.
+  - All variables with a `derivative` attribute **must** have `variability="continuous"` and be of type `Real`.
+  - Variables listed in `ModelStructure/Derivatives` **must** point to a state variable (via the `derivative` attribute) that has `causality="local"` or `"output"`, `variability="continuous"`, and is of type `Real`.
+  - Having a `derivative` attribute alone does not make a variable (or its target) a continuous-time state unless it is listed in `ModelStructure/Derivatives`.
 - **Model Structure**:
   - `Outputs` and `InitialUnknowns` **must** be complete (containing exactly one representative from each respective alias set) and correctly ordered.
   - Mandatory `InitialUnknowns` **must** be provided for:
     - Outputs with `initial="calculated"` or `"approx"`.
     - Calculated parameters.
-    - Continuous-time states and their derivatives with `initial="calculated"` or `"approx"`.
+    - Continuous-time states and their derivatives (as defined by `ModelStructure/Derivatives`) with `initial="calculated"` or `"approx"`.
   - `Derivatives` defines the set of continuous-time states; all listed entries **must** be Real variables with a `derivative` attribute pointing to a continuous Real state.
   - Dependencies and `dependenciesKind` **must** be consistent in size.
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
@@ -302,8 +302,9 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Annotations**: Annotation types within `Annotations` **must** be unique within their container.
 - **Independent Variable**: Exactly one **is** allowed; it **must** be `Float32` or `Float64`, and have no `initial` or `start` attribute.
 - **Derivative Consistency**:
-  - Derivatives and states **must** have `variability="continuous"`.
-  - **Must** be `Float32` or `Float64`.
+  - All variables with a `derivative` attribute **must** have `variability="continuous"` and be of type `Float32` or `Float64`.
+  - If a variable is listed in `ContinuousStateDerivative`, its target state variable **must** have `variability="continuous"`.
+  - Having a `derivative` attribute alone does not make a variable (or its target) a continuous-time state unless it is listed in `ContinuousStateDerivative`.
   - Dimensions of a derivative **must** match dimensions of the state.
 - **Structural Parameters**: **Must** be of type `UInt64`; if used in `<Dimension>`, the `start` value **must** be `> 0`.
 - **Dimensions**:
@@ -318,7 +319,7 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Model Structure**:
   - `Output` and `InitialUnknown` **must** be complete (containing exactly one representative from each respective mandatory alias set) and unique.
   - Non-clocked variables with `causality="output"` **must** have a representative in `Output`.
-  - Mandatory `InitialUnknowns` **must** be provided for non-clocked outputs, calculated parameters, and states/derivatives with `initial="approx"` or `"calculated"`.
+  - Mandatory `InitialUnknowns` **must** be provided for non-clocked outputs, calculated parameters, and active states/derivatives (listed in `ContinuousStateDerivative`) with `initial="approx"` or `"calculated"`.
   - Optional clocked variables are allowed in `InitialUnknown`.
   - `ContinuousStateDerivative` defines the set of continuous-time states; all listed entries **must** correspond to variables with a `derivative` attribute.
   - `ClockedState` and `EventIndicator` elements **must** be complete and unique.

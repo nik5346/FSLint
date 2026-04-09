@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{8c4e810f-3df3-4a00-8276-176fa3c9f001}">
+  <ModelExchange modelIdentifier="Test" />
+  <ModelVariables>
+    <ScalarVariable name="x" valueReference="1" causality="input" variability="continuous">
+      <Real />
+    </ScalarVariable>
+    <ScalarVariable name="der_x" valueReference="2" causality="local" variability="continuous">
+      <Real derivative="1" />
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Derivatives>
+      <Unknown index="2" />
+    </Derivatives>
+  </ModelStructure>
+</fmiModelDescription>
