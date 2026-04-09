@@ -907,13 +907,14 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         }
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str.has_value())
+                        if (deps_str)
                         {
+                            const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
-                            std::stringstream ss(deps_str.value());
+                            std::stringstream ss(ds_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -935,8 +936,8 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const auto& dk_val = *deps_kind_str;
                                 std::vector<std::string> kinds;
-                                const auto& dk_val = deps_kind_str.value();
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
@@ -967,13 +968,16 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                 }
                             }
                         }
-                        else if (deps_kind_str.has_value())
+                        else
                         {
-                            test.setStatus(TestStatus::FAIL);
-                            test.getMessages().emplace_back("Variable '" + var.name + "' (line " +
-                                                            std::to_string(node->line) +
-                                                            ") in 'ModelStructure/Outputs': If 'dependenciesKind' is "
-                                                            "present, 'dependencies' must be present.");
+                            if (deps_kind_str.has_value())
+                            {
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(
+                                    "Variable '" + var.name + "' (line " + std::to_string(node->line) +
+                                    ") in 'ModelStructure/Outputs': If 'dependenciesKind' is "
+                                    "present, 'dependencies' must be present.");
+                            }
                         }
                     }
                 }
@@ -1086,13 +1090,14 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         }
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str.has_value())
+                        if (deps_str)
                         {
+                            const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
-                            std::stringstream ss(deps_str.value());
+                            std::stringstream ss(ds_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1114,8 +1119,8 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const auto& dk_val = *deps_kind_str;
                                 std::vector<std::string> kinds;
-                                const auto& dk_val = deps_kind_str.value();
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
@@ -1146,13 +1151,16 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                 }
                             }
                         }
-                        else if (deps_kind_str.has_value())
+                        else
                         {
-                            test.setStatus(TestStatus::FAIL);
-                            test.getMessages().emplace_back(
-                                "Variable '" + var.name + "' (line " + std::to_string(node->line) +
-                                ") in 'ModelStructure/Derivatives': If 'dependenciesKind' is "
-                                "present, 'dependencies' must be present.");
+                            if (deps_kind_str.has_value())
+                            {
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(
+                                    "Variable '" + var.name + "' (line " + std::to_string(node->line) +
+                                    ") in 'ModelStructure/Derivatives': If 'dependenciesKind' is "
+                                    "present, 'dependencies' must be present.");
+                            }
                         }
                     }
                 }
@@ -1287,13 +1295,14 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         actual_indices.push_back(index);
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str.has_value())
+                        if (deps_str)
                         {
+                            const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
-                            std::stringstream ss(deps_str.value());
+                            std::stringstream ss(ds_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1315,8 +1324,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                const auto& dk_val = *deps_kind_str;
                                 std::vector<std::string> kinds;
-                                const auto& dk_val = deps_kind_str.value();
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)

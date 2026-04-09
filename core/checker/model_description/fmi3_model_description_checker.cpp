@@ -1575,10 +1575,15 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
             {
                 if (const auto vr_opt = parseNumber<uint32_t>(*vr_str))
                 {
-                    active_derivative_vrs.insert(*vr_opt);
-                    auto it = vr_to_var.find(*vr_opt);
-                    if (it != vr_to_var.end() && it->second->derivative_of.has_value())
-                        active_state_vrs.insert(*it->second->derivative_of);
+                    const uint32_t vr = *vr_opt;
+                    active_derivative_vrs.insert(vr);
+                    auto it = vr_to_var.find(vr);
+                    if (it != vr_to_var.end())
+                    {
+                        const auto& var_ref = *it->second;
+                        if (var_ref.derivative_of.has_value())
+                            active_state_vrs.insert(var_ref.derivative_of.value());
+                    }
                 }
             }
         }
