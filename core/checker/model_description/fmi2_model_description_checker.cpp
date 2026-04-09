@@ -913,7 +913,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -936,7 +936,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                const auto& dk_val = *deps_kind_str; // NOLINT(bugprone-unchecked-optional-access)
+                                const auto& dk_val = deps_kind_str.value();
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
@@ -1092,7 +1092,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1115,7 +1115,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                const auto& dk_val = *deps_kind_str;
+                                const auto& dk_val = deps_kind_str.value();
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
@@ -1293,7 +1293,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         if (deps_str.has_value())
                         {
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(deps_str.value());
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1316,7 +1316,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             if (deps_kind_str.has_value())
                             {
                                 std::vector<std::string> kinds;
-                                const auto& dk_val = *deps_kind_str;
+                                const auto& dk_val = deps_kind_str.value();
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
