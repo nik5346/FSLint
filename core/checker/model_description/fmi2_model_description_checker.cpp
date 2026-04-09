@@ -968,16 +968,13 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                                 }
                             }
                         }
-                        else
+                        else if (deps_kind_str.has_value())
                         {
-                            if (deps_kind_str.has_value())
-                            {
-                                test.setStatus(TestStatus::FAIL);
-                                test.getMessages().emplace_back(
-                                    "Variable '" + var.name + "' (line " + std::to_string(node->line) +
-                                    ") in 'ModelStructure/Outputs': If 'dependenciesKind' is "
-                                    "present, 'dependencies' must be present.");
-                            }
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back("Variable '" + var.name + "' (line " +
+                                                            std::to_string(node->line) +
+                                                            ") in 'ModelStructure/Outputs': If 'dependenciesKind' is "
+                                                            "present, 'dependencies' must be present.");
                         }
                     }
                 }
@@ -1151,16 +1148,13 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                                 }
                             }
                         }
-                        else
+                        else if (deps_kind_str.has_value())
                         {
-                            if (deps_kind_str.has_value())
-                            {
-                                test.setStatus(TestStatus::FAIL);
-                                test.getMessages().emplace_back(
-                                    "Variable '" + var.name + "' (line " + std::to_string(node->line) +
-                                    ") in 'ModelStructure/Derivatives': If 'dependenciesKind' is "
-                                    "present, 'dependencies' must be present.");
-                            }
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(
+                                "Variable '" + var.name + "' (line " + std::to_string(node->line) +
+                                ") in 'ModelStructure/Derivatives': If 'dependenciesKind' is "
+                                "present, 'dependencies' must be present.");
                         }
                     }
                 }
