@@ -912,6 +912,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 
                         if (deps_str)
                         {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
                             std::stringstream ss(ds_val);
@@ -936,6 +937,7 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                                 const auto& dk_val = *deps_kind_str;
                                 std::vector<std::string> kinds;
                                 std::stringstream ss_kind(dk_val);
@@ -1092,6 +1094,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
 
                         if (deps_str)
                         {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
                             std::stringstream ss(ds_val);
@@ -1116,6 +1119,7 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                                 const auto& dk_val = *deps_kind_str;
                                 std::vector<std::string> kinds;
                                 std::stringstream ss_kind(dk_val);
@@ -1294,6 +1298,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 
                         if (deps_str)
                         {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
                             std::stringstream ss(ds_val);
@@ -1318,6 +1323,7 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                                 const auto& dk_val = *deps_kind_str;
                                 std::vector<std::string> kinds;
                                 std::stringstream ss_kind(dk_val);
