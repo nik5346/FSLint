@@ -1,4 +1,5 @@
 #include "schema_checker.h"
+#include <format>
 
 #include "certificate.h"
 #include "file_utils.h"
@@ -240,7 +241,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
     if (version != "1.0")
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("XML version must be 1.0, found: " + version);
+        test.getMessages().emplace_back(std::format("XML version must be '1.0', found: '{}'", version));
         cert.printTestResult(test);
         return false;
     }
@@ -286,13 +287,13 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
         if (isUtf8Required())
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Encoding must be UTF-8, found: " + encoding);
+            test.getMessages().emplace_back(std::format("Encoding must be 'UTF-8', found: '{}'", encoding));
             cert.printTestResult(test);
             return false;
         }
 
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back("Encoding is " + encoding + ". It is recommended to use UTF-8.");
+        test.getMessages().emplace_back(std::format("Encoding is '{}'. It is recommended to use UTF-8.", encoding));
         cert.printTestResult(test);
         return true;
     }
@@ -604,7 +605,8 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     if (!schema_doc)
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("Failed to read schema file: " + file_utils::pathToUtf8(schema_path));
+        test.getMessages().emplace_back(
+            std::format("Failed to read schema file: {}", file_utils::pathToUtf8(schema_path)));
         cert.printTestResult(test);
         xmlCleanupParser();
         return;
@@ -664,7 +666,7 @@ void SchemaCheckerBase::validateXmlFile(const std::filesystem::path& xml_path, c
     if (!xml_doc)
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("Failed to read XML file: " + file_utils::pathToUtf8(xml_path));
+        test.getMessages().emplace_back(std::format("Failed to read XML file: {}", file_utils::pathToUtf8(xml_path)));
         cert.printTestResult(test);
         xmlSchemaFreeValidCtxt(valid_ctx);
         xmlSchemaFree(schema);

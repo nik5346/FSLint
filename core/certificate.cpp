@@ -226,17 +226,13 @@ void Certificate::printTestResult(const TestResult& test)
         {
             if (!_continue_callback(test))
             {
-                log("\n  [Aborting due to security issue]");
+                log("  [Aborting due to security issue]");
                 _abort_requested = true;
-            }
-            else
-            {
-                log("\n  [Continuing after security issue as requested by user]");
             }
         }
         else
         {
-            log("\n  [Aborting due to security issue (no continue callback set)]");
+            log("  [Aborting due to security issue (no continue callback set)]");
             _abort_requested = true;
         }
     }

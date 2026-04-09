@@ -142,8 +142,8 @@ void Fmi1BinaryChecker::validate(const std::filesystem::path& path, Certificate&
                         if (!info.exports.contains(prefixed_func))
                         {
                             export_test.setStatus(TestStatus::FAIL);
-                            export_test.getMessages().emplace_back("Mandatory function '" + prefixed_func +
-                                                                   "' is not exported.");
+                            export_test.getMessages().emplace_back(
+                                std::format("Mandatory function '{}' is not exported.", prefixed_func));
                         }
                     }
                     cert.printTestResult(export_test);

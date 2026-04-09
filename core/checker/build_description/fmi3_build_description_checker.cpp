@@ -1,4 +1,5 @@
 #include "fmi3_build_description_checker.h"
+#include <format>
 
 #include "certificate.h"
 
@@ -16,8 +17,9 @@ void Fmi3BuildDescriptionChecker::checkFmiVersion(xmlNodePtr root, Certificate& 
     else if (*bd_fmi_version != getFmiVersion())
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("fmiVersion in 'buildDescription.xml' (" + *bd_fmi_version +
-                                        ") does not match FMU version (" + getFmiVersion() + ").");
+        test.getMessages().emplace_back(
+            std::format("fmiVersion in 'buildDescription.xml' ({}) does not match FMU version ({}).", *bd_fmi_version,
+                        getFmiVersion()));
     }
     cert.printTestResult(test);
 }

@@ -12,11 +12,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <limits>
 #include <map>
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -517,9 +519,9 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         if (!val)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) +
-                                            "): Failed to parse numeric value of " + attr_name + " with value '" +
-                                            *str_opt + "'");
+            test.getMessages().emplace_back(
+                std::format("Variable '{}' (line {}): Failed to parse numeric value of '{}' with value '{}'.", var.name,
+                            var.sourceline, attr_name, *str_opt));
             return std::nullopt;
         }
         return val;
@@ -536,14 +538,9 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     if (min_val.has_value() && max_val.has_value() && max_val.value() < min_val.value())
     {
         test.setStatus(TestStatus::FAIL);
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): max (";
-        if (effective_max.has_value())
-            msg += effective_max.value();
-        msg += ") must be >= min (";
-        if (effective_min.has_value())
-            msg += effective_min.value();
-        msg += ").";
-        test.getMessages().emplace_back(msg);
+        test.getMessages().emplace_back(std::format("Variable '{}' (line {}): max ({}) must be >= min ({}).", var.name,
+                                                    var.sourceline, effective_max.value_or(""),
+                                                    effective_min.value_or("")));
         success = false;
     }
 
@@ -551,15 +548,10 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     if (start_val.has_value() && min_val.has_value() && start_val.value() < min_val.value())
     {
         test.setStatus(TestStatus::FAIL);
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
-        if (var.start.has_value())
-            msg += var.start.value();
-        msg += ") must be >= min (";
-        if (effective_min.has_value())
-            msg += effective_min.value();
-        msg += ")";
+        std::string msg = std::format("Variable '{}' (line {}): start ({}) must be >= min ({})", var.name,
+                                      var.sourceline, var.start.value_or(""), effective_min.value_or(""));
         if (!var.min && var.declared_type)
-            msg += " (min inherited from type '" + *var.declared_type + "')";
+            msg += std::format(" (min inherited from type '{}')", *var.declared_type);
         msg += ".";
         test.getMessages().emplace_back(msg);
         success = false;
@@ -569,15 +561,10 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     if (start_val.has_value() && max_val.has_value() && start_val.value() > max_val.value())
     {
         test.setStatus(TestStatus::FAIL);
-        std::string msg = "Variable \"" + var.name + "\" (line " + std::to_string(var.sourceline) + "): start (";
-        if (var.start.has_value())
-            msg += var.start.value();
-        msg += ") must be <= max (";
-        if (effective_max.has_value())
-            msg += effective_max.value();
-        msg += ")";
+        std::string msg = std::format("Variable '{}' (line {}): start ({}) must be <= max ({})", var.name,
+                                      var.sourceline, var.start.value_or(""), effective_max.value_or(""));
         if (!var.max && var.declared_type)
-            msg += " (max inherited from type '" + *var.declared_type + "')";
+            msg += std::format(" (max inherited from type '{}')", *var.declared_type);
         msg += ".";
         test.getMessages().emplace_back(msg);
         success = false;

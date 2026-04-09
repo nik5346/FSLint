@@ -106,8 +106,8 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                         if (!info.exports.contains(func))
                         {
                             export_test.setStatus(TestStatus::FAIL);
-                            export_test.getMessages().emplace_back("Mandatory function '" + func +
-                                                                   "' is not exported.");
+                            export_test.getMessages().emplace_back(
+                                std::format("Mandatory function '{}' is not exported.", func));
                         }
                     }
                     cert.printTestResult(export_test);

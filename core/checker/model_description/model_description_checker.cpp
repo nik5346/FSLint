@@ -514,7 +514,7 @@ void ModelDescriptionCheckerBase::checkModelName(const std::optional<std::string
     }
 
     if (test.getStatus() != TestStatus::PASS)
-        test.getMessages().emplace_back("Name: " + *model_name);
+        test.getMessages().emplace_back(std::format("Name: {}", *model_name));
 
     cert.printTestResult(test);
 }
@@ -1234,8 +1234,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             if (*start_time < 0.0 && !std::isnan(*start_time) && !std::isinf(*start_time))
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("startTime (" + std::to_string(*start_time) +
-                                                ") must be non-negative.");
+                test.getMessages().emplace_back(std::format("startTime ({}) must be non-negative.", *start_time));
             }
         }
         else
