@@ -1,4 +1,5 @@
 #include "build_description_checker.h"
+#include <format>
 
 #include "certificate.h"
 #include "file_utils.h"
@@ -76,9 +77,10 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
                         {
                             if (test.getStatus() == TestStatus::PASS)
                                 test.setStatus(TestStatus::WARNING);
-                            test.getMessages().emplace_back("Source file '" + filename +
-                                                            "' exists in 'sources/' directory but is not listed in "
-                                                            "'buildDescription.xml'.");
+                            test.getMessages().emplace_back(
+                                std::format("Source file '{}' exists in 'sources/' directory but is not listed in "
+                                            "'buildDescription.xml'.",
+                                            filename));
                         }
                     }
                 }
@@ -112,9 +114,9 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                 if (val.find("..") != std::string::npos)
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back("Source file '" + val +
-                                                    "' listed in 'buildDescription.xml' (line " +
-                                                    std::to_string(node->line) + ") contains illegal '..' sequence.");
+                    test.getMessages().emplace_back(std::format(
+                        "Source file '{}' listed in 'buildDescription.xml' (line {}) contains illegal '..' sequence.",
+                        val, node->line));
                     continue;
                 }
 
@@ -123,9 +125,9 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                 if (!std::filesystem::exists(file_path))
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(
-                        "Source file '" + val + "' listed in 'buildDescription.xml' (line " +
-                        std::to_string(node->line) + ") does not exist in 'sources/' directory.");
+                    test.getMessages().emplace_back(std::format("Source file '{}' listed in 'buildDescription.xml' "
+                                                                "(line {}) does not exist in 'sources/' directory.",
+                                                                val, node->line));
                 }
             }
         }
@@ -156,9 +158,10 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                 if (val.find("..") != std::string::npos)
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back("Include directory '" + val +
-                                                    "' listed in 'buildDescription.xml' (line " +
-                                                    std::to_string(node->line) + ") contains illegal '..' sequence.");
+                    test.getMessages().emplace_back(
+                        std::format("Include directory '{}' listed in 'buildDescription.xml' (line {}) contains "
+                                    "illegal '..' sequence.",
+                                    val, node->line));
                     continue;
                 }
 
@@ -167,8 +170,9 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(
-                        "Include directory '" + val + "' listed in 'buildDescription.xml' (line " +
-                        std::to_string(node->line) + ") does not exist or is not a directory in 'sources/' directory.");
+                        std::format("Include directory '{}' listed in 'buildDescription.xml' (line {}) does not exist "
+                                    "or is not a directory in 'sources/' directory.",
+                                    val, node->line));
                 }
             }
         }
@@ -208,8 +212,9 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(
-                        "BuildConfiguration (line " + std::to_string(node->line) + ") has modelIdentifier '" + id_val +
-                        "' which does not match any modelIdentifier in modelDescription.xml.");
+                        std::format("BuildConfiguration (line {}) has modelIdentifier '{}' which does not match any "
+                                    "modelIdentifier in modelDescription.xml.",
+                                    node->line, id_val));
                 }
             }
 
@@ -221,9 +226,9 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 {
                     if (test.getStatus() == TestStatus::PASS)
                         test.setStatus(TestStatus::WARNING);
-                    test.getMessages().emplace_back("Language '" + lang_val + "' in BuildConfiguration (line " +
-                                                    std::to_string(node->line) +
-                                                    ") is not one of the suggested values (e.g. C99, C++11).");
+                    test.getMessages().emplace_back(std::format("Language '{}' in BuildConfiguration (line {}) is not "
+                                                                "one of the suggested values (e.g. C99, C++11).",
+                                                                lang_val, node->line));
                 }
             }
 
@@ -244,9 +249,9 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 {
                     if (test.getStatus() == TestStatus::PASS)
                         test.setStatus(TestStatus::WARNING);
-                    test.getMessages().emplace_back("Compiler '" + compiler + "' in BuildConfiguration (line " +
-                                                    std::to_string(node->line) +
-                                                    ") is not one of the suggested values (e.g. gcc, clang, msvc).");
+                    test.getMessages().emplace_back(std::format("Compiler '{}' in BuildConfiguration (line {}) is not "
+                                                                "one of the suggested values (e.g. gcc, clang, msvc).",
+                                                                compiler, node->line));
                 }
             }
         }

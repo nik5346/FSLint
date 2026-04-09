@@ -156,7 +156,7 @@ void TerminalsAndIconsCheckerBase::checkUniqueTerminalNames(xmlXPathContextPtr c
                     if (seen_names.contains(val))
                     {
                         test.setStatus(TestStatus::FAIL);
-                        test.getMessages().emplace_back("Terminal name \"" + val + "\" (line " +
+                        test.getMessages().emplace_back("Terminal name '" + val + "' (line " +
                                                         std::to_string(child->line) + ") is not unique at its level.");
                     }
                     seen_names.insert(val);
@@ -206,7 +206,7 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back("TerminalMemberVariable (line " + std::to_string(node->line) +
-                                                    ") references non-existent variable \"" + name_val + "\".");
+                                                    ") references non-existent variable '" + name_val + "'.");
                 }
                 else
                 {
@@ -221,7 +221,7 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                             {
                                 test.setStatus(TestStatus::FAIL);
                                 test.getMessages().emplace_back(
-                                    std::format("Variable \"{}\" used as '{}' in terminal (line {}): must have "
+                                    std::format("Variable '{}' used as '{}' in terminal (line {}): must have "
                                                 "causality 'input', 'output', 'parameter', or 'calculatedParameter'.",
                                                 name_val, kind_val, node->line));
                             }
@@ -255,13 +255,13 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back("TerminalStreamMemberVariable (line " + std::to_string(node->line) +
-                                                    ") references non-existent variable \"" + in_val +
-                                                    "\" in inStreamVariableName.");
+                                                    ") references non-existent variable '" + in_val +
+                                                    "' in inStreamVariableName.");
                 }
                 else if (it->second.causality != "input" && it->second.causality != "parameter")
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back("Variable \"" + in_val + "\" used in inStreamVariableName (line " +
+                    test.getMessages().emplace_back("Variable '" + in_val + "' used in inStreamVariableName (line " +
                                                     std::to_string(node->line) +
                                                     ") must have causality 'input' or 'parameter'.");
                 }
@@ -279,7 +279,7 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                         test.setStatus(TestStatus::FAIL);
                         test.getMessages().emplace_back(
                             "TerminalStreamMemberVariable (line " + std::to_string(node->line) +
-                            ") has mismatched dimensions for \"" + *in_stream + "\" and \"" + *out_stream + "\".");
+                            ") has mismatched dimensions for '" + *in_stream + "' and '" + *out_stream + "'.");
                     }
                 }
             }
@@ -292,15 +292,15 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back("TerminalStreamMemberVariable (line " + std::to_string(node->line) +
-                                                    ") references non-existent variable \"" + out_val +
-                                                    "\" in outStreamVariableName.");
+                                                    ") references non-existent variable '" + out_val +
+                                                    "' in outStreamVariableName.");
                 }
                 else if (it->second.causality != "output" && it->second.causality != "calculatedParameter")
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(
-                        "Variable \"" + out_val + "\" used in outStreamVariableName (line " +
-                        std::to_string(node->line) + ") must have causality 'output' or 'calculatedParameter'.");
+                    test.getMessages().emplace_back("Variable '" + out_val + "' used in outStreamVariableName (line " +
+                                                    std::to_string(node->line) +
+                                                    ") must have causality 'output' or 'calculatedParameter'.");
                 }
             }
         }
@@ -332,8 +332,8 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
                         if (seen_members.contains(val))
                         {
                             test.setStatus(TestStatus::FAIL);
-                            test.getMessages().emplace_back("Member name \"" + val +
-                                                            "\" is not unique in terminal (line " +
+                            test.getMessages().emplace_back("Member name '" + val +
+                                                            "' is not unique in terminal (line " +
                                                             std::to_string(child->line) + ").");
                         }
                         seen_members.insert(val);
@@ -341,9 +341,9 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
                     else if (matching_rule == "plug" || matching_rule == "bus")
                     {
                         test.setStatus(TestStatus::FAIL);
-                        test.getMessages().emplace_back("TerminalMemberVariable (line " + std::to_string(child->line) +
-                                                        ") is missing mandatory 'memberName' for matchingRule '" +
-                                                        matching_rule + "'.");
+                        test.getMessages().emplace_back(std::format(
+                            "TerminalMemberVariable (line {}) is missing mandatory 'memberName' for matchingRule '{}'.",
+                            child->line, matching_rule));
                     }
                 }
                 else if (elem_name == "TerminalStreamMemberVariable")
@@ -356,8 +356,8 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
                         if (seen_members.contains(in_val))
                         {
                             test.setStatus(TestStatus::FAIL);
-                            test.getMessages().emplace_back("Stream member name \"" + in_val +
-                                                            "\" is not unique in terminal (line " +
+                            test.getMessages().emplace_back("Stream member name '" + in_val +
+                                                            "' is not unique in terminal (line " +
                                                             std::to_string(child->line) + ").");
                         }
                         seen_members.insert(in_val);
@@ -368,8 +368,8 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
                         if (seen_members.contains(out_val))
                         {
                             test.setStatus(TestStatus::FAIL);
-                            test.getMessages().emplace_back("Stream member name \"" + out_val +
-                                                            "\" is not unique in terminal (line " +
+                            test.getMessages().emplace_back("Stream member name '" + out_val +
+                                                            "' is not unique in terminal (line " +
                                                             std::to_string(child->line) + ").");
                         }
                         seen_members.insert(out_val);
@@ -425,9 +425,9 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(
-                        "iconBaseName \"" + base_val + "\" (line " + std::to_string(node->line) +
-                        ") must be a relative URI and must not contain \"..\", \":\" or start with "
-                        "\"/\".");
+                        "iconBaseName '" + base_val + "' (line " + std::to_string(node->line) +
+                        ") must be a relative URI and must not contain '..', ':' or start with "
+                        "'/'.");
                 }
                 else
                 {
@@ -436,8 +436,8 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                     if (!std::filesystem::exists(png_path))
                     {
                         test.setStatus(TestStatus::FAIL);
-                        test.getMessages().emplace_back("Terminal icon PNG file \"" + file_utils::pathToUtf8(png_path) +
-                                                        "\" (referenced line " + std::to_string(node->line) +
+                        test.getMessages().emplace_back("Terminal icon PNG file '" + file_utils::pathToUtf8(png_path) +
+                                                        "' (referenced line " + std::to_string(node->line) +
                                                         ") not found.");
                     }
                     else
@@ -462,8 +462,8 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
             else
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("TerminalGraphicalRepresentation (line " + std::to_string(node->line) +
-                                                ") is missing mandatory 'iconBaseName'.");
+                test.getMessages().emplace_back(std::format(
+                    "TerminalGraphicalRepresentation (line {}) is missing mandatory 'iconBaseName'.", node->line));
             }
 
             const auto connection_color = getXmlAttribute(node, "defaultConnectionColor");
@@ -478,7 +478,7 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                 if (count != 3)
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back("defaultConnectionColor \"" + color_val + "\" (line " +
+                    test.getMessages().emplace_back("defaultConnectionColor '" + color_val + "' (line " +
                                                     std::to_string(node->line) + ") must have exactly 3 RGB values.");
                 }
             }
@@ -527,8 +527,8 @@ void TerminalsAndIconsCheckerBase::checkStreamFlowConstraints(xmlXPathContextPtr
         if (has_stream && flow_count > 1)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Terminal \"" + getXmlAttribute(terminal, "name").value_or("unnamed") +
-                                            "\" (line " + std::to_string(terminal->line) +
+            test.getMessages().emplace_back("Terminal '" + getXmlAttribute(terminal, "name").value_or("unnamed") +
+                                            "' (line " + std::to_string(terminal->line) +
                                             ") has multiple inflow/outflow variables and a stream variable. Only one "
                                             "inflow/outflow variable is allowed when a stream variable is present.");
         }

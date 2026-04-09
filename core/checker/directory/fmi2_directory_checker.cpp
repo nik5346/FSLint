@@ -36,7 +36,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
             if (entry.is_directory() && fmi2_standard_entries.contains(name) && isEffectivelyEmpty(entry.path()))
             {
                 test.setStatus(TestStatus::WARNING);
-                test.getMessages().emplace_back("Standard directory '" + name + "' is empty.");
+                test.getMessages().emplace_back(std::format("Standard directory '{}' is empty.", name));
             }
         }
         cert.printTestResult(test);
@@ -120,14 +120,14 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 else
                 {
                     test.getMessages().emplace_back(
-                        "The license entry point (e.g. 'documentation/licenses/license.txt') is missing.");
+                        "The license entry point 'documentation/licenses/license.txt' is missing.");
                 }
             }
         }
         else
         {
             test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back("Providing a license is recommended (e.g. in 'documentation/licenses/').");
+            test.getMessages().emplace_back("Providing a license is recommended in 'documentation/licenses/'.");
         }
         cert.printTestResult(test);
     }

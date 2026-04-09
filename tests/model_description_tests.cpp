@@ -309,18 +309,18 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     {
         validate_fail("unit_duplicate", "is defined multiple times");
         validate_fail("unit_display_unit_duplicate", "is defined multiple times");
-        validate_fail("unit_factor_nan", "factor value \"NaN\"");
-        validate_fail("unit_offset_inf", "offset value \"INF\"");
+        validate_fail("unit_factor_nan", "factor value 'NaN'");
+        validate_fail("unit_offset_inf", "offset value 'INF'");
     }
 
     SECTION("Type definitions")
     {
         validate_fail("type_duplicate", "is defined multiple times");
         validate_fail("type_max_min", "max (5) must be >= min (10)");
-        validate_fail("type_min_nan", "min value \"NaN\"");
+        validate_fail("type_min_nan", "min value 'NaN'");
         validate_fail("enumeration_variable_no_type", "must have a declaredType attribute");
         validate_fail("enumeration_item_duplicate_value", "must be unique within the same enumeration");
-        validate_fail("enumeration_item_duplicate_name", "has multiple items named \"A\"");
+        validate_fail("enumeration_item_duplicate_name", "has multiple items named 'A'");
         validate_fail("enumeration_no_item", "must have at least one Item");
     }
 
@@ -333,7 +333,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     {
         validate_fail("exp_start_nan", "startTime");
         validate_fail("exp_stop_less_start", "must be greater than startTime");
-        validate_fail("exp_tolerance_inf", "tolerance value \"INF\"");
+        validate_fail("exp_tolerance_inf", "tolerance value 'INF'");
     }
 
     SECTION("Vendor annotations")
@@ -379,7 +379,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("combination_illegal_input_initial", "has illegal combination");
 
         validate_fail("independent_multiple", "Found multiple");
-        validate_fail("independent_non_real", "must be of type \"Real\"");
+        validate_fail("independent_non_real", "must be of type 'Real'");
         validate_fail("independent_with_start", "not allowed to have a \"start\" attribute");
         validate_fail("independent_with_initial", "not allowed to define \"initial\"");
     }
@@ -407,32 +407,32 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("bounds_start_min", "start (5) must be >= min (10)");
         validate_fail("bounds_invalid_numeric", "Failed to parse numeric value");
         validate_fail("start_nan", "is NaN");
-        validate_fail("nominal_inf", "nominal value \"INF\" is Infinity");
-        validate_fail("nominal_neg_inf", "nominal value \"-inf\" is Infinity");
+        validate_fail("nominal_inf", "nominal value 'INF' is Infinity");
+        validate_fail("nominal_neg_inf", "nominal value '-inf' is Infinity");
     }
 
     SECTION("Structure")
     {
-        validate_fail("structure_output_missing", "is missing a representative in ModelStructure/Outputs");
-        validate_fail("structure_output_missing_one", "is missing a representative in ModelStructure/Outputs");
-        validate_fail("structure_output_duplicate", "is already represented in ModelStructure/Outputs");
+        validate_fail("structure_output_missing", "is missing a representative in 'ModelStructure/Outputs'.");
+        validate_fail("structure_output_missing_one", "is missing a representative in 'ModelStructure/Outputs'.");
+        validate_fail("structure_output_duplicate", "is already represented in 'ModelStructure/Outputs'.");
         validate_fail("structure_output_extra",
-                      "listed in ModelStructure/Outputs but does not have causality=\"output\"");
-        validate_fail("structure_derivative_no_attr", "must be of type Real and have a \"derivative\" attribute");
+                      "listed in 'ModelStructure/Outputs' but does not have causality='output'.");
+        validate_fail("structure_derivative_no_attr", "must be of type 'Real' and have a 'derivative' attribute.");
         // validate_fail("structure_derivative_missing", "must have exactly one entry"); // Removed: <Derivatives> is
         // not exhaustive anymore
-        validate_fail("structure_derivative_duplicate", "is listed multiple times in ModelStructure/Derivatives");
+        validate_fail("structure_derivative_duplicate", "is listed multiple times in 'ModelStructure/Derivatives'.");
         validate_fail("structure_initial_unknowns_not_ordered", "ordered according to their ScalarVariable index");
         validate_fail("structure_dependencies_not_ordered", "ordered according to magnitude");
         validate_fail("structure_dependencies_kind_mismatch", "have the same number of list elements");
         validate_fail("structure_initial_unknowns_mismatch",
-                      "is missing a representative in ModelStructure/InitialUnknowns");
+                      "is missing a representative in 'ModelStructure/InitialUnknowns'.");
         validate_fail("structure_initial_unknowns_state_approx",
-                      "is missing a representative in ModelStructure/InitialUnknowns");
+                      "is missing a representative in 'ModelStructure/InitialUnknowns'.");
         validate_fail("structure_dependencies_kind_invalid_initial", "is not allowed in InitialUnknowns");
         validate_fail("structure_dependencies_kind_non_real", "only allowed for Real variables");
         validate_fail("derivative_index_out_of_range", "referencing index 99 which does not exist");
-        validate_fail("derivative_non_real", "Continuous-time state \"x\" (line 5) must be of type Real");
+        validate_fail("derivative_non_real", "Continuous-time state 'x' (line 5) must be of type 'Real'.");
         validate_fail("reinit_non_state", "but is not a continuous-time state");
         validate_fail("reinit_cs_only", "not allowed for Co-Simulation only FMUs");
         validate_fail("derivative_variability", "must have variability=\"continuous\"");
@@ -669,29 +669,29 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("dim_vr_undef", "references value reference 999 which is not a structural parameter");
         validate_fail("sp_type_invalid", "must be of type UInt64");
 
-        validate_fail("structure_output_missing", "is missing a representative in ModelStructure/Output");
-        validate_fail("structure_output_duplicate", "is listed multiple times in ModelStructure/Output");
+        validate_fail("structure_output_missing", "is missing a representative in 'ModelStructure/Output'.");
+        validate_fail("structure_output_duplicate", "is listed multiple times in 'ModelStructure/Output'.");
         validate_fail("structure_output_extra",
-                      "listed in ModelStructure/Output but does not have causality=\"output\"");
-        validate_fail("structure_derivative_no_attr", "must have a \"derivative\" attribute");
+                      "listed in 'ModelStructure/Output' but does not have causality='output'");
+        validate_fail("structure_derivative_no_attr", "must have a 'derivative' attribute.");
         validate_fail("derivative_dimension_mismatch", "but has different dimensions");
         // validate_fail("structure_derivative_missing", "must have exactly one entry"); // Removed
         validate_fail("structure_derivative_duplicate",
-                      "is listed multiple times in ModelStructure/ContinuousStateDerivative");
+                      "is listed multiple times in 'ModelStructure/ContinuousStateDerivative'.");
         validate_fail("structure_initial_unknowns_mismatch",
-                      "missing a representative in ModelStructure/InitialUnknown");
+                      "missing a representative in 'ModelStructure/InitialUnknown'.");
         validate_fail("derivative_non_continuous", "must have variability=\"continuous\"");
         validate_fail("derivative_non_float", "must be Float32 or Float64");
         validate_fail("reinit_non_state", "is not a continuous-time state");
         validate_fail("reinit_non_float", "must be Float32 or Float64");
-        validate_fail("structure_clocked_state_missing", "missing from ModelStructure/ClockedState");
+        validate_fail("structure_clocked_state_missing", "missing from 'ModelStructure/ClockedState'");
         validate_fail("event_indicator_bad_causality", "does not have causality='local' or 'output'");
         validate_fail("event_indicator_bad_type", "is used as an event indicator but is of type Int32");
         validate_fail("event_indicator_bad_variability", "does not have variability='continuous'");
         validate_fail("structure_initial_unknown_duplicate",
-                      "is listed multiple times in ModelStructure/InitialUnknown");
+                      "is listed multiple times in 'ModelStructure/InitialUnknown'.");
         validate_fail("structure_event_indicator_duplicate",
-                      "is listed multiple times in ModelStructure/EventIndicator");
+                      "is listed multiple times in 'ModelStructure/EventIndicator'");
 
         validate_fail("structure_dependencies_missing", "has 'dependenciesKind' but 'dependencies' is missing");
         validate_fail("structure_dependencies_kind_mismatch", "has different number of elements in 'dependencies'");
@@ -866,11 +866,11 @@ TEST_CASE("FMI 2.0 ModelStructure Alias and Partial Validation", "[fmi2][structu
 
         cert = validate("outputs_alias_duplicate");
         CHECK(has_fail(cert));
-        CHECK(has_error_with_text(cert, "already represented in ModelStructure/Outputs"));
+        CHECK(has_error_with_text(cert, "already represented in 'ModelStructure/Outputs'."));
 
         cert = validate("outputs_missing_fail");
         CHECK(has_fail(cert));
-        CHECK(has_error_with_text(cert, "missing a representative in ModelStructure/Outputs"));
+        CHECK(has_error_with_text(cert, "missing a representative in 'ModelStructure/Outputs'."));
     }
 
     SECTION("Derivatives partial listing")
@@ -880,7 +880,7 @@ TEST_CASE("FMI 2.0 ModelStructure Alias and Partial Validation", "[fmi2][structu
 
         cert = validate("derivatives_duplicate_vr_fail");
         CHECK(has_fail(cert));
-        CHECK(has_error_with_text(cert, "Value reference 1 is listed multiple times in ModelStructure/Derivatives"));
+        CHECK(has_error_with_text(cert, "Value reference 1 is listed multiple times in 'ModelStructure/Derivatives'."));
     }
 
     SECTION("InitialUnknowns with aliases")
@@ -890,7 +890,7 @@ TEST_CASE("FMI 2.0 ModelStructure Alias and Partial Validation", "[fmi2][structu
 
         cert = validate("initial_unknowns_missing_fail");
         CHECK(has_fail(cert));
-        CHECK(has_error_with_text(cert, "missing a representative in ModelStructure/InitialUnknowns"));
+        CHECK(has_error_with_text(cert, "missing a representative in 'ModelStructure/InitialUnknowns'."));
     }
 }
 
@@ -926,7 +926,7 @@ TEST_CASE("FMI 3.0 ModelStructure Alias and Partial Validation", "[fmi3][structu
         cert = validate("output_clocked_fail");
         CHECK(has_fail(cert));
         CHECK(has_error_with_text(
-            cert, "is a clocked variable. Clocked variables must not be listed in ModelStructure/Output"));
+            cert, "is a clocked variable. Clocked variables must not be listed in 'ModelStructure/Output'"));
     }
 
     SECTION("ContinuousStateDerivative partial listing")

@@ -1,4 +1,5 @@
 #include "directory_checker.h"
+#include <format>
 
 #include "certificate.h"
 #include "file_utils.h"
@@ -179,10 +180,10 @@ void DirectoryChecker::checkStandardHeaders(const std::filesystem::path& path, C
             if (headers.contains(filename))
             {
                 test.setStatus(TestStatus::WARNING);
-                test.getMessages().emplace_back("Standard FMI header file '" + filename +
-                                                "' found in 'sources/' directory. This is not recommended as these "
-                                                "headers "
-                                                "should be provided by the environment.");
+                test.getMessages().emplace_back(
+                    std::format("Standard FMI header file '{}' found in 'sources/' directory. This is not recommended "
+                                "as these ' 'headers ' 'should be provided by the environment.",
+                                filename));
             }
         }
     }

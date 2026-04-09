@@ -116,7 +116,7 @@ TEST_CASE("FMI 2.0 Encoding Validation", "[fmi2][encoding]")
     {
         Certificate cert;
         checker.validate("tests/data/fmi2/fail/encoding_iso", cert);
-        CHECK(has_error_with_text(cert, "Encoding must be UTF-8, found: ISO-8859-1"));
+        CHECK(has_error_with_text(cert, "Encoding must be 'UTF-8', found: 'ISO-8859-1'"));
         CHECK(has_fail(cert));
     }
 
@@ -134,7 +134,7 @@ TEST_CASE("FMI 2.0 Encoding Validation", "[fmi2][encoding]")
         checker.validate("tests/data/fmi2/fail/encoding_iso_with_schema_error", cert);
 
         // Should have encoding error
-        CHECK(has_error_with_text(cert, "Encoding must be UTF-8, found: ISO-8859-1"));
+        CHECK(has_error_with_text(cert, "Encoding must be 'UTF-8', found: 'ISO-8859-1'"));
 
         // Now, it SHOULD also have schema errors
         // Attribute 'maxNumberOfConstraints' is not allowed
