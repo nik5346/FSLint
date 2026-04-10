@@ -77,6 +77,7 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void checkMultipleSetAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
-    void checkContinuousStatesAndDerivatives(const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkContinuousStatesAndDerivatives(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                             Certificate& cert) const;
     void checkSourceFilesSemantic(xmlDocPtr doc, Certificate& cert) const;
 };

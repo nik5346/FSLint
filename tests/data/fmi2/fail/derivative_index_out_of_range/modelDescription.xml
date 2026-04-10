@@ -6,5 +6,9 @@
       <Real derivative="99" />
     </ScalarVariable>
   </ModelVariables>
-  <ModelStructure />
+  <ModelStructure>
+    <Derivatives>
+      <Unknown index="1" />
+    </Derivatives>
+  </ModelStructure>
 </fmiModelDescription>

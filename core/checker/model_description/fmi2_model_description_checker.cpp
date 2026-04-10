@@ -45,7 +45,7 @@ void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     checkMultipleSetAttribute(doc, variables, cert);
 
     // Check continuous-time states and derivatives
-    checkContinuousStatesAndDerivatives(variables, cert);
+    checkContinuousStatesAndDerivatives(doc, variables, cert);
 
     // Check SourceFiles semantic validation (existence of listed files)
     checkSourceFilesSemantic(doc, cert);
@@ -81,9 +81,32 @@ void Fmi2ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
     const bool has_cs = !extractModelIdentifiers(doc, {"CoSimulation"}).empty();
 
     std::set<uint32_t> state_indices;
-    for (const auto& var : variables)
-        if (var.derivative_of.has_value())
-            state_indices.insert(*var.derivative_of);
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Derivatives/Unknown");
+
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+    {
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            const auto index_str = getXmlAttribute(node, "index");
+
+            if (index_str.has_value())
+            {
+                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                {
+                    const size_t index = *index_opt;
+                    if (index > 0 && index <= variables.size())
+                    {
+                        const auto& var = variables[index - 1];
+                        if (var.derivative_of.has_value())
+                            state_indices.insert(*var.derivative_of);
+                    }
+                }
+            }
+        }
+        xmlXPathFreeObject(xpath_obj);
+    }
 
     for (const auto& var : variables)
     {
@@ -142,24 +165,51 @@ void Fmi2ModelDescriptionChecker::checkMultipleSetAttribute(xmlDocPtr doc, const
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std::vector<Variable>& variables,
+void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(xmlDocPtr doc,
+                                                                      const std::vector<Variable>& variables,
                                                                       Certificate& cert) const
 {
     TestResult test{"Continuous-time States and Derivatives", TestStatus::PASS, {}};
 
     std::set<uint32_t> state_indices;
+    std::set<uint32_t> derivative_indices;
     std::map<uint32_t, const Variable*> index_map;
 
     for (const auto& var : variables)
-    {
         index_map[var.index] = &var;
-        if (var.derivative_of.has_value())
-            state_indices.insert(*var.derivative_of);
+
+    // Parse ModelStructure/Derivatives to identify "active" states and derivatives
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/Derivatives/Unknown");
+
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+    {
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            const auto index_str = getXmlAttribute(node, "index");
+
+            if (index_str.has_value())
+            {
+                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                {
+                    const size_t index = *index_opt;
+                    if (index > 0 && index <= variables.size())
+                    {
+                        const auto& var = variables[index - 1];
+                        derivative_indices.insert(var.index);
+                        if (var.derivative_of.has_value())
+                            state_indices.insert(*var.derivative_of);
+                    }
+                }
+            }
+        }
+        xmlXPathFreeObject(xpath_obj);
     }
 
     for (const auto& var : variables)
     {
-        // Check states
+        // Check active states
         if (state_indices.contains(var.index))
         {
             if (var.causality != "local" && var.causality != "output")
@@ -182,6 +232,9 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
         // Check derivatives
         if (var.derivative_of.has_value())
         {
+            // The variability=continuous and type=Real checks on the derivative variable itself
+            // should always apply if the derivative attribute is present (since only continuous Reals
+            // can carry it).
             if (var.variability != "continuous")
             {
                 test.setStatus(TestStatus::FAIL);
@@ -189,38 +242,49 @@ void Fmi2ModelDescriptionChecker::checkContinuousStatesAndDerivatives(const std:
                                                 ") is a derivative and must have variability='continuous'.");
             }
 
-            const uint32_t ref_index = *var.derivative_of;
-            auto it = index_map.find(ref_index);
-
-            if (it == index_map.end())
+            if (var.type != "Real")
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("Variable '" + var.name + "' (line " + std::to_string(var.sourceline) +
-                                                ") has derivative attribute referencing index " +
-                                                std::to_string(ref_index) + " which does not exist.");
+                test.getMessages().emplace_back("State derivative '" + var.name + "' (line " +
+                                                std::to_string(var.sourceline) + ") must be of type 'Real'.");
             }
-            else
+
+            // Checks on the state variable itself only apply if the derivative is listed in ModelStructure
+            if (derivative_indices.contains(var.index))
             {
-                const Variable* state_var = it->second;
-                if (state_var->variability != "continuous")
+                const uint32_t ref_index = *var.derivative_of;
+                auto it = index_map.find(ref_index);
+
+                if (it == index_map.end())
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(std::format(
-                        R"(Variable "{}" (line {}) is derivative of "{}" which has variability "{}". Continuous-time states must have variability="continuous".)",
-                        var.name, var.sourceline, state_var->name, state_var->variability));
+                    test.getMessages().emplace_back("Variable '" + var.name + "' (line " +
+                                                    std::to_string(var.sourceline) +
+                                                    ") has derivative attribute referencing index " +
+                                                    std::to_string(ref_index) + " which does not exist.");
+                }
+                else
+                {
+                    const Variable* state_var = it->second;
+                    if (state_var->variability != "continuous")
+                    {
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(std::format(
+                            R"(Variable "{}" (line {}) is derivative of "{}" which has variability "{}". Continuous-time states must have variability="continuous".)",
+                            var.name, var.sourceline, state_var->name, state_var->variability));
+                    }
                 }
             }
         }
 
-        // Type check for both
-        if (var.derivative_of.has_value() || state_indices.contains(var.index))
+        // Type check for active states
+        if (state_indices.contains(var.index))
         {
             if (var.type != "Real")
             {
                 test.setStatus(TestStatus::FAIL);
-                const std::string role = var.derivative_of.has_value() ? "State derivative" : "Continuous-time state";
-                test.getMessages().emplace_back(role + " '" + var.name + "' (line " + std::to_string(var.sourceline) +
-                                                ") must be of type 'Real'.");
+                test.getMessages().emplace_back("Continuous-time state '" + var.name + "' (line " +
+                                                std::to_string(var.sourceline) + ") must be of type 'Real'.");
             }
         }
     }
@@ -843,13 +907,15 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         }
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str.has_value())
+                        if (deps_str)
                         {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                            const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(ds_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -871,8 +937,9 @@ void Fmi2ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                                const auto& dk_val = *deps_kind_str;
                                 std::vector<std::string> kinds;
-                                const auto& dk_val = *deps_kind_str; // NOLINT(bugprone-unchecked-optional-access)
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
@@ -1022,13 +1089,15 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                         }
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str.has_value())
+                        if (deps_str)
                         {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                            const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(ds_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1050,8 +1119,9 @@ void Fmi2ModelDescriptionChecker::validateDerivatives(xmlDocPtr doc, const std::
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
-                                std::vector<std::string> kinds;
+                                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                                 const auto& dk_val = *deps_kind_str;
+                                std::vector<std::string> kinds;
                                 std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
@@ -1117,11 +1187,35 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
     // Build expected set of initial unknown alias sets (FMI2 spec)
     std::set<AliasKey> expected_alias_sets;
 
-    // Identify continuous-time states (variables referenced by 'derivative' attribute of some other variable)
-    std::set<uint32_t> state_indices;
-    for (const auto& var : variables)
-        if (var.derivative_of.has_value())
-            state_indices.insert(*var.derivative_of);
+    // Identify active continuous-time states and derivatives
+    std::set<uint32_t> active_state_indices;
+    std::set<uint32_t> active_derivative_indices;
+
+    xmlXPathObjectPtr xpath_der = getXPathNodes(doc, "//ModelStructure/Derivatives/Unknown");
+    if (xpath_der != nullptr && xpath_der->nodesetval != nullptr)
+    {
+        for (int32_t i = 0; i < xpath_der->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_der->nodesetval->nodeTab[i];
+            const auto index_str = getXmlAttribute(node, "index");
+            if (index_str.has_value())
+            {
+                if (const auto index_opt = parseNumber<size_t>(*index_str))
+                {
+                    const size_t index = *index_opt;
+                    if (index > 0 && index <= variables.size())
+                    {
+                        const auto& var = variables[index - 1];
+                        active_derivative_indices.insert(var.index);
+                        if (var.derivative_of.has_value())
+                            active_state_indices.insert(*var.derivative_of);
+                    }
+                }
+            }
+        }
+        xmlXPathFreeObject(xpath_der);
+    }
 
     for (const auto& var : variables)
     {
@@ -1138,8 +1232,8 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         if (var.causality == "calculatedParameter")
             is_mandatory = true;
 
-        // (3) States and their derivatives with initial="approx" or "calculated"
-        if ((state_indices.contains(var.index) || var.derivative_of.has_value()) &&
+        // (3) Active states and their derivatives with initial="approx" or "calculated"
+        if ((active_state_indices.contains(var.index) || active_derivative_indices.contains(var.index)) &&
             (var.initial == "approx" || var.initial == "calculated"))
         {
             is_mandatory = true;
@@ -1199,13 +1293,15 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                         actual_indices.push_back(index);
 
                         // Check dependencies ordering and dependenciesKind consistency
-                        auto deps_str = getXmlAttribute(node, "dependencies");
-                        auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
+                        const auto deps_str = getXmlAttribute(node, "dependencies");
+                        const auto deps_kind_str = getXmlAttribute(node, "dependenciesKind");
 
-                        if (deps_str.has_value())
+                        if (deps_str)
                         {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                            const auto& ds_val = *deps_str;
                             std::vector<size_t> deps;
-                            std::stringstream ss(*deps_str);
+                            std::stringstream ss(ds_val);
                             size_t dep_idx = 0;
                             while (ss >> dep_idx)
                                 deps.push_back(dep_idx);
@@ -1227,8 +1323,10 @@ void Fmi2ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
                             // Check dependenciesKind size and values
                             if (deps_kind_str.has_value())
                             {
+                                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                                const auto& dk_val = *deps_kind_str;
                                 std::vector<std::string> kinds;
-                                std::stringstream ss_kind(*deps_kind_str);
+                                std::stringstream ss_kind(dk_val);
                                 std::string kind;
                                 while (ss_kind >> kind)
                                     kinds.push_back(kind);

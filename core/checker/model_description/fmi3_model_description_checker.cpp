@@ -38,8 +38,8 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     checkClockReferences(variables, cert);
     checkClockedVariables(variables, cert);
     checkAliases(variables, cert);
-    checkReinitAttribute(variables, cert);
-    checkDerivativeConsistency(variables, cert);
+    checkReinitAttribute(doc, variables, cert);
+    checkDerivativeConsistency(doc, variables, cert);
     checkCanHandleMultipleSet(variables, cert);
     checkClockTypes(doc, cert);
     checkStructuralParameter(variables, cert);
@@ -525,7 +525,7 @@ void Fmi3ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<Variable>& variables,
+void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(xmlDocPtr doc, const std::vector<Variable>& variables,
                                                              Certificate& cert) const
 {
     TestResult test{"Derivative Consistency", TestStatus::PASS, {}};
@@ -534,6 +534,27 @@ void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<V
     for (const auto& var : variables)
         if (var.value_reference.has_value())
             vr_map[*var.value_reference] = &var;
+
+    // Parse ModelStructure/ContinuousStateDerivative to identify "active" derivatives
+    std::set<uint32_t> active_derivative_vrs;
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/ContinuousStateDerivative");
+
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+    {
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            const auto vr_str = getXmlAttribute(node, "valueReference");
+
+            if (vr_str.has_value())
+            {
+                if (const auto vr_opt = parseNumber<uint32_t>(*vr_str))
+                    active_derivative_vrs.insert(*vr_opt);
+            }
+        }
+        xmlXPathFreeObject(xpath_obj);
+    }
 
     for (const auto& var : variables)
     {
@@ -569,14 +590,17 @@ void Fmi3ModelDescriptionChecker::checkDerivativeConsistency(const std::vector<V
             }
             else
             {
-                const Variable* state_var = it->second;
-                // 3. State variable must have variability="continuous"
-                if (state_var->variability != "continuous")
+                // 3. State variable must have variability="continuous" - ONLY if it's an active derivative
+                if (var.value_reference.has_value() && active_derivative_vrs.contains(*var.value_reference))
                 {
-                    test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(std::format(
-                        R"(Variable "{}" (line {}) is derivative of "{}" (line {}) which has variability "{}". Continuous-time states must have variability="continuous".)",
-                        var.name, var.sourceline, state_var->name, state_var->sourceline, state_var->variability));
+                    const Variable* state_var = it->second;
+                    if (state_var->variability != "continuous")
+                    {
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(std::format(
+                            R"(Variable "{}" (line {}) is derivative of "{}" (line {}) which has variability "{}". Continuous-time states must have variability="continuous".)",
+                            var.name, var.sourceline, state_var->name, state_var->sourceline, state_var->variability));
+                    }
                 }
             }
         }
@@ -604,15 +628,45 @@ void Fmi3ModelDescriptionChecker::checkCanHandleMultipleSet(const std::vector<Va
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkReinitAttribute(const std::vector<Variable>& variables, Certificate& cert) const
+void Fmi3ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                       Certificate& cert) const
 {
     TestResult test{"Reinit Attribute", TestStatus::PASS, {}};
 
     // Continuous-time states are variables referenced by 'derivative' attribute of some other variable
+    // which is itself listed in ContinuousStateDerivative.
     std::set<uint32_t> state_vrs;
-    for (const auto& var : variables)
-        if (var.derivative_of.has_value())
-            state_vrs.insert(*var.derivative_of);
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelStructure/ContinuousStateDerivative");
+
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+    {
+        std::map<uint32_t, const Variable*> vr_to_var;
+        for (const auto& v : variables)
+            if (v.value_reference.has_value())
+                vr_to_var[*v.value_reference] = &v;
+
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+            const auto vr_str = getXmlAttribute(node, "valueReference");
+
+            if (vr_str.has_value())
+            {
+                if (const auto vr_opt = parseNumber<uint32_t>(*vr_str))
+                {
+                    auto it = vr_to_var.find(*vr_opt);
+                    if (it != vr_to_var.end())
+                    {
+                        const auto& var_ref = *it->second;
+                        if (var_ref.derivative_of.has_value())
+                            state_vrs.insert(var_ref.derivative_of.value());
+                    }
+                }
+            }
+        }
+        xmlXPathFreeObject(xpath_obj);
+    }
 
     for (const auto& var : variables)
     {
@@ -1500,6 +1554,42 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
 {
     TestResult test{"ModelStructure Initial Unknowns", TestStatus::PASS, {}};
 
+    // Identify active continuous-time states and derivatives
+    std::set<uint32_t> active_state_vrs;
+    std::set<uint32_t> active_derivative_vrs;
+
+    xmlXPathObjectPtr xpath_der = getXPathNodes(doc, "//ModelStructure/ContinuousStateDerivative");
+    if (xpath_der != nullptr && xpath_der->nodesetval != nullptr)
+    {
+        std::map<uint32_t, const Variable*> vr_to_var;
+        for (const auto& v : variables)
+            if (v.value_reference.has_value())
+                vr_to_var[*v.value_reference] = &v;
+
+        for (int32_t i = 0; i < xpath_der->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_der->nodesetval->nodeTab[i];
+            const auto vr_str = getXmlAttribute(node, "valueReference");
+            if (vr_str.has_value())
+            {
+                if (const auto vr_opt = parseNumber<uint32_t>(*vr_str))
+                {
+                    const uint32_t vr = *vr_opt;
+                    active_derivative_vrs.insert(vr);
+                    auto it = vr_to_var.find(vr);
+                    if (it != vr_to_var.end())
+                    {
+                        const auto& var_ref = *it->second;
+                        if (var_ref.derivative_of.has_value())
+                            active_state_vrs.insert(var_ref.derivative_of.value());
+                    }
+                }
+            }
+        }
+        xmlXPathFreeObject(xpath_der);
+    }
+
     // Build expected set of initial unknown value references (FMI3 spec)
     std::set<uint32_t> expected_vrs;
 
@@ -1513,29 +1603,16 @@ void Fmi3ModelDescriptionChecker::validateInitialUnknowns(xmlDocPtr doc, const s
         // Mandatory unknowns according to FMI 3.0 spec:
         // (1) Outputs with initial="approx" or "calculated" (not clocked)
         // (2) Calculated parameters
-        // (3) State derivatives with initial="approx" or "calculated"
+        // (3) Active state derivatives with initial="approx" or "calculated"
+        // (4) Active states with initial="approx" or "calculated"
         if ((var.causality == "output" && (var.initial == "approx" || var.initial == "calculated") &&
              (!var.clocks.has_value() || var.clocks->empty())) ||
             (var.causality == "calculatedParameter") ||
-            (var.derivative_of.has_value() && (var.initial == "approx" || var.initial == "calculated")))
+            ((active_derivative_vrs.contains(*var.value_reference) ||
+              active_state_vrs.contains(*var.value_reference)) &&
+             (var.initial == "approx" || var.initial == "calculated")))
         {
             is_required = true;
-        }
-        // (4) States with initial="approx" or "calculated"
-        // Identifying states: variables referenced by 'derivative' attribute of some other variable
-        else
-        {
-            for (const auto& other : variables)
-            {
-                if (other.derivative_of.has_value() && *other.derivative_of == *var.value_reference)
-                {
-                    if (var.initial == "approx" || var.initial == "calculated")
-                    {
-                        is_required = true;
-                        break;
-                    }
-                }
-            }
         }
 
         if (is_required)
