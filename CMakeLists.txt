@@ -388,13 +388,13 @@ endif()
 FetchContent_Declare(
     picosha2
     GIT_REPOSITORY https://github.com/okdshin/PicoSHA2.git
-    GIT_TAG        161cb3fc4170fa7a3eca9e582cebd27cc4d1fe29  # Latest commit
+    GIT_TAG        master
 )
 
 FetchContent_Declare(
     rapidjson
     GIT_REPOSITORY https://github.com/Tencent/rapidjson.git
-    GIT_TAG        24b5e7a8b27f42fa16b96fc70aade9106cf7102f # Latest master to fix WASM and ARM64
+    GIT_TAG        master
 )
 
 FetchContent_Declare(
