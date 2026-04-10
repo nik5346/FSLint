@@ -394,13 +394,13 @@ FetchContent_Declare(
 FetchContent_Declare(
     rapidjson
     GIT_REPOSITORY https://github.com/Tencent/rapidjson.git
-    GIT_TAG        master # Recent master to fix WASM and ARM64
+    GIT_TAG        24b5e7a8b27f42fa16b96fc70aade9106cf7102f # Latest master to fix WASM and ARM64
 )
 
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.13.0
+  GIT_TAG        v3.14.0
 )
 
 # Prevent dependencies from installing
