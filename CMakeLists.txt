@@ -388,19 +388,19 @@ endif()
 FetchContent_Declare(
     picosha2
     GIT_REPOSITORY https://github.com/okdshin/PicoSHA2.git
-    GIT_TAG        161cb3fc4170fa7a3eca9e582cebd27cc4d1fe29  # Latest commit
+    GIT_TAG        master
 )
 
 FetchContent_Declare(
     rapidjson
     GIT_REPOSITORY https://github.com/Tencent/rapidjson.git
-    GIT_TAG        master # Recent master to fix WASM and ARM64
+    GIT_TAG        master
 )
 
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.13.0
+  GIT_TAG        v3.14.0
 )
 
 # Prevent dependencies from installing
