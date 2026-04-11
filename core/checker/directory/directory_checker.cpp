@@ -90,16 +90,12 @@ void DirectoryChecker::validate(const std::filesystem::path& path, Certificate& 
                     }
                 }
 
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                if (xmlStrEqual(name, reinterpret_cast<const xmlChar*>("ScheduledExecution")) == 0)
+                const std::optional<std::string> needs_exec = getXmlAttribute(node, "needsExecutionTool");
+                if (needs_exec.has_value())
                 {
-                    const std::optional<std::string> needs_exec = getXmlAttribute(node, "needsExecutionTool");
-                    if (needs_exec.has_value())
-                    {
-                        const auto& val = *needs_exec;
-                        if (val == "true")
-                            needs_execution_tool = true;
-                    }
+                    const auto& val = *needs_exec;
+                    if (val == "true")
+                        needs_execution_tool = true;
                 }
 
                 // Check for SourceFiles inside interface (FMI 2.0)

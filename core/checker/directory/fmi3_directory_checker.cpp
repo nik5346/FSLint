@@ -75,10 +75,9 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
-                    "The FMU depends on external resources [e.g. shared libraries, files, or servers] to be loaded or "
-                    "simulated (indicated by needsExecutionTool=\"true\"). "
-                    "'documentation/externalDependencies.{txt|html}' "
-                    "must be present to document these dependencies and how to provide them.");
+                    "If the FMU depends on external resources [e.g. shared libraries, files, or servers] to be loaded "
+                    "or simulated 'documentation/externalDependencies.{txt|html}' must be present to document "
+                    "these dependencies and how to provide them.");
             }
         }
 
