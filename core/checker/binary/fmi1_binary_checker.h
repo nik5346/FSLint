@@ -19,9 +19,12 @@ class Fmi1BinaryChecker : public BinaryChecker
 
   protected:
     /// @brief Gets expected functions (not used for FMI 1.0).
+    /// @param interfaces Supported interfaces.
     /// @return Empty vector.
-    [[nodiscard]] std::vector<std::string> getExpectedFunctions() const override
+    [[nodiscard]] std::vector<std::string>
+    getExpectedFunctions(const std::set<InterfaceType>& interfaces) const override
     {
+        (void)interfaces;
         return {}; // Not used because we override validate
     }
 };

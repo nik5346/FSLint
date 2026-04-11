@@ -10,6 +10,8 @@ class Fmi3BinaryChecker : public BinaryChecker
 {
   protected:
     /// @brief Gets mandatory FMI 3.0 functions.
+    /// @param interfaces The set of supported interface types.
     /// @return List of functions.
-    [[nodiscard]] std::vector<std::string> getExpectedFunctions() const override;
+    [[nodiscard]] std::vector<std::string>
+    getExpectedFunctions(const std::set<InterfaceType>& interfaces) const override;
 };
