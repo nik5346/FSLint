@@ -307,9 +307,9 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/fmi2/warn/empty_licenses_subdir",
                          "Standard directory 'documentation/licenses' is empty");
         validate_warning("tests/data/fmi2/warn/missing_ext_deps",
-                         "If the FMU depends on external resources [e.g. shared libraries, files, or "
-                         "servers] to be loaded or simulated 'documentation/externalDependencies.{txt|html}' "
-                         "should be present to document these dependencies and how to provide them.");
+                         "Since needsExecutionTool='true', 'documentation/externalDependencies.{txt|html}' "
+                         "should be present to document the external resources the FMU depends on to be "
+                         "loaded or simulated and how to provide them.");
 
         validate_warning("tests/data/directory/warn/unknown_entry", "Unknown file");
         validate_warning("tests/data/fmi2/warn/dist_sources_only", "buildDescription.xml' is recommended");
@@ -445,9 +445,9 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_fail("tests/data/fmi3/fail/missing_diagram_png", "diagram.png is missing");
         validate_fail("tests/data/fmi3/fail/missing_license", "Standard directory 'documentation/licenses' is empty.");
         validate_fail("tests/data/fmi3/fail/missing_ext_deps",
-                      "If the FMU depends on external resources [e.g. shared libraries, files, or "
-                      "servers] to be loaded or simulated 'documentation/externalDependencies.{txt|html}' "
-                      "must be present to document these dependencies and how to provide them.");
+                      "Since needsExecutionTool='true', 'documentation/externalDependencies.{txt|html}' "
+                      "must be present to document the external resources the FMU depends on to be "
+                      "loaded or simulated and how to provide them.");
         validate_fail("tests/data/fmi3/fail/missing_icon_png", "fallback");
         validate_fail("tests/data/fmi3/warn/missing_index_html",
                       "The documentation entry point 'documentation/index.html' is missing.");

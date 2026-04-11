@@ -274,7 +274,7 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Documentation**:
   - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
   - If the `documentation/` directory exists, the standard entry point `index.html` **must** be present.
-- **External Dependencies**: If the FMU depends on external resources [e.g. shared libraries, files, or servers] to be loaded or simulated, 'documentation/externalDependencies.{txt|html}' **should** be present to document these dependencies and how to provide them.
+- **External Dependencies**: Since `needsExecutionTool='true'`, 'documentation/externalDependencies.{txt|html}' **should** be present to document the external resources the FMU depends on to be loaded or simulated and how to provide them.
 - **Source Files Consistency**:
   - Typical source files (extensions: `.c`, `.cc`, `.cpp`, `.cxx`, `.C`, `.c++`) in `sources/` **should** be listed in `modelDescription.xml` `<SourceFiles>`.
   - `SourceFiles/File` entries **must** point to existing files in `sources/`.
@@ -349,7 +349,7 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 
 ### Directory Structure
 
-- **External Dependencies**: If the FMU depends on external resources [e.g. shared libraries, files, or servers] to be loaded or simulated, 'documentation/externalDependencies.{txt|html}' **must** be present to document these dependencies and how to provide them.
+- **External Dependencies**: Since `needsExecutionTool='true'`, 'documentation/externalDependencies.{txt|html}' **must** be present to document the external resources the FMU depends on to be loaded or simulated and how to provide them.
 - **Documentation**:
   - Providing documentation is **recommended**; a warning is issued if the `documentation/` directory is missing.
   - If the `documentation/` directory exists, the standard entry point `index.html` **must** be present.
