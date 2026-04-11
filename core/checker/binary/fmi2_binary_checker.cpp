@@ -1,5 +1,8 @@
 #include "fmi2_binary_checker.h"
 
+#include "binary_checker.h"
+
+#include <set>
 #include <string>
 #include <vector>
 

@@ -4,6 +4,7 @@
 
 #include <libxml/tree.h>
 
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <set>
@@ -11,7 +12,7 @@
 #include <vector>
 
 /// @brief Represents the FMI interface types.
-enum class InterfaceType
+enum class InterfaceType : std::uint8_t
 {
     MODEL_EXCHANGE,
     CO_SIMULATION,

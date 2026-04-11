@@ -16,6 +16,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert) const

@@ -5,6 +5,7 @@
 #include "certificate.h"
 
 #include <filesystem>
+#include <set>
 #include <string>
 #include <vector>
 
