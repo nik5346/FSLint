@@ -12,9 +12,11 @@
 
 #include <filesystem>
 #include <format>
+#include <map>
 #include <optional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cert) const
@@ -34,27 +36,30 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
         return;
     }
 
-    std::set<std::string> model_identifiers;
-    const std::vector<std::string> interface_elements = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
+    std::map<std::string, std::set<InterfaceType>> model_id_to_interfaces;
+    const std::vector<std::pair<std::string, InterfaceType>> interface_mappings = {
+        {"CoSimulation", InterfaceType::CO_SIMULATION},
+        {"ModelExchange", InterfaceType::MODEL_EXCHANGE},
+        {"ScheduledExecution", InterfaceType::SCHEDULED_EXECUTION}};
 
     xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
     if (xpath_context != nullptr)
     {
-        for (const auto& elem : interface_elements)
+        for (const auto& [elem, type] : interface_mappings)
         {
             const std::string xpath_query = "//" + elem;
             const xmlXPathObjectPtr xpath_obj =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(xpath_query.c_str()), xpath_context);
-            if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr && xpath_obj->nodesetval->nodeNr > 0)
+            if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
             {
-                const std::optional<std::string> model_id =
-                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                    getXmlAttribute(xpath_obj->nodesetval->nodeTab[0], "modelIdentifier");
-                if (model_id.has_value())
+                for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
                 {
-                    const auto& val = *model_id;
-                    model_identifiers.insert(val);
+                    const std::optional<std::string> model_id =
+                        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                        getXmlAttribute(xpath_obj->nodesetval->nodeTab[i], "modelIdentifier");
+                    if (model_id.has_value())
+                        model_id_to_interfaces[*model_id].insert(type);
                 }
             }
             if (xpath_obj != nullptr)
@@ -64,7 +69,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
     }
     xmlFreeDoc(doc);
 
-    if (model_identifiers.empty())
+    if (model_id_to_interfaces.empty())
         return;
 
     bool header_printed = false;
@@ -77,8 +82,6 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
         }
     };
 
-    const std::vector<std::string> expected_functions = getExpectedFunctions();
-
     for (const auto& platform_entry : std::filesystem::directory_iterator(binaries_path))
     {
         if (!platform_entry.is_directory())
@@ -86,7 +89,7 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
 
         const std::string platform = file_utils::pathToUtf8(platform_entry.path().filename());
 
-        for (const auto& model_id : model_identifiers)
+        for (const auto& [model_id, interfaces] : model_id_to_interfaces)
         {
             const std::vector<std::string> extensions = {".dll", ".so", ".dylib"};
             for (const auto& ext : extensions)
@@ -100,6 +103,8 @@ void BinaryChecker::validate(const std::filesystem::path& path, Certificate& cer
                     // 1. Exported Functions Check
                     TestResult export_test{
                         std::format("Exported Functions: {}/{}{}", platform, model_id, ext), TestStatus::PASS, {}};
+
+                    const std::vector<std::string> expected_functions = getExpectedFunctions(interfaces);
 
                     for (const auto& func : expected_functions)
                     {
