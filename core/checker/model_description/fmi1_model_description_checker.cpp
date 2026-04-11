@@ -39,7 +39,7 @@ void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
     if (version != "1.0")
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back(std::format(R"(version "{}" is invalid (must be exactly "1.0").)", version));
+        test.getMessages().emplace_back(std::format("version '{}' is invalid (must be exactly '1.0').", version));
     }
 }
 
@@ -72,7 +72,7 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
     {
         test.setStatus(TestStatus::FAIL);
         test.getMessages().emplace_back(std::format(
-            R"(guid "{{}}" does not match expected GUID format ({{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}}))", *guid));
+            "guid '{{}}' does not match expected GUID format ({{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}})", *guid));
     }
 
     cert.printTestResult(test);
@@ -102,7 +102,7 @@ void Fmi1ModelDescriptionChecker::checkAnnotations(xmlDocPtr doc, Certificate& c
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(std::format(
-                        R"(Vendor annotation tool "{}" (line {}) is defined multiple times.)", *name, node->line));
+                        "Vendor annotation tool '{}' (line {}) is defined multiple times.)", *name, node->line));
                 }
                 seen_names.insert(*name);
             }
@@ -141,7 +141,7 @@ void Fmi1ModelDescriptionChecker::checkCausalityVariabilityInitialCombinations(c
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    R"(Variable "{}" (line {}) has illegal combination: variability="constant" and causality="input". )"
+                    "Variable '{}' (line {}) has illegal combination: variability='constant' and causality='input'. "
                     "Logical contradiction: constants cannot be changed from the outside.",
                     var.name, var.sourceline));
             }
@@ -162,7 +162,7 @@ void Fmi1ModelDescriptionChecker::checkLegalVariability(const std::vector<Variab
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
-                    std::format(R"(Variable "{}" (line {}) is of type {} and cannot have variability "continuous".)",
+                    std::format("Variable '{}' (line {}) is of type {} and cannot have variability 'continuous'.",
                                 var.name, var.sourceline, var.type));
             }
         }
@@ -188,7 +188,7 @@ void Fmi1ModelDescriptionChecker::checkRequiredStartValues(const std::vector<Var
         {
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(
-                std::format(R"(Variable "{}" (line {}) must have a start value.)", var.name, var.sourceline));
+                std::format("Variable '{}' (line {}) must have a start value.", var.name, var.sourceline));
         }
     }
     cert.printTestResult(test);
@@ -205,7 +205,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         {
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(
-                std::format(R"(Variable "{}" (line {}) has 'fixed' attribute but is missing 'start' value.)", var.name,
+                std::format("Variable '{}' (line {}) has 'fixed' attribute but is missing 'start' value.", var.name,
                             var.sourceline));
         }
 
@@ -214,7 +214,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
         {
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(std::format(
-                R"(Variable "{}" (line {}) has causality="input" and a 'fixed' attribute. The 'fixed' attribute is only )"
+                "Variable '{}' (line {}) has causality='input' and a 'fixed' attribute. The 'fixed' attribute is only "
                 "defined for causalities other than 'input' (Section 3.3).",
                 var.name, var.sourceline));
         }
@@ -225,7 +225,7 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
             // fixed="false" (guess value) makes no sense for a constant
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(std::format(
-                R"(Variable "{}" (line {}) has variability="constant" and fixed="false", which is a contradiction.)",
+                "Variable '{}' (line {}) has variability='constant' and fixed='false', which is a contradiction.",
                 var.name, var.sourceline));
         }
     }
@@ -491,7 +491,7 @@ void Fmi1ModelDescriptionChecker::checkUnits(xmlDocPtr doc, Certificate& cert) c
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(
-                        std::format(R"(Unit "{}" (line {}) is defined multiple times.)", *name, node->line));
+                        std::format("Unit '{}' (line {}) is defined multiple times.", *name, node->line));
                 }
                 seen_names.insert(*name);
             }
@@ -520,7 +520,7 @@ void Fmi1ModelDescriptionChecker::checkTypeDefinitions(xmlDocPtr doc, Certificat
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(
-                        std::format(R"(Type definition "{}" (line {}) is defined multiple times.)", *name, node->line));
+                        std::format("Type definition '{}' (line {}) is defined multiple times.", *name, node->line));
                 }
                 seen_names.insert(*name);
             }
@@ -680,8 +680,8 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
         if (!std::filesystem::exists(full_path))
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(
-                R"(Attribute "{}" (line {}) references missing file in FMU: "{}")", attr_name, line, relative_path));
+            test.getMessages().emplace_back(std::format("Attribute '{}' (line {}) references missing file in FMU: '{}'",
+                                                        attr_name, line, relative_path));
         }
     }
 }
@@ -729,7 +729,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    R"(Variable "{}" (line {}) has alias="negatedAlias" but is of type {}. Only Real and Integer )"
+                    "Variable '{}' (line {}) has alias='negatedAlias' but is of type {}. Only Real and Integer "
                     "variables can be negated.",
                     var->name, var->sourceline, var->type));
             }
@@ -753,7 +753,7 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
                     std::format("All variables in an alias set (VR {}) must have the same type. "
-                                R"(Variable "{}" is {} but "{}" is {}.)",
+                                "Variable '{}' is {} but '{}' is {}.",
                                 vr, var->name, var->type, first->name, first->type));
             }
 
@@ -762,8 +762,8 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    R"(All variables in an alias set (VR {}) must have the same unit. Variable "{}" has )"
-                    R"(unit "{}" but "{}" has unit "{}".)",
+                    "All variables in an alias set (VR {}) must have the same unit. Variable '{}' has "
+                    "unit '{}' but '{}' has unit '{}'.",
                     vr, var->name, var->unit.value_or("(none)"), first->name, first->unit.value_or("(none)")));
             }
 
@@ -817,17 +817,17 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                             const bool first_negated =
                                 (first_with_start->alias && *first_with_start->alias == "negatedAlias");
 
-                            std::string msg1 = std::format(R"("{}" ()", var->name);
+                            std::string msg1 = std::format("'{}' (", var->name);
                             if (negated)
                                 msg1 += "negated, ";
                             if (var->start)
-                                msg1 += std::format(R"(start="{}")", *var->start);
+                                msg1 += std::format("start='{}'", *var->start);
 
-                            std::string msg2 = std::format(R"("{}" ()", first_with_start->name);
+                            std::string msg2 = std::format("'{}' (", first_with_start->name);
                             if (first_negated)
                                 msg2 += "negated, ";
                             if (first_with_start->start)
-                                msg2 += std::format(R"(start="{}")", *first_with_start->start);
+                                msg2 += std::format("start='{}'", *first_with_start->start);
 
                             test.getMessages().emplace_back(std::format(
                                 "All variables in an alias set (VR {}) must have equivalent start values. {} and {} "
@@ -860,8 +860,8 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
         {
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(std::format(
-                R"(All variables in an alias set (VR {}) must have the same variability. Variable "{}" is constant )"
-                R"(but "{}" is {}. Constants can only be aliased to other constants.)",
+                "All variables in an alias set (VR {}) must have the same variability. Variable '{}' is constant "
+                "but '{}' is {}. Constants can only be aliased to other constants.",
                 vr, constant_var->name, non_constant_var->name, non_constant_var->variability));
         }
         else if (variability_mismatch)
@@ -878,8 +878,8 @@ void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 
             variability_consistency_test.setStatus(TestStatus::WARNING);
             variability_consistency_test.getMessages().emplace_back(
-                std::format(R"(All variables in an alias set (VR {}) should have the same variability. Variable "{}" )"
-                            R"(is {} but "{}" is {}.)",
+                std::format("All variables in an alias set (VR {}) should have the same variability. Variable '{}' "
+                            "is {} but '{}' is {}.",
                             vr, first->name, first->variability, mismatch->name, mismatch->variability));
         }
     }

@@ -52,8 +52,9 @@ void SchemaCheckerBase::validate(const std::filesystem::path& path, Certificate&
     if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
     {
         std::cerr << "Directory does not exist: " << file_utils::pathToUtf8(path) << "\n";
-        cert.printTestResult(
-            {"Directory Existence", TestStatus::FAIL, {"Directory does not exist: " + file_utils::pathToUtf8(path)}});
+        cert.printTestResult({"Directory Existence",
+                              TestStatus::FAIL,
+                              {std::format("Directory does not exist: {}", file_utils::pathToUtf8(path))}});
         cert.printSubsectionSummary(false);
         return;
     }

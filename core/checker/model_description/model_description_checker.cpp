@@ -485,7 +485,7 @@ void ModelDescriptionCheckerBase::checkUniqueVariableNames(const std::vector<Var
         {
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(
-                std::format(R"(Variable name "{}" (line {}) is not unique.)", var.name, var.sourceline));
+                std::format("Variable name '{}' (line {}) is not unique.", var.name, var.sourceline));
         }
         seen_names.insert(var.name);
     }
@@ -535,7 +535,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             if (var.name.empty())
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(std::format(R"(Variable name (line {}) is empty.)", var.sourceline));
+                test.getMessages().emplace_back(std::format("Variable name (line {}) is empty.", var.sourceline));
                 is_valid = false;
             }
 
@@ -544,7 +544,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
                 test.setStatus(TestStatus::FAIL);
                 const std::string escaped_name = std::regex_replace(var.name, std::regex("\r"), "\\\\r");
                 test.getMessages().emplace_back(
-                    std::format(R"(Variable "{}" (line {}) contains illegal carriage return character (U+000D).)",
+                    std::format("Variable '{}' (line {}) contains illegal carriage return character (U+000D).",
                                 escaped_name, var.sourceline));
                 is_valid = false;
             }
@@ -553,17 +553,16 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
                 test.setStatus(TestStatus::FAIL);
                 const std::string escaped_name = std::regex_replace(var.name, std::regex("\n"), "\\\\n");
                 test.getMessages().emplace_back(
-                    std::format(R"(Variable "{}" (line {}) contains illegal line feed character (U+000A).)",
-                                escaped_name, var.sourceline));
+                    std::format("Variable '{}' (line {}) contains illegal line feed character (U+000A).", escaped_name,
+                                var.sourceline));
                 is_valid = false;
             }
             if (var.name.find('\t') != std::string::npos)
             {
                 test.setStatus(TestStatus::FAIL);
                 const std::string escaped_name = std::regex_replace(var.name, std::regex("\t"), "\\\\t");
-                test.getMessages().emplace_back(
-                    std::format(R"(Variable "{}" (line {}) contains illegal tab character (U+0009).)", escaped_name,
-                                var.sourceline));
+                test.getMessages().emplace_back(std::format(
+                    "Variable '{}' (line {}) contains illegal tab character (U+0009).", escaped_name, var.sourceline));
                 is_valid = false;
             }
         }
@@ -575,7 +574,7 @@ void ModelDescriptionCheckerBase::checkVariableNamingConvention(const std::vecto
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    R"(Variable "{}" (line {}) is not a legal variable name for naming convention "structured".)",
+                    "Variable '{}' (line {}) is not a legal variable name for naming convention 'structured'.",
                     var.name, var.sourceline));
             }
         }
@@ -613,7 +612,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     {
         test.setStatus(TestStatus::FAIL);
         test.getMessages().emplace_back(
-            std::format(R"(Generation date and time "{}" is invalid or does not match ISO 8601 format.)", dt));
+            std::format("Generation date and time '{}' is invalid or does not match ISO 8601 format.", dt));
         cert.printTestResult(test);
         return;
     }
@@ -624,7 +623,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         if (value != -1 && (value < min || value > max))
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(R"({} value {} is out of range ({}-{}).)", name,
+            test.getMessages().emplace_back(std::format("{} value {} is out of range ({}-{}).", name,
                                                         std::to_string(value), std::to_string(min),
                                                         std::to_string(max)));
         }
@@ -668,7 +667,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
     {
         test.setStatus(TestStatus::FAIL);
         test.getMessages().emplace_back(
-            std::format(R"(Generation date and time "{}" resulted in an invalid timestamp.)", dt));
+            std::format("Generation date and time '{}' resulted in an invalid timestamp.", dt));
         cert.printTestResult(test);
         return;
     }
@@ -694,7 +693,7 @@ void ModelDescriptionCheckerBase::checkGenerationDateAndTime(const std::optional
         std::array<char, 64> buf{};
         (void)std::strftime(buf.data(), buf.size(), "%Y-%m-%dT%H:%M:%SZ", &current_tm);
         test.getMessages().emplace_back(std::format(
-            R"(Generation date and time "{}" is in the future (current time: {}).)", dt, std::string(buf.data())));
+            "Generation date and time '{}' is in the future (current time: {}).", dt, std::string(buf.data())));
     }
 
     checkGenerationDateReleaseYear(dt, generation_time, test);
@@ -728,9 +727,9 @@ void ModelDescriptionCheckerBase::checkGenerationDateReleaseYearBase(const std::
     if (generation_time < fmi_release_time)
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back(std::format(
-            R"(Generation date and time "{}" is before the {} standard release ({}). This is unusual and may indicate an incorrect timestamp.)",
-            dt, fmi_version, std::to_string(release_year)));
+        test.getMessages().emplace_back(std::format("Generation date and time '{}' is before the {} standard release "
+                                                    "({}). This is unusual and may indicate an incorrect timestamp.",
+                                                    dt, fmi_version, std::to_string(release_year)));
     }
 }
 
@@ -748,7 +747,7 @@ void ModelDescriptionCheckerBase::checkFmiVersion(const std::optional<std::strin
     }
 
     if (test.getStatus() != TestStatus::PASS)
-        test.getMessages().emplace_back(std::format(R"(Version: {})", fmi_version.value_or("[missing]")));
+        test.getMessages().emplace_back(std::format("Version: {}", fmi_version.value_or("[missing]")));
 
     if (fmi_version->empty())
     {
@@ -787,7 +786,7 @@ void ModelDescriptionCheckerBase::checkModelVersion(const std::optional<std::str
         {
             test.setStatus(TestStatus::WARNING);
             test.getMessages().emplace_back(std::format(
-                R"(Model version "{}" does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).)",
+                "Model version '{}' does not follow semantic versioning format (recommended: MAJOR.MINOR.PATCH).",
                 *version));
         }
     }
@@ -932,7 +931,7 @@ void ModelDescriptionCheckerBase::checkGenerationTool(const std::optional<std::s
     {
         test.setStatus(TestStatus::WARNING);
         test.getMessages().emplace_back(
-            R"(Providing the generationTool name is recommended. For manually created FMUs, use "Handmade".)");
+            "Providing the generationTool name is recommended. For manually created FMUs, use 'Handmade'.");
     }
     else if (tool->empty())
     {
@@ -969,7 +968,7 @@ void ModelDescriptionCheckerBase::checkLogCategories(xmlDocPtr doc, Certificate&
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
-                    std::format(R"(Log category "{}" (line {}) is defined multiple times.)", val, node->line));
+                    std::format("Log category '{}' (line {}) is defined multiple times.", val, node->line));
             }
             seen_names.insert(val);
         }
@@ -995,7 +994,7 @@ void ModelDescriptionCheckerBase::checkNumberOfImplementedInterfaces(
 void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_identifier,
                                                        const std::string& interface_name, Certificate& cert) const
 {
-    TestResult test{std::format(R"(Model Identifier Format for Interface "{}")", interface_name), TestStatus::PASS, {}};
+    TestResult test{std::format("Model Identifier Format for Interface '{}'", interface_name), TestStatus::PASS, {}};
 
     if (model_identifier.empty())
     {
@@ -1018,13 +1017,13 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
         if (first_char >= '0' && first_char <= '9')
         {
             test.getMessages().emplace_back(
-                std::format(R"(Model identifier "{}" cannot start with a digit.)", model_identifier));
+                std::format("Model identifier '{}' cannot start with a digit.", model_identifier));
         }
         else
         {
-            test.getMessages().emplace_back(std::format(
-                R"(Model identifier "{}" contains invalid characters (only letters, digits, and underscores are allowed).)",
-                model_identifier));
+            test.getMessages().emplace_back(std::format("Model identifier '{}' contains invalid characters (only "
+                                                        "letters, digits, and underscores are allowed).",
+                                                        model_identifier));
         }
     }
 
@@ -1035,16 +1034,17 @@ void ModelDescriptionCheckerBase::checkModelIdentifier(const std::string& model_
     if (model_identifier.length() > ABSOLUTE_MAX_LENGTH)
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back(std::format(
-            R"(Model identifier "{}" is too long ({} characters). Maximum length is {} characters to ensure cross-platform compatibility.)",
-            model_identifier, model_identifier.length(), ABSOLUTE_MAX_LENGTH));
+        test.getMessages().emplace_back(std::format("Model identifier '{}' is too long ({} characters). Maximum length "
+                                                    "is {} characters to ensure cross-platform compatibility.",
+                                                    model_identifier, model_identifier.length(), ABSOLUTE_MAX_LENGTH));
     }
     else if (model_identifier.length() > RECOMMENDED_MAX_LENGTH)
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back(std::format(
-            R"(Model identifier "{}" is longer than recommended ({} characters). Consider keeping it under {} characters for better portability.)",
-            model_identifier, model_identifier.length(), RECOMMENDED_MAX_LENGTH));
+        test.getMessages().emplace_back(std::format("Model identifier '{}' is longer than recommended ({} characters). "
+                                                    "Consider keeping it under {} characters for better portability.",
+                                                    model_identifier, model_identifier.length(),
+                                                    RECOMMENDED_MAX_LENGTH));
     }
 
     cert.printTestResult(test);
@@ -1234,14 +1234,14 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             if (*start_time < 0.0 && !std::isnan(*start_time) && !std::isinf(*start_time))
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(std::format("startTime ({}) must be non-negative.", *start_time));
+                test.getMessages().emplace_back(std::format("startTime '{}' must be non-negative.", *start_time));
             }
         }
         else
         {
             // Schema should have caught this, but just in case
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(R"(startTime "{}" is not a valid number.)", *start_time_str));
+            test.getMessages().emplace_back(std::format("startTime '{}' is not a valid number.", *start_time_str));
         }
     }
 
@@ -1257,13 +1257,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
-                    std::format(R"(stopTime "{}" must be non-negative.)", std::to_string(*stop_time)));
+                    std::format("stopTime '{}' must be non-negative.", std::to_string(*stop_time)));
             }
         }
         else
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(R"(stopTime "{}" is not a valid number.)", *stop_time_str));
+            test.getMessages().emplace_back(std::format("stopTime '{}' is not a valid number.", *stop_time_str));
         }
     }
 
@@ -1274,7 +1274,7 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
         if (!std::isinf(*stop_time) && *stop_time <= *start_time)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(R"(stopTime "{}" must be greater than startTime "{}".)",
+            test.getMessages().emplace_back(std::format("stopTime '{}' must be greater than startTime '{}'.",
                                                         std::to_string(*stop_time), std::to_string(*start_time)));
         }
     }
@@ -1291,13 +1291,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
-                    std::format(R"(tolerance "{}" must be greater than 0.)", std::to_string(*tolerance)));
+                    std::format("tolerance '{}' must be greater than 0.", std::to_string(*tolerance)));
             }
         }
         else
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(R"(tolerance "{}" is not a valid number.)", *tolerance_str));
+            test.getMessages().emplace_back(std::format("tolerance '{}' is not a valid number.", *tolerance_str));
         }
     }
 
@@ -1313,13 +1313,13 @@ void ModelDescriptionCheckerBase::checkDefaultExperiment(xmlDocPtr doc, Certific
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
-                    std::format(R"(stepSize "{}" must be greater than 0.)", std::to_string(*step_size)));
+                    std::format("stepSize '{}' must be greater than 0.", std::to_string(*step_size)));
             }
         }
         else
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(R"(stepSize "{}" is not a valid number.)", *step_size_str));
+            test.getMessages().emplace_back(std::format("stepSize '{}' is not a valid number.", *step_size_str));
         }
     }
 
@@ -1345,9 +1345,8 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             if (!type_definitions.contains(*var.declared_type))
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(
-                    std::format(R"(Variable "{}" (line {}) references undefined type "{}".)", var.name, var.sourceline,
-                                *var.declared_type));
+                test.getMessages().emplace_back(std::format("Variable '{}' (line {}) references undefined type '{}'.",
+                                                            var.name, var.sourceline, *var.declared_type));
             }
             else
             {
@@ -1369,9 +1368,8 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             if (!units.contains(*unit_to_check))
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(
-                    std::format(R"(Variable "{}" (line {}) references undefined unit "{}".)", var.name, var.sourceline,
-                                *unit_to_check));
+                test.getMessages().emplace_back(std::format("Variable '{}' (line {}) references undefined unit '{}'.",
+                                                            var.name, var.sourceline, *unit_to_check));
             }
             else
             {
@@ -1387,7 +1385,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                     {
                         test.setStatus(TestStatus::FAIL);
                         test.getMessages().emplace_back(
-                            std::format(R"(DisplayUnit "{}" of variable "{}" (line {}) is not defined for unit "{}".)",
+                            std::format("DisplayUnit '{}' of variable '{}' (line {}) is not defined for unit '{}'.",
                                         *var.display_unit, var.name, var.sourceline, *unit_to_check));
                     }
                 }
@@ -1405,8 +1403,8 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                 if (test.getStatus() == TestStatus::PASS)
                                     test.setStatus(TestStatus::WARNING);
                                 test.getMessages().emplace_back(
-                                    std::format(R"(Variable "{}" (line {}) has relativeQuantity="true" but is )"
-                                                R"(associated with unit "{}" which has a non-zero offset ({}).)",
+                                    std::format("Variable '{}' (line {}) has relativeQuantity='true' but is "
+                                                "associated with unit '{}' which has a non-zero offset ({}).",
                                                 var.name, var.sourceline, *unit_to_check, *unit_def.offset));
                             }
                         }
@@ -1425,7 +1423,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
-                    std::format(R"(Type definition "{}" (line {}) references undefined unit "{}".)", name,
+                    std::format("Type definition '{}' (line {}) references undefined unit '{}'.", name,
                                 type_def.sourceline, *type_def.unit));
             }
             else
@@ -1441,7 +1439,7 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                     {
                         test.setStatus(TestStatus::FAIL);
                         test.getMessages().emplace_back(std::format(
-                            R"(DisplayUnit "{}" of type definition "{}" (line {}) is not defined for unit "{}".)",
+                            "DisplayUnit '{}' of type definition '{}' (line {}) is not defined for unit '{}'.",
                             *type_def.display_unit, name, type_def.sourceline, *type_def.unit));
                     }
                 }
@@ -1459,8 +1457,8 @@ void ModelDescriptionCheckerBase::checkTypeAndUnitReferences(
                                 if (test.getStatus() == TestStatus::PASS)
                                     test.setStatus(TestStatus::WARNING);
                                 test.getMessages().emplace_back(
-                                    std::format(R"(Type definition "{}" (line {}) has relativeQuantity="true" but )"
-                                                R"(references unit "{}" which has a non-zero offset ({}).)",
+                                    std::format("Type definition '{}' (line {}) has relativeQuantity='true' but "
+                                                "references unit '{}' which has a non-zero offset ({}).",
                                                 name, type_def.sourceline, *type_def.unit, *unit_def.offset));
                             }
                         }
@@ -1486,7 +1484,7 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
             if (test.getStatus() == TestStatus::PASS)
                 test.setStatus(TestStatus::WARNING);
             test.getMessages().emplace_back(
-                std::format(R"(Type definition "{}" (line {}) is unused.)", name, type_def.sourceline));
+                std::format("Type definition '{}' (line {}) is unused.", name, type_def.sourceline));
         }
     }
 
@@ -1496,8 +1494,7 @@ void ModelDescriptionCheckerBase::checkUnusedDefinitions(const std::map<std::str
         {
             if (test.getStatus() == TestStatus::PASS)
                 test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back(
-                std::format(R"(Unit "{}" (line {}) is unused.)", name, unit_def.sourceline));
+            test.getMessages().emplace_back(std::format("Unit '{}' (line {}) is unused.", name, unit_def.sourceline));
         }
     }
 

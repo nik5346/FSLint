@@ -110,7 +110,7 @@ TEST_CASE("Path Format Non-ASCII Warning Logic", "[archive][encoding]")
         checker.checkPathFormat(entries, cert);
         CHECK_FALSE(has_fail(cert));
         CHECK(has_warning(cert));
-        CHECK(has_warning_with_text(cert, "Non-ASCII characters in path"));
+        CHECK(has_warning_with_text(cert, "contains non-ASCII characters but language encoding flag"));
     }
 
     SECTION("Non-ASCII filename, Bit 11 set (PASS)")

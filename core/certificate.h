@@ -139,7 +139,7 @@ class Certificate
     Certificate();
 
   private:
-    bool _quiet = true;
+    bool _quiet = false;
     bool _use_color = true;
     std::string _report_buffer;
     std::vector<TestResult> _results;

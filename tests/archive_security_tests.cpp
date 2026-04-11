@@ -281,7 +281,7 @@ TEST_CASE("Backslash Normalization and Validation", "[archive]")
         checker.checkPathFormat(entries, cert);
 
         CHECK(has_fail(cert));
-        CHECK(has_error_with_text(cert, "Backslash '\\' found in path 'binaries\\win64\\model.dll'"));
+        CHECK(has_error_with_text(cert, "contains backslashes"));
 
         Certificate cert2;
         checker.checkZipSlip(entries, cert2);

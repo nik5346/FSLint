@@ -30,7 +30,7 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
 
     SECTION("Metadata")
     {
-        validate_fail("metadata/fmi_version_invalid", "is invalid (must be exactly \"1.0\")");
+        validate_fail("metadata/fmi_version_invalid", "is invalid (must be exactly '1.0')");
         validate_fail("metadata/guid_missing", "guid attribute is missing");
         validate_fail("metadata/guid_empty", "guid attribute is empty");
         validate_fail("metadata/guid_invalid", "does not match expected GUID format");
@@ -56,7 +56,7 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
                       "All variables in an alias set (VR 1) must have equivalent start values");
         validate_fail("alias_inconsistent_start_negated",
                       "All variables in an alias set (VR 1) must have equivalent start values");
-        validate_fail("alias_negated_boolean", "alias=\"negatedAlias\" but is of type Boolean");
+        validate_fail("alias_negated_boolean", "alias='negatedAlias' but is of type Boolean");
         validate_fail("alias_multiple_noalias",
                       "All variables in an alias set (VR 1) must have exactly one base variable (noAlias)");
         validate_fail("alias_no_noalias",
@@ -68,9 +68,9 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
     SECTION("Implementation")
     {
         validate_fail("implementation/entry_point_missing_file",
-                      R"(references missing file in FMU: "resources/non_existent.mdl")");
+                      "references missing file in FMU: 'resources/non_existent.mdl'");
         validate_fail("implementation/file_missing_file",
-                      R"(references missing file in FMU: "resources/missing_extra.txt")");
+                      "references missing file in FMU: 'resources/missing_extra.txt'");
     }
 
     SECTION("Vendor Annotations")
@@ -108,8 +108,8 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
 
     SECTION("Legal Variability and Combinations")
     {
-        validate_fail("variability_continuous_non_real", "cannot have variability \"continuous\"");
-        validate_fail("constant_input", "has illegal combination: variability=\"constant\" and causality=\"input\"");
+        validate_fail("variability_continuous_non_real", "cannot have variability 'continuous'");
+        validate_fail("constant_input", "has illegal combination: variability='constant' and causality='input'");
     }
 
     SECTION("Start Values")
@@ -117,8 +117,8 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("start_missing_input", "must have a start value");
         validate_fail("start_missing_constant", "must have a start value");
         validate_fail("fixed_no_start", "has 'fixed' attribute but is missing 'start' value");
-        validate_fail("fixed_on_input", "has causality=\"input\" and a 'fixed' attribute");
-        validate_fail("fixed_on_constant_guess", "has variability=\"constant\" and fixed=\"false\"");
+        validate_fail("fixed_on_input", "has causality='input' and a 'fixed' attribute");
+        validate_fail("fixed_on_constant_guess", "has variability='constant' and fixed='false'");
     }
 }
 
@@ -158,7 +158,7 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         validate_warning("warn/author_empty", "The 'author' attribute is empty.");
         validate_warning(
             "warn/generation_tool_missing",
-            "Providing the generationTool name is recommended. For manually created FMUs, use \"Handmade\".");
+            "Providing the generationTool name is recommended. For manually created FMUs, use 'Handmade'.");
         validate_warning("warn/license_missing", "Providing a license is recommended.");
         validate_warning("warn/copyright_missing", "Providing a copyright notice is recommended.");
         validate_warning("warn/model_version_missing", "Providing a model version is recommended.");
@@ -167,8 +167,8 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
 
     SECTION("Unused Definitions")
     {
-        validate_warning("warn/unit_unused", "Unit \"s\" (line 4) is unused.");
-        validate_warning("warn/type_unused", "Type definition \"MyType\" (line 4) is unused.");
+        validate_warning("warn/unit_unused", "Unit 's' (line 4) is unused.");
+        validate_warning("warn/type_unused", "Type definition 'MyType' (line 4) is unused.");
     }
 
     SECTION("Aliases")
@@ -277,8 +277,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
     {
         validate_fail("fmi_version_missing", "fmiVersion attribute is missing");
         validate_fail("fmi_version_empty", "fmiVersion attribute is empty");
-        validate_fail("fmi_version_invalid", "is invalid (must be exactly \"2.0\")");
-        validate_fail("fmi_version_patch", "is invalid (must be exactly \"2.0\")");
+        validate_fail("fmi_version_invalid", "is invalid (must be exactly '2.0')");
+        validate_fail("fmi_version_patch", "is invalid (must be exactly '2.0')");
 
         validate_fail("model_name_missing", "modelName attribute is missing");
         validate_fail("model_name_empty", "modelName attribute is empty");
@@ -360,19 +360,19 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
     SECTION("Variability")
     {
-        validate_fail("variability_continuous_integer", "cannot have variability \"continuous\"");
-        validate_fail("variability_continuous_boolean", "cannot have variability \"continuous\"");
-        validate_fail("variability_continuous_string", "cannot have variability \"continuous\"");
-        validate_fail("parameter_continuous", "Parameters must be \"fixed\" or \"tunable\"");
-        validate_fail("independent_variability", "must have variability=\"continuous\"");
+        validate_fail("variability_continuous_integer", "cannot have variability 'continuous'");
+        validate_fail("variability_continuous_boolean", "cannot have variability 'continuous'");
+        validate_fail("variability_continuous_string", "cannot have variability 'continuous'");
+        validate_fail("parameter_continuous", "Parameters must be 'fixed' or 'tunable'");
+        validate_fail("independent_variability", "must have variability='continuous'");
         validate_fail("multiple_set_non_input", "has 'canHandleMultipleSetPerTimeInstant' but causality is 'output'");
         validate_fail("multiple_set_cs_only", "not allowed for Co-Simulation only FMUs");
     }
 
     SECTION("Initial/Start Values")
     {
-        validate_fail("start_illegal_calculated", "has initial=\"calculated\" but provides a start value");
-        validate_fail("start_illegal_independent", "has causality=\"independent\" but provides a start value");
+        validate_fail("start_illegal_calculated", "has initial='calculated' but provides a start value");
+        validate_fail("start_illegal_independent", "has causality='independent' but provides a start value");
         validate_fail("start_missing", "must have a start value");
         validate_fail("combination_illegal", "has illegal combination");
         validate_fail("combination_illegal_parameter_continuous", "has illegal combination");
@@ -380,8 +380,8 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
 
         validate_fail("independent_multiple", "Found multiple");
         validate_fail("independent_non_real", "must be of type 'Real'");
-        validate_fail("independent_with_start", "not allowed to have a \"start\" attribute");
-        validate_fail("independent_with_initial", "not allowed to define \"initial\"");
+        validate_fail("independent_with_start", "not allowed to have a 'start' attribute");
+        validate_fail("independent_with_initial", "not allowed to define 'initial'");
     }
 
     SECTION("Aliases")
@@ -435,7 +435,7 @@ TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")
         validate_fail("derivative_non_real", "Continuous-time state 'x' (line 5) must be of type 'Real'.");
         validate_fail("reinit_non_state", "but is not a continuous-time state");
         validate_fail("reinit_cs_only", "not allowed for Co-Simulation only FMUs");
-        validate_fail("derivative_variability", "must have variability=\"continuous\"");
+        validate_fail("derivative_variability", "must have variability='continuous'");
         validate_fail("structure/derivative_input_fail",
                       "Continuous-time state 'x' (line 5) must have causality 'local' or 'output'.");
     }
@@ -476,7 +476,7 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
         validate_warning(
             "generation_tool_missing",
-            "Providing the generationTool name is recommended. For manually created FMUs, use \"Handmade\".");
+            "Providing the generationTool name is recommended. For manually created FMUs, use 'Handmade'.");
         validate_warning("generation_tool_empty", "The 'generationTool' attribute is empty.");
         validate_warning("license_missing", "Providing a license is recommended.");
         validate_warning("license_empty", "The 'license' attribute is empty.");
@@ -498,12 +498,12 @@ TEST_CASE("FMI 2.0 Model Description Warning Cases", "[fmi2][warn]")
 
     SECTION("Unit definitions")
     {
-        validate_warning("unit_unused", "Unit \"s\" (line 4) is unused");
+        validate_warning("unit_unused", "Unit 's' (line 4) is unused");
     }
 
     SECTION("Type definitions")
     {
-        validate_warning("type_unused", "Type definition \"UnusedType\" (line 4) is unused.");
+        validate_warning("type_unused", "Type definition 'UnusedType' (line 4) is unused.");
     }
 }
 
@@ -606,16 +606,16 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
 
     SECTION("Variability")
     {
-        validate_fail("variability_continuous_integer", "cannot have variability \"continuous\"");
-        validate_fail("variability_continuous_boolean", "cannot have variability \"continuous\"");
-        validate_fail("variability_continuous_string", "cannot have variability \"continuous\"");
-        validate_fail("parameter_discrete", "Parameters must be \"fixed\" or \"tunable\"");
+        validate_fail("variability_continuous_integer", "cannot have variability 'continuous'");
+        validate_fail("variability_continuous_boolean", "cannot have variability 'continuous'");
+        validate_fail("variability_continuous_string", "cannot have variability 'continuous'");
+        validate_fail("parameter_discrete", "Parameters must be 'fixed' or 'tunable'");
         validate_fail("multiple_set_non_input", "must be 'input'");
     }
 
     SECTION("Initial/Start Values")
     {
-        validate_fail("start_illegal_calculated", "has initial=\"calculated\" but provides a start value");
+        validate_fail("start_illegal_calculated", "has initial='calculated' but provides a start value");
         validate_fail("start_missing", "must have a start value");
         validate_fail("combination_illegal", "has illegal combination");
         validate_fail("combination_illegal_parameter_continuous", "has illegal combination");
@@ -682,7 +682,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
                       "is listed multiple times in 'ModelStructure/ContinuousStateDerivative'.");
         validate_fail("structure_initial_unknowns_mismatch",
                       "missing a representative in 'ModelStructure/InitialUnknown'.");
-        validate_fail("derivative_non_continuous", "must have variability=\"continuous\"");
+        validate_fail("derivative_non_continuous", "must have variability='continuous'");
         validate_fail("derivative_non_float", "must be Float32 or Float64");
         validate_fail("reinit_non_state", "is not a continuous-time state");
         validate_fail("reinit_non_float", "must be Float32 or Float64");
@@ -739,7 +739,7 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
         validate_warning(
             "metadata_missing",
-            "Providing the generationTool name is recommended. For manually created FMUs, use \"Handmade\".");
+            "Providing the generationTool name is recommended. For manually created FMUs, use 'Handmade'.");
         validate_warning("metadata_missing", "Providing a license is recommended.");
 
         validate_warning("model_version_missing", "Providing a model version is recommended.");
@@ -763,12 +763,12 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("Unit definitions")
     {
-        validate_warning("definitions_unused", "Unit \"s\" (line 5) is unused");
+        validate_warning("definitions_unused", "Unit 's' (line 5) is unused");
     }
 
     SECTION("Type definitions")
     {
-        validate_warning("definitions_unused", "Type definition \"UnusedType\" (line 9) is unused");
+        validate_warning("definitions_unused", "Type definition 'UnusedType' (line 9) is unused");
     }
 
     SECTION("DefaultExperiment")
@@ -797,7 +797,7 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
     {
         checker.validate("tests/data/fmi3/pass/fmi_version_patch", cert);
         CHECK(has_fail(cert));
-        CHECK(has_error_with_text(cert, "version \"3.0.1\" is invalid (must be exactly \"3.0\")."));
+        CHECK(has_error_with_text(cert, "version '3.0.1' is invalid (must be exactly '3.0')."));
     }
 
     SECTION("DefaultExperiment INF")
@@ -826,8 +826,8 @@ TEST_CASE("FMI 2.0 Type and Unit Usage", "[fmi2][usage]")
     checker.validate("tests/data/fmi2/pass/type_usage", cert);
 
     // Should NOT have warning about unused definitions
-    CHECK_FALSE(has_warning_with_text(cert, "Type definition \"Position\""));
-    CHECK_FALSE(has_warning_with_text(cert, "Unit \"m\" is unused."));
+    CHECK_FALSE(has_warning_with_text(cert, "Type definition 'Position'"));
+    CHECK_FALSE(has_warning_with_text(cert, "Unit 'm' is unused."));
 }
 
 TEST_CASE("FMI 2.0 Source code detection when directory is missing", "[fmi2][fail]")

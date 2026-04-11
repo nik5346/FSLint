@@ -23,8 +23,9 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
     if (!std::filesystem::exists(fmu_path))
     {
         std::cerr << "File does not exist: " << file_utils::pathToUtf8(fmu_path) << "\n";
-        cert.printTestResult(
-            {"File Existence", TestStatus::FAIL, {"File does not exist: " + file_utils::pathToUtf8(fmu_path)}});
+        cert.printTestResult({"File Existence",
+                              TestStatus::FAIL,
+                              {std::format("File does not exist: {}", file_utils::pathToUtf8(fmu_path))}});
         cert.printSubsectionSummary(false);
         return;
     }
@@ -37,8 +38,9 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
     if (!handler.open(fmu_path))
     {
         std::cerr << "Failed to open ZIP file: " << file_utils::pathToUtf8(fmu_path) << "\n";
-        cert.printTestResult(
-            {"Archive Open", TestStatus::FAIL, {"Failed to open ZIP file: " + file_utils::pathToUtf8(fmu_path)}});
+        cert.printTestResult({"Archive Open",
+                              TestStatus::FAIL,
+                              {std::format("Failed to open ZIP file: {}", file_utils::pathToUtf8(fmu_path))}});
         cert.printSubsectionSummary(false);
         return;
     }
@@ -51,8 +53,9 @@ void ArchiveChecker::validate(const std::filesystem::path& fmu_path, Certificate
     if (entries.empty())
     {
         std::cerr << "ZIP file is empty: " << file_utils::pathToUtf8(fmu_path) << "\n";
-        cert.printTestResult(
-            {"Archive Content", TestStatus::FAIL, {"ZIP file is empty: " + file_utils::pathToUtf8(fmu_path)}});
+        cert.printTestResult({"Archive Content",
+                              TestStatus::FAIL,
+                              {std::format("ZIP file is empty: {}", file_utils::pathToUtf8(fmu_path))}});
         cert.printSubsectionSummary(false);
         return;
     }
@@ -113,7 +116,7 @@ void ArchiveChecker::checkFileExtension(const std::filesystem::path& path, Certi
     if (path.extension() != ".fmu" && path.extension() != ".ssp")
     {
         ext_test.setStatus(TestStatus::FAIL);
-        ext_test.getMessages().emplace_back("model file must have .fmu or .ssp extension respectively.");
+        ext_test.getMessages().emplace_back("Model file must have .fmu or .ssp extension respectively.");
     }
 
     cert.printTestResult(ext_test);
@@ -132,10 +135,9 @@ void ArchiveChecker::checkCompressionMethods(const std::vector<ZipFileEntry>& en
         if (entry.compression_method != COMPRESSION_STORE && entry.compression_method != COMPRESSION_DEFLATE)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Invalid compression method for '" + entry.filename +
-                                            "': " + std::to_string(entry.compression_method) + " (only " +
-                                            std::to_string(COMPRESSION_STORE) + "=store and " +
-                                            std::to_string(COMPRESSION_DEFLATE) + "=deflate allowed).");
+            test.getMessages().emplace_back(
+                std::format("Invalid compression method for '{}': {} (only {}=store and {}=deflate allowed).",
+                            entry.filename, entry.compression_method, COMPRESSION_STORE, COMPRESSION_DEFLATE));
         }
     }
 
@@ -160,8 +162,8 @@ void ArchiveChecker::checkZipSlip(const std::vector<ZipFileEntry>& entries, Cert
         if (base_it != base.end())
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Zip Slip detected in '" + entry.filename +
-                                            "': path escapes archive root.");
+            test.getMessages().emplace_back(
+                std::format("Zip Slip detected in '{}': path escapes archive root.", entry.filename));
         }
     }
 
@@ -186,8 +188,9 @@ void ArchiveChecker::checkZipBomb(const std::vector<ZipFileEntry>& entries, Cert
         if (entry.uncompressed_size > MAX_SINGLE_SIZE)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("File '" + entry.filename + "' uncompressed size exceeds 1 GB limit (" +
-                                            std::to_string(entry.uncompressed_size) + " bytes).");
+            test.getMessages().emplace_back(
+                std::format("File '{}' uncompressed size exceeds 1 GB limit ({} bytes). Potential zip bomb.",
+                            entry.filename, entry.uncompressed_size));
         }
 
         // Check compression ratio
@@ -198,8 +201,9 @@ void ArchiveChecker::checkZipBomb(const std::vector<ZipFileEntry>& entries, Cert
             if (ratio > MAX_RATIO)
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("File '" + entry.filename + "' has excessive compression ratio (" +
-                                                std::to_string(ratio) + ":1). Potential zip bomb.");
+                test.getMessages().emplace_back(
+                    std::format("File '{}' has excessive compression ratio ({:.2f}:1). Potential zip bomb.",
+                                entry.filename, ratio));
             }
         }
     }
@@ -207,8 +211,8 @@ void ArchiveChecker::checkZipBomb(const std::vector<ZipFileEntry>& entries, Cert
     if (total_uncompressed_size > MAX_TOTAL_SIZE)
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("Total uncompressed size of archive exceeds 10 GB limit (" +
-                                        std::to_string(total_uncompressed_size) + " bytes).");
+        test.getMessages().emplace_back(
+            std::format("Total uncompressed size of archive exceeds 10 GB limit ({} bytes).", total_uncompressed_size));
     }
 
     cert.printTestResult(test);
@@ -227,7 +231,7 @@ void ArchiveChecker::checkDuplicateNames(const std::vector<ZipFileEntry>& entrie
         if (std::ranges::find(seen_names, entry.filename) != seen_names.end())
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Duplicate entry name found: '" + entry.filename + "'.");
+            test.getMessages().emplace_back(std::format("Duplicate entry name found: '{}'.", entry.filename));
         }
         else
         {
@@ -245,8 +249,9 @@ void ArchiveChecker::checkDuplicateNames(const std::vector<ZipFileEntry>& entrie
             if (std::ranges::count(seen_names, entry.filename) == 1)
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("Case-conflicting entry names found: '" + entry.filename +
-                                                "' collides with another entry on case-insensitive filesystems.");
+                test.getMessages().emplace_back(std::format("Case-conflicting entry names found: '{}' collides with "
+                                                            "another entry on case-insensitive filesystems.",
+                                                            entry.filename));
             }
         }
         else
@@ -285,8 +290,8 @@ void ArchiveChecker::checkOverlappingEntries(const std::vector<ZipFileEntry>& en
             if (range_start < r.end && range_end > r.start)
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("Overlapping file entries: '" + entry.filename + "' overlaps with '" +
-                                                r.filename + "'.");
+                test.getMessages().emplace_back(
+                    std::format("Overlapping file entries: '{}' overlaps with '{}'.", entry.filename, r.filename));
             }
         }
         ranges.push_back({.start = range_start, .end = range_end, .filename = entry.filename});
@@ -316,8 +321,8 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
         if (signature != 0x04034b50)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Invalid Local File Header signature at offset " +
-                                            std::to_string(entry.offset) + " for entry '" + entry.raw_filename + "'.");
+            test.getMessages().emplace_back(std::format(
+                "Invalid Local File Header signature at offset {} for entry '{}'.", entry.offset, entry.raw_filename));
             continue;
         }
 
@@ -333,9 +338,9 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
         if (local_filename_len != entry.filename_length)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Filename length mismatch for '" + entry.raw_filename +
-                                            "': Central Directory says " + std::to_string(entry.filename_length) +
-                                            " but Local Header says " + std::to_string(local_filename_len) + ".");
+            test.getMessages().emplace_back(
+                std::format("Filename length mismatch for '{}': Central Directory says {} but Local Header says {}.",
+                            entry.raw_filename, entry.filename_length, local_filename_len));
         }
 
         std::string local_filename(local_filename_len, '\0');
@@ -344,17 +349,17 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
         if (local_filename != entry.raw_filename)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Filename mismatch for '" + entry.raw_filename +
-                                            "': Central Directory says '" + entry.raw_filename +
-                                            "' but Local Header says '" + local_filename + "'.");
+            test.getMessages().emplace_back(
+                std::format("Filename mismatch for '{}': Central Directory says '{}' but Local Header says '{}'.",
+                            entry.raw_filename, entry.raw_filename, local_filename));
         }
 
         if (local_extra_len != entry.extra_field_length)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Extra field length mismatch for '" + entry.filename +
-                                            "': Central Directory says " + std::to_string(entry.extra_field_length) +
-                                            " but Local Header says " + std::to_string(local_extra_len) + ".");
+            test.getMessages().emplace_back(
+                std::format("Extra field length mismatch for '{}': Central Directory says {} but Local Header says {}.",
+                            entry.raw_filename, entry.extra_field_length, local_extra_len));
         }
 
         // Optional: Check uncompressed size, compressed size, etc.
@@ -374,16 +379,16 @@ void ArchiveChecker::checkCentralDirectoryConsistency(const std::filesystem::pat
             if (local_comp_size != entry.compressed_size)
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("Compressed size mismatch for '" + entry.filename +
-                                                "': Central Directory says " + std::to_string(entry.compressed_size) +
-                                                " but Local Header says " + std::to_string(local_comp_size) + ".");
+                test.getMessages().emplace_back(std::format(
+                    "Compressed size mismatch for '{}': Central Directory says {} but Local Header says {}.",
+                    entry.filename, entry.compressed_size, local_comp_size));
             }
             if (local_uncomp_size != entry.uncompressed_size)
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("Uncompressed size mismatch for '" + entry.filename +
-                                                "': Central Directory says " + std::to_string(entry.uncompressed_size) +
-                                                " but Local Header says " + std::to_string(local_uncomp_size) + ".");
+                test.getMessages().emplace_back(std::format(
+                    "Uncompressed size mismatch for '{}': Central Directory says {} but Local Header says {}.",
+                    entry.filename, entry.uncompressed_size, local_uncomp_size));
             }
         }
     }
@@ -400,9 +405,10 @@ void ArchiveChecker::checkEntryCountSanity(const Zipper& handler, const std::vec
     if (reported_count != static_cast<int32_t>(entries.size()))
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("Total entry count mismatch: Central Directory reports " +
-                                        std::to_string(reported_count) + " entries, but " +
-                                        std::to_string(entries.size()) + " were found.");
+
+        test.getMessages().emplace_back(
+            std::format("Total entry count mismatch: Central Directory reports {} entries, but {} were found.",
+                        reported_count, entries.size()));
     }
 
     cert.printTestResult(test);
@@ -420,8 +426,7 @@ void ArchiveChecker::checkExtraFieldsAndComments(const Zipper& handler, const st
     if (comment.size() > 2048) // Arbitrary limit for "sanity", though ZIP allows 64K
     {
         test.setStatus(TestStatus::WARNING);
-        test.getMessages().emplace_back("Archive comment is unusually large (" + std::to_string(comment.size()) +
-                                        " bytes).");
+        test.getMessages().emplace_back(std::format("Archive comment is unusually large ({} bytes).", comment.size()));
     }
 
     for (const auto& entry : entries)
@@ -430,8 +435,9 @@ void ArchiveChecker::checkExtraFieldsAndComments(const Zipper& handler, const st
         if (entry.extra_field_length > 4096)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Extra field for '" + entry.filename + "' is suspiciously large (" +
-                                            std::to_string(entry.extra_field_length) + " bytes).");
+            test.getMessages().emplace_back(std::format("Extra field for '{}' is excessively large ({} bytes). This "
+                                                        "may indicate a malformed or malicious archive.",
+                                                        entry.filename, entry.extra_field_length));
         }
     }
 
@@ -450,10 +456,9 @@ void ArchiveChecker::checkVersionNeeded(const std::vector<ZipFileEntry>& entries
         if (entry.version_needed > MAX_ZIP_VERSION)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Version needed to extract for '" + entry.filename + "' is " +
-                                            std::to_string(entry.version_needed / VERSION_CONVERSION_FACTOR) + "." +
-                                            std::to_string(entry.version_needed % VERSION_CONVERSION_FACTOR) +
-                                            " (maximum allowed is 2.0).");
+            test.getMessages().emplace_back(std::format(
+                "Version needed to extract for '{}' is {}.{} (maximum allowed is 2.0).", entry.filename,
+                entry.version_needed / VERSION_CONVERSION_FACTOR, entry.version_needed % VERSION_CONVERSION_FACTOR));
         }
     }
 
@@ -475,17 +480,20 @@ void ArchiveChecker::checkLanguageEncodingFlag(const std::vector<ZipFileEntry>& 
         if (has_non_ascii && !bit11_set)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Language encoding flag (bit 11) must be set for '" + entry.raw_filename +
-                                            "' because it contains non-ASCII characters.");
+            test.getMessages().emplace_back(std::format(
+                "Language encoding flag (bit 11) must be set for '{}' because it contains non-ASCII characters. "
+                "This may cause compatibility issues on some platforms.",
+                entry.raw_filename));
         }
         else if (!has_non_ascii && bit11_set)
         {
             if (test.getStatus() != TestStatus::FAIL)
                 test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back(
-                "Language encoding flag (bit 11) is set for '" + entry.raw_filename +
-                "' but it only contains ASCII characters (for maximum portability, keeping this "
-                "bit at 0 is recommended).");
+            test.getMessages().emplace_back(std::format(
+                "Language encoding flag (bit 11) is set for '{}' but it does not contain non-ASCII characters. "
+                "While not strictly invalid, this may indicate a misconfiguration (for maximum portability, keeping "
+                "this bit at 0 is recommended).",
+                entry.raw_filename));
         }
     }
 
@@ -501,7 +509,8 @@ void ArchiveChecker::checkEncryption(const std::vector<ZipFileEntry>& entries, C
         if (entry.is_encrypted)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("File '" + entry.filename + "' is encrypted (encryption not allowed).");
+            test.getMessages().emplace_back(
+                std::format("File '{}' is encrypted (encryption not allowed).", entry.filename));
         }
     }
 
@@ -525,8 +534,8 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
             if (c <= 0x1F)
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("Path '" + path + "' contains illegal control character (U+00" +
-                                                (c < 0x10 ? "0" : "") + std::format("{:X}", c) + ").");
+                test.getMessages().emplace_back(
+                    std::format("Path '{}' contains illegal control character (U+00{:02X}).", path, c));
                 break;
             }
         }
@@ -540,7 +549,7 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
             if (path.find(c) != std::string::npos)
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("Path '" + path + "' contains illegal character '" + c + "'.");
+                test.getMessages().emplace_back(std::format("Path '{}' contains illegal character '{}'.", path, c));
             }
         }
 
@@ -548,9 +557,9 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
         if (path.find('\\') != std::string::npos)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(
-                "Backslash '\\' found in path '" + path +
-                "' (only forward slashes '/' allowed per ZIP specification section 4.4.17).");
+            test.getMessages().emplace_back(std::format("Path '{}' contains backslashes '\\' (only forward slashes '/' "
+                                                        "allowed per ZIP specification section 4.4.17).",
+                                                        path));
         }
 
         // Check for non-ASCII characters
@@ -561,47 +570,50 @@ void ArchiveChecker::checkPathFormat(const std::vector<ZipFileEntry>& entries, C
         if (has_non_ascii && !bit11_set)
         {
             test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back("Non-ASCII characters in path '" + path +
-                                            "' (may cause compatibility issues on different operating systems).");
+            test.getMessages().emplace_back(
+                std::format("Path '{}' contains non-ASCII characters but language encoding flag (bit 11) is not set. "
+                            "This may cause compatibility issues on some platforms.",
+                            path));
         }
 
         // Check for leading slash (absolute path)
         if (!path.empty() && path[0] == '/')
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Path '" + path +
-                                            "' must not start with '/' (absolute paths not allowed).");
+            test.getMessages().emplace_back(
+                std::format("Path '{}' starts with '/' (absolute paths not allowed).", path));
         }
 
         // Check for drive or device letter (Windows-style paths)
         if (path.find(':') != std::string::npos)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Path '" + path +
-                                            "' must not contain ':' (drive letters or device paths not allowed).");
+            test.getMessages().emplace_back(
+                std::format("Path '{}' contains ':' (drive letters or device paths not allowed).", path));
         }
 
         // Check for parent directory traversal
         if (path.find("../") != std::string::npos || path.find("..\\") != std::string::npos)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Path '" + path +
-                                            "' contains '..' (parent directory traversal not allowed).");
+            test.getMessages().emplace_back(
+                std::format("Path '{}' contains '..' (parent directory traversal not allowed).", path));
         }
 
         // Check for current directory reference at start
         if (path.size() >= 2 && path[0] == '.' && path[1] == '/')
         {
             test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back("Path '" + path +
-                                            "' starts with './' (redundant current directory reference).");
+            test.getMessages().emplace_back(
+                std::format("Path '{}' starts with './' (redundant current directory reference).", path));
         }
 
         // Check for multiple consecutive slashes
         if (path.find("//") != std::string::npos)
         {
             test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back("Path '" + path + "' contains '//' (multiple consecutive slashes).");
+            test.getMessages().emplace_back(
+                std::format("Path '{}' contains '//' (multiple consecutive slashes).", path));
         }
     }
 
@@ -617,8 +629,8 @@ void ArchiveChecker::checkSymbolicLinks(const std::vector<ZipFileEntry>& entries
         if (entry.is_symlink) // You'll need to add this field to ZipFileEntry
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("Symbolic link found: '" + entry.filename +
-                                            "' (links not allowed in FMU/SSP archives).");
+            test.getMessages().emplace_back(
+                std::format("Symbolic link found: '{}' (links not allowed in FMU/SSP archives).", entry.filename));
         }
     }
 
@@ -643,9 +655,9 @@ void ArchiveChecker::checkGeneralPurposeBit3(const std::vector<ZipFileEntry>& en
         if (bit3_set && entry.compression_method != COMPRESSION_DEFLATE)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back("General purpose bit 3 is set for '" + entry.filename +
-                                            "' but compression method is not deflate (" +
-                                            std::to_string(COMPRESSION_DEFLATE) + ").");
+            test.getMessages().emplace_back(
+                std::format("General purpose bit 3 is set for '{}' but compression method is not deflate ({}).",
+                            entry.filename, COMPRESSION_DEFLATE));
         }
     }
 
