@@ -97,8 +97,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                     test.setStatus(TestStatus::WARNING);
                 test.getMessages().emplace_back(
                     "Since needsExecutionTool='true', 'documentation/externalDependencies.{txt|html}' should be "
-                    "present to document the external resources the FMU depends on to be loaded or simulated and how "
-                    "to provide them.");
+                    "present to document the external resources the FMU depends on.");
             }
         }
         cert.printTestResult(test);
