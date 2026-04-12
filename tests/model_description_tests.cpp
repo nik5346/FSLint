@@ -225,7 +225,7 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
     SECTION("FMI 1.0 Direct Dependency Valid")
     {
         Certificate cert_dd;
-        checker.validate("tests/data/fmi1/pass/DirectDependencyValid", cert_dd);
+        checker.validate("tests/data/fmi1/pass/direct_dependency_valid", cert_dd);
         CHECK_FALSE(has_fail(cert_dd));
     }
 

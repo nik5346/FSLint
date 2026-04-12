@@ -19,6 +19,7 @@
 #include <regex>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -87,7 +88,7 @@ void Fmi1ModelDescriptionChecker::checkDirectDependencies(xmlDocPtr doc, const s
     TestResult test{"Direct Dependency References", TestStatus::PASS, {}};
 
     // Create a map for fast lookup of variables by name
-    std::map<std::string, const Variable*> variable_map;
+    std::unordered_map<std::string, const Variable*> variable_map;
     for (const auto& var : variables)
         variable_map[var.name] = &var;
 
