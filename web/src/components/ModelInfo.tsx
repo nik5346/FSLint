@@ -203,58 +203,6 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         gap: '24px',
       }}
     >
-      <section>
-        <h3 style={{ marginBottom: '16px' }}>Test Results</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {results.map((res: TestResult, i: number) => (
-            <div
-              key={i}
-              style={{
-                border: `1px solid ${theme.border}`,
-                borderRadius: '4px',
-                padding: '8px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: '4px',
-                }}
-              >
-                <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{res.test_name}</span>
-                <span
-                  style={{
-                    fontSize: '10px',
-                    padding: '2px 4px',
-                    borderRadius: '4px',
-                    backgroundColor:
-                      res.status === 'PASS'
-                        ? 'var(--status-pass)'
-                        : res.status === 'FAIL'
-                          ? 'var(--status-fail)'
-                          : 'var(--status-warn)',
-                    color: '#fff',
-                  }}
-                >
-                  {res.status}
-                </span>
-              </div>
-              {res.messages.map((msg: string, j: number) => (
-                <div key={j} style={{ fontSize: '12px', color: theme.muted, marginLeft: '8px' }}>
-                  • {msg}
-                </div>
-              ))}
-            </div>
-          ))}
-          {results.length === 0 && (
-            <div style={{ color: theme.muted, fontSize: '0.9em', fontStyle: 'italic' }}>
-              No test results recorded.
-            </div>
-          )}
-        </div>
-      </section>
-
       {overallStatus === 'FAIL' &&
         (hasSecurityFailure || !summary?.standard || summary.standard === 'UNKNOWN') && (
           <div

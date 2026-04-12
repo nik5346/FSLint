@@ -54,12 +54,7 @@ export const ModelTreeItem: React.FC<ModelTreeItemProps> = ({
   };
 
   const status = 'overallStatus' in node ? node.overallStatus : node.status;
-  const name =
-    'summary' in node && node.summary
-      ? node.summary.model_name
-      : 'name' in node
-        ? node.name
-        : 'Root';
+  const name = ('name' in node && node.name) || (node.summary && node.summary.model_name) || 'Root';
 
   return (
     <div
@@ -99,6 +94,11 @@ export const ModelTreeItem: React.FC<ModelTreeItemProps> = ({
           }}
           role="button"
           tabIndex={0}
+          aria-label={
+            isExpanded
+              ? `Collapse ${name}`
+              : `Expand ${name}`
+          }
           style={{
             display: 'flex',
             alignItems: 'center',

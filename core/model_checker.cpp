@@ -36,10 +36,10 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         if (filename.empty() && path.has_parent_path())
             filename = file_utils::pathToUtf8(path.parent_path().filename());
         std::cout << "Validating: " << filename << "\n";
-
-        const std::string hash = calculateSHA256(path);
-        cert.printMainHeader(hash);
     }
+
+    const std::string hash = calculateSHA256(path);
+    cert.printMainHeader(hash);
 
     std::filesystem::path extract_dir;
     bool is_temporary = false;
@@ -143,11 +143,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         std::filesystem::remove_all(extract_dir);
 #endif
 
-    if (!quiet)
-    {
-        cert.printNestedModelsTree();
-        cert.printFooter();
-    }
+    cert.printNestedModelsTree();
+    cert.printFooter();
 
     return cert;
 }

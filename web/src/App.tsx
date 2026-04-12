@@ -1040,7 +1040,7 @@ function App() {
               )}
 
               {activeTab === 'explorer' && selectedNode && (
-                <>
+                <div style={{ flex: 1, display: 'flex', minWidth: 0 }}>
                   <div
                     style={{
                       width: explorerWidth,
@@ -1102,7 +1102,7 @@ function App() {
                       isDark={isDark}
                     />
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>
