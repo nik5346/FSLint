@@ -1,31 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription
-  fmiVersion="1.0"
-  modelName="AliasInheritedUnit"
-  modelIdentifier="AliasInheritedUnit"
-  guid="{c78f134a-93f4-4f81-9b16-4775d5e23652}"
-  generationTool="Handmade"
-  variableNamingConvention="flat"
-  numberOfEventIndicators="0">
-
+<fmiModelDescription fmiVersion="1.0" modelName="AliasInheritedUnit" modelIdentifier="AliasInheritedUnit" guid="{c78f134a-93f4-4f81-9b16-4775d5e23652}" generationTool="Handmade" variableNamingConvention="flat" numberOfEventIndicators="0">
   <TypeDefinitions>
     <Type name="Position">
-      <RealType unit="m"/>
+      <RealType unit="m" />
     </Type>
   </TypeDefinitions>
-
   <UnitDefinitions>
-    <BaseUnit unit="m"/>
+    <BaseUnit unit="m" />
   </UnitDefinitions>
-
   <ModelVariables>
     <ScalarVariable name="var1" valueReference="1" variability="continuous" causality="output" alias="noAlias">
-      <Real start="0.0" unit="m"/>
+      <Real start="0.0" unit="m" />
     </ScalarVariable>
-
     <ScalarVariable name="var2" valueReference="1" variability="continuous" causality="output" alias="alias" declaredType="Position">
-      <Real start="0.0"/>
+      <Real start="0.0" />
     </ScalarVariable>
   </ModelVariables>
-
 </fmiModelDescription>

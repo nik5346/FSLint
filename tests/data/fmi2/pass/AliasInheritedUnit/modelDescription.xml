@@ -1,37 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription
-  fmiVersion="2.0"
-  modelName="AliasInheritedUnit"
-  guid="{c78f134a-93f4-4f81-9b16-4775d5e23652}"
-  generationTool="Handmade"
-  variableNamingConvention="flat">
-
-  <CoSimulation modelIdentifier="AliasInheritedUnit"/>
-
+<fmiModelDescription fmiVersion="2.0" modelName="AliasInheritedUnit" guid="{c78f134a-93f4-4f81-9b16-4775d5e23652}" generationTool="Handmade" variableNamingConvention="flat">
+  <CoSimulation modelIdentifier="AliasInheritedUnit" />
   <UnitDefinitions>
-    <Unit name="m"/>
+    <Unit name="m" />
   </UnitDefinitions>
-
   <TypeDefinitions>
     <SimpleType name="Position">
-      <Real unit="m"/>
+      <Real unit="m" />
     </SimpleType>
   </TypeDefinitions>
-
   <ModelVariables>
     <ScalarVariable name="var1" valueReference="1" variability="continuous" causality="output" initial="exact">
-      <Real start="0.0" unit="m"/>
+      <Real start="0.0" unit="m" />
     </ScalarVariable>
-
     <ScalarVariable name="var2" valueReference="1" variability="continuous" causality="local" initial="calculated" declaredType="Position">
-      <Real/>
+      <Real />
     </ScalarVariable>
   </ModelVariables>
-
   <ModelStructure>
     <Outputs>
-      <Unknown index="1"/>
+      <Unknown index="1" />
     </Outputs>
   </ModelStructure>
-
 </fmiModelDescription>
