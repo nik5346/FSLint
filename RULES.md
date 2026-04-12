@@ -179,7 +179,7 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Required Start Values**: Variables **must** have a `start` attribute if `causality="input"` or `variability="constant"`.
 - **Illegal Start Values**:
   - The `fixed` attribute **must** only be present if a `start` attribute is also provided.
-  - The `fixed` attribute **must not** be used for variables with `causality="input"` (this attribute is only defined for other causalities).
+  - The `fixed` attribute **must not** be used for variables with `causality="input"` or `causality="none"` (this attribute is only defined for other causalities).
   - For variables with `variability="constant"`, `fixed="false"` (guess value) is **not allowed**.
 - **Causality/Variability Combinations**:
   - Variables with `variability="constant"` **must not** have `causality="input"` (logical contradiction: constants cannot be changed from the outside).
