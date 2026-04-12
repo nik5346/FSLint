@@ -173,6 +173,12 @@ TEST_CASE("FMI 1.0 Model Description Warning Cases", "[fmi1][warn]")
         validate_warning("warn/generation_date_missing", "Providing 'generationDateAndTime' is recommended.");
     }
 
+    SECTION("Implementation")
+    {
+        validate_warning("warn/file_uri_missing",
+                         "references 'file://' URI pointing to a path that does not exist on the current system");
+    }
+
     SECTION("Unused Definitions")
     {
         validate_warning("warn/unit_unused", "Unit 's' (line 4) is unused.");

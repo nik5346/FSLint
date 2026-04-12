@@ -171,6 +171,7 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 - **Model Identifier Matching**: The `modelIdentifier` **must** match the FMU filename stem (ZIP name).
 - **URI-based File References**: In CS `CoSimulation_Tool`, `entryPoint` and `file` attributes **should** use the `fmu://` URI scheme.
   - URIs using `fmu://` **must** point to existing files within the archive.
+  - URIs using `file://` **should** point to existing files on the current system. If the file is missing, a warning is issued as it may affect portability.
 - **Vendor Annotations**: Tool names within `VendorAnnotations` **must** be unique.
 
 ### Variable Consistency

@@ -793,6 +793,20 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
                                                         attr_name, line, relative_path));
         }
     }
+    else if (uri.starts_with("file://"))
+    {
+        const std::string path = uri.substr(7); // Remove "file://"
+        if (!std::filesystem::exists(path))
+        {
+            if (test.getStatus() != TestStatus::FAIL)
+                test.setStatus(TestStatus::WARNING);
+
+            test.getMessages().emplace_back(
+                std::format("Attribute '{}' (line {}) references 'file://' URI pointing to a path that does not exist "
+                            "on the current system: '{}' (may affect portability).",
+                            attr_name, line, path));
+        }
+    }
 }
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert) const
