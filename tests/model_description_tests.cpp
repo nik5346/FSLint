@@ -125,6 +125,7 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("start_missing_constant", "must have a start value");
         validate_fail("fixed_no_start", "has 'fixed' attribute but is missing 'start' value");
         validate_fail("fixed_on_input", "has causality='input' and a 'fixed' attribute");
+        validate_fail("fixed_on_none", "has attribute 'fixed' but causality='none'");
         validate_fail("fixed_on_constant_guess", "has variability='constant' and fixed='false'");
     }
 }

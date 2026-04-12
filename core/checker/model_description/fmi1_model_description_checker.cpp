@@ -308,14 +308,24 @@ void Fmi1ModelDescriptionChecker::checkIllegalStartValues(const std::vector<Vari
                             var.sourceline));
         }
 
-        // FMI 1.0: "fixed" attribute is not defined for causality="input"
-        if (var.causality == "input" && var.fixed)
+        // FMI 1.0: "fixed" attribute is not defined for causality="input" or "none"
+        if ((var.causality == "input" || var.causality == "none") && var.fixed)
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(
-                "Variable '{}' (line {}) has causality='input' and a 'fixed' attribute. The 'fixed' attribute is only "
-                "defined for causalities other than 'input' (Section 3.3).",
-                var.name, var.sourceline));
+            if (var.causality == "input")
+            {
+                test.getMessages().emplace_back(std::format(
+                    "Variable '{}' (line {}) has causality='input' and a 'fixed' attribute. The 'fixed' attribute is "
+                    "only defined for causalities other than 'input' (Section 3.3).",
+                    var.name, var.sourceline));
+            }
+            else
+            {
+                test.getMessages().emplace_back(std::format(
+                    "Variable '{}' (line {}) has attribute 'fixed' but causality='none' — this variable does not "
+                    "participate in initialization and 'fixed' has no meaning here.",
+                    var.name, var.sourceline));
+            }
         }
 
         // FMI 1.0: "fixed" attribute for variability="constant"
