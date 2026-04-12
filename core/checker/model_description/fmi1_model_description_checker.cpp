@@ -832,8 +832,8 @@ std::string Fmi1ModelDescriptionChecker::percentDecode(const std::string& s) con
                     return c - 'A' + 10;
                 return -1;
             };
-            int h1 = hex2int(s[i + 1]);
-            int h2 = hex2int(s[i + 2]);
+            const int h1 = hex2int(s[i + 1]);
+            const int h2 = hex2int(s[i + 2]);
             if (h1 != -1 && h2 != -1)
             {
                 res += static_cast<char>((h1 << 4) | h2);
