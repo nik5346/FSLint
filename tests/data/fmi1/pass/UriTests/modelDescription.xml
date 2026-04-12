@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="UriTests" modelIdentifier="UriTests" guid="{12345678-1234-1234-1234-123456789012}" numberOfContinuousStates="0" numberOfEventIndicators="0" generationDateAndTime="2024-05-22T12:00:00Z" variableNamingConvention="flat">
+  <ModelVariables>
+    <ScalarVariable name="x" valueReference="1" causality="input">
+      <Real start="0.0"/>
+    </ScalarVariable>
+  </ModelVariables>
+  <Implementation>
+    <CoSimulation_Tool>
+      <Capabilities canHandleVariableCommunicationStepSize="true"/>
+      <Model entryPoint="fmu:////resources/model%20file.mdl" type="Modelica">
+        <File file="fmu://resources/extra%23file.txt" />
+      </Model>
+    </CoSimulation_Tool>
+  </Implementation>
+</fmiModelDescription>

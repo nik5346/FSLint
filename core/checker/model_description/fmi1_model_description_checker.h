@@ -71,6 +71,7 @@ class Fmi1ModelDescriptionChecker : public ModelDescriptionCheckerBase
   private:
     void checkImplementation(xmlDocPtr doc, Certificate& cert) const;
     void checkUri(const std::string& uri, const std::string& attr_name, int line, TestResult& test) const;
+    std::string percentDecode(const std::string& s) const;
     void checkAliases(const std::vector<Variable>& variables,
                       const std::map<std::string, TypeDefinition>& type_definitions, Certificate& cert) const;
     void checkDirectDependencies(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;

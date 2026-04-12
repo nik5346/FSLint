@@ -259,6 +259,13 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
         CHECK_FALSE(has_error_with_text(cert_date, "Generation date and time"));
         CHECK_FALSE(has_warning_with_text(cert_date, "Generation date and time"));
     }
+
+    SECTION("FMI 1.0 URI Handling Valid")
+    {
+        Certificate cert_uri;
+        checker.validate("tests/data/fmi1/pass/UriTests", cert_uri);
+        CHECK_FALSE(has_fail(cert_uri));
+    }
 }
 
 TEST_CASE("FMI 2.0 Model Description Failure Cases", "[fmi2][fail]")

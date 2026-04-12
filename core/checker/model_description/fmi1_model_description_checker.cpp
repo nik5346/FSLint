@@ -780,10 +780,22 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
     if (uri.starts_with("fmu://"))
     {
         std::string relative_path = uri.substr(6); // Remove "fmu://"
+
+        // Percent-decode the path
+        relative_path = percentDecode(relative_path);
+
         // The path in fmu:// scheme is relative to the FMU root.
-        // We remove any leading slash if present after fmu:// (e.g., fmu:///resources/...)
-        if (!relative_path.empty() && relative_path[0] == '/')
+        // We remove any leading slashes if present after fmu:// (e.g., fmu:////resources/...)
+        while (!relative_path.empty() && relative_path[0] == '/')
             relative_path.erase(0, 1);
+
+        if (relative_path.empty())
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                std::format("Attribute '{}' (line {}) references FMU root instead of a file.", attr_name, line));
+            return;
+        }
 
         const std::filesystem::path full_path = getFmuRootPath() / relative_path;
         if (!std::filesystem::exists(full_path))
@@ -792,7 +804,46 @@ void Fmi1ModelDescriptionChecker::checkUri(const std::string& uri, const std::st
             test.getMessages().emplace_back(std::format("Attribute '{}' (line {}) references missing file in FMU: '{}'",
                                                         attr_name, line, relative_path));
         }
+        else if (!std::filesystem::is_regular_file(full_path))
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                std::format("Attribute '{}' (line {}) references a directory instead of a file: '{}'", attr_name, line,
+                            relative_path));
+        }
     }
+}
+
+std::string Fmi1ModelDescriptionChecker::percentDecode(const std::string& s) const
+{
+    std::string res;
+    res.reserve(s.length());
+    for (size_t i = 0; i < s.length(); ++i)
+    {
+        if (s[i] == '%' && i + 2 < s.length())
+        {
+            auto hex2int = [](char c) -> int
+            {
+                if (c >= '0' && c <= '9')
+                    return c - '0';
+                if (c >= 'a' && c <= 'f')
+                    return c - 'a' + 10;
+                if (c >= 'A' && c <= 'F')
+                    return c - 'A' + 10;
+                return -1;
+            };
+            int h1 = hex2int(s[i + 1]);
+            int h2 = hex2int(s[i + 2]);
+            if (h1 != -1 && h2 != -1)
+            {
+                res += static_cast<char>((h1 << 4) | h2);
+                i += 2;
+                continue;
+            }
+        }
+        res += s[i];
+    }
+    return res;
 }
 
 void Fmi1ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables,
