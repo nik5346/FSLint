@@ -94,17 +94,26 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
             if (std::filesystem::exists(diag_png_path))
             {
-                const auto dimensions = file_utils::getPngDimensions(diag_png_path);
-                if (dimensions.has_value())
+                if (!file_utils::hasPngMagic(diag_png_path))
                 {
-                    if (dimensions->first < 100 || dimensions->second < 100)
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        "File 'documentation/diagram.png' is not a valid PNG image (invalid magic bytes).");
+                }
+                else
+                {
+                    const auto dimensions = file_utils::getPngDimensions(diag_png_path);
+                    if (dimensions.has_value())
                     {
-                        if (test.getStatus() != TestStatus::FAIL)
-                            test.setStatus(TestStatus::WARNING);
-                        test.getMessages().emplace_back(std::format(
-                            "Diagram 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
-                            "100x100 pixels is recommended.",
-                            dimensions->first, dimensions->second));
+                        if (dimensions->first < 100 || dimensions->second < 100)
+                        {
+                            if (test.getStatus() != TestStatus::FAIL)
+                                test.setStatus(TestStatus::WARNING);
+                            test.getMessages().emplace_back(std::format(
+                                "Diagram 'documentation/diagram.png' is small ({}x{} pixels). A size of at least "
+                                "100x100 pixels is recommended.",
+                                dimensions->first, dimensions->second));
+                        }
                     }
                 }
             }
@@ -170,18 +179,28 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
                     }
                     else
                     {
-                        const auto dimensions = file_utils::getPngDimensions(png_path);
-                        if (dimensions.has_value())
+                        if (!file_utils::hasPngMagic(png_path))
                         {
-                            if (dimensions->first < 100 || dimensions->second < 100)
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(std::format(
+                                "File '{}' is not a valid PNG image (invalid magic bytes).",
+                                std::string("terminalsAndIcons/") + file_utils::pathToUtf8(png_path.filename())));
+                        }
+                        else
+                        {
+                            const auto dimensions = file_utils::getPngDimensions(png_path);
+                            if (dimensions.has_value())
                             {
-                                if (test.getStatus() != TestStatus::FAIL)
-                                    test.setStatus(TestStatus::WARNING);
-                                test.getMessages().emplace_back(std::format(
-                                    "Icon '{}' is small ({}x{} pixels). A size of at least 100x100 pixels is "
-                                    "recommended.",
-                                    file_utils::pathToUtf8(png_path.filename()), dimensions->first,
-                                    dimensions->second));
+                                if (dimensions->first < 100 || dimensions->second < 100)
+                                {
+                                    if (test.getStatus() != TestStatus::FAIL)
+                                        test.setStatus(TestStatus::WARNING);
+                                    test.getMessages().emplace_back(std::format(
+                                        "Icon '{}' is small ({}x{} pixels). A size of at least 100x100 pixels is "
+                                        "recommended.",
+                                        file_utils::pathToUtf8(png_path.filename()), dimensions->first,
+                                        dimensions->second));
+                                }
                             }
                         }
                     }
@@ -191,17 +210,26 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
 
         if (icon_png_exists)
         {
-            const auto dimensions = file_utils::getPngDimensions(icon_png_path);
-            if (dimensions.has_value())
+            if (!file_utils::hasPngMagic(icon_png_path))
             {
-                if (dimensions->first < 100 || dimensions->second < 100)
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    "File 'terminalsAndIcons/icon.png' is not a valid PNG image (invalid magic bytes).");
+            }
+            else
+            {
+                const auto dimensions = file_utils::getPngDimensions(icon_png_path);
+                if (dimensions.has_value())
                 {
-                    if (test.getStatus() != TestStatus::FAIL)
-                        test.setStatus(TestStatus::WARNING);
-                    test.getMessages().emplace_back(
-                        std::format("Icon 'terminalsAndIcons/icon.png' is small ({}x{} pixels). A size of at least "
-                                    "100x100 pixels is recommended.",
-                                    dimensions->first, dimensions->second));
+                    if (dimensions->first < 100 || dimensions->second < 100)
+                    {
+                        if (test.getStatus() != TestStatus::FAIL)
+                            test.setStatus(TestStatus::WARNING);
+                        test.getMessages().emplace_back(std::format(
+                            "Icon 'terminalsAndIcons/icon.png' is small ({}x{} pixels). A size of at least "
+                            "100x100 pixels is recommended.",
+                            dimensions->first, dimensions->second));
+                    }
                 }
             }
         }

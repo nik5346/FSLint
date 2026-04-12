@@ -131,8 +131,28 @@ void fileNodeToJson(const std::filesystem::path& path, void* node_ptr, void* all
     }
 }
 
+bool hasPngMagic(const std::filesystem::path& path)
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file)
+        return false;
+
+    std::array<unsigned char, 8> header{};
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    file.read(reinterpret_cast<char*>(header.data()), static_cast<std::streamsize>(header.size()));
+    if (file.gcount() < 8)
+        return false;
+
+    // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+    static constexpr std::array<unsigned char, 8> signature = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+    return std::memcmp(header.data(), signature.data(), signature.size()) == 0;
+}
+
 std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesystem::path& path)
 {
+    if (!hasPngMagic(path))
+        return std::nullopt;
+
     std::ifstream file(path, std::ios::binary);
     if (!file)
         return std::nullopt;
@@ -143,11 +163,6 @@ std::optional<std::pair<uint32_t, uint32_t>> getPngDimensions(const std::filesys
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     file.read(reinterpret_cast<char*>(header.data()), static_cast<std::streamsize>(header.size()));
     if (file.gcount() < 24)
-        return std::nullopt;
-
-    // Check PNG signature: 89 50 4E 47 0D 0A 1A 0A
-    static constexpr std::array<unsigned char, 8> signature = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-    if (std::memcmp(header.data(), signature.data(), signature.size()) != 0)
         return std::nullopt;
 
     // Check IHDR chunk type: "IHDR"

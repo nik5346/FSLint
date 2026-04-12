@@ -442,18 +442,29 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                     }
                     else
                     {
-                        const auto dimensions = file_utils::getPngDimensions(png_path);
-                        if (dimensions.has_value())
+                        if (!file_utils::hasPngMagic(png_path))
                         {
-                            if (dimensions->first < 100 || dimensions->second < 100)
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(std::format(
+                                "File '{}' (referenced line {}) is not a valid PNG image (invalid magic bytes).",
+                                std::string("terminalsAndIcons/") + file_utils::pathToUtf8(png_path.filename()),
+                                node->line));
+                        }
+                        else
+                        {
+                            const auto dimensions = file_utils::getPngDimensions(png_path);
+                            if (dimensions.has_value())
                             {
-                                if (test.getStatus() != TestStatus::FAIL)
-                                    test.setStatus(TestStatus::WARNING);
-                                test.getMessages().emplace_back(std::format(
-                                    "Terminal icon '{}' (referenced line {}) is small ({}x{} pixels). A size of at "
-                                    "least 100x100 pixels is recommended.",
-                                    file_utils::pathToUtf8(png_path.filename()), node->line, dimensions->first,
-                                    dimensions->second));
+                                if (dimensions->first < 100 || dimensions->second < 100)
+                                {
+                                    if (test.getStatus() != TestStatus::FAIL)
+                                        test.setStatus(TestStatus::WARNING);
+                                    test.getMessages().emplace_back(std::format(
+                                        "Terminal icon '{}' (referenced line {}) is small ({}x{} pixels). A size of at "
+                                        "least 100x100 pixels is recommended.",
+                                        file_utils::pathToUtf8(png_path.filename()), node->line, dimensions->first,
+                                        dimensions->second));
+                                }
                             }
                         }
                     }

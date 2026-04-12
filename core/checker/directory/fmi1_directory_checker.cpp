@@ -159,6 +159,11 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
             test.setStatus(TestStatus::WARNING);
             test.getMessages().emplace_back("Recommended file 'model.png' is missing from the FMU root.");
         }
+        else if (!file_utils::hasPngMagic(png_path))
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back("File 'model.png' is not a valid PNG image (invalid magic bytes).");
+        }
         else
         {
             auto dimensions = file_utils::getPngDimensions(png_path);

@@ -23,6 +23,11 @@ std::string pathToUtf8(const std::filesystem::path& path);
 /// @return Path.
 std::filesystem::path utf8ToPath(const std::string& utf8);
 
+/// @brief Checks if a file has the PNG magic signature.
+/// @param path Path to file.
+/// @return True if it has the PNG signature.
+bool hasPngMagic(const std::filesystem::path& path);
+
 /// @brief Gets PNG image dimensions.
 /// @param path Path to PNG.
 /// @return Pair of width and height or std::nullopt.

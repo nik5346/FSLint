@@ -105,6 +105,18 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
         checker.validate("tests/data/fmi1/fail/missing_binary", cert3);
         REQUIRE(has_fail(cert3));
         CHECK(has_error_with_text(cert3, "does not contain a binary matching modelIdentifier"));
+
+        Certificate cert4;
+        Fmi1DirectoryChecker png_checker;
+        png_checker.setOriginalPath("Test.fmu");
+        png_checker.validate("tests/data/directory/fail/invalid_png_magic", cert4);
+        REQUIRE(has_fail(cert4));
+        CHECK(has_error_with_text(cert4, "File 'model.png' is not a valid PNG image (invalid magic bytes)."));
+
+        Certificate cert5;
+        png_checker.validate("tests/data/directory/fail/zero_byte_png", cert5);
+        REQUIRE(has_fail(cert5));
+        CHECK(has_error_with_text(cert5, "File 'model.png' is not a valid PNG image (invalid magic bytes)."));
     }
 
     SECTION("Warning Cases")
@@ -293,6 +305,10 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_fail("tests/data/fmi2/fail/undeclared_sources",
                       "Source code FMU contains a 'sources/' directory, but no <SourceFiles> are listed in "
                       "'modelDescription.xml'.");
+        validate_fail("tests/data/directory/fail/invalid_png_magic",
+                      "File 'model.png' is not a valid PNG image (invalid magic bytes).");
+        validate_fail("tests/data/directory/fail/zero_byte_png",
+                      "File 'model.png' is not a valid PNG image (invalid magic bytes).");
     }
 
     SECTION("Warning Cases")
@@ -451,6 +467,10 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
                       "The documentation entry point 'documentation/index.html' is missing.");
         validate_fail("tests/data/fmi3/warn/invalid_binaries_tuple",
                       "does not contain a binary matching modelIdentifier");
+        validate_fail("tests/data/fmi3/fail/invalid_diagram_png",
+                      "File 'documentation/diagram.png' is not a valid PNG image (invalid magic bytes).");
+        validate_fail("tests/data/fmi3/fail/invalid_icon_png",
+                      "File 'terminalsAndIcons/icon.png' is not a valid PNG image (invalid magic bytes).");
     }
 
     SECTION("Warning Cases")
