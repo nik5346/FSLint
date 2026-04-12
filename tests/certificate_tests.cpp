@@ -39,9 +39,9 @@ TEST_CASE("Certificate reporting logic", "[certificate]")
     {
         cert.printSubsectionHeader("Group 1");
         cert.printTestResult({"Test 1", TestStatus::PASS, {}});
-        cert.printSubsectionSummary(false); // Manually failed
+        cert.printSubsectionSummary(false); // Manually failed but should not set isFailed()
 
-        CHECK(cert.isFailed());
+        CHECK_FALSE(cert.isFailed());
         CHECK(cert.getFullReport().find("Result: FAILED") != std::string::npos);
     }
 

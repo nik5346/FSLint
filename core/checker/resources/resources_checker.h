@@ -14,5 +14,6 @@ class ResourcesChecker : public Checker
     void validate(const std::filesystem::path& path, Certificate& cert) const override;
 
   private:
-    void scanResources(const std::filesystem::path& resources_dir, Certificate& cert) const;
+    void scanResources(const std::filesystem::path& resources_dir, Certificate& cert,
+                       const std::string& logical_prefix = "") const;
 };

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -100,14 +101,6 @@ class TestResult
     bool _is_security_issue{false};       ///< True if this is a security-related test.
 };
 
-/// @brief Result of validation for a nested model (e.g., within resources).
-struct NestedModelResult
-{
-    std::string name;                             ///< Path or name of the nested model.
-    TestStatus status = TestStatus::PASS;         ///< Aggregated status.
-    std::vector<NestedModelResult> nested_models; ///< Recursively nested results.
-};
-
 /// @brief Summary of extracted model metadata.
 struct ModelSummary
 {
@@ -129,6 +122,17 @@ struct ModelSummary
     std::vector<std::string> fmu_types{};         ///< FMU types ("Binary", "Source code").
     std::string source_language{};                ///< Programming language of sources.
     uint64_t total_size = 0;                      ///< Total recursive size in bytes.
+};
+
+/// @brief Result of validation for a nested model (e.g., within resources).
+struct NestedModelResult
+{
+    std::string name;                     ///< Segment name only (e.g. "inner.fmu").
+    std::string logical_path;             ///< Full logical path from validation root (e.g. "inner.fmu/even_inner.fmu").
+    TestStatus status = TestStatus::PASS; ///< Aggregated status.
+    std::optional<ModelSummary> summary;  ///< Child model metadata.
+    std::optional<std::vector<TestResult>> results; ///< Child test results.
+    std::vector<NestedModelResult> nested_models;   ///< Recursively nested results.
 };
 
 /// @brief Validation report generator and result container.

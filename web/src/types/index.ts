@@ -161,10 +161,19 @@ export interface TestResult {
  * Represents a hierarchical test result for nested models.
  */
 export interface NestedModelResult {
-  /** The name of the nested model. */
+  /** The segment name of the nested model (e.g. "inner.fmu"). */
   name: string;
-  /** The status of the nested model validation. */
+  /** The full logical path from the validation root (e.g. "inner.fmu/even_inner.fmu"). */
+  logical_path: string;
+  /** The validation status of this model. */
   status: 'PASS' | 'FAIL' | 'WARNING';
+  /** Metadata summary for this model, if available. */
+  summary?: Pick<
+    ModelSummary,
+    'model_name' | 'standard' | 'fmi_version' | 'guid' | 'generation_tool'
+  >;
+  /** Individual test results for this model, if available. */
+  results?: TestResult[];
   /** Results of further nested models. */
   nested_models?: NestedModelResult[];
 }

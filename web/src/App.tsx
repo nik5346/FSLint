@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useFSLint } from './hooks/useFSLint';
-import { FileNode } from './types';
+import { FileNode, NestedModelResult, ValidationResult } from './types';
 import { FileTreeItem } from './components/FileTreeItem';
 import { FilePreview } from './components/FilePreview';
+import { ModelTree } from './components/ModelTree';
 import { ModelInfo } from './components/ModelInfo';
 import { RulesOutline } from './components/RulesOutline';
 import { MarkdownContent } from './components/MarkdownContent';
@@ -73,17 +74,49 @@ function App() {
   );
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [rulesText, setRulesText] = useState<string>('');
-  const [explorerWidth, setExplorerWidth] = useState(300);
+  const [explorerWidth, setExplorerWidth] = useState(200);
+  const [modelTreeWidth, setModelTreeWidth] = useState(190);
   const [rulesWidth, setRulesWidth] = useState(250);
   const [isResizing, setIsResizing] = useState(false);
+  const [isResizingModelTree, setIsResizingModelTree] = useState(false);
   const [isResizingRules, setIsResizingRules] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [activeRuleLine, setActiveRuleLine] = useState<number | undefined>();
+  const [selectedModelPath, setSelectedModelPath] = useState<string | null>(null);
 
   const outputEndRef = useRef<HTMLPreElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
   const rulesScrollRef = useRef<HTMLDivElement>(null);
+
+  const selectedNode = useMemo(() => {
+    if (!validationResult) return null;
+    if (!selectedModelPath) return validationResult;
+
+    let found: NestedModelResult | ValidationResult | null = null;
+    /**
+     * Recursively finds a nested model result by its logical path.
+     * @param {NestedModelResult[]} nodes - The array of nodes to search.
+     */
+    const findNode = (nodes: NestedModelResult[]) => {
+      for (const node of nodes) {
+        if (node.logical_path === selectedModelPath) {
+          found = node;
+          return;
+        }
+        if (node.nested_models) findNode(node.nested_models);
+      }
+    };
+    findNode(validationResult.nested_models);
+    return found;
+  }, [validationResult, selectedModelPath]);
+
+  const selectedFileTree = useMemo(() => {
+    if (!selectedNode) return null;
+    if ('file_tree' in selectedNode) return selectedNode.file_tree;
+    // For nested models, we don't have a file tree yet (as per Change 7c)
+    return null;
+  }, [selectedNode]);
 
   const fileMap = useMemo(() => {
     const map = new Map<string, FileNode>();
@@ -95,9 +128,9 @@ function App() {
       map.set(node.path, node);
       node.children?.forEach(traverse);
     };
-    if (fileTree) traverse(fileTree);
+    if (selectedFileTree) traverse(selectedFileTree);
     return map;
-  }, [fileTree]);
+  }, [selectedFileTree]);
 
   const rulesHeaders = useMemo(() => extractHeaders(rulesText), [rulesText]);
 
@@ -185,6 +218,11 @@ function App() {
         z-index: 2 !important;
         display: inline-block !important;
       }
+      :root {
+        --status-pass: #4caf50;
+        --status-fail: #f44336;
+        --status-warn: #ff9800;
+      }
     `;
   }, [theme.bg, theme.text, theme.surface, isDark]);
 
@@ -215,9 +253,14 @@ function App() {
      */
     const handleMouseMove = (e: MouseEvent) => {
       if (isResizing) {
-        const newWidth = e.clientX - 64 - 20;
+        const newWidth = e.clientX - 64 - 20 - modelTreeWidth - 4;
         if (newWidth > 150 && newWidth < 800) {
           setExplorerWidth(newWidth);
+        }
+      } else if (isResizingModelTree) {
+        const newWidth = e.clientX - 64 - 20;
+        if (newWidth > 100 && newWidth < 400) {
+          setModelTreeWidth(newWidth);
         }
       } else if (isResizingRules) {
         const newWidth = e.clientX - 64 - 20;
@@ -231,10 +274,11 @@ function App() {
      */
     const handleMouseUp = () => {
       setIsResizing(false);
+      setIsResizingModelTree(false);
       setIsResizingRules(false);
     };
 
-    if (isResizing || isResizingRules) {
+    if (isResizing || isResizingModelTree || isResizingRules) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     }
@@ -242,7 +286,7 @@ function App() {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isResizing, isResizingRules]);
+  }, [isResizing, isResizingModelTree, isResizingRules, modelTreeWidth]);
 
   useEffect(() => {
     if (validationResult) {
@@ -252,11 +296,18 @@ function App() {
         setActiveTab('certificate');
       } else {
         // Otherwise default to the info tab
-
         setActiveTab('info');
       }
     }
   }, [validationResult, fileTree]);
+
+  /**
+   * Resets the selected model path when the validation result changes.
+   */
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedModelPath(null);
+  }, [validationResult]);
 
   /**
    * Handles file selection from the hidden input.
@@ -545,9 +596,12 @@ function App() {
         <button
           className={`tab-btn ${activeTab === 'explorer' ? 'active' : ''}`}
           onClick={() => setActiveTab('explorer')}
-          disabled={!fileTree}
-          style={{ opacity: fileTree ? 1 : 0.3, cursor: fileTree ? 'pointer' : 'default' }}
-          title="File Tree"
+          disabled={!validationResult}
+          style={{
+            opacity: validationResult ? 1 : 0.3,
+            cursor: validationResult ? 'pointer' : 'default',
+          }}
+          title="Explorer"
         >
           <svg
             width="24"
@@ -857,7 +911,7 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'explorer' && fileTree && (
+        {activeTab === 'explorer' && validationResult && (
           <div
             style={{
               flex: 1,
@@ -869,6 +923,42 @@ function App() {
               overflow: 'hidden',
             }}
           >
+            {/* Left column: Model Tree */}
+            <div
+              style={{
+                width: modelTreeWidth,
+                backgroundColor: theme.surface,
+                overflowY: 'auto',
+                padding: '10px',
+                flexShrink: 0,
+                borderRight: `1px solid ${theme.border}`,
+              }}
+            >
+              <ModelTree
+                root={validationResult}
+                selectedPath={selectedModelPath}
+                onSelect={(path) => {
+                  setSelectedModelPath(path);
+                  setSelectedFile(null);
+                }}
+              />
+            </div>
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizingModelTree(true);
+              }}
+              style={{
+                width: '4px',
+                cursor: 'col-resize',
+                backgroundColor: isResizingModelTree ? '#007bff' : theme.border,
+                transition: 'background-color 0.2s',
+                zIndex: 10,
+              }}
+            />
+
+            {/* Middle column: File Tree */}
             <div
               style={{
                 width: explorerWidth,
@@ -878,26 +968,32 @@ function App() {
                 flexShrink: 0,
               }}
             >
-              {fileTree.name.startsWith('model_validation_') ||
-              fileTree.name.startsWith('model_cert_add_') ? (
-                fileTree.children?.map((child) => (
+              {selectedFileTree ? (
+                selectedFileTree.name.startsWith('model_validation_') ||
+                selectedFileTree.name.startsWith('model_cert_add_') ? (
+                  selectedFileTree.children?.map((child) => (
+                    <FileTreeItem
+                      key={child.path}
+                      node={child}
+                      isSelected={child.path === selectedFile}
+                      selectedFile={selectedFile}
+                      setSelectedFile={setSelectedFile}
+                      theme={theme}
+                    />
+                  ))
+                ) : (
                   <FileTreeItem
-                    key={child.path}
-                    node={child}
-                    isSelected={child.path === selectedFile}
+                    node={selectedFileTree}
+                    isSelected={selectedFile === selectedFileTree.path}
                     selectedFile={selectedFile}
                     setSelectedFile={setSelectedFile}
                     theme={theme}
                   />
-                ))
+                )
               ) : (
-                <FileTreeItem
-                  node={fileTree}
-                  isSelected={selectedFile === fileTree.path}
-                  selectedFile={selectedFile}
-                  setSelectedFile={setSelectedFile}
-                  theme={theme}
-                />
+                <div style={{ color: theme.muted, fontSize: '0.9em', textAlign: 'center' }}>
+                  File tree not available for this model
+                </div>
               )}
             </div>
             {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
@@ -914,21 +1010,141 @@ function App() {
                 zIndex: 10,
               }}
             />
+
+            {/* Right column: Detail Panel */}
             <div
               style={{
                 flex: 1,
                 backgroundColor: theme.surface,
                 minWidth: 0,
+                overflowY: 'auto',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
               }}
             >
-              <FilePreview
-                key={selectedFile}
-                selectedFile={selectedFile}
-                node={selectedFile ? fileMap.get(selectedFile) : null}
-                module={module}
-                theme={theme}
-                isDark={isDark}
-              />
+              {selectedNode && (
+                <>
+                  <section>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '10px',
+                      }}
+                    >
+                      <h3 style={{ margin: 0 }}>Model Summary</h3>
+                      <button
+                        onClick={() => setActiveTab('certificate')}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          border: `1px solid ${theme.border}`,
+                          backgroundColor: theme.surface,
+                          color: theme.text,
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                        }}
+                      >
+                        View certificate report
+                      </button>
+                    </div>
+                    {'summary' in selectedNode && selectedNode.summary && (
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '120px 1fr',
+                          gap: '8px',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <span style={{ color: theme.muted }}>Name:</span>
+                        <span>{selectedNode.summary.model_name}</span>
+                        <span style={{ color: theme.muted }}>Standard:</span>
+                        <span>{selectedNode.summary.standard}</span>
+                        <span style={{ color: theme.muted }}>Version:</span>
+                        <span>{selectedNode.summary.fmi_version}</span>
+                        <span style={{ color: theme.muted }}>GUID:</span>
+                        <span style={{ wordBreak: 'break-all' }}>{selectedNode.summary.guid}</span>
+                        <span style={{ color: theme.muted }}>Tool:</span>
+                        <span>{selectedNode.summary.generation_tool}</span>
+                      </div>
+                    )}
+                  </section>
+
+                  <section>
+                    <h3 style={{ marginBottom: '10px' }}>Test Results</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedNode.results?.map((res, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            border: `1px solid ${theme.border}`,
+                            borderRadius: '4px',
+                            padding: '8px',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              marginBottom: '4px',
+                            }}
+                          >
+                            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                              {res.test_name}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                padding: '2px 4px',
+                                borderRadius: '4px',
+                                backgroundColor:
+                                  res.status === 'PASS'
+                                    ? 'var(--status-pass)'
+                                    : res.status === 'FAIL'
+                                      ? 'var(--status-fail)'
+                                      : 'var(--status-warn)',
+                                color: '#fff',
+                              }}
+                            >
+                              {res.status}
+                            </span>
+                          </div>
+                          {res.messages.map((msg, j) => (
+                            <div
+                              key={j}
+                              style={{ fontSize: '12px', color: theme.muted, marginLeft: '8px' }}
+                            >
+                              • {msg}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </>
+              )}
+              {selectedFile && (
+                <div
+                  style={{
+                    marginTop: 'auto',
+                    borderTop: `1px solid ${theme.border}`,
+                    paddingTop: '20px',
+                  }}
+                >
+                  <FilePreview
+                    key={selectedFile}
+                    selectedFile={selectedFile}
+                    node={selectedFile ? fileMap.get(selectedFile) : null}
+                    module={module}
+                    theme={theme}
+                    isDark={isDark}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
