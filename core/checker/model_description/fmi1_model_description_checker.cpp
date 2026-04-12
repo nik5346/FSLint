@@ -4,7 +4,10 @@
 
 #include "certificate.h"
 
+#include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <libxml/xmlmemory.h>
+#include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
 #include <cstddef>
@@ -19,6 +22,7 @@
 #include <regex>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -32,6 +36,9 @@ void Fmi1ModelDescriptionChecker::performVersionSpecificChecks(
 
     // Check implementation (CoSimulation only)
     checkImplementation(doc, cert);
+
+    // Check DirectDependency references
+    checkDirectDependencies(doc, variables, cert);
 }
 
 void Fmi1ModelDescriptionChecker::validateFmiVersionValue(const std::string& version, TestResult& test) const
@@ -74,6 +81,98 @@ void Fmi1ModelDescriptionChecker::checkGuid(const std::optional<std::string>& gu
         test.getMessages().emplace_back(std::format(
             "guid '{{}}' does not match expected GUID format ({{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}})", *guid));
     }
+
+    cert.printTestResult(test);
+}
+
+void Fmi1ModelDescriptionChecker::checkDirectDependencies(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                          Certificate& cert) const
+{
+    TestResult test{"Direct Dependency References", TestStatus::PASS, {}};
+
+    // Create a map for fast lookup of variables by name
+    std::unordered_map<std::string, const Variable*> variable_map;
+    for (const auto& var : variables)
+        variable_map[var.name] = &var;
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ScalarVariable[DirectDependency]");
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+    {
+        for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            xmlNodePtr var_node = xpath_obj->nodesetval->nodeTab[i];
+            auto var_name = getXmlAttribute(var_node, "name");
+            auto causality = getXmlAttribute(var_node, "causality").value_or("internal");
+
+            if (causality != "output")
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Variable '{}' (line {}) has a DirectDependency element but causality is '{}' (must be 'output').",
+                    var_name.value_or("unknown"), var_node->line, causality));
+            }
+
+            // Find DirectDependency node
+            xmlNodePtr dd_node = nullptr;
+            for (xmlNodePtr child = var_node->children; child != nullptr; child = child->next)
+            {
+                if (child->type != XML_ELEMENT_NODE)
+                    continue;
+
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                const std::string elem_name = reinterpret_cast<const char*>(child->name);
+                if (elem_name == "DirectDependency")
+                {
+                    dd_node = child;
+                    break;
+                }
+            }
+
+            if (dd_node != nullptr)
+            {
+                for (xmlNodePtr name_node = dd_node->children; name_node != nullptr; name_node = name_node->next)
+                {
+                    if (name_node->type != XML_ELEMENT_NODE)
+                        continue;
+
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                    const std::string node_name = reinterpret_cast<const char*>(name_node->name);
+                    if (node_name == "Name")
+                    {
+                        xmlChar* content = xmlNodeGetContent(name_node);
+                        if (content != nullptr)
+                        {
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                            const std::string dep_name = reinterpret_cast<const char*>(content);
+                            xmlFree(content);
+
+                            auto it = variable_map.find(dep_name);
+                            if (it == variable_map.end())
+                            {
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(
+                                    std::format("Variable '{}' (line {}) references non-existent variable '{}' in "
+                                                "DirectDependency.",
+                                                var_name.value_or("unknown"), name_node->line, dep_name));
+                            }
+                            else if (it->second->causality != "input")
+                            {
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(std::format(
+                                    "Variable '{}' (line {}) references variable '{}' in DirectDependency "
+                                    "which exists but is not an input (causality='{}').",
+                                    var_name.value_or("unknown"), name_node->line, dep_name, it->second->causality));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (xpath_obj != nullptr)
+        xmlXPathFreeObject(xpath_obj);
 
     cert.printTestResult(test);
 }

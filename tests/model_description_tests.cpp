@@ -99,6 +99,13 @@ TEST_CASE("FMI 1.0 Model Description Failure Cases", "[fmi1][fail]")
         validate_fail("ref_unit_undef", "references undefined unit");
     }
 
+    SECTION("Direct Dependency References")
+    {
+        validate_fail("direct_dependency_invalid_causality", "causality is 'input' (must be 'output')");
+        validate_fail("direct_dependency_missing_variable", "references non-existent variable 'non_existent'");
+        validate_fail("direct_dependency_not_input", "exists but is not an input (causality='internal')");
+    }
+
     SECTION("DefaultExperiment")
     {
         validate_fail("exp_start_neg", "startTime");
@@ -213,6 +220,13 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
         Certificate cert_floats;
         checker.validate("tests/data/fmi1/pass/SpecialFloats", cert_floats);
         CHECK_FALSE(has_fail(cert_floats));
+    }
+
+    SECTION("FMI 1.0 Direct Dependency Valid")
+    {
+        Certificate cert_dd;
+        checker.validate("tests/data/fmi1/pass/direct_dependency_valid", cert_dd);
+        CHECK_FALSE(has_fail(cert_dd));
     }
 
     SECTION("FMI 1.0 Alias Negated Valid")

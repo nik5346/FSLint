@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="DirectDependencyInvalidCausality" modelIdentifier="DirectDependencyInvalidCausality" guid="{12345678-1234-1234-1234-123456789012}" numberOfContinuousStates="0" numberOfEventIndicators="0">
+  <ModelVariables>
+    <ScalarVariable name="u" valueReference="1" causality="input">
+      <Real start="0.0" />
+      <DirectDependency>
+        <Name>u</Name>
+      </DirectDependency>
+    </ScalarVariable>
+  </ModelVariables>
+</fmiModelDescription>
