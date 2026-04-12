@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ValidationResult, Theme, FSLintModule } from '../types';
+import { ValidationResult, Theme, FSLintModule, NestedModelResult, TestResult } from '../types';
 
 /**
  * Properties for the ModelInfo component.
  */
 interface ModelInfoProps {
-  /** The validation result object. */
-  result: ValidationResult;
+  /** The validation result object or nested result. */
+  result: ValidationResult | NestedModelResult;
   /** The current theme object. */
   theme: Theme;
   /** Whether the dark mode is enabled. */
@@ -64,19 +64,14 @@ const Section = ({
  * @returns {JSX.Element} The rendered ModelInfo component.
  */
 export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => {
-  const { summary, overallStatus, results } = result;
-
-  const hasSecurityFailure =
-    overallStatus === 'FAIL' &&
-    results.some((r) => r.status === 'FAIL' && r.test_name.includes('[SECURITY]'));
-
-  const statusColor =
-    overallStatus === 'FAIL' ? '#ff5555' : overallStatus === 'WARNING' ? '#ffb86c' : '#50fa7b';
+  const summary = result.summary;
+  const overallStatus = 'overallStatus' in result ? result.overallStatus : result.status;
+  const results = result.results || [];
 
   const [iconUrl, setIconUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!summary.has_icon || !module || !result.file_tree) {
+    if (!summary || !('has_icon' in summary) || !summary.has_icon || !module || !result.file_tree) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIconUrl(null);
       return;
@@ -123,7 +118,27 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [summary.has_icon, module, result.file_tree]);
+  }, [summary, module, result.file_tree]);
+
+  /**
+   * Formats a size in bytes into a human-readable string.
+   * @param {number} bytes - The number of bytes.
+   * @returns {string} The formatted size string.
+   */
+  if (!summary) {
+    return (
+      <div style={{ padding: '24px', color: theme.muted }}>
+        Metadata summary not available for this model.
+      </div>
+    );
+  }
+
+  const hasSecurityFailure =
+    overallStatus === 'FAIL' &&
+    results.some((r: TestResult) => r.status === 'FAIL' && r.test_name.includes('[SECURITY]'));
+
+  const statusColor =
+    overallStatus === 'FAIL' ? '#ff5555' : overallStatus === 'WARNING' ? '#ffb86c' : '#50fa7b';
 
   /**
    * Formats a size in bytes into a human-readable string.
@@ -157,14 +172,24 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
       label: summary.standard === 'SSP' ? 'SSP Version' : 'FMI Version',
       value: summary.fmi_version,
     },
-    { label: 'Model Version', value: summary.model_version },
-    { label: 'Author', value: summary.author },
-    { label: 'Copyright', value: summary.copyright },
-    { label: 'License', value: summary.license },
+    { label: 'Model Version', value: 'model_version' in summary ? summary.model_version : '' },
+    { label: 'Author', value: 'author' in summary ? summary.author : '' },
+    { label: 'Copyright', value: 'copyright' in summary ? summary.copyright : '' },
+    { label: 'License', value: 'license' in summary ? summary.license : '' },
     { label: 'Generation Tool', value: summary.generation_tool },
-    { label: 'Generation Date', value: summary.generation_date_and_time },
-    { label: 'Source Language', value: summary.source_language },
-    { label: 'Total Size', value: summary.total_size ? formatSize(summary.total_size) : '' },
+    {
+      label: 'Generation Date',
+      value: 'generation_date_and_time' in summary ? summary.generation_date_and_time : '',
+    },
+    {
+      label: 'Source Language',
+      value: 'source_language' in summary ? summary.source_language : '',
+    },
+    {
+      label: 'Total Size',
+      value:
+        'total_size' in summary ? (summary.total_size ? formatSize(summary.total_size) : '') : '',
+    },
   ].filter((item) => item.value);
 
   return (
@@ -178,6 +203,58 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         gap: '24px',
       }}
     >
+      <section>
+        <h3 style={{ marginBottom: '16px' }}>Test Results</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {results.map((res: TestResult, i: number) => (
+            <div
+              key={i}
+              style={{
+                border: `1px solid ${theme.border}`,
+                borderRadius: '4px',
+                padding: '8px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: '4px',
+                }}
+              >
+                <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{res.test_name}</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 4px',
+                    borderRadius: '4px',
+                    backgroundColor:
+                      res.status === 'PASS'
+                        ? 'var(--status-pass)'
+                        : res.status === 'FAIL'
+                          ? 'var(--status-fail)'
+                          : 'var(--status-warn)',
+                    color: '#fff',
+                  }}
+                >
+                  {res.status}
+                </span>
+              </div>
+              {res.messages.map((msg: string, j: number) => (
+                <div key={j} style={{ fontSize: '12px', color: theme.muted, marginLeft: '8px' }}>
+                  • {msg}
+                </div>
+              ))}
+            </div>
+          ))}
+          {results.length === 0 && (
+            <div style={{ color: theme.muted, fontSize: '0.9em', fontStyle: 'italic' }}>
+              No test results recorded.
+            </div>
+          )}
+        </div>
+      </section>
+
       {overallStatus === 'FAIL' &&
         (hasSecurityFailure || !summary?.standard || summary.standard === 'UNKNOWN') && (
           <div
@@ -209,7 +286,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
           flexWrap: 'wrap',
         }}
       >
-        {summary.has_icon && iconUrl && (
+        {'has_icon' in summary && summary.has_icon && iconUrl && (
           <div
             style={{
               width: '128px',
@@ -256,7 +333,7 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
             </div>
           </div>
 
-          {summary.description && (
+          {'description' in summary && summary.description && (
             <p style={{ margin: '0', lineHeight: '1.6', color: theme.text, fontSize: '1.05em' }}>
               {summary.description}
             </p>
@@ -299,110 +376,120 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
         </Section>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {summary.standard !== 'SSP' && summary.standard !== 'UNKNOWN' && (
-            <Section title="Capabilities" theme={theme}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', fontSize: '0.95em' }}>
-                  <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
-                    FMU Type:
-                  </span>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {summary.fmu_types.length > 0 ? (
-                      summary.fmu_types.map((t) => (
-                        <span
-                          key={t}
-                          style={{
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            backgroundColor: theme.buttonHoverBg,
-                            fontSize: '0.85em',
-                            border: `1px solid ${theme.border}`,
-                          }}
-                        >
-                          {t}
+          {summary.standard !== 'SSP' &&
+            summary.standard !== 'UNKNOWN' &&
+            'fmu_types' in summary && (
+              <Section title="Capabilities" theme={theme}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', fontSize: '0.95em' }}>
+                    <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
+                      FMU Type:
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {summary.fmu_types.length > 0 ? (
+                        summary.fmu_types.map((t: string) => (
+                          <span
+                            key={t}
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: theme.buttonHoverBg,
+                              fontSize: '0.85em',
+                              border: `1px solid ${theme.border}`,
+                            }}
+                          >
+                            {t}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: theme.muted, fontStyle: 'italic' }}>
+                          None detected
                         </span>
-                      ))
-                    ) : (
-                      <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
-                    )}
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', fontSize: '0.95em' }}>
+                    <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
+                      Interfaces:
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {'interfaces' in summary && summary.interfaces.length > 0 ? (
+                        summary.interfaces.map((intf: string) => (
+                          <span
+                            key={intf}
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: theme.buttonHoverBg,
+                              fontSize: '0.85em',
+                              border: `1px solid ${theme.border}`,
+                            }}
+                          >
+                            {intf}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: theme.muted, fontStyle: 'italic' }}>
+                          None detected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', fontSize: '0.95em' }}>
+                    <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
+                      Platforms:
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {'platforms' in summary && summary.platforms.length > 0 ? (
+                        summary.platforms.map((p: string) => (
+                          <span
+                            key={p}
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: theme.buttonHoverBg,
+                              fontSize: '0.85em',
+                              border: `1px solid ${theme.border}`,
+                            }}
+                          >
+                            {p}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: theme.muted, fontStyle: 'italic' }}>
+                          None detected
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
+              </Section>
+            )}
 
-                <div style={{ display: 'flex', fontSize: '0.95em' }}>
-                  <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
-                    Interfaces:
-                  </span>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {summary.interfaces.length > 0 ? (
-                      summary.interfaces.map((intf) => (
-                        <span
-                          key={intf}
-                          style={{
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            backgroundColor: theme.buttonHoverBg,
-                            fontSize: '0.85em',
-                            border: `1px solid ${theme.border}`,
-                          }}
-                        >
-                          {intf}
-                        </span>
-                      ))
-                    ) : (
-                      <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
-                    )}
-                  </div>
+          {summary.standard !== 'UNKNOWN' &&
+            'layered_standards' in summary &&
+            summary.layered_standards.length > 0 && (
+              <Section title="Layered Standards" theme={theme}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {summary.layered_standards.map((s: string) => (
+                    <span
+                      key={s}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: '6px',
+                        backgroundColor: theme.buttonHoverBg,
+                        fontSize: '0.9em',
+                        border: `1px solid ${theme.border}`,
+                      }}
+                    >
+                      {s}
+                    </span>
+                  ))}
                 </div>
-
-                <div style={{ display: 'flex', fontSize: '0.95em' }}>
-                  <span style={{ width: '220px', color: theme.muted, flexShrink: 0 }}>
-                    Platforms:
-                  </span>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {summary.platforms.length > 0 ? (
-                      summary.platforms.map((p) => (
-                        <span
-                          key={p}
-                          style={{
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            backgroundColor: theme.buttonHoverBg,
-                            fontSize: '0.85em',
-                            border: `1px solid ${theme.border}`,
-                          }}
-                        >
-                          {p}
-                        </span>
-                      ))
-                    ) : (
-                      <span style={{ color: theme.muted, fontStyle: 'italic' }}>None detected</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Section>
-          )}
-
-          {summary.standard !== 'UNKNOWN' && summary.layered_standards.length > 0 && (
-            <Section title="Layered Standards" theme={theme}>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {summary.layered_standards.map((s) => (
-                  <span
-                    key={s}
-                    style={{
-                      padding: '4px 12px',
-                      borderRadius: '6px',
-                      backgroundColor: theme.buttonHoverBg,
-                      fontSize: '0.9em',
-                      border: `1px solid ${theme.border}`,
-                    }}
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </Section>
-          )}
+              </Section>
+            )}
         </div>
       </div>
     </div>

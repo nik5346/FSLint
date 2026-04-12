@@ -165,6 +165,8 @@ export interface NestedModelResult {
   name: string;
   /** The full logical path from the validation root (e.g. "inner.fmu/even_inner.fmu"). */
   logical_path: string;
+  /** The validation report for this model. */
+  report: string;
   /** The validation status of this model. */
   status: 'PASS' | 'FAIL' | 'WARNING';
   /** Metadata summary for this model, if available. */
@@ -176,12 +178,20 @@ export interface NestedModelResult {
   results?: TestResult[];
   /** Results of further nested models. */
   nested_models?: NestedModelResult[];
+  /** The file tree of the FMU contents. */
+  file_tree?: FileNode;
 }
 
 /**
  * The complete validation result returned by the checker.
  */
 export interface ValidationResult {
+  /** The segment name (optional for root). */
+  name: string;
+  /** The logical path (optional for root). */
+  logical_path: string;
+  /** The status (compatibility with NestedModelResult). */
+  status: 'PASS' | 'FAIL' | 'WARNING';
   /** The text-based validation report. */
   report: string;
   /** The overall validation status. */

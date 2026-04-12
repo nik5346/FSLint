@@ -242,6 +242,9 @@ export const useFSLint = () => {
 
         try {
           const result = JSON.parse(resultJson) as ValidationResult;
+          result.name = 'Root';
+          result.logical_path = '';
+          result.status = result.overallStatus;
           setValidationResult(result);
           setOutput(result.report);
           if (result.file_tree) {

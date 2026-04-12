@@ -209,6 +209,12 @@ void Certificate::printTestResult(const TestResult& test)
 
     log(std::format("{}{}", status_tag, test.getName()));
 
+    if (test.getStatus() == TestStatus::FAIL && test.isSecurityIssue() && _continue_callback)
+    {
+        if (!_continue_callback(test))
+            _abort_requested = true;
+    }
+
     if (test.getStatus() != TestStatus::PASS)
     {
         for (size_t i = 0; i < test.getMessages().size(); ++i)
@@ -394,6 +400,7 @@ static void serializeNestedResults(const std::vector<NestedModelResult>& results
             break;
         }
         obj.AddMember("status", rapidjson::Value(status.c_str(), allocator).Move(), allocator);
+        obj.AddMember("report", rapidjson::Value(res.report.c_str(), allocator).Move(), allocator);
 
         if (res.summary.has_value())
         {
@@ -426,7 +433,20 @@ static void serializeNestedResults(const std::vector<NestedModelResult>& results
             obj.AddMember("results", res_arr, allocator);
         }
 
-        // TODO: Emit file_tree for nested models once extraction directory persistency is handled.
+        if (!res.extraction_path.empty() && std::filesystem::exists(res.extraction_path) &&
+            std::filesystem::is_directory(res.extraction_path))
+        {
+            rapidjson::Value tree;
+            file_utils::fileNodeToJson(res.extraction_path, &tree, &allocator);
+
+            if (tree.IsObject() && tree.HasMember("name") && res.summary.has_value())
+            {
+                std::string label = res.summary->model_name;
+                if (!label.empty())
+                    tree["name"].SetString(label.c_str(), static_cast<rapidjson::SizeType>(label.length()), allocator);
+            }
+            obj.AddMember("file_tree", tree, allocator);
+        }
 
         if (!res.nested_models.empty())
         {

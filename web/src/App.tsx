@@ -100,6 +100,7 @@ function App() {
      */
     const findNode = (nodes: NestedModelResult[]) => {
       for (const node of nodes) {
+        if (found) return;
         if (node.logical_path === selectedModelPath) {
           found = node;
           return;
@@ -113,8 +114,12 @@ function App() {
 
   const selectedFileTree = useMemo(() => {
     if (!selectedNode) return null;
-    if ('file_tree' in selectedNode) return selectedNode.file_tree;
-    // For nested models, we don't have a file tree yet (as per Change 7c)
+    if ('file_tree' in selectedNode) {
+      return (
+        (selectedNode as ValidationResult).file_tree ||
+        (selectedNode as NestedModelResult).file_tree
+      );
+    }
     return null;
   }, [selectedNode]);
 
@@ -399,18 +404,6 @@ function App() {
         await processItems({ files: allFiles, directories: allDirs });
       }
     }
-  };
-
-  /**
-   * Copies the raw validation output to the clipboard.
-   */
-  const handleCopy = () => {
-    // eslint-disable-next-line no-control-regex
-    const stripped = output.replace(/\x1b\[[0-9;]*m/g, '');
-    navigator.clipboard.writeText(stripped).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
   };
 
   /**
@@ -896,22 +889,7 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'info' && validationResult && (
-          <div
-            style={{
-              flex: 1,
-              minHeight: 0,
-              backgroundColor: theme.surface,
-              borderRadius: '4px',
-              border: `1px solid ${theme.border}`,
-              overflow: 'hidden',
-            }}
-          >
-            <ModelInfo result={validationResult} theme={theme} isDark={isDark} module={module} />
-          </div>
-        )}
-
-        {activeTab === 'explorer' && validationResult && (
+        {activeTab !== 'rules' && validationResult && (
           <div
             style={{
               flex: 1,
@@ -923,7 +901,7 @@ function App() {
               overflow: 'hidden',
             }}
           >
-            {/* Left column: Model Tree */}
+            {/* Shared Left Sidebar: Model Tree */}
             <div
               style={{
                 width: modelTreeWidth,
@@ -958,281 +936,175 @@ function App() {
               }}
             />
 
-            {/* Middle column: File Tree */}
-            <div
-              style={{
-                width: explorerWidth,
-                backgroundColor: theme.surface,
-                overflowY: 'auto',
-                padding: '10px',
-                flexShrink: 0,
-              }}
-            >
-              {selectedFileTree ? (
-                selectedFileTree.name.startsWith('model_validation_') ||
-                selectedFileTree.name.startsWith('model_cert_add_') ? (
-                  selectedFileTree.children?.map((child) => (
-                    <FileTreeItem
-                      key={child.path}
-                      node={child}
-                      isSelected={child.path === selectedFile}
-                      selectedFile={selectedFile}
-                      setSelectedFile={setSelectedFile}
-                      theme={theme}
-                    />
-                  ))
-                ) : (
-                  <FileTreeItem
-                    node={selectedFileTree}
-                    isSelected={selectedFile === selectedFileTree.path}
-                    selectedFile={selectedFile}
-                    setSelectedFile={setSelectedFile}
-                    theme={theme}
-                  />
-                )
-              ) : (
-                <div style={{ color: theme.muted, fontSize: '0.9em', textAlign: 'center' }}>
-                  File tree not available for this model
+            {/* Tab-specific Content */}
+            <div style={{ flex: 1, display: 'flex', minWidth: 0 }}>
+              {activeTab === 'info' && selectedNode && (
+                <div style={{ flex: 1, backgroundColor: theme.surface, overflowY: 'auto' }}>
+                  <ModelInfo result={selectedNode} theme={theme} isDark={isDark} module={module} />
                 </div>
               )}
-            </div>
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-            <div
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setIsResizing(true);
-              }}
-              style={{
-                width: '4px',
-                cursor: 'col-resize',
-                backgroundColor: isResizing ? '#007bff' : theme.border,
-                transition: 'background-color 0.2s',
-                zIndex: 10,
-              }}
-            />
 
-            {/* Right column: Detail Panel */}
-            <div
-              style={{
-                flex: 1,
-                backgroundColor: theme.surface,
-                minWidth: 0,
-                overflowY: 'auto',
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '20px',
-              }}
-            >
-              {selectedNode && (
-                <>
-                  <section>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '10px',
-                      }}
-                    >
-                      <h3 style={{ margin: 0 }}>Model Summary</h3>
-                      <button
-                        onClick={() => setActiveTab('certificate')}
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          border: `1px solid ${theme.border}`,
-                          backgroundColor: theme.surface,
-                          color: theme.text,
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                        }}
-                      >
-                        View certificate report
-                      </button>
-                    </div>
-                    {'summary' in selectedNode && selectedNode.summary && (
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '120px 1fr',
-                          gap: '8px',
-                          fontSize: '14px',
-                        }}
-                      >
-                        <span style={{ color: theme.muted }}>Name:</span>
-                        <span>{selectedNode.summary.model_name}</span>
-                        <span style={{ color: theme.muted }}>Standard:</span>
-                        <span>{selectedNode.summary.standard}</span>
-                        <span style={{ color: theme.muted }}>Version:</span>
-                        <span>{selectedNode.summary.fmi_version}</span>
-                        <span style={{ color: theme.muted }}>GUID:</span>
-                        <span style={{ wordBreak: 'break-all' }}>{selectedNode.summary.guid}</span>
-                        <span style={{ color: theme.muted }}>Tool:</span>
-                        <span>{selectedNode.summary.generation_tool}</span>
-                      </div>
-                    )}
-                  </section>
-
-                  <section>
-                    <h3 style={{ marginBottom: '10px' }}>Test Results</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {selectedNode.results?.map((res, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            border: `1px solid ${theme.border}`,
-                            borderRadius: '4px',
-                            padding: '8px',
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              marginBottom: '4px',
-                            }}
-                          >
-                            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
-                              {res.test_name}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: '10px',
-                                padding: '2px 4px',
-                                borderRadius: '4px',
-                                backgroundColor:
-                                  res.status === 'PASS'
-                                    ? 'var(--status-pass)'
-                                    : res.status === 'FAIL'
-                                      ? 'var(--status-fail)'
-                                      : 'var(--status-warn)',
-                                color: '#fff',
-                              }}
-                            >
-                              {res.status}
-                            </span>
-                          </div>
-                          {res.messages.map((msg, j) => (
-                            <div
-                              key={j}
-                              style={{ fontSize: '12px', color: theme.muted, marginLeft: '8px' }}
-                            >
-                              • {msg}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </>
-              )}
-              {selectedFile && (
+              {activeTab === 'certificate' && selectedNode && (
                 <div
                   style={{
-                    marginTop: 'auto',
-                    borderTop: `1px solid ${theme.border}`,
-                    paddingTop: '20px',
+                    position: 'relative',
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: theme.surface,
+                    overflow: 'hidden',
                   }}
                 >
-                  <FilePreview
-                    key={selectedFile}
-                    selectedFile={selectedFile}
-                    node={selectedFile ? fileMap.get(selectedFile) : null}
-                    module={module}
-                    theme={theme}
-                    isDark={isDark}
-                  />
+                  <button
+                    onClick={() => {
+                      const report =
+                        'overallStatus' in selectedNode
+                          ? (selectedNode as ValidationResult).report
+                          : (selectedNode as NestedModelResult).report;
+                      // eslint-disable-next-line no-control-regex
+                      const stripped = report.replace(/\x1b\[[0-9;]*m/g, '');
+                      navigator.clipboard.writeText(stripped).then(() => {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      });
+                    }}
+                    disabled={!selectedNode.report}
+                    title={copied ? 'Copied!' : 'Copy to clipboard'}
+                    className="copy-btn"
+                    style={{
+                      position: 'absolute',
+                      top: '6px',
+                      right: '12px',
+                      zIndex: 1,
+                      padding: '5px',
+                      color: theme.text,
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: selectedNode.report ? 'pointer' : 'default',
+                      opacity: selectedNode.report ? 0.6 : 0.2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background-color 0.15s, opacity 0.15s',
+                    }}
+                  >
+                    {copied ? (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                      </svg>
+                    )}
+                  </button>
+                  <pre
+                    style={{
+                      flex: 1,
+                      minHeight: 0,
+                      backgroundColor: 'transparent',
+                      color: theme.text,
+                      padding: '15px',
+                      overflowY: 'auto',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                      fontFamily: 'monospace',
+                      fontVariantNumeric: 'tabular-nums',
+                      textRendering: 'optimizeSpeed',
+                    }}
+                  >
+                    {parseAnsi(selectedNode.report)}
+                  </pre>
                 </div>
               )}
-            </div>
-          </div>
-        )}
 
-        {activeTab === 'certificate' && (
-          <div
-            style={{
-              position: 'relative',
-              flex: 1,
-              minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: theme.surface,
-              borderRadius: '4px',
-              border: `1px solid ${theme.border}`,
-              overflow: 'hidden',
-            }}
-          >
-            <button
-              onClick={handleCopy}
-              disabled={!output}
-              title={copied ? 'Copied!' : 'Copy to clipboard'}
-              className="copy-btn"
-              style={{
-                position: 'absolute',
-                top: '6px',
-                right: '12px',
-                zIndex: 1,
-                padding: '5px',
-                color: theme.text,
-                border: 'none',
-                borderRadius: '6px',
-                cursor: output ? 'pointer' : 'default',
-                opacity: output ? 0.6 : 0.2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'background-color 0.15s, opacity 0.15s',
-              }}
-            >
-              {copied ? (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                </svg>
+              {activeTab === 'explorer' && selectedNode && (
+                <>
+                  <div
+                    style={{
+                      width: explorerWidth,
+                      backgroundColor: theme.surface,
+                      overflowY: 'auto',
+                      padding: '10px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {selectedFileTree ? (
+                      selectedFileTree.name.startsWith('model_validation_') ||
+                      selectedFileTree.name.startsWith('model_cert_add_') ? (
+                        selectedFileTree.children?.map((child) => (
+                          <FileTreeItem
+                            key={child.path}
+                            node={child}
+                            isSelected={child.path === selectedFile}
+                            selectedFile={selectedFile}
+                            setSelectedFile={setSelectedFile}
+                            theme={theme}
+                          />
+                        ))
+                      ) : (
+                        <FileTreeItem
+                          node={selectedFileTree}
+                          isSelected={selectedFile === selectedFileTree.path}
+                          selectedFile={selectedFile}
+                          setSelectedFile={setSelectedFile}
+                          theme={theme}
+                        />
+                      )
+                    ) : (
+                      <div style={{ color: theme.muted, fontSize: '0.9em', textAlign: 'center' }}>
+                        File tree not available for this model
+                      </div>
+                    )}
+                  </div>
+                  {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                  <div
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setIsResizing(true);
+                    }}
+                    style={{
+                      width: '4px',
+                      cursor: 'col-resize',
+                      backgroundColor: isResizing ? '#007bff' : theme.border,
+                      transition: 'background-color 0.2s',
+                      zIndex: 10,
+                    }}
+                  />
+                  <div style={{ flex: 1, backgroundColor: theme.surface, minWidth: 0 }}>
+                    <FilePreview
+                      key={selectedFile}
+                      selectedFile={selectedFile}
+                      node={selectedFile ? fileMap.get(selectedFile) : null}
+                      module={module}
+                      theme={theme}
+                      isDark={isDark}
+                    />
+                  </div>
+                </>
               )}
-            </button>
-            <pre
-              ref={outputEndRef}
-              style={{
-                flex: 1,
-                minHeight: 0,
-                backgroundColor: 'transparent',
-                color: theme.text,
-                padding: '15px',
-                overflowY: 'auto',
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-                fontFamily: 'monospace',
-                fontVariantNumeric: 'tabular-nums',
-                textRendering: 'optimizeSpeed',
-              }}
-            >
-              {parseAnsi(output)}
-            </pre>
+            </div>
           </div>
         )}
 
