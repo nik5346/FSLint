@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="1.0" modelName="AliasInheritedUnit" modelIdentifier="AliasInheritedUnit" guid="{c78f134a-93f4-4f81-9b16-4775d5e23652}" generationTool="Handmade" variableNamingConvention="flat" numberOfEventIndicators="0">
+<fmiModelDescription fmiVersion="1.0" modelName="AliasInheritedUnit" modelIdentifier="AliasInheritedUnit" guid="{c78f134a-93f4-4f81-9b16-4775d5e23652}" generationTool="Handmade" variableNamingConvention="flat" numberOfContinuousStates="0" numberOfEventIndicators="0">
   <TypeDefinitions>
     <Type name="Position">
       <RealType unit="m" />
