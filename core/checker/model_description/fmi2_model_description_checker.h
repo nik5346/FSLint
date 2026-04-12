@@ -73,7 +73,8 @@ class Fmi2ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
 
     void checkEnumerationVariables(const std::vector<Variable>& variables, Certificate& cert) const;
-    void checkAliases(const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkAliases(const std::vector<Variable>& variables,
+                      const std::map<std::string, TypeDefinition>& type_definitions, Certificate& cert) const;
     void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void checkMultipleSetAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;

@@ -26,14 +26,14 @@
 
 void Fmi2ModelDescriptionChecker::performVersionSpecificChecks(
     xmlDocPtr doc, const std::vector<Variable>& variables,
-    [[maybe_unused]] const std::map<std::string, TypeDefinition>& type_definitions,
+    const std::map<std::string, TypeDefinition>& type_definitions,
     [[maybe_unused]] const std::map<std::string, UnitDefinition>& units, Certificate& cert) const
 {
     // Enumeration variables must have a declaredType
     checkEnumerationVariables(variables, cert);
 
     // Check Alias variables
-    checkAliases(variables, cert);
+    checkAliases(variables, type_definitions, cert);
 
     // Check Independent variable
     checkIndependentVariable(variables, cert);
@@ -355,9 +355,24 @@ void Fmi2ModelDescriptionChecker::checkIndependentVariable(const std::vector<Var
     cert.printTestResult(test);
 }
 
-void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables, Certificate& cert) const
+void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables,
+                                               const std::map<std::string, TypeDefinition>& type_definitions,
+                                               Certificate& cert) const
 {
     TestResult test{"Alias Variables", TestStatus::PASS, {}};
+
+    auto resolve_unit = [&](const Variable* v) -> std::optional<std::string>
+    {
+        if (v->unit.has_value())
+            return v->unit;
+        if (v->declared_type.has_value())
+        {
+            auto it = type_definitions.find(*v->declared_type);
+            if (it != type_definitions.end())
+                return it->second.unit;
+        }
+        return std::nullopt;
+    };
 
     // Group variables by base type and valueReference
     const auto get_base_type = [](const std::string& type) -> std::string
@@ -480,17 +495,19 @@ void Fmi2ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
 
         // Rule 4: All variables in the same alias set must have the same unit
         const Variable* first_var = alias_set[0];
+        const auto first_unit = resolve_unit(first_var);
         for (size_t i = 1; i < alias_set.size(); ++i)
         {
             const Variable* var = alias_set[i];
-            if (var->unit != first_var->unit)
+            const auto var_unit = resolve_unit(var);
+            if (var_unit != first_unit)
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(
                     std::format("All variables in an alias set (VR {}) must have the same unit. Variable '{}' has "
                                 "unit '{}' but '{}' has unit '{}'.",
-                                key.second, var->name, var->unit.value_or("(none)"), first_var->name,
-                                first_var->unit.value_or("(none)")));
+                                key.second, var->name, var_unit.value_or("(none)"), first_var->name,
+                                first_unit.value_or("(none)")));
             }
         }
     }

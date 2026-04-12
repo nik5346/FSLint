@@ -244,6 +244,13 @@ TEST_CASE("FMI 1.0 Model Description Passing Cases", "[fmi1][pass]")
         CHECK_FALSE(has_fail(cert_alias_int));
     }
 
+    SECTION("FMI 1.0 Alias Inherited Unit Valid")
+    {
+        Certificate cert_alias_unit;
+        checker.validate("tests/data/fmi1/pass/AliasInheritedUnit", cert_alias_unit);
+        CHECK_FALSE(has_fail(cert_alias_unit));
+    }
+
     SECTION("FMI 1.0 Date Format (Date Only) Valid")
     {
         Certificate cert_date;
@@ -539,6 +546,14 @@ TEST_CASE("FMI 2.0 Model Description Passing Cases", "[fmi2][pass]")
         checker.validate("tests/data/fmi2/pass/structured_naming", cert);
         CHECK_FALSE(has_fail(cert));
     }
+
+    SECTION("FMI 2.0 Alias Inherited Unit Valid")
+    {
+        Fmi2ModelDescriptionChecker checker;
+        Certificate cert_alias_unit;
+        checker.validate("tests/data/fmi2/pass/AliasInheritedUnit", cert_alias_unit);
+        CHECK_FALSE(has_fail(cert_alias_unit));
+    }
 }
 
 TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
@@ -806,6 +821,13 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
     {
         checker.validate("tests/data/fmi3/pass/derivative_input_ok", cert);
         CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("FMI 3.0 Alias Inherited Unit Valid")
+    {
+        Certificate cert_alias_unit;
+        checker.validate("tests/data/fmi3/pass/AliasInheritedUnit", cert_alias_unit);
+        CHECK_FALSE(has_fail(cert_alias_unit));
     }
 
     SECTION("FMI 3.0 Patch Version")
