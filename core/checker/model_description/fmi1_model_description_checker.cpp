@@ -4,7 +4,10 @@
 
 #include "certificate.h"
 
+#include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <libxml/xmlmemory.h>
+#include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
 
 #include <cstddef>
@@ -114,8 +117,12 @@ void Fmi1ModelDescriptionChecker::checkDirectDependencies(xmlDocPtr doc, const s
             xmlNodePtr dd_node = nullptr;
             for (xmlNodePtr child = var_node->children; child != nullptr; child = child->next)
             {
-                if (child->type == XML_ELEMENT_NODE &&
-                    std::string(reinterpret_cast<const char*>(child->name)) == "DirectDependency")
+                if (child->type != XML_ELEMENT_NODE)
+                    continue;
+
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                const std::string elem_name = reinterpret_cast<const char*>(child->name);
+                if (elem_name == "DirectDependency")
                 {
                     dd_node = child;
                     break;
@@ -126,13 +133,18 @@ void Fmi1ModelDescriptionChecker::checkDirectDependencies(xmlDocPtr doc, const s
             {
                 for (xmlNodePtr name_node = dd_node->children; name_node != nullptr; name_node = name_node->next)
                 {
-                    if (name_node->type == XML_ELEMENT_NODE &&
-                        std::string(reinterpret_cast<const char*>(name_node->name)) == "Name")
+                    if (name_node->type != XML_ELEMENT_NODE)
+                        continue;
+
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                    const std::string node_name = reinterpret_cast<const char*>(name_node->name);
+                    if (node_name == "Name")
                     {
                         xmlChar* content = xmlNodeGetContent(name_node);
                         if (content != nullptr)
                         {
-                            std::string dep_name(reinterpret_cast<const char*>(content));
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                            const std::string dep_name = reinterpret_cast<const char*>(content);
                             xmlFree(content);
 
                             auto it = variable_map.find(dep_name);
