@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+  fmiVersion="3.0"
+  modelName="AliasInheritedUnit"
+  instantiationToken="{c78f134a-93f4-4f81-9b16-4775d5e23652}"
+  generationTool="Handmade">
+
+  <ModelExchange modelIdentifier="AliasInheritedUnit"/>
+
+  <UnitDefinitions>
+    <Unit name="m"/>
+  </UnitDefinitions>
+
+  <TypeDefinitions>
+    <Float64Type name="Position" unit="m"/>
+  </TypeDefinitions>
+
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <Float64 name="var1" valueReference="1" variability="continuous" causality="local" unit="m"/>
+    <Float64 name="var2" valueReference="1" variability="continuous" causality="local" declaredType="Position"/>
+  </ModelVariables>
+
+  <ModelStructure/>
+
+</fmiModelDescription>
