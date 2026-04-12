@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="1.0" modelName="DirectDependencyValid" modelIdentifier="DirectDependencyValid" guid="{12345678-1234-1234-1234-123456789012}" numberOfContinuousStates="0" numberOfEventIndicators="0">
+    <ModelVariables>
+        <ScalarVariable name="u" valueReference="1" causality="input">
+            <Real start="0.0"/>
+        </ScalarVariable>
+        <ScalarVariable name="y" valueReference="2" causality="output">
+            <Real/>
+            <DirectDependency>
+                <Name>u</Name>
+            </DirectDependency>
+        </ScalarVariable>
+        <ScalarVariable name="z" valueReference="3" causality="output">
+            <Real/>
+            <DirectDependency/>
+        </ScalarVariable>
+    </ModelVariables>
+</fmiModelDescription>

@@ -189,6 +189,9 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - All variables in an alias set **must** have equivalent `start` values (taking negation into account).
   - If any variable in an alias set has `variability="constant"`, all variables in that set **must** be `constant`.
   - All variables in an alias set **should** have the same `variability`.
+- **Direct Dependency References**:
+  - `DirectDependency` **must** only be present on variables with `causality="output"`.
+  - Each `Name` listed inside `DirectDependency` **must** reference an existing variable with `causality="input"`.
 
 ### Binary Exports
 - **Function Prefixing**: All exported functions must be prefixed with `<modelIdentifier>_`.
