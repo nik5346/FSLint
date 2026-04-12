@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="1.0" modelName="DirectDependencyMissingVariable" modelIdentifier="DirectDependencyMissingVariable" guid="{12345678-1234-1234-1234-123456789012}" numberOfContinuousStates="0" numberOfEventIndicators="0">
-    <ModelVariables>
-        <ScalarVariable name="y" valueReference="1" causality="output">
-            <Real/>
-            <DirectDependency>
-                <Name>non_existent</Name>
-            </DirectDependency>
-        </ScalarVariable>
-    </ModelVariables>
+  <ModelVariables>
+    <ScalarVariable name="y" valueReference="1" causality="output">
+      <Real />
+      <DirectDependency>
+        <Name>non_existent</Name>
+      </DirectDependency>
+    </ScalarVariable>
+  </ModelVariables>
 </fmiModelDescription>

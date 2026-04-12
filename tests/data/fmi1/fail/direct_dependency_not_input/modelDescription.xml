@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription fmiVersion="1.0" modelName="DirectDependencyNotInput" modelIdentifier="DirectDependencyNotInput" guid="{12345678-1234-1234-1234-123456789012}" numberOfContinuousStates="0" numberOfEventIndicators="0">
-    <ModelVariables>
-        <ScalarVariable name="p" valueReference="1" causality="internal">
-            <Real/>
-        </ScalarVariable>
-        <ScalarVariable name="y" valueReference="2" causality="output">
-            <Real/>
-            <DirectDependency>
-                <Name>p</Name>
-            </DirectDependency>
-        </ScalarVariable>
-    </ModelVariables>
+  <ModelVariables>
+    <ScalarVariable name="p" valueReference="1" causality="internal">
+      <Real />
+    </ScalarVariable>
+    <ScalarVariable name="y" valueReference="2" causality="output">
+      <Real />
+      <DirectDependency>
+        <Name>p</Name>
+      </DirectDependency>
+    </ScalarVariable>
+  </ModelVariables>
 </fmiModelDescription>
