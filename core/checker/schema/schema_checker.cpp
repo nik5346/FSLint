@@ -315,7 +315,7 @@ bool SchemaCheckerBase::validateUtf8Encoding(const std::filesystem::path& xml_pa
 void SchemaCheckerBase::checkXmlSecurity(const std::filesystem::path& xml_path, const std::string& validation_name,
                                          Certificate& cert) const
 {
-    TestResult test{validation_name + " [SECURITY] XXE Check", TestStatus::PASS, {}};
+    TestResult test{"[SECURITY] " + validation_name + " XXE Check", TestStatus::PASS, {}};
 
     const xmlDocPtr doc = readXmlFile(xml_path);
     if (doc == nullptr)
