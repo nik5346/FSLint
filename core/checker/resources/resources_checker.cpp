@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <functional>
 #include <string>
+#include <utility>
 
 void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {

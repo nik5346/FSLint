@@ -441,7 +441,7 @@ static void serializeNestedResults(const std::vector<NestedModelResult>& results
 
             if (tree.IsObject() && tree.HasMember("name") && res.summary.has_value())
             {
-                std::string label = res.summary->model_name;
+                const std::string label = res.summary->model_name;
                 if (!label.empty())
                     tree["name"].SetString(label.c_str(), static_cast<rapidjson::SizeType>(label.length()), allocator);
             }

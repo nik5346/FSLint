@@ -221,7 +221,8 @@ int main(int argc, char** argv)
         // Default: validate FMU (without saving certificate)
         Certificate initial_cert;
         initial_cert.setContinueCallback(continue_callback);
-        Certificate result_cert = validator.validate(fmu_path, output_json, show_tree, std::move(initial_cert));
+        const Certificate result_cert =
+            validator.validate(fmu_path, output_json, show_tree, std::move(initial_cert));
 
         if (output_json)
             std::cout << result_cert.toJson() << '\n';

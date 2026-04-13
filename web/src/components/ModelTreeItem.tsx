@@ -94,11 +94,7 @@ export const ModelTreeItem: React.FC<ModelTreeItemProps> = ({
           }}
           role="button"
           tabIndex={0}
-          aria-label={
-            isExpanded
-              ? `Collapse ${name}`
-              : `Expand ${name}`
-          }
+          aria-label={isExpanded ? `Collapse ${name}` : `Expand ${name}`}
           style={{
             display: 'flex',
             alignItems: 'center',
