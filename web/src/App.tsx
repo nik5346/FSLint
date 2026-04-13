@@ -902,39 +902,43 @@ function App() {
             }}
           >
             {/* Shared Left Sidebar: Model Tree */}
-            <div
-              style={{
-                width: modelTreeWidth,
-                backgroundColor: theme.surface,
-                overflowY: 'auto',
-                padding: '10px',
-                flexShrink: 0,
-                borderRight: `1px solid ${theme.border}`,
-              }}
-            >
-              <ModelTree
-                root={validationResult}
-                selectedPath={selectedModelPath}
-                onSelect={(path) => {
-                  setSelectedModelPath(path);
-                  setSelectedFile(null);
-                }}
-              />
-            </div>
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-            <div
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setIsResizingModelTree(true);
-              }}
-              style={{
-                width: '4px',
-                cursor: 'col-resize',
-                backgroundColor: isResizingModelTree ? '#007bff' : theme.border,
-                transition: 'background-color 0.2s',
-                zIndex: 10,
-              }}
-            />
+            {validationResult.nested_models && validationResult.nested_models.length > 0 && (
+              <>
+                <div
+                  style={{
+                    width: modelTreeWidth,
+                    backgroundColor: theme.surface,
+                    overflowY: 'auto',
+                    padding: '10px',
+                    flexShrink: 0,
+                    borderRight: `1px solid ${theme.border}`,
+                  }}
+                >
+                  <ModelTree
+                    root={validationResult}
+                    selectedPath={selectedModelPath}
+                    onSelect={(path) => {
+                      setSelectedModelPath(path);
+                      setSelectedFile(null);
+                    }}
+                  />
+                </div>
+                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                <div
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setIsResizingModelTree(true);
+                  }}
+                  style={{
+                    width: '4px',
+                    cursor: 'col-resize',
+                    backgroundColor: isResizingModelTree ? '#007bff' : theme.border,
+                    transition: 'background-color 0.2s',
+                    zIndex: 10,
+                  }}
+                />
+              </>
+            )}
 
             {/* Tab-specific Content */}
             <div style={{ flex: 1, display: 'flex', minWidth: 0 }}>
