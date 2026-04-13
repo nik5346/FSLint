@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import Editor from '@monaco-editor/react';
 import { useFSLint } from './hooks/useFSLint';
 import { FileNode, NestedModelResult, ValidationResult } from './types';
 import { FileTreeItem } from './components/FileTreeItem';
@@ -8,6 +9,7 @@ import { ModelInfo } from './components/ModelInfo';
 import { RulesOutline } from './components/RulesOutline';
 import { MarkdownContent } from './components/MarkdownContent';
 import { extractHeaders, getFilesFromHandle, getFilesFromEntry } from './utils/file';
+import { configureMonaco, commonEditorOptions } from './utils/monaco';
 
 import clike from 'react-syntax-highlighter/dist/esm/languages/prism/clike';
 import cpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
@@ -74,6 +76,7 @@ function App() {
   );
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [rulesText, setRulesText] = useState<string>('');
+  const [rulesViewMode, setRulesViewMode] = useState<'render' | 'code'>('render');
   const [explorerWidth, setExplorerWidth] = useState(200);
   const [modelTreeWidth, setModelTreeWidth] = useState(190);
   const [rulesWidth, setRulesWidth] = useState(250);
@@ -88,6 +91,8 @@ function App() {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
   const rulesScrollRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rulesEditorRef = useRef<any>(null);
 
   const selectedNode = useMemo(() => {
     if (!validationResult) return null;
@@ -143,6 +148,20 @@ function App() {
    * Updates the active rule line based on the scroll position of the rules container.
    */
   const handleRulesScroll = useCallback(() => {
+    if (rulesViewMode === 'code' && rulesEditorRef.current) {
+      const topVisibleLine = rulesEditorRef.current.getVisibleRanges()[0]?.startLineNumber || 1;
+      let currentHeaderLine = rulesHeaders[0]?.line;
+      for (const header of rulesHeaders) {
+        if (header.line <= topVisibleLine) {
+          currentHeaderLine = header.line;
+        } else {
+          break;
+        }
+      }
+      setActiveRuleLine(currentHeaderLine);
+      return;
+    }
+
     if (!rulesScrollRef.current) return;
 
     const container = rulesScrollRef.current;
@@ -158,7 +177,7 @@ function App() {
       }
     }
     setActiveRuleLine(currentHeaderLine);
-  }, [rulesHeaders]);
+  }, [rulesHeaders, rulesViewMode]);
 
   const theme = useMemo(
     () => ({
@@ -242,6 +261,10 @@ function App() {
       folderInputRef.current.setAttribute('webkitdirectory', '');
       folderInputRef.current.setAttribute('directory', '');
     }
+  }, []);
+
+  useEffect(() => {
+    configureMonaco();
   }, []);
 
   useEffect(() => {
@@ -406,32 +429,6 @@ function App() {
     }
   };
 
-  /**
-   * Parses text with ANSI color codes into JSX elements.
-   * @param {string} text - The text containing ANSI codes.
-   * @returns {Array<string | JSX.Element | null>} An array of parsed elements.
-   */
-  const parseAnsi = (text: string) => {
-    // eslint-disable-next-line no-control-regex
-    const parts = text.split(/(\x1b\[[0-9;]*m)/);
-    let currentColor = '';
-
-    return parts.map((part, i) => {
-      if (part.startsWith('\x1b[')) {
-        if (part === '\x1b[31m') currentColor = '#ff5555';
-        else if (part === '\x1b[33m') currentColor = '#ffb86c';
-        else if (part === '\x1b[0m') currentColor = '';
-        return null;
-      }
-      return currentColor ? (
-        <span key={i} style={{ color: currentColor }}>
-          {part}
-        </span>
-      ) : (
-        part
-      );
-    });
-  };
 
   return (
     <div
@@ -857,7 +854,19 @@ function App() {
                 flexShrink: 0,
               }}
             >
-              <RulesOutline headers={rulesHeaders} theme={theme} activeLine={activeRuleLine} />
+              <RulesOutline
+                headers={rulesHeaders}
+                theme={theme}
+                activeLine={activeRuleLine}
+                onSelect={(line) => {
+                  if (rulesViewMode === 'code' && rulesEditorRef.current) {
+                    rulesEditorRef.current.revealLineInCenter(line);
+                  } else {
+                    const el = document.getElementById(`line-${line}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              />
             </div>
             {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
             <div
@@ -879,12 +888,89 @@ function App() {
               style={{
                 flex: 1,
                 minHeight: 0,
-                overflowY: 'auto',
-                padding: '0 20px',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
                 backgroundColor: theme.surface,
               }}
             >
-              <MarkdownContent content={rulesText} theme={theme} isDark={isDark} />
+              <button
+                onClick={() => setRulesViewMode(rulesViewMode === 'render' ? 'code' : 'render')}
+                title={rulesViewMode === 'render' ? 'Show Code' : 'Show Preview'}
+                className="icon-btn"
+                style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '24px',
+                  zIndex: 10,
+                  padding: '5px',
+                  color: theme.text,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  opacity: 0.8,
+                  backgroundColor: theme.surface,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.15s, opacity 0.15s',
+                }}
+              >
+                {rulesViewMode === 'render' ? (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="16 18 22 12 16 6" />
+                    <polyline points="8 6 2 12 8 18" />
+                  </svg>
+                ) : (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+
+              <div style={{ flex: 1, minHeight: 0, padding: rulesViewMode === 'render' ? '0 20px' : 0 }}>
+                {rulesViewMode === 'render' ? (
+                  <MarkdownContent content={rulesText} theme={theme} isDark={isDark} />
+                ) : (
+                  <Editor
+                    height="100%"
+                    language="markdown"
+                    theme={isDark ? 'vs-dark' : 'vs-light'}
+                    value={rulesText}
+                    onMount={(editor) => {
+                      rulesEditorRef.current = editor;
+                      editor.onDidScrollChange(handleRulesScroll);
+                      if (activeRuleLine) {
+                        editor.revealLineInCenter(activeRuleLine);
+                      }
+                    }}
+                    options={{
+                      ...commonEditorOptions,
+                      minimap: { enabled: false },
+                      lineNumbers: 'on',
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1022,24 +1108,23 @@ function App() {
                       </svg>
                     )}
                   </button>
-                  <pre
-                    style={{
-                      flex: 1,
-                      minHeight: 0,
-                      backgroundColor: 'transparent',
-                      color: theme.text,
-                      padding: '15px',
-                      overflowY: 'auto',
-                      margin: 0,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all',
-                      fontFamily: 'monospace',
-                      fontVariantNumeric: 'tabular-nums',
-                      textRendering: 'optimizeSpeed',
-                    }}
-                  >
-                    {parseAnsi(selectedNode.report)}
-                  </pre>
+                  <div style={{ flex: 1, minHeight: 0 }}>
+                    <Editor
+                      height="100%"
+                      language="fslint-report"
+                      theme={isDark ? 'fslint-dark' : 'fslint-light'}
+                      value={(
+                        ('overallStatus' in selectedNode
+                          ? (selectedNode as ValidationResult).report
+                          : (selectedNode as NestedModelResult).report) || ''
+                      ).replace(
+                        // eslint-disable-next-line no-control-regex
+                        /\x1b\[[0-9;]*m/g,
+                        '',
+                      )}
+                      options={commonEditorOptions}
+                    />
+                  </div>
                 </div>
               )}
 
