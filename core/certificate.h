@@ -127,12 +127,12 @@ struct ModelSummary
 /// @brief Result of validation for a nested model (e.g., within resources).
 struct NestedModelResult
 {
-    std::string name;                      ///< Segment name only (e.g. "inner.fmu").
-    std::string logical_path;              ///< Full logical path from validation root (e.g. "inner.fmu/even_inner.fmu").
-    std::string report;                    ///< Full validation report text.
-    std::filesystem::path extraction_path; ///< Path to extracted contents.
-    TestStatus status = TestStatus::PASS;  ///< Aggregated status.
-    std::optional<ModelSummary> summary;   ///< Child model metadata.
+    std::string name;         ///< Segment name only (e.g. "inner.fmu").
+    std::string logical_path; ///< Full logical path from validation root (e.g. "inner.fmu/even_inner.fmu").
+    std::string report;       ///< Full validation report text.
+    std::filesystem::path extraction_path;          ///< Path to extracted contents.
+    TestStatus status = TestStatus::PASS;           ///< Aggregated status.
+    std::optional<ModelSummary> summary;            ///< Child model metadata.
     std::optional<std::vector<TestResult>> results; ///< Child test results.
     std::vector<NestedModelResult> nested_models;   ///< Recursively nested results.
 };
