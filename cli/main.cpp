@@ -34,6 +34,7 @@ void printUsage(const std::string& program_name)
     std::cout << "  -d, --display           Display certificate information from FMU/SSP\n";
     std::cout << "  -c, --verify            Verify the embedded certificate in FMU/SSP\n";
     std::cout << "  -t, --tree              Show internal file tree of FMU/SSP\n";
+    std::cout << "  -j, --json              Output validation result as JSON to stdout\n";
     std::cout << "  -h, --help              Show this help message\n";
     std::cout << "  -v, --version           Show version information\n";
     std::cout << "\n";
@@ -65,6 +66,7 @@ int main(int argc, char** argv)
         bool display_cert = false;
         bool verify_cert = false;
         bool show_tree = false;
+        bool output_json = false;
 
         // Parse arguments
         for (size_t i = 1; i < args.size(); ++i)
@@ -115,6 +117,10 @@ int main(int argc, char** argv)
             {
                 show_tree = true;
             }
+            else if (arg == "-j" || arg == "--json")
+            {
+                output_json = true;
+            }
             else if (arg[0] != '-')
             {
                 if (fmu_path.empty())
@@ -158,6 +164,12 @@ int main(int argc, char** argv)
             return 1;
         }
 
+        if (output_json && operation_count > 0)
+        {
+            std::cerr << "Error: --json cannot be combined with certificate operations\n";
+            return 1;
+        }
+
         // Create validator instance
         const ModelChecker validator;
 
@@ -196,20 +208,23 @@ int main(int argc, char** argv)
 
         if (save_cert)
         {
-            (void)validator.addCertificate(fmu_path);
+            (void)validator.addCertificate(fmu_path, continue_callback);
             return 0;
         }
 
         if (update_cert)
         {
-            (void)validator.updateCertificate(fmu_path);
+            (void)validator.updateCertificate(fmu_path, continue_callback);
             return 0;
         }
 
         // Default: validate FMU (without saving certificate)
         Certificate initial_cert;
         initial_cert.setContinueCallback(continue_callback);
-        (void)validator.validate(fmu_path, false, show_tree, std::move(initial_cert));
+        const Certificate result_cert = validator.validate(fmu_path, output_json, show_tree, std::move(initial_cert));
+
+        if (output_json)
+            std::cout << result_cert.toJson() << '\n';
 
         return 0;
     }

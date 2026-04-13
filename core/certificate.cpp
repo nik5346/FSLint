@@ -209,6 +209,12 @@ void Certificate::printTestResult(const TestResult& test)
 
     log(std::format("{}{}", status_tag, test.getName()));
 
+    if (test.getStatus() == TestStatus::FAIL && test.isSecurityIssue() && _continue_callback)
+    {
+        if (!_continue_callback(test))
+            _abort_requested = true;
+    }
+
     if (test.getStatus() != TestStatus::PASS)
     {
         for (size_t i = 0; i < test.getMessages().size(); ++i)
@@ -222,10 +228,10 @@ void Certificate::printTestResult(const TestResult& test)
 
 void Certificate::printSubsectionSummary(bool subsection_valid)
 {
+    // subsection_valid is kept for caller compatibility but no longer manually
+    // increments _total_failed; _current_subsection_failed is the sole source
+    // of truth for failures.
     const bool actual_valid = subsection_valid && (_current_subsection_failed == 0);
-
-    if (!actual_valid && _current_subsection_failed == 0)
-        _total_failed++;
 
     log("");
     log("  ────────────────────────────────────────");
@@ -375,6 +381,7 @@ static void serializeNestedResults(const std::vector<NestedModelResult>& results
     {
         rapidjson::Value obj(rapidjson::kObjectType);
         obj.AddMember("name", rapidjson::Value(res.name.c_str(), allocator).Move(), allocator);
+        obj.AddMember("logical_path", rapidjson::Value(res.logical_path.c_str(), allocator).Move(), allocator);
 
         std::string status;
         switch (res.status)
@@ -393,6 +400,53 @@ static void serializeNestedResults(const std::vector<NestedModelResult>& results
             break;
         }
         obj.AddMember("status", rapidjson::Value(status.c_str(), allocator).Move(), allocator);
+        obj.AddMember("report", rapidjson::Value(res.report.c_str(), allocator).Move(), allocator);
+
+        if (res.summary.has_value())
+        {
+            rapidjson::Value sum(rapidjson::kObjectType);
+            const auto& s = *res.summary;
+            sum.AddMember("model_name", rapidjson::Value(s.model_name.c_str(), allocator).Move(), allocator);
+            sum.AddMember("standard", rapidjson::Value(s.standard.c_str(), allocator).Move(), allocator);
+            sum.AddMember("fmi_version", rapidjson::Value(s.fmi_version.c_str(), allocator).Move(), allocator);
+            sum.AddMember("guid", rapidjson::Value(s.guid.c_str(), allocator).Move(), allocator);
+            sum.AddMember("generation_tool", rapidjson::Value(s.generation_tool.c_str(), allocator).Move(), allocator);
+            obj.AddMember("summary", sum, allocator);
+        }
+        if (res.results.has_value())
+        {
+            rapidjson::Value res_arr(rapidjson::kArrayType);
+            for (const auto& r : *res.results)
+            {
+                rapidjson::Value ro(rapidjson::kObjectType);
+                ro.AddMember("test_name", rapidjson::Value(r.getName().c_str(), allocator).Move(), allocator);
+                const char* st = r.getStatus() == TestStatus::PASS   ? "PASS"
+                                 : r.getStatus() == TestStatus::FAIL ? "FAIL"
+                                                                     : "WARNING";
+                ro.AddMember("status", rapidjson::Value(st, allocator).Move(), allocator);
+                rapidjson::Value msgs(rapidjson::kArrayType);
+                for (const auto& m : r.getMessages())
+                    msgs.PushBack(rapidjson::Value(m.c_str(), allocator).Move(), allocator);
+                ro.AddMember("messages", msgs, allocator);
+                res_arr.PushBack(ro, allocator);
+            }
+            obj.AddMember("results", res_arr, allocator);
+        }
+
+        if (!res.extraction_path.empty() && std::filesystem::exists(res.extraction_path) &&
+            std::filesystem::is_directory(res.extraction_path))
+        {
+            rapidjson::Value tree;
+            file_utils::fileNodeToJson(res.extraction_path, &tree, &allocator);
+
+            if (tree.IsObject() && tree.HasMember("name") && res.summary.has_value())
+            {
+                const std::string label = res.summary->model_name;
+                if (!label.empty())
+                    tree["name"].SetString(label.c_str(), static_cast<rapidjson::SizeType>(label.length()), allocator);
+            }
+            obj.AddMember("file_tree", tree, allocator);
+        }
 
         if (!res.nested_models.empty())
         {

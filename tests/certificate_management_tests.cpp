@@ -24,7 +24,7 @@ TEST_CASE("Certificate Management on Directories", "[certificate][directory]")
         // Add
         bool added = checker.addCertificate(test_dir);
         CHECK(added);
-        CHECK(std::filesystem::exists(test_dir / "extra/validation_certificate.txt"));
+        CHECK(std::filesystem::exists(test_dir / "extra/org.fslint/cert.txt"));
 
         // Display
         bool displayed = checker.displayCertificate(test_dir);
@@ -33,12 +33,12 @@ TEST_CASE("Certificate Management on Directories", "[certificate][directory]")
         // Update
         bool updated = checker.updateCertificate(test_dir);
         CHECK(updated);
-        CHECK(std::filesystem::exists(test_dir / "extra/validation_certificate.txt"));
+        CHECK(std::filesystem::exists(test_dir / "extra/org.fslint/cert.txt"));
 
         // Remove
         bool removed = checker.removeCertificate(test_dir);
         CHECK(removed);
-        CHECK_FALSE(std::filesystem::exists(test_dir / "extra/validation_certificate.txt"));
+        CHECK_FALSE(std::filesystem::exists(test_dir / "extra/org.fslint/cert.txt"));
     }
 
     // Final cleanup to ensure no side effects on other tests

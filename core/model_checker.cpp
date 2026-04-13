@@ -16,11 +16,15 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
+
+static constexpr std::string_view CERT_RELATIVE_PATH = "extra/org.fslint/cert.txt";
 
 Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree,
                                    Certificate cert) const
@@ -33,10 +37,10 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         if (filename.empty() && path.has_parent_path())
             filename = file_utils::pathToUtf8(path.parent_path().filename());
         std::cout << "Validating: " << filename << "\n";
-
-        const std::string hash = calculateSHA256(path);
-        cert.printMainHeader(hash);
     }
+
+    const std::string hash = calculateSHA256(path);
+    cert.printMainHeader(hash);
 
     std::filesystem::path extract_dir;
     bool is_temporary = false;
@@ -140,20 +144,17 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         std::filesystem::remove_all(extract_dir);
 #endif
 
-    if (!quiet)
-    {
-        cert.printNestedModelsTree();
-        cert.printFooter();
-    }
+    cert.printNestedModelsTree();
+    cert.printFooter();
 
     return cert;
 }
 
-bool ModelChecker::addCertificate(const std::filesystem::path& path) const
+bool ModelChecker::addCertificate(const std::filesystem::path& path, ContinueCallback callback) const
 {
     Certificate cert;
-    // For now, certificate operations also stop on security issues by default
-    // as no callback is set.
+    if (callback)
+        cert.setContinueCallback(std::move(callback));
     cert.setQuiet(false);
 
     // Print header
@@ -238,11 +239,10 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     cert.printFooter();
 
     // Create extra directory if it doesn't exist
-    const std::filesystem::path extra_dir = extract_dir / "extra";
-    std::filesystem::create_directories(extra_dir);
+    const std::filesystem::path cert_file = extract_dir / CERT_RELATIVE_PATH;
+    std::filesystem::create_directories(cert_file.parent_path());
 
     // Write certificate to file
-    const std::filesystem::path cert_file = extra_dir / "validation_certificate.txt";
     if (!cert.saveToFile(cert_file))
     {
         std::cerr << "Error: Failed to create certificate file\n";
@@ -284,7 +284,7 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path) const
     return true;
 }
 
-bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
+bool ModelChecker::updateCertificate(const std::filesystem::path& path, ContinueCallback callback) const
 {
     std::cout << "Re-validating model and updating certificate...\n\n";
 
@@ -293,7 +293,7 @@ bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
         const auto result = removeCertificate(path);
         if (!result)
             return false;
-        return addCertificate(path);
+        return addCertificate(path, std::move(callback));
     }
 
     // Remove existing certificate first
@@ -306,8 +306,7 @@ bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
     }
 
     // Remove old certificate if it exists
-    const std::filesystem::path extra_dir = temp_dir / "extra";
-    const std::filesystem::path old_cert = extra_dir / "validation_certificate.txt";
+    const std::filesystem::path old_cert = temp_dir / CERT_RELATIVE_PATH;
     if (std::filesystem::exists(old_cert))
         std::filesystem::remove(old_cert);
 
@@ -329,22 +328,25 @@ bool ModelChecker::updateCertificate(const std::filesystem::path& path) const
     std::filesystem::remove_all(temp_dir);
 
     // Now validate and add new certificate
-    return addCertificate(path);
+    return addCertificate(path, std::move(callback));
 }
 
 bool ModelChecker::removeCertificate(const std::filesystem::path& path) const
 {
     if (std::filesystem::is_directory(path))
     {
-        const std::filesystem::path extra_dir = path / "extra";
-        const std::filesystem::path cert_file = extra_dir / "validation_certificate.txt";
+        const std::filesystem::path cert_file = path / CERT_RELATIVE_PATH;
 
         if (std::filesystem::exists(cert_file))
         {
             std::filesystem::remove(cert_file);
-            // Remove extra directory if empty
-            if (std::filesystem::exists(extra_dir) && std::filesystem::is_empty(extra_dir))
-                std::filesystem::remove(extra_dir);
+            // Remove parent directories if empty
+            auto parent = cert_file.parent_path();
+            while (parent != path && std::filesystem::exists(parent) && std::filesystem::is_empty(parent))
+            {
+                std::filesystem::remove(parent);
+                parent = parent.parent_path();
+            }
             std::cout << "Validation certificate removed successfully from directory model\n";
         }
         else
@@ -363,8 +365,7 @@ bool ModelChecker::removeCertificate(const std::filesystem::path& path) const
         return false;
     }
 
-    const std::filesystem::path extra_dir = temp_dir / "extra";
-    const std::filesystem::path cert_file = extra_dir / "validation_certificate.txt";
+    const std::filesystem::path cert_file = temp_dir / CERT_RELATIVE_PATH;
     bool had_certificate = false;
 
     if (std::filesystem::exists(cert_file))
@@ -372,9 +373,13 @@ bool ModelChecker::removeCertificate(const std::filesystem::path& path) const
         had_certificate = true;
         std::filesystem::remove(cert_file);
 
-        // Remove extra directory if empty
-        if (std::filesystem::is_empty(extra_dir))
-            std::filesystem::remove(extra_dir);
+        // Remove parent directories if empty
+        auto parent = cert_file.parent_path();
+        while (parent != temp_dir && std::filesystem::exists(parent) && std::filesystem::is_empty(parent))
+        {
+            std::filesystem::remove(parent);
+            parent = parent.parent_path();
+        }
     }
 
     if (!had_certificate)
@@ -408,7 +413,7 @@ bool ModelChecker::displayCertificate(const std::filesystem::path& path) const
 {
     if (std::filesystem::is_directory(path))
     {
-        const std::filesystem::path cert_file = path / "extra" / "validation_certificate.txt";
+        const std::filesystem::path cert_file = path / CERT_RELATIVE_PATH;
         if (!std::filesystem::exists(cert_file))
         {
             std::cout << "No validation certificate found in directory model\n";
@@ -436,7 +441,7 @@ bool ModelChecker::displayCertificate(const std::filesystem::path& path) const
     }
 
     std::vector<uint8_t> cert;
-    if (!zipper.extractFile("extra/validation_certificate.txt", cert))
+    if (!zipper.extractFile(std::string(CERT_RELATIVE_PATH), cert))
     {
         std::cout << "No validation certificate found in model\n";
         zipper.close();
@@ -457,7 +462,7 @@ bool ModelChecker::verifyCertificate(const std::filesystem::path& path) const
 
     if (std::filesystem::is_directory(path))
     {
-        const std::filesystem::path cert_file = path / "extra" / "validation_certificate.txt";
+        const std::filesystem::path cert_file = path / CERT_RELATIVE_PATH;
         if (!std::filesystem::exists(cert_file))
         {
             std::cout << "No validation certificate found in directory model\n";
@@ -484,7 +489,7 @@ bool ModelChecker::verifyCertificate(const std::filesystem::path& path) const
         }
 
         std::vector<uint8_t> cert_data;
-        if (!zipper.extractFile("extra/validation_certificate.txt", cert_data))
+        if (!zipper.extractFile(std::string(CERT_RELATIVE_PATH), cert_data))
         {
             std::cout << "No validation certificate found in model\n";
             zipper.close();
@@ -498,37 +503,19 @@ bool ModelChecker::verifyCertificate(const std::filesystem::path& path) const
     std::string stored_version;
     std::string stored_hash;
 
-    std::istringstream iss(cert_content);
+    const std::regex tool_re(R"(Tool:\s+FSLint\s+(\S+))");
+    const std::regex hash_re(R"(SHA256:\s+([0-9a-f]{64}))");
+    std::smatch match;
     std::string line;
+    std::istringstream iss(cert_content);
     while (std::getline(iss, line))
     {
-        if (line.find("Tool:") != std::string::npos)
-        {
-            const size_t pos = line.find("FSLint");
-            if (pos != std::string::npos && line.length() > pos + 7)
-            {
-                stored_version = line.substr(pos + 7);
-                // Trim leading/trailing spaces
-                const size_t first = stored_version.find_first_not_of(' ');
-                if (std::string::npos != first)
-                {
-                    const size_t last = stored_version.find_last_not_of(' ');
-                    stored_version = stored_version.substr(first, last - first + 1);
-                }
-            }
-        }
-        else if (line.find("SHA256:") != std::string::npos)
-        {
-            const size_t pos = line.find("SHA256:");
-            stored_hash = line.substr(pos + 7);
-            // Trim leading/trailing spaces
-            const size_t first = stored_hash.find_first_not_of(' ');
-            if (std::string::npos != first)
-            {
-                const size_t last = stored_hash.find_last_not_of(' ');
-                stored_hash = stored_hash.substr(first, last - first + 1);
-            }
-        }
+        if (stored_version.empty() && std::regex_search(line, match, tool_re))
+            stored_version = match[1].str();
+        if (stored_hash.empty() && std::regex_search(line, match, hash_re))
+            stored_hash = match[1].str();
+        if (!stored_version.empty() && !stored_hash.empty())
+            break;
     }
 
     if (stored_hash.empty())
@@ -660,7 +647,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 std::string rel_path_str = file_utils::pathToUtf8(rel_path);
                 std::ranges::replace(rel_path_str, '\\', '/');
 
-                if (rel_path_str == "extra/validation_certificate.txt")
+                if (rel_path_str == CERT_RELATIVE_PATH)
                     continue;
 
                 files.push_back(rel_path);
@@ -698,11 +685,8 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
             for (const auto& entry : entries)
             {
                 // Skip directories and the certificate itself
-                if (entry.filename.empty() || entry.filename.back() == '/' ||
-                    entry.filename == "extra/validation_certificate.txt")
-                {
+                if (entry.filename.empty() || entry.filename.back() == '/' || entry.filename == CERT_RELATIVE_PATH)
                     continue;
-                }
                 name_pairs.emplace_back(entry.filename, entry.raw_filename);
             }
             // Sort by normalized filename for consistent hashing

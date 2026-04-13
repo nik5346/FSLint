@@ -5,7 +5,9 @@
 #include "model_checker.h"
 
 #include <filesystem>
+#include <functional>
 #include <string>
+#include <utility>
 
 void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& cert) const
 {
@@ -16,7 +18,8 @@ void ResourcesChecker::validate(const std::filesystem::path& path, Certificate& 
     scanResources(resources_dir, cert);
 }
 
-void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir, Certificate& cert) const
+void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir, Certificate& cert,
+                                     const std::string& logical_prefix) const
 {
     for (const auto& entry : std::filesystem::directory_iterator(resources_dir))
     {
@@ -28,12 +31,39 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                 const ModelChecker nested_checker;
                 // validate(..., true) will perform validation quietly and return a certificate
                 // The ResourcesChecker inside that validation will handle further nesting
-                const Certificate nested_cert = nested_checker.validate(entry.path(), true);
+                Certificate initial_cert;
+                if (cert.getContinueCallback())
+                    initial_cert.setContinueCallback(cert.getContinueCallback());
+
+                if (cert.shouldAbort())
+                    continue;
+
+                const Certificate nested_cert =
+                    nested_checker.validate(entry.path(), true, false, std::move(initial_cert));
 
                 NestedModelResult result;
                 result.name = file_utils::pathToUtf8(entry.path().filename());
+                result.logical_path = logical_prefix + result.name;
+                result.report = nested_cert.getFullReport();
+                result.extraction_path = nested_cert.getExtractionPath();
                 result.status = nested_cert.getOverallStatus();
+                result.summary = nested_cert.getSummary();
+                result.results = nested_cert.getResults();
                 result.nested_models = nested_cert.getNestedModels();
+
+                std::function<void(NestedModelResult&, const std::string&)> fix_paths =
+                    [&fix_paths](NestedModelResult& r, const std::string& prefix)
+                {
+                    std::string segment = r.name;
+                    if (segment.ends_with('/'))
+                        segment.pop_back();
+                    r.logical_path = prefix + segment;
+                    for (auto& child : r.nested_models)
+                        fix_paths(child, r.logical_path + "/");
+                };
+
+                for (auto& child : result.nested_models)
+                    fix_paths(child, result.logical_path + "/");
 
                 cert.addNestedModelResult(result);
             }
@@ -49,19 +79,47 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                 std::filesystem::exists(entry.path() / "SystemStructure.ssd"))
             {
                 const ModelChecker nested_checker;
-                const Certificate nested_cert = nested_checker.validate(entry.path(), true);
+                Certificate initial_cert;
+                if (cert.getContinueCallback())
+                    initial_cert.setContinueCallback(cert.getContinueCallback());
+
+                if (cert.shouldAbort())
+                    continue;
+
+                const Certificate nested_cert =
+                    nested_checker.validate(entry.path(), true, false, std::move(initial_cert));
 
                 NestedModelResult result;
                 result.name = file_utils::pathToUtf8(entry.path().filename()) + "/";
+                result.logical_path = logical_prefix + file_utils::pathToUtf8(entry.path().filename());
+                result.report = nested_cert.getFullReport();
+                result.extraction_path = nested_cert.getExtractionPath();
                 result.status = nested_cert.getOverallStatus();
+                result.summary = nested_cert.getSummary();
+                result.results = nested_cert.getResults();
                 result.nested_models = nested_cert.getNestedModels();
+
+                std::function<void(NestedModelResult&, const std::string&)> fix_paths =
+                    [&fix_paths](NestedModelResult& r, const std::string& prefix)
+                {
+                    std::string segment = r.name;
+                    if (segment.ends_with('/'))
+                        segment.pop_back();
+                    r.logical_path = prefix + segment;
+                    for (auto& child : r.nested_models)
+                        fix_paths(child, r.logical_path + "/");
+                };
+
+                for (auto& child : result.nested_models)
+                    fix_paths(child, result.logical_path + "/");
 
                 cert.addNestedModelResult(result);
             }
             else
             {
                 // Just a regular directory, recurse into it
-                scanResources(entry.path(), cert);
+                const std::string sub_prefix = logical_prefix + file_utils::pathToUtf8(entry.path().filename()) + "/";
+                scanResources(entry.path(), cert, sub_prefix);
             }
         }
     }

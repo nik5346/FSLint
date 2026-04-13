@@ -55,13 +55,15 @@ class ModelChecker
   public:
     /// @brief Adds certificate to model.
     /// @param path Model path.
+    /// @param callback Optional callback for security issues.
     /// @return True if successful.
-    [[nodiscard]] bool addCertificate(const std::filesystem::path& path) const;
+    [[nodiscard]] bool addCertificate(const std::filesystem::path& path, ContinueCallback callback = nullptr) const;
 
     /// @brief Updates certificate.
     /// @param path Model path.
+    /// @param callback Optional callback for security issues.
     /// @return True if successful.
-    [[nodiscard]] bool updateCertificate(const std::filesystem::path& path) const;
+    [[nodiscard]] bool updateCertificate(const std::filesystem::path& path, ContinueCallback callback = nullptr) const;
 
     /// @brief Removes certificate.
     /// @param path Model path.
