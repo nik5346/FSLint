@@ -429,7 +429,6 @@ function App() {
     }
   };
 
-
   return (
     <div
       style={{
@@ -883,8 +882,6 @@ function App() {
               }}
             />
             <div
-              ref={rulesScrollRef}
-              onScroll={handleRulesScroll}
               style={{
                 flex: 1,
                 minHeight: 0,
@@ -947,7 +944,16 @@ function App() {
                 )}
               </button>
 
-              <div style={{ flex: 1, minHeight: 0, padding: rulesViewMode === 'render' ? '0 20px' : 0 }}>
+              <div
+                ref={rulesViewMode === 'render' ? rulesScrollRef : null}
+                onScroll={rulesViewMode === 'render' ? handleRulesScroll : undefined}
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  padding: rulesViewMode === 'render' ? '0 20px' : 0,
+                  overflowY: rulesViewMode === 'render' ? 'auto' : 'hidden',
+                }}
+              >
                 {rulesViewMode === 'render' ? (
                   <MarkdownContent content={rulesText} theme={theme} isDark={isDark} />
                 ) : (

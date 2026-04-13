@@ -6,31 +6,35 @@ import { loader } from '@monaco-editor/react';
  */
 export const configureMonaco = () => {
   loader.init().then((monaco) => {
-    // Register a custom language for FSLint validation reports
-    monaco.languages.register({ id: 'fslint-report' });
+    // Register a custom language for FSLint validation reports if not already registered
+    if (
+      !monaco.languages.getLanguages().some((lang: { id: string }) => lang.id === 'fslint-report')
+    ) {
+      monaco.languages.register({ id: 'fslint-report' });
 
-    // Define tokens for the report language
-    monaco.languages.setMonarchTokensProvider('fslint-report', {
-      tokenizer: {
-        root: [
-          // Status markers
-          [/\[✓ PASS\]/, 'status-pass'],
-          [/\[✗ FAIL\]/, 'status-fail'],
-          [/\[⚠ WARN\]/, 'status-warn'],
+      // Define tokens for the report language
+      monaco.languages.setMonarchTokensProvider('fslint-report', {
+        tokenizer: {
+          root: [
+            // Status markers
+            [/\[✓ PASS\]/, 'status-pass'],
+            [/\[✗ FAIL\]/, 'status-fail'],
+            [/\[⚠ WARN\]/, 'status-warn'],
 
-          // Headers and sections
-          [/^--[-]+$/, 'separator'],
-          [/^[A-Z][A-Za-z ]+$/, 'header'],
+            // Headers and sections
+            [/^--[-]+$/, 'separator'],
+            [/^[A-Z][A-Za-z ]+$/, 'header'],
 
-          // Box drawing characters
-          [/[┌┐└┘├┤┬┴┼─│]/, 'box-drawing'],
+            // Box drawing characters
+            [/[┌┐└┘├┤┬┴┼─│]/, 'box-drawing'],
 
-          // Numbers and paths
-          [/\d+/, 'number'],
-          [/[a-zA-Z0-9_/.-]+\.[a-z]{2,4}/, 'path'],
-        ],
-      },
-    });
+            // Numbers and paths
+            [/\d+/, 'number'],
+            [/[a-zA-Z0-9_/.-]+\.[a-z]{2,4}/, 'path'],
+          ],
+        },
+      });
+    }
 
     // Define the themes
     monaco.editor.defineTheme('fslint-dark', {
