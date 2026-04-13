@@ -9,7 +9,7 @@ import { ModelInfo } from './components/ModelInfo';
 import { RulesOutline } from './components/RulesOutline';
 import { MarkdownContent } from './components/MarkdownContent';
 import { extractHeaders, getFilesFromHandle, getFilesFromEntry } from './utils/file';
-import { configureMonaco, commonEditorOptions } from './utils/monaco';
+import { handleBeforeMount, commonEditorOptions } from './utils/monaco';
 
 import clike from 'react-syntax-highlighter/dist/esm/languages/prism/clike';
 import cpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
@@ -261,10 +261,6 @@ function App() {
       folderInputRef.current.setAttribute('webkitdirectory', '');
       folderInputRef.current.setAttribute('directory', '');
     }
-  }, []);
-
-  useEffect(() => {
-    configureMonaco();
   }, []);
 
   useEffect(() => {
@@ -889,67 +885,124 @@ function App() {
                 display: 'flex',
                 flexDirection: 'column',
                 backgroundColor: theme.surface,
+                overflow: 'hidden',
               }}
             >
-              <button
-                onClick={() => setRulesViewMode(rulesViewMode === 'render' ? 'code' : 'render')}
-                title={rulesViewMode === 'render' ? 'Show Code' : 'Show Preview'}
-                className="icon-btn"
+              <div
                 style={{
                   position: 'absolute',
-                  top: '12px',
-                  right: '24px',
+                  top: '6px',
+                  right: '30px',
                   zIndex: 10,
-                  padding: '5px',
-                  color: theme.text,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  opacity: 0.8,
-                  backgroundColor: theme.surface,
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background-color 0.15s, opacity 0.15s',
+                  gap: '4px',
                 }}
               >
-                {rulesViewMode === 'render' ? (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="16 18 22 12 16 6" />
-                    <polyline points="8 6 2 12 8 18" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </button>
+                <button
+                  onClick={() => setRulesViewMode(rulesViewMode === 'render' ? 'code' : 'render')}
+                  title={rulesViewMode === 'render' ? 'Show Code' : 'Show Preview'}
+                  className="copy-btn"
+                  style={{
+                    padding: '5px',
+                    color: theme.text,
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    opacity: 0.6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background-color 0.15s, opacity 0.15s',
+                  }}
+                >
+                  {rulesViewMode === 'render' ? (
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="16 18 22 12 16 6" />
+                      <polyline points="8 6 2 12 8 18" />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(rulesText).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    });
+                  }}
+                  title={copied ? 'Copied!' : 'Copy to clipboard'}
+                  className="copy-btn"
+                  style={{
+                    padding: '5px',
+                    color: theme.text,
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    opacity: 0.6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background-color 0.15s, opacity 0.15s',
+                  }}
+                >
+                  {copied ? (
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                    </svg>
+                  )}
+                </button>
+              </div>
 
               <div
                 ref={rulesViewMode === 'render' ? rulesScrollRef : null}
                 onScroll={rulesViewMode === 'render' ? handleRulesScroll : undefined}
                 style={{
-                  flex: 1,
-                  minHeight: 0,
+                  height: '100%',
                   padding: rulesViewMode === 'render' ? '0 20px' : 0,
                   overflowY: rulesViewMode === 'render' ? 'auto' : 'hidden',
                 }}
@@ -961,6 +1014,7 @@ function App() {
                     height="100%"
                     language="markdown"
                     theme={isDark ? 'vs-dark' : 'vs-light'}
+                    beforeMount={handleBeforeMount}
                     value={rulesText}
                     onMount={(editor) => {
                       rulesEditorRef.current = editor;
@@ -1119,6 +1173,7 @@ function App() {
                       height="100%"
                       language="fslint-report"
                       theme={isDark ? 'fslint-dark' : 'fslint-light'}
+                      beforeMount={handleBeforeMount}
                       value={(
                         ('overallStatus' in selectedNode
                           ? (selectedNode as ValidationResult).report
