@@ -42,8 +42,8 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                     nested_checker.validate(entry.path(), true, false, std::move(initial_cert));
 
                 NestedModelResult result;
-                result.name = file_utils::pathToUtf8(entry.path().filename()) + "/";
-                result.logical_path = logical_prefix + file_utils::pathToUtf8(entry.path().filename());
+                result.name = file_utils::pathToUtf8(entry.path().filename());
+                result.logical_path = logical_prefix + result.name;
                 result.report = nested_cert.getFullReport();
                 result.extraction_path = nested_cert.getExtractionPath();
                 result.status = nested_cert.getOverallStatus();
@@ -90,8 +90,8 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                     nested_checker.validate(entry.path(), true, false, std::move(initial_cert));
 
                 NestedModelResult result;
-                result.name = file_utils::pathToUtf8(entry.path().filename());
-                result.logical_path = logical_prefix + result.name;
+                result.name = file_utils::pathToUtf8(entry.path().filename()) + "/";
+                result.logical_path = logical_prefix + file_utils::pathToUtf8(entry.path().filename());
                 result.report = nested_cert.getFullReport();
                 result.extraction_path = nested_cert.getExtractionPath();
                 result.status = nested_cert.getOverallStatus();

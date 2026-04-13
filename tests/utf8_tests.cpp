@@ -82,7 +82,8 @@ TEST_CASE("UTF-8 Path and Filename Support", "[utf8]")
         bool found = false;
         for (const auto& nested : cert.getNestedModels())
         {
-            if (nested.name == nested_name)
+            // Use path comparison to handle potential NFD/NFC normalization differences on macOS
+            if (fs::path(file_utils::utf8ToPath(nested.name)) == fs::path(file_utils::utf8ToPath(nested_name)))
             {
                 found = true;
                 break;
