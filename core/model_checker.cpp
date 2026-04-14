@@ -62,9 +62,11 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
         }
 
         // Step 2: Extract to temporary directory
+        static uint64_t temp_dir_counter = 0;
         const auto now = std::chrono::high_resolution_clock::now();
         const auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-        const std::string dir_name = "model_validation_" + std::to_string(nanos);
+        const std::string dir_name =
+            "model_validation_" + std::to_string(nanos) + "_" + std::to_string(temp_dir_counter++);
 #ifdef __EMSCRIPTEN__
         extract_dir = std::filesystem::current_path() / dir_name;
 #else
@@ -170,7 +172,8 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
                     if (!quiet)
                         std::cerr << "Error: Failed to repackage model at " << path << "\n";
                     // Restore from backup
-                    std::filesystem::copy_file(backup_path, path, std::filesystem::copy_options::overwrite_existing, ec);
+                    std::filesystem::copy_file(backup_path, path, std::filesystem::copy_options::overwrite_existing,
+                                               ec);
                 }
                 std::filesystem::remove(backup_path, ec);
             }
@@ -202,13 +205,9 @@ bool ModelChecker::addCertificate(const std::filesystem::path& path, ContinueCal
     }
 
     if (std::filesystem::is_directory(path))
-    {
         std::cout << "\nCertificate added successfully to directory model\n";
-    }
     else
-    {
         std::cout << "\nCertificate added successfully to model\n";
-    }
 
     return true;
 }
@@ -648,9 +647,9 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                     std::vector<uint8_t> data;
                     if (zipper.extractFile(raw_name, data))
                     {
-                        const std::string temp_name =
-                            "temp_nested_hash_" + std::to_string(std::hash<std::string>{}(normalized_name)) +
-                            (normalized_name.ends_with(".fmu") ? ".fmu" : ".ssp");
+                        const std::string temp_name = "temp_nested_hash_" +
+                                                      std::to_string(std::hash<std::string>{}(normalized_name)) +
+                                                      (normalized_name.ends_with(".fmu") ? ".fmu" : ".ssp");
 #ifdef __EMSCRIPTEN__
                         const std::filesystem::path temp_path = std::filesystem::current_path() / temp_name;
 #else
@@ -658,7 +657,8 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
 #endif
                         {
                             std::ofstream f(temp_path, std::ios::binary);
-                            f.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
+                            f.write(reinterpret_cast<const char*>(data.data()),
+                                    static_cast<std::streamsize>(data.size()));
                         }
                         const std::string nested_hash = calculateSHA256(temp_path);
                         std::filesystem::remove(temp_path);
