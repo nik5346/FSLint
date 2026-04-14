@@ -151,6 +151,7 @@ class Certificate
     std::vector<TestResult> _results;
     std::vector<NestedModelResult> _nested_models;
     ModelSummary _summary;
+    bool _is_adding_certificate = false;
 
     // Subsection tracking
     size_t _current_subsection_passed = 0;
@@ -294,6 +295,20 @@ class Certificate
     [[nodiscard]] const ModelSummary& getSummary() const noexcept
     {
         return _summary;
+    }
+
+    /// @brief Sets the adding certificate flag.
+    /// @param adding True if adding certificate.
+    void setIsAddingCertificate(bool adding) noexcept
+    {
+        _is_adding_certificate = adding;
+    }
+
+    /// @brief Checks if certificate is being added.
+    /// @return True if adding certificate.
+    [[nodiscard]] bool isAddingCertificate() const noexcept
+    {
+        return _is_adding_certificate;
     }
 
     /// @brief Converts report data to JSON.

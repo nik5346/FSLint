@@ -6,10 +6,15 @@
 #include <filesystem>
 #include <string>
 
+#include <string_view>
+
 /// @brief Orchestrator for FMU/SSP validation and certificate management.
 class ModelChecker
 {
   public:
+    /// @brief Relative path to the certificate file within the model.
+    static constexpr std::string_view CERT_RELATIVE_PATH = "extra/org.fslint/cert.txt";
+
     /// @brief Virtual destructor for base class with virtual methods.
     virtual ~ModelChecker() = default;
 
