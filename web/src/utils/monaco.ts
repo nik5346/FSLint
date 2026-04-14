@@ -50,12 +50,14 @@ export const handleBeforeMount = (monaco: Monaco) => {
           [/\[SECURITY\]/, 'status-security'],
 
           // Overall results and outcomes
-          [/Overall Status: PASS/, 'status-pass'],
-          [/Overall Status: FAIL/, 'status-fail'],
-          [/Overall Status: WARN/, 'status-warn'],
-          [/Result: PASS/, 'status-pass'],
-          [/Result: FAIL/, 'status-fail'],
-          [/Result: WARN/, 'status-warn'],
+          [/Overall Status: PASS[ED]*/, 'status-pass'],
+          [/Overall Status: FAIL[ED]*/, 'status-fail'],
+          [/Overall Status: WARN[ED]*/, 'status-warn'],
+          [/Result: PASS[ED]*/, 'status-pass'],
+          [/Result: FAIL[ED]*/, 'status-fail'],
+          [/Result: WARN[ED]*/, 'status-warn'],
+          [/MODEL VALIDATION PASSED/, 'status-pass'],
+          [/MODEL VALIDATION FAILED/, 'status-fail'],
 
           // Numbers and paths
           [/\d+/, 'number'],
