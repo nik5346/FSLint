@@ -25,7 +25,9 @@ export const commonEditorOptions = {
  */
 export const handleBeforeMount = (monaco: Monaco) => {
   // Register a custom language for FSLint validation reports if not already registered
-  if (!monaco.languages.getLanguages().some((lang: { id: string }) => lang.id === 'fslint-report')) {
+  if (
+    !monaco.languages.getLanguages().some((lang: { id: string }) => lang.id === 'fslint-report')
+  ) {
     monaco.languages.register({ id: 'fslint-report' });
 
     // Define tokens for the report language

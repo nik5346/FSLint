@@ -163,80 +163,77 @@ export const FilePreview = ({
    * Registers the CSV language and custom themes.
    * @param {Monaco} monaco - The Monaco editor instance.
    */
-  const handleBeforeMount = useCallback(
-    (monaco: Monaco) => {
-      commonHandleBeforeMount(monaco);
+  const handleBeforeMount = useCallback((monaco: Monaco) => {
+    commonHandleBeforeMount(monaco);
 
-      const darkColors = [
-        '#ff5555',
-        '#50fa7b',
-        '#f1fa8c',
-        '#bd93f9',
-        '#ff79c6',
-        '#8be9fd',
-        '#ffb86c',
-      ];
-      const lightColors = [
-        '#e45649',
-        '#50a14f',
-        '#c18401',
-        '#4078f2',
-        '#a626a4',
-        '#0184bc',
-        '#986801',
-      ];
+    const darkColors = [
+      '#ff5555',
+      '#50fa7b',
+      '#f1fa8c',
+      '#bd93f9',
+      '#ff79c6',
+      '#8be9fd',
+      '#ffb86c',
+    ];
+    const lightColors = [
+      '#e45649',
+      '#50a14f',
+      '#c18401',
+      '#4078f2',
+      '#a626a4',
+      '#0184bc',
+      '#986801',
+    ];
 
-      // Re-define themes with CSV rules included
-      monaco.editor.defineTheme('fslint-dark', {
-        base: 'vs-dark',
-        inherit: true,
-        rules: [
-          { token: 'status-pass', foreground: '4caf50', fontStyle: 'bold' },
-          { token: 'status-fail', foreground: 'f44336', fontStyle: 'bold' },
-          { token: 'status-warn', foreground: 'ff9800', fontStyle: 'bold' },
-          { token: 'header', foreground: '569cd6', fontStyle: 'bold' },
-          { token: 'separator', foreground: '808080' },
-          { token: 'box-drawing', foreground: 'd4d4d4' },
-          ...Array.from({ length: 10 }).map((_, i) => ({
-            token: `csv-col-${i}`,
-            foreground: darkColors[i % darkColors.length],
-          })),
-        ],
-        colors: {
-          'editor.background': '#2a2a2a',
-          'editor.foreground': '#f0f0f0',
-          'editor.lineHighlightBackground': '#333333',
-          'editorLineNumber.foreground': '#858585',
-          'editorLineNumber.activeForeground': '#c6c6c6',
-        },
-      });
+    // Re-define themes with CSV rules included
+    monaco.editor.defineTheme('fslint-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'status-pass', foreground: '4caf50', fontStyle: 'bold' },
+        { token: 'status-fail', foreground: 'f44336', fontStyle: 'bold' },
+        { token: 'status-warn', foreground: 'ff9800', fontStyle: 'bold' },
+        { token: 'header', foreground: '569cd6', fontStyle: 'bold' },
+        { token: 'separator', foreground: '808080' },
+        { token: 'box-drawing', foreground: 'd4d4d4' },
+        ...Array.from({ length: 10 }).map((_, i) => ({
+          token: `csv-col-${i}`,
+          foreground: darkColors[i % darkColors.length],
+        })),
+      ],
+      colors: {
+        'editor.background': '#2a2a2a',
+        'editor.foreground': '#f0f0f0',
+        'editor.lineHighlightBackground': '#333333',
+        'editorLineNumber.foreground': '#858585',
+        'editorLineNumber.activeForeground': '#c6c6c6',
+      },
+    });
 
-      monaco.editor.defineTheme('fslint-light', {
-        base: 'vs',
-        inherit: true,
-        rules: [
-          { token: 'status-pass', foreground: '2e7d32', fontStyle: 'bold' },
-          { token: 'status-fail', foreground: 'c62828', fontStyle: 'bold' },
-          { token: 'status-warn', foreground: 'ef6c00', fontStyle: 'bold' },
-          { token: 'header', foreground: '005a9e', fontStyle: 'bold' },
-          { token: 'separator', foreground: 'a0a0a0' },
-          { token: 'box-drawing', foreground: '333333' },
-          ...Array.from({ length: 10 }).map((_, i) => ({
-            token: `csv-col-${i}`,
-            foreground: lightColors[i % lightColors.length],
-          })),
-        ],
-        colors: {
-          'editor.background': '#ffffff',
-          'editor.foreground': '#111418',
-          'editor.lineHighlightBackground': '#f3f3f3',
-          'editorLineNumber.foreground': '#999999',
-          'editorLineNumber.activeForeground': '#333333',
-        },
-      });
-    },
-    [],
-  );
+    monaco.editor.defineTheme('fslint-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'status-pass', foreground: '2e7d32', fontStyle: 'bold' },
+        { token: 'status-fail', foreground: 'c62828', fontStyle: 'bold' },
+        { token: 'status-warn', foreground: 'ef6c00', fontStyle: 'bold' },
+        { token: 'header', foreground: '005a9e', fontStyle: 'bold' },
+        { token: 'separator', foreground: 'a0a0a0' },
+        { token: 'box-drawing', foreground: '333333' },
+        ...Array.from({ length: 10 }).map((_, i) => ({
+          token: `csv-col-${i}`,
+          foreground: lightColors[i % lightColors.length],
+        })),
+      ],
+      colors: {
+        'editor.background': '#ffffff',
+        'editor.foreground': '#111418',
+        'editor.lineHighlightBackground': '#f3f3f3',
+        'editorLineNumber.foreground': '#999999',
+        'editorLineNumber.activeForeground': '#333333',
+      },
+    });
+  }, []);
 
   useEffect(() => {
     if (!monaco) return;
