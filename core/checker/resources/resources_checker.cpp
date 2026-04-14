@@ -32,6 +32,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
                 // validate(..., true) will perform validation quietly and return a certificate
                 // The ResourcesChecker inside that validation will handle further nesting
                 Certificate initial_cert;
+                initial_cert.setIsAddingCertificate(cert.isAddingCertificate());
                 if (cert.getContinueCallback())
                     initial_cert.setContinueCallback(cert.getContinueCallback());
 
@@ -80,6 +81,7 @@ void ResourcesChecker::scanResources(const std::filesystem::path& resources_dir,
             {
                 const ModelChecker nested_checker;
                 Certificate initial_cert;
+                initial_cert.setIsAddingCertificate(cert.isAddingCertificate());
                 if (cert.getContinueCallback())
                     initial_cert.setContinueCallback(cert.getContinueCallback());
 

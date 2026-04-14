@@ -24,8 +24,6 @@
 #include <utility>
 #include <vector>
 
-static constexpr std::string_view CERT_RELATIVE_PATH = "extra/org.fslint/cert.txt";
-
 Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet, bool show_tree,
                                    Certificate cert) const
 {
@@ -147,140 +145,71 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     cert.printNestedModelsTree();
     cert.printFooter();
 
+    if (cert.isAddingCertificate() && !cert.isFailed())
+    {
+        const std::filesystem::path cert_file = extract_dir / CERT_RELATIVE_PATH;
+        std::filesystem::create_directories(cert_file.parent_path());
+        if (!cert.saveToFile(cert_file))
+        {
+            if (!quiet)
+                std::cerr << "Error: Failed to save certificate to " << cert_file << "\n";
+        }
+        else if (is_temporary)
+        {
+            // Create backup for safety
+            std::filesystem::path backup_path = path;
+            backup_path += ".fslint_backup";
+            std::error_code ec;
+            std::filesystem::copy_file(path, backup_path, std::filesystem::copy_options::overwrite_existing, ec);
+
+            if (!ec)
+            {
+                // Repackage with certificate
+                if (!package(extract_dir, path))
+                {
+                    if (!quiet)
+                        std::cerr << "Error: Failed to repackage model at " << path << "\n";
+                    // Restore from backup
+                    std::filesystem::copy_file(backup_path, path, std::filesystem::copy_options::overwrite_existing, ec);
+                }
+                std::filesystem::remove(backup_path, ec);
+            }
+            else
+            {
+                if (!quiet)
+                    std::cerr << "Error: Failed to create backup before repackaging: " << ec.message() << "\n";
+            }
+        }
+    }
+
     return cert;
 }
 
 bool ModelChecker::addCertificate(const std::filesystem::path& path, ContinueCallback callback) const
 {
-    Certificate cert;
+    Certificate initial_cert;
+    initial_cert.setIsAddingCertificate(true);
     if (callback)
-        cert.setContinueCallback(std::move(callback));
-    cert.setQuiet(false);
+        initial_cert.setContinueCallback(std::move(callback));
+    initial_cert.setQuiet(false);
 
-    // Print header
-    std::string filename = file_utils::pathToUtf8(path.filename());
-    if (filename.empty() && path.has_parent_path())
-        filename = file_utils::pathToUtf8(path.parent_path().filename());
-    std::cout << "Validating: " << filename << "\n";
+    const Certificate result_cert = validate(path, false, false, std::move(initial_cert));
 
-    const std::string hash = calculateSHA256(path);
-    cert.printMainHeader(hash);
-
-    std::filesystem::path extract_dir;
-    bool is_temporary = false;
+    if (result_cert.isFailed())
+    {
+        std::cerr << "Error: Validation failed. Certificate was not added.\n";
+        return false;
+    }
 
     if (std::filesystem::is_directory(path))
     {
-        extract_dir = path;
+        std::cout << "\nCertificate added successfully to directory model\n";
     }
     else
     {
-        // Step 1: Archive validation
-        const ArchiveChecker archive_checker;
-        archive_checker.validate(path, cert);
-
-        if (cert.shouldAbort())
-        {
-            cert.printFooter();
-            return false;
-        }
-
-        // Step 2: Extract to temporary directory
-        const std::string dir_name = "model_cert_add_" + std::to_string(std::time(nullptr));
-#ifdef __EMSCRIPTEN__
-        extract_dir = std::filesystem::current_path() / dir_name;
-#else
-        extract_dir = std::filesystem::temp_directory_path() / dir_name;
-#endif
-        is_temporary = true;
-
-        Zipper zipper;
-        if (!zipper.open(path))
-        {
-            cert.printFooter();
-            return false;
-        }
-
-        if (!zipper.extractAll(extract_dir))
-        {
-            zipper.close();
-            cert.printFooter();
-            if (std::filesystem::exists(extract_dir))
-                std::filesystem::remove_all(extract_dir);
-            return false;
-        }
-        zipper.close();
+        std::cout << "\nCertificate added successfully to model\n";
     }
 
-    // Step 3: Detect and validate
-    ModelInfo model_info = CheckerFactory::detectModel(extract_dir, path);
-    model_info.original_path = path;
-
-    if (model_info.standard == ModelStandard::UNKNOWN)
-    {
-        cert.printSubsectionHeader("MODEL DETECTION");
-        cert.printTestResult({"Model Type Detection",
-                              TestStatus::FAIL,
-                              {"Could not detect model standard. Missing 'modelDescription.xml' (for FMI) or "
-                               "'SystemStructure.ssd' (for SSP)."}});
-        cert.printSubsectionSummary(false);
-
-        std::cerr << "Error: Could not detect model standard\n";
-        cert.printFooter();
-        if (is_temporary && std::filesystem::exists(extract_dir))
-            std::filesystem::remove_all(extract_dir);
-        return false;
-    }
-
-    const auto checkers = CheckerFactory::createCheckers(model_info);
-    for (const auto& checker : checkers)
-        checker->validate(extract_dir, cert);
-
-    cert.printFooter();
-
-    // Create extra directory if it doesn't exist
-    const std::filesystem::path cert_file = extract_dir / CERT_RELATIVE_PATH;
-    std::filesystem::create_directories(cert_file.parent_path());
-
-    // Write certificate to file
-    if (!cert.saveToFile(cert_file))
-    {
-        std::cerr << "Error: Failed to create certificate file\n";
-        if (is_temporary && std::filesystem::exists(extract_dir))
-            std::filesystem::remove_all(extract_dir);
-        return false;
-    }
-
-    if (!is_temporary)
-    {
-        std::cout << "\nCertificate added successfully to directory model\n";
-        return true;
-    }
-
-    // Create backup
-    std::filesystem::path backup_path = path;
-    backup_path += ".backup";
-    std::filesystem::copy_file(path, backup_path, std::filesystem::copy_options::overwrite_existing);
-
-    // Repackage with certificate
-    if (!package(extract_dir, path))
-    {
-        std::cerr << "Error: Failed to repackage model with certificate\n";
-        std::filesystem::copy_file(backup_path, path, std::filesystem::copy_options::overwrite_existing);
-        std::filesystem::remove(backup_path);
-        if (std::filesystem::exists(extract_dir))
-            std::filesystem::remove_all(extract_dir);
-        return false;
-    }
-
-    // Cleanup
-    std::filesystem::remove(backup_path);
-#ifndef __EMSCRIPTEN__
-    if (std::filesystem::exists(extract_dir))
-        std::filesystem::remove_all(extract_dir);
-#endif
-
-    std::cout << "\nCertificate added successfully to model\n";
     return true;
 }
 
@@ -647,7 +576,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 std::string rel_path_str = file_utils::pathToUtf8(rel_path);
                 std::ranges::replace(rel_path_str, '\\', '/');
 
-                if (rel_path_str == CERT_RELATIVE_PATH)
+                if (rel_path_str == CERT_RELATIVE_PATH || rel_path_str.ends_with("/" + std::string(CERT_RELATIVE_PATH)))
                     continue;
 
                 files.push_back(rel_path);
@@ -663,15 +592,27 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
             // Hash path to include structure in hash
             hasher.process(rel_path_str.begin(), rel_path_str.end());
 
-            // Hash content
-            std::ifstream f(path / rel_path, std::ios::binary);
-            if (f)
+            const auto full_path = path / rel_path;
+            const auto ext = rel_path.extension().string();
+
+            if (ext == ".fmu" || ext == ".ssp")
             {
-                std::vector<char> buffer(4096);
-                while (f.read(buffer.data(), static_cast<std::streamsize>(buffer.size())))
-                    hasher.process(buffer.begin(), buffer.end());
-                if (f.gcount() > 0)
-                    hasher.process(buffer.begin(), buffer.begin() + f.gcount());
+                // Recursive hash for nested models to be invariant to their certificates
+                const std::string nested_hash = calculateSHA256(full_path);
+                hasher.process(nested_hash.begin(), nested_hash.end());
+            }
+            else
+            {
+                // Hash content
+                std::ifstream f(full_path, std::ios::binary);
+                if (f)
+                {
+                    std::vector<char> buffer(4096);
+                    while (f.read(buffer.data(), static_cast<std::streamsize>(buffer.size())))
+                        hasher.process(buffer.begin(), buffer.end());
+                    if (f.gcount() > 0)
+                        hasher.process(buffer.begin(), buffer.begin() + f.gcount());
+                }
             }
         }
     }
@@ -684,8 +625,9 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
             std::vector<std::pair<std::string, std::string>> name_pairs;
             for (const auto& entry : entries)
             {
-                // Skip directories and the certificate itself
-                if (entry.filename.empty() || entry.filename.back() == '/' || entry.filename == CERT_RELATIVE_PATH)
+                // Skip directories and any certificate file
+                if (entry.filename.empty() || entry.filename.back() == '/' || entry.filename == CERT_RELATIVE_PATH ||
+                    entry.filename.ends_with("/" + std::string(CERT_RELATIVE_PATH)))
                     continue;
                 name_pairs.emplace_back(entry.filename, entry.raw_filename);
             }
@@ -700,10 +642,36 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                 // Hash filename (use normalized name for consistency)
                 hasher.process(normalized_name.begin(), normalized_name.end());
 
-                // Hash content
-                std::vector<uint8_t> data;
-                if (zipper.extractFile(raw_name, data))
-                    hasher.process(data.begin(), data.end());
+                if (normalized_name.ends_with(".fmu") || normalized_name.ends_with(".ssp"))
+                {
+                    // Recursive hash for nested models inside archive
+                    std::vector<uint8_t> data;
+                    if (zipper.extractFile(raw_name, data))
+                    {
+                        const std::string temp_name =
+                            "temp_nested_hash_" + std::to_string(std::hash<std::string>{}(normalized_name)) +
+                            (normalized_name.ends_with(".fmu") ? ".fmu" : ".ssp");
+#ifdef __EMSCRIPTEN__
+                        const std::filesystem::path temp_path = std::filesystem::current_path() / temp_name;
+#else
+                        const std::filesystem::path temp_path = std::filesystem::temp_directory_path() / temp_name;
+#endif
+                        {
+                            std::ofstream f(temp_path, std::ios::binary);
+                            f.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
+                        }
+                        const std::string nested_hash = calculateSHA256(temp_path);
+                        std::filesystem::remove(temp_path);
+                        hasher.process(nested_hash.begin(), nested_hash.end());
+                    }
+                }
+                else
+                {
+                    // Hash content
+                    std::vector<uint8_t> data;
+                    if (zipper.extractFile(raw_name, data))
+                        hasher.process(data.begin(), data.end());
+                }
             }
             zipper.close();
         }
