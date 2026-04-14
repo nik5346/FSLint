@@ -5,7 +5,7 @@ import { Monaco } from '@monaco-editor/react';
  */
 export const commonEditorOptions = {
   readOnly: true,
-  renderWhitespace: 'none' as const,
+  renderWhitespace: 'all' as const,
   fontSize: 13,
   lineHeight: 21,
   minimap: { enabled: true },
@@ -46,6 +46,17 @@ export const handleBeforeMount = (monaco: Monaco) => {
           // Box drawing characters
           [/[┌┐└┘├┤┬┴┼─│]/, 'box-drawing'],
 
+          // Security markers
+          [/\[SECURITY\]/, 'status-security'],
+
+          // Overall results and outcomes
+          [/Overall Status: PASS/, 'status-pass'],
+          [/Overall Status: FAIL/, 'status-fail'],
+          [/Overall Status: WARN/, 'status-warn'],
+          [/Result: PASS/, 'status-pass'],
+          [/Result: FAIL/, 'status-fail'],
+          [/Result: WARN/, 'status-warn'],
+
           // Numbers and paths
           [/\d+/, 'number'],
           [/[a-zA-Z0-9_/.-]+\.[a-z]{2,4}/, 'path'],
@@ -70,6 +81,7 @@ export const handleBeforeMount = (monaco: Monaco) => {
       { token: 'header', foreground: '569cd6', fontStyle: 'bold' },
       { token: 'separator', foreground: '808080' },
       { token: 'box-drawing', foreground: 'd4d4d4' },
+      { token: 'status-security', foreground: '4fc3f7', fontStyle: 'bold' },
     ],
     colors: {
       'editor.background': '#2a2a2a',
@@ -87,6 +99,7 @@ export const handleBeforeMount = (monaco: Monaco) => {
       { token: 'header', foreground: '005a9e', fontStyle: 'bold' },
       { token: 'separator', foreground: 'a0a0a0' },
       { token: 'box-drawing', foreground: '333333' },
+      { token: 'status-security', foreground: '0288d1', fontStyle: 'bold' },
     ],
     colors: {
       'editor.background': '#ffffff',

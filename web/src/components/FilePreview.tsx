@@ -544,7 +544,6 @@ export const FilePreview = ({
                   value={content}
                   options={{
                     ...commonEditorOptions,
-                    renderWhitespace: 'all',
                     lineNumbersMinChars: 3,
                   }}
                 />

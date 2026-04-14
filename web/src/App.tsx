@@ -1025,7 +1025,6 @@ function App() {
                     }}
                     options={{
                       ...commonEditorOptions,
-                      minimap: { enabled: false },
                       lineNumbers: 'on',
                     }}
                   />
