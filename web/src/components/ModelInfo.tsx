@@ -263,9 +263,9 @@ export const ModelInfo = ({ result, theme, isDark, module }: ModelInfoProps) => 
                     borderRadius: '100px',
                     fontSize: '0.85em',
                     fontWeight: 'bold',
-                    backgroundColor: '#ff555522',
-                    color: '#ff5555',
-                    border: '1px solid #ff555544',
+                    backgroundColor: 'var(--status-security-bg, rgba(2, 136, 209, 0.15))',
+                    color: 'var(--status-security, #0288d1)',
+                    border: '1px solid var(--status-security-border, rgba(2, 136, 209, 0.3))',
                   }}
                 >
                   🛡️ Security Violation

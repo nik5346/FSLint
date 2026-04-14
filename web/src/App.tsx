@@ -246,6 +246,7 @@ function App() {
         --status-pass: #4caf50;
         --status-fail: #f44336;
         --status-warn: #ff9800;
+        --status-security: #0288d1;
       }
     `;
   }, [theme.bg, theme.text, theme.surface, isDark]);
