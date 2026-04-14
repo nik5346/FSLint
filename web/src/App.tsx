@@ -732,17 +732,21 @@ function App() {
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'stretch',
               flexShrink: 0,
             }}
           >
             <button
               onClick={downloadCertifiedModel}
               disabled={
-                !validationResult || validationResult.overallStatus !== 'PASS' || isProcessing
+                !validationResult ||
+                (validationResult.overallStatus !== 'PASS' &&
+                  validationResult.overallStatus !== 'WARNING') ||
+                isProcessing
               }
               title={
-                validationResult?.overallStatus === 'PASS'
+                validationResult?.overallStatus === 'PASS' ||
+                validationResult?.overallStatus === 'WARNING'
                   ? 'Download Certified Model'
                   : 'Model must pass validation to be certified'
               }
@@ -751,23 +755,29 @@ function App() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '42px',
-                height: '42px',
+                width: '80px',
                 borderRadius: '8px',
                 border: `1px solid ${theme.buttonBorder}`,
                 color: theme.text,
                 cursor:
-                  validationResult?.overallStatus === 'PASS' && !isProcessing
+                  (validationResult?.overallStatus === 'PASS' ||
+                    validationResult?.overallStatus === 'WARNING') &&
+                  !isProcessing
                     ? 'pointer'
                     : 'default',
                 transition: 'background-color 0.15s, border-color 0.15s',
                 flexShrink: 0,
-                opacity: validationResult?.overallStatus === 'PASS' && !isProcessing ? 1 : 0.3,
+                opacity:
+                  (validationResult?.overallStatus === 'PASS' ||
+                    validationResult?.overallStatus === 'WARNING') &&
+                  !isProcessing
+                    ? 1
+                    : 0.3,
               }}
             >
               <svg
-                width="20"
-                height="20"
+                width="24"
+                height="24"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
