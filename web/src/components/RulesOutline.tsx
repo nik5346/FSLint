@@ -7,12 +7,14 @@ import { Theme } from '../types';
  * @param {Array<{ level: number; text: string; line: number }>} props.headers - List of headers to display.
  * @param {Theme} props.theme - The current theme object.
  * @param {number} [props.activeLine] - The currently active (scrolled to) line number.
+ * @param {(line: number) => void} [props.onSelect] - Callback when a header is selected.
  * @returns {JSX.Element} The rendered RulesOutline component.
  */
 export const RulesOutline = ({
   headers,
   theme,
   activeLine,
+  onSelect,
 }: {
   /**
    *
@@ -37,6 +39,10 @@ export const RulesOutline = ({
    *
    */
   activeLine?: number;
+  /**
+   *
+   */
+  onSelect?: (line: number) => void;
 }) => {
   const activeRef = useRef<HTMLDivElement>(null);
 
@@ -58,13 +64,19 @@ export const RulesOutline = ({
               role="button"
               tabIndex={0}
               onClick={() => {
-                const el = document.getElementById(`line-${header.line}`);
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                if (onSelect) onSelect(header.line);
+                else {
+                  const el = document.getElementById(`line-${header.line}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  const el = document.getElementById(`line-${header.line}`);
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  if (onSelect) onSelect(header.line);
+                  else {
+                    const el = document.getElementById(`line-${header.line}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }
                 }
               }}
               style={{
