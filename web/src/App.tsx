@@ -67,6 +67,7 @@ function App() {
     setFileTree,
     validationResult,
     processItems,
+    downloadCertifiedModel,
   } = useFSLint();
 
   const [copied, setCopied] = useState(false);
@@ -726,6 +727,69 @@ function App() {
                 </div>
               )}
             </div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'stretch',
+              flexShrink: 0,
+            }}
+          >
+            <button
+              onClick={downloadCertifiedModel}
+              disabled={
+                !validationResult ||
+                (validationResult.overallStatus !== 'PASS' &&
+                  validationResult.overallStatus !== 'WARNING') ||
+                isProcessing
+              }
+              title={
+                validationResult?.overallStatus === 'PASS' ||
+                validationResult?.overallStatus === 'WARNING'
+                  ? 'Download Certified Model'
+                  : 'Model must pass validation to be certified'
+              }
+              className="icon-btn"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '80px',
+                borderRadius: '8px',
+                border: `1px solid ${theme.buttonBorder}`,
+                color: theme.text,
+                cursor:
+                  (validationResult?.overallStatus === 'PASS' ||
+                    validationResult?.overallStatus === 'WARNING') &&
+                  !isProcessing
+                    ? 'pointer'
+                    : 'default',
+                transition: 'background-color 0.15s, border-color 0.15s',
+                flexShrink: 0,
+                opacity:
+                  (validationResult?.overallStatus === 'PASS' ||
+                    validationResult?.overallStatus === 'WARNING') &&
+                  !isProcessing
+                    ? 1
+                    : 0.3,
+              }}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </button>
           </div>
 
           <div

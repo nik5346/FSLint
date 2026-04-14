@@ -73,6 +73,10 @@ export interface FSLintModule {
   };
   /** The main entry point for running the validation logic. */
   _run_validation: (path: number) => number;
+  /** Adds a certificate to a model. */
+  _add_certificate: (path: number) => number;
+  /** Packages a model into an archive. */
+  _package_model: (extractDir: number, modelPath: number) => number;
   /** Allocates space on the Emscripten stack. */
   stackAlloc: (size: number) => number;
   /** Saves the current Emscripten stack position. */
