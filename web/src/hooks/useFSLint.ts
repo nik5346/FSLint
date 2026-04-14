@@ -14,6 +14,7 @@ export const useFSLint = () => {
   const [currentWorkDir, setCurrentWorkDir] = useState<string | null>(null);
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [lastTarget, setLastTarget] = useState<string | null>(null);
 
   useEffect(() => {
     /**
@@ -232,6 +233,7 @@ export const useFSLint = () => {
         const targetPath =
           discoveredRootRel || (normalizedFiles.length === 1 ? normalizedFiles[0].relPath : '.');
         const target = targetPath === '.' ? workDir : `${workDir}/${targetPath}`;
+        setLastTarget(target);
 
         const stack = module.stackSave();
         const targetPtr = module.stackAlloc(target.length * 4 + 1);
@@ -278,6 +280,70 @@ export const useFSLint = () => {
     [module, isProcessing, currentWorkDir, recursiveUnlink, mkdirP],
   );
 
+  /**
+   * Triggers a browser download of the certified model.
+   * Adds the certificate to the last validated model and packages it if necessary.
+   */
+  const downloadCertifiedModel = useCallback(async () => {
+    if (!module || !lastTarget || !validationResult) return;
+
+    setIsProcessing(true);
+    try {
+      const stack = module.stackSave();
+      const targetPtr = module.stackAlloc(lastTarget.length * 4 + 1);
+      module.stringToUTF8(lastTarget, targetPtr, lastTarget.length * 4 + 1);
+
+      // 1. Add certificate
+      try {
+        const success = module._add_certificate(targetPtr);
+        if (!success) {
+          throw new Error('Failed to add certificate to the model');
+        }
+
+        let downloadPath = lastTarget;
+        const isDirectory = module.FS.isDir(module.FS.stat(lastTarget).mode);
+
+        // 2. Package if it's a directory
+        if (isDirectory) {
+          const isSSP = validationResult.summary.standard === 'SSP';
+          const extension = isSSP ? '.ssp' : '.fmu';
+          const modelName = validationResult.summary.model_name || 'model';
+          const archiveName = `${modelName}${extension}`;
+          const archivePath = `${currentWorkDir}/${archiveName}`;
+
+          const archivePathPtr = module.stackAlloc(archivePath.length * 4 + 1);
+          module.stringToUTF8(archivePath, archivePathPtr, archivePath.length * 4 + 1);
+
+          const packageSuccess = module._package_model(targetPtr, archivePathPtr);
+          if (!packageSuccess) {
+            throw new Error('Failed to package the certified model');
+          }
+          downloadPath = archivePath;
+        }
+
+        // 3. Read and trigger download
+        const data = module.FS.readFile(downloadPath) as Uint8Array;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const blob = new Blob([data as any], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = downloadPath.split('/').pop() || 'model.fmu';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } finally {
+        module.stackRestore(stack);
+      }
+    } catch (err) {
+      console.error('Download failed:', err);
+      setOutput((prev) => prev + 'Error during download: ' + (err as Error).message + '\n');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [module, lastTarget, validationResult, currentWorkDir, setOutput]);
+
   return {
     module,
     output,
@@ -288,5 +354,6 @@ export const useFSLint = () => {
     setFileTree,
     validationResult,
     processItems,
+    downloadCertifiedModel,
   };
 };
