@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <iterator>
 #include <iostream>
 #include <regex>
 #include <sstream>
@@ -659,8 +660,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
 #endif
                         {
                             std::ofstream f(temp_path, std::ios::binary);
-                            f.write(static_cast<const char*>(static_cast<const void*>(data.data())),
-                                    static_cast<std::streamsize>(data.size()));
+                            std::copy(data.begin(), data.end(), std::ostreambuf_iterator<char>(f));
                         }
                         const std::string nested_hash = calculateSHA256(temp_path);
                         std::filesystem::remove(temp_path);
