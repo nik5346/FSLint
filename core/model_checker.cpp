@@ -10,6 +10,7 @@
 #include "picosha2.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <ctime>
@@ -142,11 +143,6 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
     if (show_tree)
         cert.printFileTree(extract_dir);
 
-#ifndef __EMSCRIPTEN__
-    if (is_temporary && std::filesystem::exists(extract_dir))
-        std::filesystem::remove_all(extract_dir);
-#endif
-
     cert.printNestedModelsTree();
     cert.printFooter();
 
@@ -187,6 +183,10 @@ Certificate ModelChecker::validate(const std::filesystem::path& path, bool quiet
             }
         }
     }
+
+    // Final cleanup for Emscripten when adding certificate
+    if (is_temporary && cert.isAddingCertificate() && std::filesystem::exists(extract_dir))
+        std::filesystem::remove_all(extract_dir);
 
     return cert;
 }
@@ -526,10 +526,16 @@ bool ModelChecker::package(const std::filesystem::path& extract_dir, const std::
     // Recursively add all files from extract_dir
     try
     {
+        const std::filesystem::path absolute_model_path = std::filesystem::absolute(model_path);
+
         for (const auto& entry : std::filesystem::recursive_directory_iterator(extract_dir))
         {
             if (entry.is_regular_file())
             {
+                // Skip the output file if it's inside the extract_dir to avoid recursive inclusion
+                if (std::filesystem::absolute(entry.path()) == absolute_model_path)
+                    continue;
+
                 const std::filesystem::path rel_path = std::filesystem::relative(entry.path(), extract_dir);
 
                 std::string internal_path = file_utils::pathToUtf8(rel_path);
@@ -650,7 +656,8 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
                     std::vector<uint8_t> data;
                     if (zipper.extractFile(raw_name, data))
                     {
-                        const std::string temp_name = "temp_nested_hash_" +
+                        static std::atomic<uint32_t> temp_counter{0};
+                        const std::string temp_name = "temp_nested_hash_" + std::to_string(temp_counter++) + "_" +
                                                       std::to_string(std::hash<std::string>{}(normalized_name)) +
                                                       (normalized_name.ends_with(".fmu") ? ".fmu" : ".ssp");
 #ifdef __EMSCRIPTEN__

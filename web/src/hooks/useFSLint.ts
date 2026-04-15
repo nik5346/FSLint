@@ -285,9 +285,18 @@ export const useFSLint = () => {
    * Adds the certificate to the last validated model and packages it if necessary.
    */
   const downloadCertifiedModel = useCallback(async () => {
-    if (!module || !lastTarget || !validationResult) return;
+    if (!module || !lastTarget || !validationResult) {
+      console.error('Download aborted: missing module, lastTarget, or validationResult', {
+        hasModule: !!module,
+        lastTarget,
+        hasValidationResult: !!validationResult,
+      });
+      return;
+    }
 
     setIsProcessing(true);
+    setOutput((prev) => prev + '\nAdding certificates recursively and packaging model...\n');
+
     try {
       const stack = module.stackSave();
       const targetPtr = module.stackAlloc(lastTarget.length * 4 + 1);
@@ -295,6 +304,7 @@ export const useFSLint = () => {
 
       // 1. Add certificate
       try {
+        console.log('Adding certificates to:', lastTarget);
         const success = module._add_certificate(targetPtr);
         if (!success) {
           throw new Error('Failed to add certificate to the model');
@@ -302,6 +312,7 @@ export const useFSLint = () => {
 
         let downloadPath = lastTarget;
         const isDirectory = module.FS.isDir(module.FS.stat(lastTarget).mode);
+        console.log('Is directory:', isDirectory);
 
         // 2. Package if it's a directory
         if (isDirectory) {
@@ -309,8 +320,10 @@ export const useFSLint = () => {
           const extension = isSSP ? '.ssp' : '.fmu';
           const modelName = validationResult.summary.model_name || 'model';
           const archiveName = `${modelName}${extension}`;
+          // Make sure archive is OUTSIDE the lastTarget directory but INSIDE workDir
           const archivePath = `${currentWorkDir}/${archiveName}`;
 
+          console.log('Packaging directory to:', archivePath);
           const archivePathPtr = module.stackAlloc(archivePath.length * 4 + 1);
           module.stringToUTF8(archivePath, archivePathPtr, archivePath.length * 4 + 1);
 
@@ -322,6 +335,7 @@ export const useFSLint = () => {
         }
 
         // 3. Read and trigger download
+        console.log('Triggering download for:', downloadPath);
         const data = module.FS.readFile(downloadPath) as Uint8Array;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const blob = new Blob([data as any], { type: 'application/octet-stream' });
@@ -333,12 +347,14 @@ export const useFSLint = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        setOutput((prev) => prev + 'Certified model downloaded successfully.\n');
       } finally {
         module.stackRestore(stack);
       }
     } catch (err) {
       console.error('Download failed:', err);
-      setOutput((prev) => prev + 'Error during download: ' + (err as Error).message + '\n');
+      const errorMessage = (err as Error).message || String(err);
+      setOutput((prev) => prev + 'Error during download: ' + errorMessage + '\n');
     } finally {
       setIsProcessing(false);
     }
