@@ -15,12 +15,14 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -657,7 +659,7 @@ std::string ModelChecker::calculateSHA256(const std::filesystem::path& path) con
 #endif
                         {
                             std::ofstream f(temp_path, std::ios::binary);
-                            f.write(reinterpret_cast<const char*>(data.data()),
+                            f.write(static_cast<const char*>(static_cast<const void*>(data.data())),
                                     static_cast<std::streamsize>(data.size()));
                         }
                         const std::string nested_hash = calculateSHA256(temp_path);
