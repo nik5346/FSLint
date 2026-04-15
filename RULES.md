@@ -295,6 +295,12 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - `language`: `C89`, `C90`, `C99`, `C11`, `C17`, `C18`, `C23`, `C++98`, `C++03`, `C++11`, `C++14`, `C++17`, `C++20`, `C++23`, `C++26`.
   - `compiler`: `gcc`, `clang`, `msvc`.
 - **Model Identifier Match**: `modelIdentifier` in `BuildConfiguration` must match an identifier from `modelDescription.xml`.
+- **Absolute Paths**: `SourceFile` and `IncludeDirectory` `name` attributes **must not** be absolute paths.
+- **PreprocessorDefinition Validation**: Each `<PreprocessorDefinition>` **must** have a `name` attribute that is a valid C preprocessor identifier (`[A-Za-z_][A-Za-z0-9_]*`). If `optional="true"`, at least one `<Option>` child **should** be present.
+- **Library Validation**: Each `<Library>` **must** have a non-empty `name` attribute. Internal libraries (where `external` is absent or `"false"`) **should** have a matching file present under `binaries/`.
+- **Duplicate modelIdentifier**: Multiple `BuildConfiguration` elements **should not** share the same `modelIdentifier`.
+- **Empty SourceFileSet**: A `<SourceFileSet>` with no `<SourceFile>` children **should** be avoided.
+- **compilerOptions without compiler**: Specifying `compilerOptions` without a `compiler` attribute **should** be avoided.
 
 ---
 
@@ -383,6 +389,12 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - `language`: `C89`, `C90`, `C99`, `C11`, `C17`, `C18`, `C23`, `C++98`, `C++03`, `C++11`, `C++14`, `C++17`, `C++20`, `C++23`, `C++26`.
   - `compiler`: `gcc`, `clang`, `msvc`.
 - **Model Identifier Match**: `modelIdentifier` in `BuildConfiguration` must match an identifier from `modelDescription.xml`.
+- **Absolute Paths**: `SourceFile` and `IncludeDirectory` `name` attributes **must not** be absolute paths.
+- **PreprocessorDefinition Validation**: Each `<PreprocessorDefinition>` **must** have a `name` attribute that is a valid C preprocessor identifier (`[A-Za-z_][A-Za-z0-9_]*`). If `optional="true"`, at least one `<Option>` child **should** be present.
+- **Library Validation**: Each `<Library>` **must** have a non-empty `name` attribute. Internal libraries (where `external` is absent or `"false"`) **should** have a matching file present under `binaries/`.
+- **Duplicate modelIdentifier**: Multiple `BuildConfiguration` elements **should not** share the same `modelIdentifier`.
+- **Empty SourceFileSet**: A `<SourceFileSet>` with no `<SourceFile>` children **should** be avoided.
+- **compilerOptions without compiler**: Specifying `compilerOptions` without a `compiler` attribute **should** be avoided.
 
 ---
 

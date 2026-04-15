@@ -12,8 +12,10 @@
 #include <libxml/xpath.h>
 
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <optional>
+#include <regex>
 #include <set>
 #include <string>
 #include <vector>
@@ -48,6 +50,9 @@ void BuildDescriptionChecker::validate(const std::filesystem::path& path, Certif
         checkBuildConfigurationAttributes(xpath_context, valid_ids, cert);
         checkSourceFiles(xpath_context, sources_path, cert, listed_files);
         checkIncludeDirectories(xpath_context, sources_path, cert);
+        checkPreprocessorDefinitions(xpath_context, cert);
+        checkLibraries(path, xpath_context, cert);
+        checkEmptySourceFileSets(xpath_context, cert);
         xmlXPathFreeContext(xpath_context);
     }
 
@@ -120,6 +125,18 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                     continue;
                 }
 
+                // Absolute path check (Unix: /..., Windows: [A-Za-z]:\..., \\...)
+                if (val.starts_with('/') || (val.size() >= 3 && std::isalpha(static_cast<unsigned char>(val[0])) &&
+                                             val[1] == ':' && val[2] == '\\') ||
+                    val.starts_with("\\\\"))
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(std::format(
+                        "Source file '{}' listed in 'buildDescription.xml' (line {}) is an absolute path.", val,
+                        node->line));
+                    continue;
+                }
+
                 listed_files.insert(val);
                 const auto file_path = sources_path / val;
                 if (!std::filesystem::exists(file_path))
@@ -165,6 +182,18 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                     continue;
                 }
 
+                // Absolute path check (Unix: /..., Windows: [A-Za-z]:\..., \\...)
+                if (val.starts_with('/') || (val.size() >= 3 && std::isalpha(static_cast<unsigned char>(val[0])) &&
+                                             val[1] == ':' && val[2] == '\\') ||
+                    val.starts_with("\\\\"))
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(std::format(
+                        "Include directory '{}' listed in 'buildDescription.xml' (line {}) is an absolute path.", val,
+                        node->line));
+                    continue;
+                }
+
                 const auto dir_path = sources_path / val;
                 if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
                 {
@@ -199,16 +228,18 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                                                                   "C++14", "C++17", "C++20", "C++23", "C++26"};
         static const std::set<std::string> suggested_compilers = {"gcc", "clang", "msvc"};
 
+        std::set<std::string> seen_ids;
+
         for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             const xmlNodePtr node = configs_xpath->nodesetval->nodeTab[i];
 
             const auto model_id = getXmlAttribute(node, "modelIdentifier");
-            if (model_id.has_value() && !valid_ids.empty())
+            if (model_id.has_value())
             {
                 const auto& id_val = *model_id;
-                if (!valid_ids.contains(id_val))
+                if (!valid_ids.empty() && !valid_ids.contains(id_val))
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(
@@ -216,6 +247,15 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                                     "modelIdentifier in modelDescription.xml.",
                                     node->line, id_val));
                 }
+
+                if (seen_ids.contains(id_val))
+                {
+                    if (test.getStatus() == TestStatus::PASS)
+                        test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back(std::format(
+                        "modelIdentifier '{}' appears in multiple BuildConfiguration elements.", id_val));
+                }
+                seen_ids.insert(id_val);
             }
 
             const auto lang_opt = getXmlAttribute(node, "language");
@@ -253,6 +293,16 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                                                                 "one of the suggested values (e.g. gcc, clang, msvc).",
                                                                 compiler, node->line));
                 }
+            }
+
+            const auto compiler_options_opt = getXmlAttribute(node, "compilerOptions");
+            if (compiler_options_opt.has_value() && !compiler_opt.has_value())
+            {
+                if (test.getStatus() == TestStatus::PASS)
+                    test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back(std::format(
+                    "BuildConfiguration (line {}) specifies 'compilerOptions' but no 'compiler' attribute.",
+                    node->line));
             }
         }
     }
@@ -317,4 +367,190 @@ std::optional<std::string> BuildDescriptionChecker::getXmlAttribute(xmlNodePtr n
     std::string value(reinterpret_cast<char*>(attr));
     xmlFree(attr);
     return value;
+}
+
+void BuildDescriptionChecker::checkPreprocessorDefinitions(xmlXPathContextPtr xpath_context, Certificate& cert) const
+{
+    TestResult test{"Preprocessor Definitions", TestStatus::PASS, {}};
+    const xmlXPathObjectPtr xpath_obj =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//PreprocessorDefinition"), xpath_context);
+
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+    {
+        static const std::regex id_regex("^[A-Za-z_][A-Za-z0-9_]*$");
+
+        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+
+            const auto name_opt = getXmlAttribute(node, "name");
+            if (!name_opt.has_value())
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format("PreprocessorDefinition (line {}) is missing required 'name' attribute.", node->line));
+                continue;
+            }
+
+            const auto& name = *name_opt;
+            if (!std::regex_match(name, id_regex))
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "PreprocessorDefinition name '{}' (line {}) is not a valid C preprocessor identifier.", name,
+                    node->line));
+            }
+
+            const auto optional_opt = getXmlAttribute(node, "optional");
+            if (optional_opt.has_value() && *optional_opt == "true")
+            {
+                bool has_option = false;
+                for (xmlNodePtr child = node->children; child != nullptr; child = child->next)
+                {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                    if (child->type == XML_ELEMENT_NODE &&
+                        xmlStrEqual(child->name, reinterpret_cast<const xmlChar*>("Option")))
+                    {
+                        has_option = true;
+                        break;
+                    }
+                }
+
+                if (!has_option)
+                {
+                    if (test.getStatus() == TestStatus::PASS)
+                        test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back(std::format(
+                        "PreprocessorDefinition '{}' (line {}) is marked optional but has no <Option> children.", name,
+                        node->line));
+                }
+            }
+        }
+    }
+
+    if (xpath_obj != nullptr)
+        xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void BuildDescriptionChecker::checkEmptySourceFileSets(xmlXPathContextPtr xpath_context, Certificate& cert) const
+{
+    TestResult test{"Empty Source File Sets", TestStatus::PASS, {}};
+    const xmlXPathObjectPtr xpath_obj =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//SourceFileSet"), xpath_context);
+
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+    {
+        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+
+            bool has_source_file = false;
+            for (xmlNodePtr child = node->children; child != nullptr; child = child->next)
+            {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                if (child->type == XML_ELEMENT_NODE &&
+                    xmlStrEqual(child->name, reinterpret_cast<const xmlChar*>("SourceFile")))
+                {
+                    has_source_file = true;
+                    break;
+                }
+            }
+
+            if (!has_source_file)
+            {
+                if (test.getStatus() == TestStatus::PASS)
+                    test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back(
+                    std::format("SourceFileSet (line {}) contains no SourceFile entries.", node->line));
+            }
+        }
+    }
+
+    if (xpath_obj != nullptr)
+        xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void BuildDescriptionChecker::checkLibraries(const std::filesystem::path& path, xmlXPathContextPtr xpath_context,
+                                             Certificate& cert) const
+{
+    TestResult test{"Build Description Libraries", TestStatus::PASS, {}};
+    const xmlXPathObjectPtr xpath_obj =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>("//Library"), xpath_context);
+
+    if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+    {
+        for (int i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+
+            const auto name_opt = getXmlAttribute(node, "name");
+            if (!name_opt.has_value() || name_opt->empty())
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format("Library (line {}) is missing required 'name' attribute or it is empty.", node->line));
+                continue;
+            }
+
+            const auto& name = *name_opt;
+            if (name.find("..") != std::string::npos)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Library '{}' listed in 'buildDescription.xml' (line {}) contains illegal '..' sequence.", name,
+                    node->line));
+                continue;
+            }
+
+            if (name.starts_with('/') || (name.size() >= 3 && std::isalpha(static_cast<unsigned char>(name[0])) &&
+                                          name[1] == ':' && name[2] == '\\') ||
+                name.starts_with("\\\\"))
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Library '{}' listed in 'buildDescription.xml' (line {}) is an absolute path.", name, node->line));
+                continue;
+            }
+
+            const auto external_opt = getXmlAttribute(node, "external");
+            if (!external_opt.has_value() || *external_opt == "false")
+            {
+                bool found = false;
+                const auto binaries_path = path / "binaries";
+                if (std::filesystem::exists(binaries_path))
+                {
+                    for (const auto& entry : std::filesystem::recursive_directory_iterator(binaries_path))
+                    {
+                        if (entry.is_regular_file() && entry.path().filename().string() == name)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!found)
+                {
+                    if (test.getStatus() == TestStatus::PASS)
+                        test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back(std::format(
+                        "Library '{}' (line {}) is declared as internal but no matching file was found under "
+                        "'binaries/'.",
+                        name, node->line));
+                }
+            }
+        }
+    }
+
+    if (xpath_obj != nullptr)
+        xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
 }
