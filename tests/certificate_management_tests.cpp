@@ -6,9 +6,14 @@
 
 TEST_CASE("Certificate Management on Directories", "[certificate][directory]")
 {
-    // Use existing test data directly
-    std::filesystem::path test_dir = "tests/data/fmi2/pass";
+    // Use reference FMU extracted for directory testing
+    const std::filesystem::path fmu_path = "tests/reference_fmus/2.0/BouncingBall.fmu";
+    const std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "fslint_dir_cert_test";
     ModelChecker checker;
+
+    if (std::filesystem::exists(test_dir))
+        std::filesystem::remove_all(test_dir);
+    REQUIRE(checker.extract(fmu_path, test_dir));
 
     // Ensure clean state before starting
     (void)checker.removeCertificate(test_dir);
@@ -48,23 +53,14 @@ TEST_CASE("Certificate Management on Directories", "[certificate][directory]")
 TEST_CASE("Certificate Verification", "[certificate][verification]")
 {
     // Create a temporary directory for testing
-    const std::filesystem::path base_test_dir = "tests/data/fmi2/pass";
+    const std::filesystem::path fmu_path = "tests/reference_fmus/2.0/BouncingBall.fmu";
     const std::filesystem::path temp_test_dir = std::filesystem::temp_directory_path() / "fslint_verify_test";
 
     if (std::filesystem::exists(temp_test_dir))
         std::filesystem::remove_all(temp_test_dir);
 
-    std::filesystem::create_directories(temp_test_dir);
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(base_test_dir))
-    {
-        const auto rel_path = std::filesystem::relative(entry.path(), base_test_dir);
-        if (entry.is_directory())
-            std::filesystem::create_directories(temp_test_dir / rel_path);
-        else
-            std::filesystem::copy_file(entry.path(), temp_test_dir / rel_path);
-    }
-
     ModelChecker checker;
+    REQUIRE(checker.extract(fmu_path, temp_test_dir));
 
     SECTION("Successful verification")
     {
