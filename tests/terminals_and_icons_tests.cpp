@@ -112,5 +112,24 @@ TEST_CASE("FMI 3.0 Terminals and Icons Validation", "[terminals][icons][fmi3]")
                       "must be a relative URI and must not contain '..'");
         validate_fail("tests/data/fmi3/terminals_and_icons/fail/invalid_connection_color",
                       "must have exactly 3 RGB values");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/version_mismatch", "FMI version mismatch");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/invalid_variable_kind", "has invalid variableKind");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/invalid_matching_rule", "has invalid matchingRule");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/color_out_of_range", "must have exactly 3 RGB values");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/invalid_extent", "has invalid extent");
+        validate_fail("tests/data/fmi3/terminals_and_icons/fail/extent_out_of_bounds", "lies outside CoordinateSystem");
+    }
+
+    SECTION("Warning Cases")
+    {
+        auto validate_warning = [&](const std::string& path, const std::string& expected_warning)
+        {
+            Certificate cert;
+            checker.validate(path, cert);
+            INFO("Checking path: " << file_utils::pathToUtf8(path));
+            CHECK(has_warning_with_text(cert, expected_warning));
+        };
+
+        validate_warning("tests/data/fmi3/terminals_and_icons/fail/orphan_png", "Orphan PNG file found");
     }
 }

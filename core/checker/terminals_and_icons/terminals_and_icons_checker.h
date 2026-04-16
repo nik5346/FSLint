@@ -74,14 +74,17 @@ class TerminalsAndIconsCheckerBase : public Checker
     /// @param path FMU root.
     /// @param variables Extracted variables.
     /// @param cert Certificate.
+    /// @param fmi_model_description_version FMI version from modelDescription.xml.
     /// @return True if file exists and was checked.
     bool checkTerminalsAndIcons(const std::filesystem::path& path,
-                                const std::map<std::string, TerminalVariableInfo>& variables, Certificate& cert) const;
+                                const std::map<std::string, TerminalVariableInfo>& variables, Certificate& cert,
+                                const std::string& fmi_model_description_version) const;
 
     /// @brief Validates version in terminalsAndIcons.xml.
     /// @param root XML node.
+    /// @param expected_version Expected FMI version (from modelDescription.xml).
     /// @param test Result to update.
-    virtual void checkFmiVersion(xmlNodePtr root, TestResult& test) const = 0;
+    virtual void checkFmiVersion(xmlNodePtr root, const std::string& expected_version, TestResult& test) const = 0;
 
     /// @brief Checks for duplicate terminal names.
     /// @param context XPath context.

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiTerminalsAndIcons xmlns="http://fmi-standard.org/fmi-terminals-and-icons-3" fmiVersion="3.0">
+  <Terminals>
+    <Terminal name="T1" matchingRule="plug">
+      <TerminalMemberVariable variableName="u" variableKind="signal" />
+      <TerminalGraphicalRepresentation x1="10" y1="10" x2="0" y2="0" iconBaseName="icon" />
+    </Terminal>
+  </Terminals>
+</fmiTerminalsAndIcons>

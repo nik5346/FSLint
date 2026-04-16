@@ -24,6 +24,7 @@ class Fmi3TerminalsAndIconsChecker : public TerminalsAndIconsCheckerBase
 
     /// @brief Validates version.
     /// @param root XML node.
+    /// @param expected_version Expected FMI version.
     /// @param test Result to update.
-    void checkFmiVersion(xmlNodePtr root, TestResult& test) const override;
+    void checkFmiVersion(xmlNodePtr root, const std::string& expected_version, TestResult& test) const override;
 };
