@@ -125,16 +125,16 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                     continue;
                 }
 
-                // Absolute path check (Unix: /..., Windows: [A-Za-z]:\..., \\...)
+                // Path must be relative (Unix: /..., Windows: [A-Za-z]:\..., \\...)
                 if (val.starts_with('/') ||
                     (val.size() >= 3 && std::isalpha(static_cast<unsigned char>(val[0])) && val[1] == ':' &&
                      val[2] == '\\') ||
                     val.starts_with("\\\\"))
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(
-                        std::format("Source file '{}' listed in 'buildDescription.xml' (line {}) is an absolute path.",
-                                    val, node->line));
+                    test.getMessages().emplace_back(std::format(
+                        "Source file '{}' listed in 'buildDescription.xml' (line {}) must be a relative path.", val,
+                        node->line));
                     continue;
                 }
 
@@ -183,7 +183,7 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                     continue;
                 }
 
-                // Absolute path check (Unix: /..., Windows: [A-Za-z]:\..., \\...)
+                // Path must be relative (Unix: /..., Windows: [A-Za-z]:\..., \\...)
                 if (val.starts_with('/') ||
                     (val.size() >= 3 && std::isalpha(static_cast<unsigned char>(val[0])) && val[1] == ':' &&
                      val[2] == '\\') ||
@@ -191,8 +191,8 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                 {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(std::format(
-                        "Include directory '{}' listed in 'buildDescription.xml' (line {}) is an absolute path.", val,
-                        node->line));
+                        "Include directory '{}' listed in 'buildDescription.xml' (line {}) must be a relative path.",
+                        val, node->line));
                     continue;
                 }
 
@@ -229,7 +229,6 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                                                                   "C18",   "C23",   "C++98", "C++03", "C++11",
                                                                   "C++14", "C++17", "C++20", "C++23", "C++26"};
         static const std::set<std::string> suggested_compilers = {"gcc", "clang", "msvc"};
-        std::set<std::string> seen_ids;
 
         for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)
         {
@@ -248,15 +247,6 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                                     "modelIdentifier in modelDescription.xml.",
                                     node->line, id_val));
                 }
-
-                if (seen_ids.contains(id_val))
-                {
-                    if (test.getStatus() == TestStatus::PASS)
-                        test.setStatus(TestStatus::WARNING);
-                    test.getMessages().emplace_back(
-                        std::format("modelIdentifier '{}' appears in multiple BuildConfiguration elements.", id_val));
-                }
-                seen_ids.insert(id_val);
             }
 
             const auto lang_opt = getXmlAttribute(node, "language");
@@ -518,7 +508,8 @@ void BuildDescriptionChecker::checkLibraries(const std::filesystem::path& path, 
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    "Library '{}' listed in 'buildDescription.xml' (line {}) is an absolute path.", name, node->line));
+                    "Library '{}' listed in 'buildDescription.xml' (line {}) must be a relative path.", name,
+                    node->line));
                 continue;
             }
 

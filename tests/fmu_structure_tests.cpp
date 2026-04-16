@@ -551,9 +551,9 @@ TEST_CASE("Build Description Validation", "[build_description]")
         validate_fail("tests/data/build_description/fail/version_mismatch", "does not match FMU version");
         validate_fail("tests/data/build_description/fail/id_mismatch", "does not match any modelIdentifier");
         validate_fail("tests/data/build_description/fail/dotdot", "contains illegal '..' sequence");
-        validate_fail("tests/data/build_description/fail/absolute_path_source", "is an absolute path");
-        validate_fail("tests/data/build_description/fail/absolute_path_include", "is an absolute path");
-        validate_fail("tests/data/build_description/fail/absolute_path_library", "is an absolute path");
+        validate_fail("tests/data/build_description/fail/absolute_path_source", "must be a relative path");
+        validate_fail("tests/data/build_description/fail/absolute_path_include", "must be a relative path");
+        validate_fail("tests/data/build_description/fail/absolute_path_library", "must be a relative path");
         validate_fail("tests/data/build_description/fail/preprocessor_missing_name",
                       "missing required 'name' attribute");
         validate_fail("tests/data/build_description/fail/preprocessor_invalid_name",
@@ -576,8 +576,6 @@ TEST_CASE("Build Description Validation", "[build_description]")
         validate_warning("tests/data/build_description/warn/empty_source_file_set", "contains no SourceFile entries");
         validate_warning("tests/data/build_description/warn/compiler_options_no_compiler",
                          "specifies 'compilerOptions' but no 'compiler' attribute");
-        validate_warning("tests/data/build_description/warn/duplicate_id",
-                         "appears in multiple BuildConfiguration elements");
     }
 
     SECTION("Passing Cases")
