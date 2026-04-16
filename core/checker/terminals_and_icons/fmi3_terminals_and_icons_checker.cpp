@@ -29,9 +29,9 @@ void Fmi3TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, const std::s
     else if (*version_attr != expected_version)
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back(std::format(
-            "FMI version mismatch: terminalsAndIcons.xml has '{}', but modelDescription.xml has '{}'.", *version_attr,
-            expected_version));
+        test.getMessages().emplace_back(
+            std::format("FMI version mismatch: terminalsAndIcons.xml has '{}', but modelDescription.xml has '{}'.",
+                        *version_attr, expected_version));
     }
 }
 

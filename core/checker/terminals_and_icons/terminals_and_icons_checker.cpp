@@ -430,8 +430,8 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
     std::optional<double> cs_x1, cs_y1, cs_x2, cs_y2;
 
     // Check for CoordinateSystem
-    const std::string cs_expr = "/" + prefix + "fmiTerminalsAndIcons/" + prefix + "GraphicalRepresentation/" + prefix +
-                                "CoordinateSystem";
+    const std::string cs_expr =
+        "/" + prefix + "fmiTerminalsAndIcons/" + prefix + "GraphicalRepresentation/" + prefix + "CoordinateSystem";
     const xmlXPathObjectPtr cs_obj =
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(cs_expr.c_str()), context);
@@ -579,8 +579,9 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                 if (!parse_ok)
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(std::format(
-                        "TerminalGraphicalRepresentation (line {}) has invalid numeric extent attributes.", node->line));
+                    test.getMessages().emplace_back(
+                        std::format("TerminalGraphicalRepresentation (line {}) has invalid numeric extent attributes.",
+                                    node->line));
                 }
                 else if (x1 >= x2 || y1 >= y2)
                 {
