@@ -1,4 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="3.0" modelName="test" instantiationToken="{...}">
-  <CoSimulation modelIdentifier="real_id" />
+<?xml version="1.0" encoding="utf-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e403d-2490-4103-9efc-7a916a24687d}">
+  <CoSimulation modelIdentifier="right_id" />
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+  </ModelVariables>
+  <ModelStructure />
 </fmiModelDescription>

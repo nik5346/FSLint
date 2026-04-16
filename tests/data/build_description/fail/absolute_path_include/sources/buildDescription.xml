@@ -2,7 +2,7 @@
 <fmiBuildDescription fmiVersion="3.0">
   <BuildConfiguration modelIdentifier="Test">
     <SourceFileSet>
-      <SourceFile name="missing.c" />
+      <IncludeDirectory name="/absolute/inc" />
     </SourceFileSet>
   </BuildConfiguration>
 </fmiBuildDescription>

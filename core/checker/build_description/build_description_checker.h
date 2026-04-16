@@ -74,5 +74,21 @@ class BuildDescriptionChecker : public Checker
     [[nodiscard]] std::set<std::string> getValidModelIdentifiers(const std::filesystem::path& path) const;
 
   private:
+    /// @brief Checks preprocessor definitions.
+    /// @param xpath_context libxml2 XPath context.
+    /// @param cert Certificate to record results.
+    void checkPreprocessorDefinitions(xmlXPathContextPtr xpath_context, Certificate& cert) const;
+
+    /// @brief Checks libraries listed in buildDescription.xml.
+    /// @param path FMU root directory.
+    /// @param xpath_context libxml2 XPath context.
+    /// @param cert Certificate to record results.
+    void checkLibraries(const std::filesystem::path& path, xmlXPathContextPtr xpath_context, Certificate& cert) const;
+
+    /// @brief Checks for empty SourceFileSet elements.
+    /// @param xpath_context libxml2 XPath context.
+    /// @param cert Certificate to record results.
+    void checkEmptySourceFileSets(xmlXPathContextPtr xpath_context, Certificate& cert) const;
+
     std::string _fmi_version;
 };

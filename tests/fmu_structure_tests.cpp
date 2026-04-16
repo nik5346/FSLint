@@ -551,6 +551,15 @@ TEST_CASE("Build Description Validation", "[build_description]")
         validate_fail("tests/data/build_description/fail/version_mismatch", "does not match FMU version");
         validate_fail("tests/data/build_description/fail/id_mismatch", "does not match any modelIdentifier");
         validate_fail("tests/data/build_description/fail/dotdot", "contains illegal '..' sequence");
+        validate_fail("tests/data/build_description/fail/absolute_path_source", "must be a relative path");
+        validate_fail("tests/data/build_description/fail/absolute_path_include", "must be a relative path");
+        validate_fail("tests/data/build_description/fail/absolute_path_library", "must be a relative path");
+        validate_fail("tests/data/build_description/fail/preprocessor_missing_name",
+                      "missing required 'name' attribute");
+        validate_fail("tests/data/build_description/fail/preprocessor_invalid_name",
+                      "is not a valid C preprocessor identifier");
+        validate_fail("tests/data/build_description/fail/library_missing_name",
+                      "missing required 'name' attribute or it is empty");
     }
 
     SECTION("Warning Cases")
@@ -560,6 +569,13 @@ TEST_CASE("Build Description Validation", "[build_description]")
                          "is not listed in 'buildDescription.xml'");
         validate_warning("tests/data/build_description/warn/unknown_language", "is not one of the suggested values");
         validate_warning("tests/data/build_description/warn/unknown_compiler", "is not one of the suggested values");
+        validate_warning("tests/data/build_description/warn/preprocessor_optional_no_options",
+                         "marked optional but has no <Option> children");
+        validate_warning("tests/data/build_description/warn/library_internal_missing",
+                         "declared as internal but no matching file was found");
+        validate_warning("tests/data/build_description/warn/empty_source_file_set", "contains no SourceFile entries");
+        validate_warning("tests/data/build_description/warn/compiler_options_no_compiler",
+                         "specifies 'compilerOptions' but no 'compiler' attribute");
     }
 
     SECTION("Passing Cases")
