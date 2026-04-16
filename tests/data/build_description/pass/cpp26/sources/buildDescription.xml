@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiBuildDescription fmiVersion="3.0">
-  <BuildConfiguration modelIdentifier="test" language="C++26" />
+  <BuildConfiguration modelIdentifier="Test" language="C++26" />
 </fmiBuildDescription>

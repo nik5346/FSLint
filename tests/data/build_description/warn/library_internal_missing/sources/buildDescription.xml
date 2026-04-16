@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiBuildDescription fmiVersion="3.0">
   <BuildConfiguration modelIdentifier="Test">
-    <SourceFileSet>
-      <SourceFile name="missing.c" />
-    </SourceFileSet>
+    <Library name="missing_internal.so" external="false" />
   </BuildConfiguration>
 </fmiBuildDescription>

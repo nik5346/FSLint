@@ -126,14 +126,15 @@ void BuildDescriptionChecker::checkSourceFiles(xmlXPathContextPtr xpath_context,
                 }
 
                 // Absolute path check (Unix: /..., Windows: [A-Za-z]:\..., \\...)
-                if (val.starts_with('/') || (val.size() >= 3 && std::isalpha(static_cast<unsigned char>(val[0])) &&
-                                             val[1] == ':' && val[2] == '\\') ||
+                if (val.starts_with('/') ||
+                    (val.size() >= 3 && std::isalpha(static_cast<unsigned char>(val[0])) && val[1] == ':' &&
+                     val[2] == '\\') ||
                     val.starts_with("\\\\"))
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(std::format(
-                        "Source file '{}' listed in 'buildDescription.xml' (line {}) is an absolute path.", val,
-                        node->line));
+                    test.getMessages().emplace_back(
+                        std::format("Source file '{}' listed in 'buildDescription.xml' (line {}) is an absolute path.",
+                                    val, node->line));
                     continue;
                 }
 
@@ -183,8 +184,9 @@ void BuildDescriptionChecker::checkIncludeDirectories(xmlXPathContextPtr xpath_c
                 }
 
                 // Absolute path check (Unix: /..., Windows: [A-Za-z]:\..., \\...)
-                if (val.starts_with('/') || (val.size() >= 3 && std::isalpha(static_cast<unsigned char>(val[0])) &&
-                                             val[1] == ':' && val[2] == '\\') ||
+                if (val.starts_with('/') ||
+                    (val.size() >= 3 && std::isalpha(static_cast<unsigned char>(val[0])) && val[1] == ':' &&
+                     val[2] == '\\') ||
                     val.starts_with("\\\\"))
                 {
                     test.setStatus(TestStatus::FAIL);
@@ -227,7 +229,6 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                                                                   "C18",   "C23",   "C++98", "C++03", "C++11",
                                                                   "C++14", "C++17", "C++20", "C++23", "C++26"};
         static const std::set<std::string> suggested_compilers = {"gcc", "clang", "msvc"};
-
         std::set<std::string> seen_ids;
 
         for (int i = 0; i < configs_xpath->nodesetval->nodeNr; ++i)
@@ -252,8 +253,8 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
                 {
                     if (test.getStatus() == TestStatus::PASS)
                         test.setStatus(TestStatus::WARNING);
-                    test.getMessages().emplace_back(std::format(
-                        "modelIdentifier '{}' appears in multiple BuildConfiguration elements.", id_val));
+                    test.getMessages().emplace_back(
+                        std::format("modelIdentifier '{}' appears in multiple BuildConfiguration elements.", id_val));
                 }
                 seen_ids.insert(id_val);
             }
@@ -300,9 +301,9 @@ void BuildDescriptionChecker::checkBuildConfigurationAttributes(xmlXPathContextP
             {
                 if (test.getStatus() == TestStatus::PASS)
                     test.setStatus(TestStatus::WARNING);
-                test.getMessages().emplace_back(std::format(
-                    "BuildConfiguration (line {}) specifies 'compilerOptions' but no 'compiler' attribute.",
-                    node->line));
+                test.getMessages().emplace_back(
+                    std::format("BuildConfiguration (line {}) specifies 'compilerOptions' but no 'compiler' attribute.",
+                                node->line));
             }
         }
     }
@@ -398,9 +399,9 @@ void BuildDescriptionChecker::checkPreprocessorDefinitions(xmlXPathContextPtr xp
             if (!std::regex_match(name, id_regex))
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(std::format(
-                    "PreprocessorDefinition name '{}' (line {}) is not a valid C preprocessor identifier.", name,
-                    node->line));
+                test.getMessages().emplace_back(
+                    std::format("PreprocessorDefinition name '{}' (line {}) is not a valid C preprocessor identifier.",
+                                name, node->line));
             }
 
             const auto optional_opt = getXmlAttribute(node, "optional");
@@ -510,8 +511,9 @@ void BuildDescriptionChecker::checkLibraries(const std::filesystem::path& path, 
                 continue;
             }
 
-            if (name.starts_with('/') || (name.size() >= 3 && std::isalpha(static_cast<unsigned char>(name[0])) &&
-                                          name[1] == ':' && name[2] == '\\') ||
+            if (name.starts_with('/') ||
+                (name.size() >= 3 && std::isalpha(static_cast<unsigned char>(name[0])) && name[1] == ':' &&
+                 name[2] == '\\') ||
                 name.starts_with("\\\\"))
             {
                 test.setStatus(TestStatus::FAIL);
