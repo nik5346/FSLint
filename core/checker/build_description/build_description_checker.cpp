@@ -507,9 +507,9 @@ void BuildDescriptionChecker::checkLibraries(const std::filesystem::path& path, 
                 name.starts_with("\\\\"))
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(std::format(
-                    "Library '{}' listed in 'buildDescription.xml' (line {}) must be a relative path.", name,
-                    node->line));
+                test.getMessages().emplace_back(
+                    std::format("Library '{}' listed in 'buildDescription.xml' (line {}) must be a relative path.",
+                                name, node->line));
                 continue;
             }
 
