@@ -410,8 +410,8 @@ void BuildDescriptionChecker::checkPreprocessorDefinitions(xmlXPathContextPtr xp
                 bool has_option = false;
                 for (xmlNodePtr child = node->children; child != nullptr; child = child->next)
                 {
-                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     if (child->type == XML_ELEMENT_NODE &&
+                        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                         xmlStrEqual(child->name, reinterpret_cast<const xmlChar*>("Option")))
                     {
                         has_option = true;
@@ -453,8 +453,8 @@ void BuildDescriptionChecker::checkEmptySourceFileSets(xmlXPathContextPtr xpath_
             bool has_source_file = false;
             for (xmlNodePtr child = node->children; child != nullptr; child = child->next)
             {
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 if (child->type == XML_ELEMENT_NODE &&
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     xmlStrEqual(child->name, reinterpret_cast<const xmlChar*>("SourceFile")))
                 {
                     has_source_file = true;
