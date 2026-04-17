@@ -452,9 +452,8 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                 cs_x2 = std::stod(*x2_s);
                 cs_y2 = std::stod(*y2_s);
             }
-            catch (...)
+            catch (...) // NOLINT(bugprone-empty-catch)
             {
-                // NOLINTNEXTLINE(bugprone-empty-catch)
                 // Should be caught by XSD validation, but let's be safe
             }
         }
