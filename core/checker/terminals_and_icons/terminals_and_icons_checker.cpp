@@ -328,11 +328,6 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
 
         if (matching_rule != "plug" && matching_rule != "bus" && matching_rule != "signal")
         {
-            // FMI 2.0 did not have matchingRule, but our checker currently assumes FMI 3.0 structure
-            // or FMI 2.0 wrapped in it.
-            // Actually, the XSD for FMI 3.0 has matchingRule as required.
-            // But we should check if we are in FMI 3.0.
-            // Actually, the prompt says it should be one of: plug, bus, signal.
             test.setStatus(TestStatus::FAIL);
             test.getMessages().emplace_back(
                 std::format("Terminal '{}' (line {}) has invalid matchingRule '{}'. Must be one of: plug, bus, signal.",
