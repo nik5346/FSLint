@@ -454,6 +454,7 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
             }
             catch (...)
             {
+                // NOLINTNEXTLINE(bugprone-empty-catch)
                 // Should be caught by XSD validation, but let's be safe
             }
         }
@@ -536,7 +537,7 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                 {
                     try
                     {
-                        int val = std::stoi(part);
+                        const int val = std::stoi(part);
                         if (val < 0 || val > 255)
                             all_valid_ints = false;
                     }
