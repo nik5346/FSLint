@@ -16,8 +16,8 @@
 #include <limits>
 #include <map>
 #include <optional>
-#include <sstream>
 #include <set>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -567,9 +567,9 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
             if (!val)
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(std::format(
-                    "Variable '{}' (line {}): Failed to parse numeric value of 'start' with value '{}'.", var.name,
-                    var.sourceline, token));
+                test.getMessages().emplace_back(
+                    std::format("Variable '{}' (line {}): Failed to parse numeric value of 'start' with value '{}'.",
+                                var.name, var.sourceline, token));
                 success = false;
                 continue;
             }
