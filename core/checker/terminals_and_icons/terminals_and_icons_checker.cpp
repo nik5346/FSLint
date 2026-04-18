@@ -35,7 +35,7 @@ void TerminalsAndIconsCheckerBase::validate(const std::filesystem::path& path, C
         return;
     }
 
-    checkTerminalsAndIcons(path, variables, cert);
+    checkTerminalsAndIcons(path, variables, cert, fmiModelDescriptionVersion);
 
     cert.printSubsectionSummary(true);
 }
@@ -59,7 +59,8 @@ std::optional<std::string> TerminalsAndIconsCheckerBase::getXmlAttribute(xmlNode
 
 bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem::path& path,
                                                           const std::map<std::string, TerminalVariableInfo>& variables,
-                                                          Certificate& cert) const
+                                                          Certificate& cert,
+                                                          const std::string& fmi_model_description_version) const
 {
     auto terminals_path = path / "terminalsAndIcons" / "terminalsAndIcons.xml";
 
@@ -92,8 +93,8 @@ bool TerminalsAndIconsCheckerBase::checkTerminalsAndIcons(const std::filesystem:
 
     // 1. Check fmi_version consistency
     {
-        TestResult test{"Terminals and Icons Version", TestStatus::PASS, {}};
-        checkFmiVersion(root, test);
+        TestResult test{"Terminals and Icons Version Match", TestStatus::PASS, {}};
+        checkFmiVersion(root, fmi_model_description_version, test);
         print_test(test);
     }
 
@@ -226,6 +227,14 @@ void TerminalsAndIconsCheckerBase::checkVariableReferences(xmlXPathContextPtr co
                                                 name_val, kind_val, node->line));
                             }
                         }
+                        else
+                        {
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(std::format(
+                                "TerminalMemberVariable (line {}) has invalid variableKind '{}'. Must be one of: "
+                                "signal, inflow, outflow.",
+                                node->line, kind_val));
+                        }
                     }
                 }
             }
@@ -317,6 +326,14 @@ void TerminalsAndIconsCheckerBase::checkUniqueMemberNames(xmlXPathContextPtr con
         std::set<std::string> seen_members;
         const auto matching_rule = getXmlAttribute(terminal, "matchingRule").value_or("plug");
 
+        if (matching_rule != "plug" && matching_rule != "bus" && matching_rule != "signal")
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                std::format("Terminal '{}' (line {}) has invalid matchingRule '{}'. Must be one of: plug, bus, signal.",
+                            getXmlAttribute(terminal, "name").value_or("unnamed"), terminal->line, matching_rule));
+        }
+
         for (xmlNodePtr child = terminal->children; child != nullptr; child = child->next)
         {
             if (child->type == XML_ELEMENT_NODE)
@@ -404,6 +421,41 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                                                                 xmlXPathContextPtr context, const std::string& prefix,
                                                                 TestResult& test) const
 {
+    std::set<std::string> referenced_icons;
+    std::optional<double> cs_x1, cs_y1, cs_x2, cs_y2;
+
+    // Check for CoordinateSystem
+    const std::string cs_expr =
+        "/" + prefix + "fmiTerminalsAndIcons/" + prefix + "GraphicalRepresentation/" + prefix + "CoordinateSystem";
+    const xmlXPathObjectPtr cs_obj =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        xmlXPathEvalExpression(reinterpret_cast<const xmlChar*>(cs_expr.c_str()), context);
+    if (cs_obj != nullptr && cs_obj->nodesetval != nullptr && cs_obj->nodesetval->nodeNr > 0)
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        const xmlNodePtr cs_node = cs_obj->nodesetval->nodeTab[0];
+        const auto x1_s = getXmlAttribute(cs_node, "x1");
+        const auto y1_s = getXmlAttribute(cs_node, "y1");
+        const auto x2_s = getXmlAttribute(cs_node, "x2");
+        const auto y2_s = getXmlAttribute(cs_node, "y2");
+        if (x1_s && y1_s && x2_s && y2_s)
+        {
+            try
+            {
+                cs_x1 = std::stod(*x1_s);
+                cs_y1 = std::stod(*y1_s);
+                cs_x2 = std::stod(*x2_s);
+                cs_y2 = std::stod(*y2_s);
+            }
+            catch (...) // NOLINT(bugprone-empty-catch)
+            {
+                // Should be caught by XSD validation, but let's be safe
+            }
+        }
+    }
+    if (cs_obj != nullptr)
+        xmlXPathFreeObject(cs_obj);
+
     const std::string expr = "//" + prefix + "TerminalGraphicalRepresentation";
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -420,6 +472,7 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
             if (icon_base.has_value())
             {
                 const auto& base_val = *icon_base;
+                referenced_icons.insert(base_val + ".png");
                 if (base_val.find("..") != std::string::npos || base_val.starts_with("/") ||
                     base_val.find(":") != std::string::npos)
                 {
@@ -473,13 +526,76 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
                 std::stringstream ss(color_val);
                 std::string part;
                 int count = 0;
+                bool all_valid_ints = true;
                 while (ss >> part)
+                {
+                    try
+                    {
+                        const int val = std::stoi(part);
+                        if (val < 0 || val > 255)
+                            all_valid_ints = false;
+                    }
+                    catch (...)
+                    {
+                        all_valid_ints = false;
+                    }
                     count++;
-                if (count != 3)
+                }
+                if (count != 3 || !all_valid_ints)
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back("defaultConnectionColor '" + color_val + "' (line " +
-                                                    std::to_string(node->line) + ") must have exactly 3 RGB values.");
+                    test.getMessages().emplace_back(std::format(
+                        "defaultConnectionColor '{}' (line {}) must have exactly 3 RGB values in range 0-255.",
+                        color_val, node->line));
+                }
+            }
+
+            const auto x1_s = getXmlAttribute(node, "x1");
+            const auto y1_s = getXmlAttribute(node, "y1");
+            const auto x2_s = getXmlAttribute(node, "x2");
+            const auto y2_s = getXmlAttribute(node, "y2");
+
+            if (x1_s && y1_s && x2_s && y2_s)
+            {
+                double x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+                bool parse_ok = true;
+                try
+                {
+                    x1 = std::stod(*x1_s);
+                    y1 = std::stod(*y1_s);
+                    x2 = std::stod(*x2_s);
+                    y2 = std::stod(*y2_s);
+                }
+                catch (...)
+                {
+                    parse_ok = false;
+                }
+
+                if (!parse_ok)
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        std::format("TerminalGraphicalRepresentation (line {}) has invalid numeric extent attributes.",
+                                    node->line));
+                }
+                else if (x1 >= x2 || y1 >= y2)
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(std::format(
+                        "TerminalGraphicalRepresentation (line {}) has invalid extent: must have x1 < x2 and y1 < y2.",
+                        node->line));
+                }
+
+                if (cs_x1 && cs_y1 && cs_x2 && cs_y2)
+                {
+                    if (x1 < *cs_x1 || x2 > *cs_x2 || y1 < *cs_y1 || y2 > *cs_y2)
+                    {
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(
+                            std::format("TerminalGraphicalRepresentation (line {}) extent [{}, {}, {}, {}] "
+                                        "lies outside CoordinateSystem bounds [{}, {}, {}, {}].",
+                                        node->line, x1, y1, x2, y2, *cs_x1, *cs_y1, *cs_x2, *cs_y2));
+                    }
                 }
             }
         }
@@ -487,6 +603,26 @@ void TerminalsAndIconsCheckerBase::checkGraphicalRepresentation(const std::files
 
     if (xpath_obj != nullptr)
         xmlXPathFreeObject(xpath_obj);
+
+    // Check for orphan PNG files
+    const auto terminals_dir = path / "terminalsAndIcons";
+    if (std::filesystem::exists(terminals_dir) && std::filesystem::is_directory(terminals_dir))
+    {
+        for (const auto& entry : std::filesystem::directory_iterator(terminals_dir))
+        {
+            if (entry.is_regular_file() && entry.path().extension() == ".png")
+            {
+                const std::string filename = entry.path().filename().string();
+                if (!referenced_icons.contains(filename))
+                {
+                    if (test.getStatus() != TestStatus::FAIL)
+                        test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back(
+                        std::format("Orphan PNG file found in 'terminalsAndIcons/': '{}'.", filename));
+                }
+            }
+        }
+    }
 }
 
 void TerminalsAndIconsCheckerBase::checkStreamFlowConstraints(xmlXPathContextPtr context, const std::string& prefix,

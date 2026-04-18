@@ -5,6 +5,7 @@
 #include "certificate.h"
 #include "xml_utils.h"
 
+#include <format>
 #include <libxml/parser.h>
 #include <libxml/xmlstring.h>
 #include <libxml/xpath.h>
@@ -13,13 +14,20 @@
 #include <map>
 #include <string>
 
-void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, TestResult& test) const
+void Fmi2TerminalsAndIconsChecker::checkFmiVersion(xmlNodePtr root, const std::string& /*expected_version*/,
+                                                   TestResult& test) const
 {
     const auto version_attr = getXmlAttribute(root, "fmiVersion");
     if (!version_attr)
     {
         test.setStatus(TestStatus::FAIL);
-        test.getMessages().emplace_back("terminalsAndIcons.xml is missing 'fmi_version' attribute.");
+        test.getMessages().emplace_back("terminalsAndIcons.xml is missing 'fmiVersion' attribute.");
+    }
+    else if (*version_attr != "3.0")
+    {
+        test.setStatus(TestStatus::FAIL);
+        test.getMessages().emplace_back(std::format(
+            "fmiVersion in 'terminalsAndIcons.xml' must be '3.0' for FMI 2.x FMUs (found '{}').", *version_attr));
     }
 }
 

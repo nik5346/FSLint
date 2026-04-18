@@ -258,12 +258,19 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 
 ### Terminals and Icons
 
+- **fmiVersion Check**: `terminalsAndIcons.xml` **must** have `fmiVersion="3.0"`. This attribute is fixed to "3.0" for FMI 2.0 FMUs because the feature was backported from FMI 3.0.
 - **Unique Names**: Terminal and member names **must** be unique within their respective levels.
-- **Variable References**: All `variableName` references **must** exist in `modelDescription.xml`.
+- **VariableReferences**:
+  - All `variableName` references **must** exist in `modelDescription.xml`.
+  - `variableKind` **must** be one of: `signal`, `inflow`, `outflow`.
+- **Matching Rules**: `matchingRule` on each terminal **must** be one of: `plug`, `bus`, `signal`.
 - **Causality Constraints**: Variables used as stream members or flows **must** have compatible causalities (input, output, parameter, etc.).
 - **Graphical Representation**:
   - Icons **must** exist (`iconBaseName` must point to a PNG file). PNG icons **should** have at least a size of 100x100 pixels.
-  - Colors **must** be valid RGB (3 space-separated values).
+  - Colors **must** be valid RGB: `defaultConnectionColor` **must** have exactly 3 space-separated values, and each **must** be an integer in range 0–255.
+  - Extent Validity: `TerminalGraphicalRepresentation` coordinates **must** satisfy `x1 < x2` and `y1 < y2`.
+  - Coordinate System: If a top-level `CoordinateSystem` is present, the terminal's extent **must** lie within those bounds.
+  - Orphan Files: PNG files in `terminalsAndIcons/` that are not referenced by any terminal's `iconBaseName` **should** be avoided (**WARN**).
 - **Stream/Flow Constraints**: Only one inflow/outflow **is** allowed when a stream variable is present in a terminal.
 
 ### Binary Exports
@@ -344,13 +351,20 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
 
 ### Terminals and Icons
 
+- **fmiVersion Match**: The `fmiVersion` attribute in `terminalsAndIcons.xml` **must** match the `fmiVersion` in `modelDescription.xml`.
 - **Unique Names**: Terminal and member names **must** be unique within their respective levels.
-- **Variable References**: All `variableName` references **must** exist in `modelDescription.xml`.
+- **VariableReferences**:
+  - All `variableName` references **must** exist in `modelDescription.xml`.
+  - `variableKind` **must** be one of: `signal`, `inflow`, `outflow`.
+- **Matching Rules**: `matchingRule` on each terminal **must** be one of: `plug`, `bus`, `signal`.
 - **Causality Constraints**: Variables used as stream members or flows **must** have compatible causalities (input, output, parameter, etc.).
 - **Graphical Representation**:
   - Icons **must** exist (`iconBaseName` must point to a PNG file). PNG icons **should** have at least a size of 100x100 pixels.
   - PNG fallback required if SVG is provided in `terminalsAndIcons/`.
-  - Colors **must** be valid RGB (3 space-separated values).
+  - Colors **must** be valid RGB: `defaultConnectionColor` **must** have exactly 3 space-separated values, and each **must** be an integer in range 0–255.
+  - Extent Validity: `TerminalGraphicalRepresentation` coordinates **must** satisfy `x1 < x2` and `y1 < y2`.
+  - Coordinate System: If a top-level `CoordinateSystem` is present, the terminal's extent **must** lie within those bounds.
+  - Orphan Files: PNG files in `terminalsAndIcons/` that are not referenced by any terminal's `iconBaseName` **should** be avoided (**WARN**).
 - **Stream/Flow Constraints**: Only one inflow/outflow allowed when a stream variable is present in a terminal.
 
 ### Binary Exports
