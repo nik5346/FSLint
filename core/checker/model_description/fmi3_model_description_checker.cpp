@@ -1407,16 +1407,6 @@ void Fmi3ModelDescriptionChecker::checkVariableDependencies(xmlDocPtr doc, const
 
                 for (const auto& k : kinds)
                 {
-                    // 3. 'constant' only for floating point unknowns
-                    if (k == "constant" && unknown_var && unknown_var->type != "Float32" &&
-                        unknown_var->type != "Float64")
-                    {
-                        test.setStatus(TestStatus::FAIL);
-                        test.getMessages().emplace_back(
-                            std::format("{} (VR {}) has dependencyKind 'constant' but unknown is not a float type.",
-                                        elem_name, unknown_vr));
-                    }
-
                     // 4. 'fixed', 'tunable', 'discrete' only for floating point unknowns AND NOT for InitialUnknown
                     if (k == "fixed" || k == "tunable" || k == "discrete")
                     {

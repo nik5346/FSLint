@@ -735,8 +735,6 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("structure_dependencies_missing", "has 'dependenciesKind' but 'dependencies' is missing");
         validate_fail("structure_dependencies_kind_mismatch", "has different number of elements in 'dependencies'");
         validate_fail("structure_dependencies_kind_invalid_initial", "has illegal dependencyKind 'fixed'");
-        validate_fail("structure_dependencies_kind_non_float",
-                      "has dependencyKind 'constant' but unknown is not a float type");
     }
 }
 
