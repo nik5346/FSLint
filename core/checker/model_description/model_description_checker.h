@@ -16,6 +16,7 @@
 #include <limits>
 #include <map>
 #include <optional>
+#include <sstream>
 #include <set>
 #include <string>
 #include <string_view>
@@ -530,7 +531,6 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
     // Parse the effective min/max (which may come from type definition)
     auto min_val = parse(effective_min, "min");
     auto max_val = parse(effective_max, "max");
-    auto start_val = parse(var.start, "start");
 
     bool success = true;
 
@@ -544,30 +544,94 @@ bool ModelDescriptionCheckerBase::validateTypeBounds(const Variable& var,
         success = false;
     }
 
-    // 2. Check: start >= min
-    if (start_val.has_value() && min_val.has_value() && start_val.value() < min_val.value())
-    {
-        test.setStatus(TestStatus::FAIL);
-        std::string msg = std::format("Variable '{}' (line {}): start ({}) must be >= min ({})", var.name,
-                                      var.sourceline, var.start.value_or(""), effective_min.value_or(""));
-        if (!var.min && var.declared_type)
-            msg += std::format(" (min inherited from type '{}')", *var.declared_type);
-        msg += ".";
-        test.getMessages().emplace_back(msg);
-        success = false;
-    }
+    if (!var.start.has_value())
+        return success;
 
-    // 3. Check: start <= max
-    if (start_val.has_value() && max_val.has_value() && start_val.value() > max_val.value())
+    if (var.has_dimension)
     {
-        test.setStatus(TestStatus::FAIL);
-        std::string msg = std::format("Variable '{}' (line {}): start ({}) must be <= max ({})", var.name,
-                                      var.sourceline, var.start.value_or(""), effective_max.value_or(""));
-        if (!var.max && var.declared_type)
-            msg += std::format(" (max inherited from type '{}')", *var.declared_type);
-        msg += ".";
-        test.getMessages().emplace_back(msg);
-        success = false;
+        std::stringstream ss(*var.start);
+        std::string token;
+        while (ss >> token)
+        {
+            if (token.empty())
+                continue;
+
+            // Check for special floats (NaN, INF) using version-specific hook
+            if constexpr (std::is_floating_point_v<T>)
+            {
+                if (isSpecialFloat(token))
+                    validateVariableSpecialFloat(test, var, token, "start");
+            }
+
+            const auto val = parseNumber<T>(token);
+            if (!val)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Variable '{}' (line {}): Failed to parse numeric value of 'start' with value '{}'.", var.name,
+                    var.sourceline, token));
+                success = false;
+                continue;
+            }
+
+            // 2. Check: start >= min
+            if (min_val.has_value() && *val < *min_val)
+            {
+                test.setStatus(TestStatus::FAIL);
+                std::string msg = std::format("Variable '{}' (line {}): start value '{}' must be >= min ({})", var.name,
+                                              var.sourceline, token, effective_min.value_or(""));
+                if (!var.min && var.declared_type)
+                    msg += std::format(" (min inherited from type '{}')", *var.declared_type);
+                msg += ".";
+                test.getMessages().emplace_back(msg);
+                success = false;
+            }
+
+            // 3. Check: start <= max
+            if (max_val.has_value() && *val > *max_val)
+            {
+                test.setStatus(TestStatus::FAIL);
+                std::string msg = std::format("Variable '{}' (line {}): start value '{}' must be <= max ({})", var.name,
+                                              var.sourceline, token, effective_max.value_or(""));
+                if (!var.max && var.declared_type)
+                    msg += std::format(" (max inherited from type '{}')", *var.declared_type);
+                msg += ".";
+                test.getMessages().emplace_back(msg);
+                success = false;
+            }
+        }
+    }
+    else
+    {
+        auto start_val = parse(var.start, "start");
+        if (start_val.has_value())
+        {
+            // 2. Check: start >= min
+            if (min_val.has_value() && start_val.value() < min_val.value())
+            {
+                test.setStatus(TestStatus::FAIL);
+                std::string msg = std::format("Variable '{}' (line {}): start ({}) must be >= min ({})", var.name,
+                                              var.sourceline, var.start.value_or(""), effective_min.value_or(""));
+                if (!var.min && var.declared_type)
+                    msg += std::format(" (min inherited from type '{}')", *var.declared_type);
+                msg += ".";
+                test.getMessages().emplace_back(msg);
+                success = false;
+            }
+
+            // 3. Check: start <= max
+            if (max_val.has_value() && start_val.value() > max_val.value())
+            {
+                test.setStatus(TestStatus::FAIL);
+                std::string msg = std::format("Variable '{}' (line {}): start ({}) must be <= max ({})", var.name,
+                                              var.sourceline, var.start.value_or(""), effective_max.value_or(""));
+                if (!var.max && var.declared_type)
+                    msg += std::format(" (max inherited from type '{}')", *var.declared_type);
+                msg += ".";
+                test.getMessages().emplace_back(msg);
+                success = false;
+            }
+        }
     }
 
     return success;

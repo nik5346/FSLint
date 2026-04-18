@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="ArrayBounds" instantiationToken="{123}" generationTool="Handwritten">
+  <ModelExchange modelIdentifier="ArrayBounds" />
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+    <Float64 name="v" valueReference="1" causality="parameter" variability="fixed" start="1 10 3" max="5">
+      <Dimension start="3" />
+    </Float64>
+  </ModelVariables>
+  <ModelStructure>
+  </ModelStructure>
+</fmiModelDescription>
