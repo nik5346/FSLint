@@ -944,12 +944,8 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
     // Get expected outputs (all variables with causality='output')
     std::set<uint32_t> expected_vrs;
     for (const auto& var : variables)
-    {
         if (var.causality == "output" && var.value_reference.has_value())
-        {
             expected_vrs.insert(*var.value_reference);
-        }
-    }
 
     // FMI3: Get actual outputs from 'ModelStructure/Output' (using valueReference attribute)
     std::set<uint32_t> actual_vrs;
@@ -1117,7 +1113,6 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
                             std::format("Clocked state variable '{}' (line {}) must not be of type Clock.", var.name,
                                         var.sourceline));
                     }
-
                 }
             }
         }
