@@ -302,6 +302,15 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/directory/warn/nonstandard_platform_fmi2",
                          "is not one of the standardized FMI 2.0 platform names");
         validate_warning("tests/data/fmi2/warn/empty_extra", "Standard directory 'extra' is empty");
+        validate_warning("tests/data/fmi2/warn/not_rdn_extra", "should use reverse domain name notation");
+
+        SECTION("RDNN in extra/ for FMI 2.0 (Success cases)")
+        {
+            Certificate cert;
+            checker.validate("tests/data/fmi2/pass/rdn_extra", cert);
+            CHECK_FALSE(has_warning_with_text(cert, "should use reverse domain name notation"));
+        }
+
         validate_warning("tests/data/fmi2/warn/empty_terminalsAndIcons",
                          "Standard directory 'terminalsAndIcons' is empty");
         validate_warning("tests/data/fmi2/warn/empty_licenses_subdir",
@@ -460,6 +469,14 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
         validate_warning("tests/data/directory/warn/nonstandard_platform_fmi3",
                          "is not one of the standardized FMI 3.0 architectures");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
+
+        SECTION("RDNN in extra/ for FMI 3.0 (Success cases)")
+        {
+            Certificate cert;
+            checker.validate("tests/data/fmi3/pass/rdn_extra", cert);
+            CHECK_FALSE(has_warning_with_text(cert, "should use reverse domain name notation"));
+        }
+
         validate_warning("tests/data/fmi3/warn/missing_icon_png",
                          "Recommended file 'terminalsAndIcons/icon.png' is missing");
         validate_warning("tests/data/fmi3/warn/empty_extra", "Standard directory 'extra' is empty");

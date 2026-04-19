@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <format>
 #include <map>
+#include <regex>
 #include <set>
 #include <string>
 
@@ -275,7 +276,36 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         }
     }
 
-    // 8. Standard Headers
+    // 8. Extra
+    {
+        TestResult test{"Extra", TestStatus::PASS, {}};
+        const auto extra_path = path / "extra";
+        if (std::filesystem::is_directory(extra_path))
+        {
+            for (const auto& entry : std::filesystem::directory_iterator(extra_path))
+            {
+                if (entry.is_directory())
+                {
+                    const std::string name = file_utils::pathToUtf8(entry.path().filename());
+                    // Reverse domain notation: e.g. com.example
+                    // It should have at least one dot and non-empty segments.
+                    const std::regex rd_regex("^[^.]+(\\.[^.]+)+$");
+                    if (!std::regex_match(name, rd_regex))
+                    {
+                        if (test.getStatus() != TestStatus::FAIL)
+                            test.setStatus(TestStatus::WARNING);
+                        test.getMessages().emplace_back(
+                            std::format("Subdirectory '{}' in extra/ should use reverse domain name notation "
+                                        "(e.g. 'com.example').",
+                                        name));
+                    }
+                }
+            }
+        }
+        cert.printTestResult(test);
+    }
+
+    // 9. Standard Headers
     static const std::set<std::string> fmi2_headers = {"fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"};
     checkStandardHeaders(path, cert, fmi2_headers);
 }

@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{1}">
-  <CoSimulation modelIdentifier="Test" />
+<?xml version="1.0" encoding="utf-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="not_rdn_test" instantiationToken="123">
+  <CoSimulation modelIdentifier="not_rdn_test" />
+  <ModelVariables />
+  <ModelStructure />
 </fmiModelDescription>
