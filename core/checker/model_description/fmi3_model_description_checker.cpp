@@ -122,6 +122,10 @@ std::vector<Variable> Fmi3ModelDescriptionChecker::extractVariables(xmlDocPtr do
         var.display_unit = getXmlAttribute(node, "displayUnit");
         var.declared_type = getXmlAttribute(node, "declaredType");
         var.clocks = getXmlAttribute(node, "clocks");
+
+        if (auto p = getXmlAttribute(node, "previous"))
+            var.previous = parseNumber<uint32_t>(*p);
+
         extractDimensions(node, var);
         var.sourceline = node->line;
 
@@ -937,12 +941,11 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
 {
     TestResult test{"ModelStructure Outputs", TestStatus::PASS, {}};
 
-    // Get expected outputs (all non-clocked variables with causality='output')
+    // Get expected outputs (all variables with causality='output')
     std::set<uint32_t> expected_vrs;
     for (const auto& var : variables)
     {
-        if (var.causality == "output" && var.value_reference.has_value() &&
-            (!var.clocks.has_value() || var.clocks->empty()))
+        if (var.causality == "output" && var.value_reference.has_value())
         {
             expected_vrs.insert(*var.value_reference);
         }
@@ -989,14 +992,6 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
                         if (var.causality == "output")
                         {
                             is_output = true;
-                            if (var.clocks.has_value() && !var.clocks->empty())
-                            {
-                                test.setStatus(TestStatus::FAIL);
-                                test.getMessages().emplace_back(
-                                    std::format("Variable '{}' (line {}) is a clocked variable. Clocked variables must "
-                                                "not be listed in 'ModelStructure/Output'.",
-                                                var.name, var.sourceline));
-                            }
                         }
                         else
                         {
@@ -1036,7 +1031,7 @@ void Fmi3ModelDescriptionChecker::validateOutputs(xmlDocPtr doc, const std::vect
         }
 
         test.getMessages().emplace_back("'ModelStructure/Output' must have exactly one representative for each alias "
-                                        "set of non-clocked variables with causality='output'.");
+                                        "set of variables with causality='output'.");
     }
 
     cert.printTestResult(test);
@@ -1047,7 +1042,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
 {
     TestResult test{"ModelStructure Clocked States", TestStatus::PASS, {}};
 
-    // Get expected clocked states: variables with causality="local" or "output" and has clocks attribute
+    // Get expected clocked states: variables with causality="local" or "output" and has previous attribute
     std::set<uint32_t> expected_vrs;
     std::map<uint32_t, const Variable*> vr_to_var;
     for (const auto& var : variables)
@@ -1055,7 +1050,7 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
         if (var.value_reference.has_value())
             vr_to_var[*var.value_reference] = &var;
 
-        if ((var.causality == "local" || var.causality == "output") && var.clocks.has_value() && !var.clocks->empty())
+        if ((var.causality == "local" || var.causality == "output") && var.previous.has_value())
         {
             if (var.value_reference.has_value())
                 expected_vrs.insert(*var.value_reference);
@@ -1123,14 +1118,6 @@ void Fmi3ModelDescriptionChecker::validateClockedStates(xmlDocPtr doc, const std
                                         var.sourceline));
                     }
 
-                    auto prev_str = getXmlAttribute(node, "previous");
-                    if (!prev_str.has_value())
-                    {
-                        test.setStatus(TestStatus::FAIL);
-                        test.getMessages().emplace_back(std::format("'ModelStructure/ClockedState' for variable '{}' "
-                                                                    "(line {}) must have the 'previous' attribute.",
-                                                                    var.name, var.sourceline));
-                    }
                 }
             }
         }
