@@ -58,6 +58,7 @@ struct Variable
     bool has_dimension = false;                  ///< True if array.
     std::vector<Dimension> dimensions;           ///< Dimensions.
     std::optional<std::string> clocks;           ///< Clock references.
+    std::optional<uint32_t> previous;            ///< Previous attribute (FMI 3.0).
     bool relative_quantity = false;              ///< RelativeQuantity attribute.
     size_t sourceline = 0;                       ///< XML line number.
 };

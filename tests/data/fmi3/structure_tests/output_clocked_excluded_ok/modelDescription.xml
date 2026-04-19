@@ -3,11 +3,11 @@
   <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
     <Float64 name="time" valueReference="1" causality="independent" variability="continuous" />
-    <Clock name="c" valueReference="10" causality="input" variability="discrete" />
-    <Float64 name="y_clocked" valueReference="2" causality="output" variability="discrete" clocks="10" />
+    <Clock name="c" valueReference="10" causality="input" variability="discrete" intervalVariability="triggered" />
+    <Float64 name="y_clocked" valueReference="2" causality="output" variability="discrete" clocks="10" previous="2" />
   </ModelVariables>
   <ModelStructure>
     <Output />
-    <ClockedState valueReference="2" previous="2" />
+    <ClockedState valueReference="2" />
   </ModelStructure>
 </fmiModelDescription>

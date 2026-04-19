@@ -822,6 +822,12 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
         CHECK_FALSE(has_fail(cert));
     }
 
+    SECTION("FMI 3.0 Clocks Reference FMU")
+    {
+        checker.validate("tests/data/fmi3/pass/Clocks", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
     SECTION("FMI 3.0 Derivative Input OK")
     {
         checker.validate("tests/data/fmi3/pass/derivative_input_ok", cert);
@@ -976,13 +982,14 @@ TEST_CASE("FMI 3.0 ModelStructure Alias and Partial Validation", "[fmi3][structu
 
     SECTION("Output with clocked variables")
     {
+        // Now output_clocked_excluded_ok should FAIL because y_clocked (output) is missing from ModelStructure/Output
         Certificate cert = validate("output_clocked_excluded_ok");
-        CHECK_FALSE(has_fail(cert));
-
-        cert = validate("output_clocked_fail");
         CHECK(has_fail(cert));
-        CHECK(has_error_with_text(
-            cert, "is a clocked variable. Clocked variables must not be listed in 'ModelStructure/Output'"));
+        CHECK(has_error_with_text(cert, "missing a representative in 'ModelStructure/Output'"));
+
+        // Now output_clocked_fail (which correctly lists y_clocked in Output) should PASS
+        cert = validate("output_clocked_fail");
+        CHECK_FALSE(has_fail(cert));
     }
 
     SECTION("ContinuousStateDerivative partial listing")

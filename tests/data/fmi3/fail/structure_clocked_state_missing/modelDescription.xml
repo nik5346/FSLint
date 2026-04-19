@@ -4,9 +4,8 @@
   <ModelVariables>
     <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
     <Clock name="c" valueReference="1" causality="input" intervalVariability="triggered" />
-    <Float64 name="v" valueReference="2" causality="local" variability="discrete" clocks="1" />
+    <Float64 name="v" valueReference="2" causality="local" variability="discrete" clocks="1" previous="2" />
   </ModelVariables>
   <ModelStructure>
-
   </ModelStructure>
 </fmiModelDescription>

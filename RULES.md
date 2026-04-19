@@ -335,11 +335,12 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - Clock types **must** have consistent `intervalVariability` and interval attributes.
 - **Model Structure**:
   - `Output` and `InitialUnknown` **must** be complete (containing exactly one representative from each respective mandatory alias set) and unique.
-  - Non-clocked variables with `causality="output"` **must** have a representative in `Output`.
-  - Mandatory `InitialUnknowns` **must** be provided for non-clocked outputs, calculated parameters, and active states/derivatives (listed in `ContinuousStateDerivative`) with `initial="approx"` or `"calculated"`.
+  - `Output`: Must contain exactly one representative per alias set for every variable with `causality="output"`.
+  - Mandatory `InitialUnknowns` **must** be provided for outputs, calculated parameters, and active states/derivatives (listed in `ContinuousStateDerivative`) with `initial="approx"` or `"calculated"`.
   - Optional clocked variables are allowed in `InitialUnknown`.
   - `ContinuousStateDerivative` defines the set of continuous-time states; all listed entries **must** correspond to variables with a `derivative` attribute.
-  - `ClockedState` and `EventIndicator` elements **must** be complete and unique.
+  - `ClockedState`: Must list all variables that have a `previous` attribute.
+  - `EventIndicator` elements **must** be complete and unique.
 - **Variable Dependencies**: `dependenciesKind` **must** be restricted to allowed types and is **not allowed** for `InitialUnknown`.
 
 ### Variable Consistency
