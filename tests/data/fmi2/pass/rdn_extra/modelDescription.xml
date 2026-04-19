@@ -1,9 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <fmiModelDescription fmiVersion="2.0" modelName="rdn_test" guid="123">
   <CoSimulation modelIdentifier="rdn_test">
     <SourceFiles>
-      <File name="dummy.c"/>
+      <File name="dummy.c" />
     </SourceFiles>
   </CoSimulation>
-  <ModelVariables/>
-  <ModelStructure/>
+  <ModelVariables />
+  <ModelStructure />
 </fmiModelDescription>

@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <fmiBuildDescription fmiVersion="3.0" modelIdentifier="not_rdn_test">
   <SourceFileSet>
-    <SourceFile name="dummy.c"/>
+    <SourceFile name="dummy.c" />
   </SourceFileSet>
 </fmiBuildDescription>
