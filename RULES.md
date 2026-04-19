@@ -335,11 +335,11 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - Clock types **must** have consistent `intervalVariability` and interval attributes.
 - **Model Structure**:
   - `Output` and `InitialUnknown` **must** be complete (containing exactly one representative from each respective mandatory alias set) and unique.
-  - `Output`: Must contain exactly one representative per alias set for every variable with `causality="output"`, including clocked output variables (those with a `clocks` attribute). The presence of a `clocks` attribute does not exempt an output variable from this requirement.
-  - Mandatory `InitialUnknowns` **must** be provided for non-clocked outputs, calculated parameters, and active states/derivatives (listed in `ContinuousStateDerivative`) with `initial="approx"` or `"calculated"`.
+  - `Output`: Must contain exactly one representative per alias set for every variable with `causality="output"`.
+  - Mandatory `InitialUnknowns` **must** be provided for outputs, calculated parameters, and active states/derivatives (listed in `ContinuousStateDerivative`) with `initial="approx"` or `"calculated"`.
   - Optional clocked variables are allowed in `InitialUnknown`.
   - `ContinuousStateDerivative` defines the set of continuous-time states; all listed entries **must** correspond to variables with a `derivative` attribute.
-  - `ClockedState`: Must list all variables that have a `previous` attribute (clocked variables that carry state between clock ticks). Variables that are clocked (have a `clocks` attribute) but do NOT have a `previous` attribute must NOT be required here — they are correctly listed under `<Output>` instead.
+  - `ClockedState`: Must list all variables that have a `previous` attribute.
   - `EventIndicator` elements **must** be complete and unique.
 - **Variable Dependencies**: `dependenciesKind` **must** be restricted to allowed types and is **not allowed** for `InitialUnknown`.
 
