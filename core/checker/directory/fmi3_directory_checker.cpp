@@ -64,7 +64,7 @@ void Fmi3DirectoryChecker::performVersionSpecificChecks(
         else
         {
             test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back("Providing documentation is recommended.");
+            test.getMessages().emplace_back("Providing documentation is recommended in 'documentation/'.");
         }
 
         // externalDependencies check (must be present even if documentation/ is missing)

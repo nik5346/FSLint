@@ -140,7 +140,7 @@ TEST_CASE("FMI 1.0 Directory Validation", "[directory][fmi1]")
             CHECK(has_error_with_text(cert, "The documentation entry point 'documentation/_main.html' is missing."));
         }
 
-        validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended.");
+        validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended in 'documentation/'.");
         validate_warning("tests/data/fmi1/warn/fmi_headers_in_sources",
                          "Standard FMI header file 'fmiFunctions.h' found in 'sources/' directory");
         validate_warning("tests/data/fmi1/warn/unknown_root_entry", "Unknown file in FMU root: 'unknown.txt'");
@@ -298,7 +298,7 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi2/warn/missing_model_png", "Recommended file 'model.png' is missing");
-        validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended.");
+        validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended in 'documentation/'.");
         validate_warning("tests/data/directory/warn/nonstandard_platform_fmi2",
                          "is not one of the standardized FMI 2.0 platform names");
         validate_warning("tests/data/fmi2/warn/empty_extra", "Standard directory 'extra' is empty");
@@ -465,7 +465,7 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
     SECTION("Warning Cases")
     {
         validate_warning("tests/data/fmi3/warn/unknown_entry", "Unknown file in FMU root");
-        validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended.");
+        validate_warning("tests/data/directory/warn/missing_doc_entry", "Providing documentation is recommended in 'documentation/'.");
         validate_warning("tests/data/directory/warn/nonstandard_platform_fmi3",
                          "is not one of the standardized FMI 3.0 architectures");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");

@@ -192,7 +192,7 @@ void Fmi1DirectoryChecker::performVersionSpecificChecks(
         else
         {
             test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back("Providing documentation is recommended.");
+            test.getMessages().emplace_back("Providing documentation is recommended in 'documentation/'.");
         }
         cert.printTestResult(test);
     }
