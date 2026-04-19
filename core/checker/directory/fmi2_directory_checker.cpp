@@ -86,7 +86,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
         else
         {
             test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back("Providing documentation is recommended.");
+            test.getMessages().emplace_back("Providing documentation is recommended in 'documentation/'.");
         }
 
         if (needs_execution_tool)
