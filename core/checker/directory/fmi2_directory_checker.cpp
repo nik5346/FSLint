@@ -280,7 +280,7 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
     {
         TestResult test{"Extra", TestStatus::PASS, {}};
         const auto extra_path = path / "extra";
-        if (std::filesystem::exists(extra_path))
+        if (std::filesystem::is_directory(extra_path))
         {
             for (const auto& entry : std::filesystem::directory_iterator(extra_path))
             {
@@ -288,9 +288,8 @@ void Fmi2DirectoryChecker::performVersionSpecificChecks(const std::filesystem::p
                 {
                     const std::string name = file_utils::pathToUtf8(entry.path().filename());
                     // Reverse domain notation: e.g. com.example
-                    // It should have at least one dot and follow basic domain naming rules.
-                    // We allow hyphens and uppercase letters as they are common in RDNN.
-                    const std::regex rd_regex("^[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)+$");
+                    // It should have at least one dot and non-empty segments.
+                    const std::regex rd_regex("^[^.]+(\\.[^.]+)+$");
                     if (!std::regex_match(name, rd_regex))
                     {
                         if (test.getStatus() != TestStatus::FAIL)

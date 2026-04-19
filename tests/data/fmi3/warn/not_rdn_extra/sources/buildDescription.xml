@@ -1,0 +1,5 @@
+<fmiBuildDescription fmiVersion="3.0" modelIdentifier="not_rdn_test">
+  <SourceFileSet>
+    <SourceFile name="dummy.c"/>
+  </SourceFileSet>
+</fmiBuildDescription>

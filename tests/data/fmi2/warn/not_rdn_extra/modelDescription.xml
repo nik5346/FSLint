@@ -1,0 +1,9 @@
+<fmiModelDescription fmiVersion="2.0" modelName="not_rdn_test" guid="123">
+  <CoSimulation modelIdentifier="not_rdn_test">
+    <SourceFiles>
+      <File name="dummy.c"/>
+    </SourceFiles>
+  </CoSimulation>
+  <ModelVariables/>
+  <ModelStructure/>
+</fmiModelDescription>

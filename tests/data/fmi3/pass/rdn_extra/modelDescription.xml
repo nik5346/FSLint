@@ -1,0 +1,5 @@
+<fmiModelDescription fmiVersion="3.0" modelName="rdn_test">
+  <CoSimulation modelIdentifier="rdn_test"/>
+  <ModelVariables/>
+  <ModelStructure/>
+</fmiModelDescription>

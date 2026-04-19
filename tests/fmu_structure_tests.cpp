@@ -302,27 +302,13 @@ TEST_CASE("FMI 2.0 Directory Validation", "[directory][fmi2]")
         validate_warning("tests/data/directory/warn/nonstandard_platform_fmi2",
                          "is not one of the standardized FMI 2.0 platform names");
         validate_warning("tests/data/fmi2/warn/empty_extra", "Standard directory 'extra' is empty");
+        validate_warning("tests/data/fmi2/warn/not_rdn_extra", "should use reverse domain name notation");
 
-        SECTION("RDNN in extra/ for FMI 2.0")
+        SECTION("RDNN in extra/ for FMI 2.0 (Success cases)")
         {
-            fs::path temp_dir = "tests/data/fmi2/warn/not_rdn_extra";
-            fs::create_directories(temp_dir / "extra" / "not_rdn");
-            fs::create_directories(temp_dir / "binaries" / "linux64");
-            {
-                std::ofstream md(temp_dir / "modelDescription.xml");
-                md << "<fmiModelDescription fmiVersion=\"2.0\" modelName=\"test\" guid=\"123\">\n"
-                   << "  <CoSimulation modelIdentifier=\"test\"/>\n"
-                   << "  <ModelVariables/>\n"
-                   << "  <ModelStructure/>\n"
-                   << "</fmiModelDescription>";
-                std::ofstream bin(temp_dir / "binaries" / "linux64" / "test.so");
-            }
-
             Certificate cert;
-            checker.validate(temp_dir, cert);
-            CHECK(has_warning_with_text(cert, "should use reverse domain name notation"));
-
-            fs::remove_all(temp_dir);
+            checker.validate("tests/data/fmi2/pass/rdn_extra", cert);
+            CHECK_FALSE(has_warning_with_text(cert, "should use reverse domain name notation"));
         }
 
         validate_warning("tests/data/fmi2/warn/empty_terminalsAndIcons",
@@ -484,27 +470,11 @@ TEST_CASE("FMI 3.0 Directory Validation", "[directory][fmi3]")
                          "is not one of the standardized FMI 3.0 architectures");
         validate_warning("tests/data/fmi3/warn/not_rdn_extra", "should use reverse domain name notation");
 
-        SECTION("RDNN with hyphens and uppercase")
+        SECTION("RDNN in extra/ for FMI 3.0 (Success cases)")
         {
-            fs::path temp_dir = "tests/data/fmi3/pass/rdnn_test";
-            fs::create_directories(temp_dir / "extra" / "org.fmi-standard.fmi-ls-xcp");
-            fs::create_directories(temp_dir / "extra" / "com.Example.Tool");
-            fs::create_directories(temp_dir / "binaries" / "x86_64-linux");
-            {
-                std::ofstream md(temp_dir / "modelDescription.xml");
-                md << "<fmiModelDescription fmiVersion=\"3.0\" modelName=\"test\">\n"
-                   << "  <CoSimulation modelIdentifier=\"test\"/>\n"
-                   << "  <ModelVariables/>\n"
-                   << "  <ModelStructure/>\n"
-                   << "</fmiModelDescription>";
-                std::ofstream bin(temp_dir / "binaries" / "x86_64-linux" / "test.so");
-            }
-
             Certificate cert;
-            checker.validate(temp_dir, cert);
+            checker.validate("tests/data/fmi3/pass/rdn_extra", cert);
             CHECK_FALSE(has_warning_with_text(cert, "should use reverse domain name notation"));
-
-            fs::remove_all(temp_dir);
         }
 
         validate_warning("tests/data/fmi3/warn/missing_icon_png",
