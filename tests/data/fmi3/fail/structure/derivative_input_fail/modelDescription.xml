@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e810f-3df3-4a00-8276-176fa3c9f001}">
+<fmi3ModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e810f-3df3-4a00-8276-176fa3c9f001}">
   <ModelExchange modelIdentifier="Test" />
   <ModelVariables>
     <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
@@ -9,4 +9,4 @@
   <ModelStructure>
     <ContinuousStateDerivative valueReference="2" />
   </ModelStructure>
-</fmiModelDescription>
+</fmi3ModelDescription>

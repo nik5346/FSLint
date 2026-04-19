@@ -38,11 +38,14 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     checkClockReferences(variables, cert);
     checkClockedVariables(variables, cert);
     checkAliases(variables, type_definitions, cert);
+    checkAliasElements(doc, variables, units, cert);
     checkReinitAttribute(doc, variables, cert);
     checkDerivativeConsistency(doc, variables, cert);
     checkCanHandleMultipleSet(variables, cert);
     checkClockTypes(doc, cert);
     checkStructuralParameter(variables, cert);
+    checkCapabilityFlags(doc, cert);
+    checkClockAttributeConsistency(doc, variables, cert);
     checkDerivativeDimensions(variables, cert);
     checkModelStructure(doc, variables, cert);
 }
@@ -701,6 +704,137 @@ void Fmi3ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
     cert.printTestResult(test);
 }
 
+void Fmi3ModelDescriptionChecker::checkAliasElements(xmlDocPtr doc, const std::vector<Variable>& variables,
+                                                       const std::map<std::string, UnitDefinition>& units,
+                                                       Certificate& cert) const
+{
+    TestResult test{"Alias Elements", TestStatus::PASS, {}};
+
+    std::map<uint32_t, const Variable*> vr_map;
+    std::map<std::string, const Variable*> name_map;
+    for (const auto& var : variables)
+    {
+        if (var.value_reference.has_value())
+            vr_map[*var.value_reference] = &var;
+        name_map[var.name] = &var;
+    }
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelVariables/*");
+    if (xpath_obj == nullptr || xpath_obj->nodesetval == nullptr)
+    {
+        if (xpath_obj != nullptr)
+            xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    // For cycle detection
+    std::map<std::string, std::string> alias_to_aliased;
+
+    for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr var_node = xpath_obj->nodesetval->nodeTab[i];
+        auto var_name = getXmlAttribute(var_node, "name").value_or("unnamed");
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        std::string var_type = reinterpret_cast<const char*>(var_node->name);
+        auto var_unit = getXmlAttribute(var_node, "unit");
+
+        for (xmlNodePtr child = var_node->children; child != nullptr; child = child->next)
+        {
+            if (child->type == XML_ELEMENT_NODE &&
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                xmlStrcmp(child->name, reinterpret_cast<const xmlChar*>("Alias")) == 0)
+            {
+                auto vr_str = getXmlAttribute(child, "valueReference");
+                if (!vr_str)
+                    continue;
+
+                auto vr_opt = parseNumber<uint32_t>(*vr_str);
+                if (!vr_opt)
+                    continue;
+
+                uint32_t vr = *vr_opt;
+                auto it = vr_map.find(vr);
+
+                if (it == vr_map.end())
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        std::format("Variable '{}' (line {}): <Alias> references non-existent valueReference {}.",
+                                    var_name, child->line, vr));
+                }
+                else
+                {
+                    const Variable* aliased_var = it->second;
+
+                    // Rule: The type of the alias variable must match the type of the aliased variable
+                    if (var_type != aliased_var->type)
+                    {
+                        test.setStatus(TestStatus::FAIL);
+                        test.getMessages().emplace_back(std::format(
+                            "Variable '{}' (line {}): <Alias> type mismatch. Parent is {}, aliased variable '{}' is {}.",
+                            var_name, child->line, var_type, aliased_var->name, aliased_var->type));
+                    }
+
+                    // For cycle detection
+                    alias_to_aliased[var_name] = aliased_var->name;
+
+                    // Rule: If displayUnit is specified on the <Alias>: that unit name must exist
+                    auto displayUnit = getXmlAttribute(child, "displayUnit");
+                    if (displayUnit)
+                    {
+                        if (!var_unit)
+                        {
+                            if (test.getStatus() != TestStatus::FAIL)
+                                test.setStatus(TestStatus::WARNING);
+                            test.getMessages().emplace_back(
+                                std::format("Variable '{}' (line {}): <Alias> specifies displayUnit='{}' but parent "
+                                            "variable has no unit attribute.",
+                                            var_name, child->line, *displayUnit));
+                        }
+                        else
+                        {
+                            auto unit_it = units.find(*var_unit);
+                            if (unit_it == units.end() || unit_it->second.display_units.find(*displayUnit) ==
+                                                              unit_it->second.display_units.end())
+                            {
+                                test.setStatus(TestStatus::FAIL);
+                                test.getMessages().emplace_back(std::format(
+                                    "Variable '{}' (line {}): <Alias> specifies displayUnit '{}' which is not defined "
+                                    "for unit '{}'.",
+                                    var_name, child->line, *displayUnit, *var_unit));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Rule: Alias cycles: if variable A aliases variable B, and B also has an <Alias> pointing back to A
+    for (const auto& [alias, aliased] : alias_to_aliased)
+    {
+        std::string current = aliased;
+        std::set<std::string> visited = {alias};
+
+        while (alias_to_aliased.contains(current))
+        {
+            if (visited.contains(current))
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format("Circular alias chain detected starting from '{}'.", alias));
+                break;
+            }
+            visited.insert(current);
+            current = alias_to_aliased.at(current);
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
 void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& variables,
                                                const std::map<std::string, TypeDefinition>& type_definitions,
                                                Certificate& cert) const
@@ -851,6 +985,243 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
                 "attribute. Found: {}.",
                 vr, vars));
         }
+    }
+
+    cert.printTestResult(test);
+}
+
+void Fmi3ModelDescriptionChecker::checkClockAttributeConsistency(xmlDocPtr doc, const std::vector<Variable>& /*variables*/,
+                                                                   Certificate& cert) const
+{
+    TestResult test{"Clock Attribute Consistency", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelVariables/*");
+    if (xpath_obj == nullptr || xpath_obj->nodesetval == nullptr)
+    {
+        if (xpath_obj != nullptr)
+            xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        std::string type = reinterpret_cast<const char*>(node->name);
+        auto causality = getXmlAttribute(node, "causality").value_or("local");
+
+        if (type != "Clock" && causality != "clock")
+            continue;
+
+        auto name = getXmlAttribute(node, "name").value_or("unnamed");
+        auto clockType = getXmlAttribute(node, "clockType").value_or("periodic");
+        auto intervalVariability = getXmlAttribute(node, "intervalVariability").value_or("");
+
+        auto period = getXmlAttribute(node, "period");
+        auto intervalCounter = getXmlAttribute(node, "intervalCounter");
+        auto shiftDecimal = getXmlAttribute(node, "shiftDecimal");
+        auto shiftFraction = getXmlAttribute(node, "shiftFraction");
+        auto resolution = getXmlAttribute(node, "resolution");
+
+        // Rule: If clockType="periodic" or unspecified (default is periodic):
+        // intervalVariability must be "constant" or "fixed" → FAIL if it is "changing" or "countdown".
+        if (clockType == "periodic")
+        {
+            if (intervalVariability == "changing" || intervalVariability == "countdown")
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Clock variable '{}' (line {}): is 'periodic' but has intervalVariability='{}'.",
+                    name, node->line, intervalVariability));
+            }
+        }
+
+        // Rule: If clockType="aperiodic" or clockType="triggered":
+        // the attributes period, intervalCounter, shiftDecimal, and shiftFraction must not be present
+        if (clockType == "aperiodic" || clockType == "triggered")
+        {
+            auto check_not_present = [&](const std::optional<std::string>& attr_val, const std::string& attr_name) {
+                if (attr_val) {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(std::format(
+                        "Clock variable '{}' (line {}): attribute '{}' must not be present for clockType='{}'.",
+                        name, node->line, attr_name, clockType));
+                }
+            };
+            check_not_present(period, "period");
+            check_not_present(intervalCounter, "intervalCounter");
+            check_not_present(shiftDecimal, "shiftDecimal");
+            check_not_present(shiftFraction, "shiftFraction");
+        }
+
+        // Rule: If clockType="triggered" and causality="output" → FAIL
+        if (clockType == "triggered" && causality == "output")
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(
+                "Clock variable '{}' (line {}): triggered clocks cannot be outputs.",
+                name, node->line));
+        }
+
+        // Rule: If shiftDecimal is present and period is also declared as a plain numeric attribute:
+        // shiftDecimal must satisfy 0 <= shiftDecimal < period
+        if (shiftDecimal && period)
+        {
+            auto sd_val = parseNumber<double>(*shiftDecimal);
+            auto p_val = parseNumber<double>(*period);
+            if (sd_val && p_val)
+            {
+                if (*sd_val < 0 || *sd_val >= *p_val)
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(std::format(
+                        "Clock variable '{}' (line {}): shiftDecimal ({}) must satisfy 0 <= shiftDecimal < period ({}).",
+                        name, node->line, *shiftDecimal, *period));
+                }
+            }
+        }
+
+        // Rule: If both intervalCounter and resolution are present: resolution must be > 0
+        if (intervalCounter && resolution)
+        {
+            auto res_val = parseNumber<double>(*resolution);
+            if (res_val && *res_val <= 0)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Clock variable '{}' (line {}): resolution must be > 0 when intervalCounter is present.",
+                    name, node->line));
+            }
+        }
+
+        // Rule: If clockType="countdown": causality must be "input" → FAIL if not.
+        if (clockType == "countdown" && causality != "input")
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(
+                "Clock variable '{}' (line {}): clockType='countdown' requires causality='input' (found '{}').",
+                name, node->line, causality));
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificate& cert) const
+{
+    TestResult test{"Capability Flag Consistency", TestStatus::PASS, {}};
+
+    auto check_interface = [&](xmlNodePtr node, const std::string& interface_name)
+    {
+        auto get_bool = [&](const std::string& attr, bool default_val) -> bool
+        {
+            auto val = getXmlAttribute(node, attr);
+            if (!val)
+                return default_val;
+            return *val == "true" || *val == "1";
+        };
+
+        const bool canGetAndSetFMUState = get_bool("canGetAndSetFMUState", false);
+        const bool canSerializeFMUState = get_bool("canSerializeFMUState", false);
+        const bool providesDirectionalDerivatives = get_bool("providesDirectionalDerivatives", false);
+        const bool providesAdjointDerivatives = get_bool("providesAdjointDerivatives", false);
+
+        if (!canGetAndSetFMUState && canSerializeFMUState)
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(
+                std::format("{} (line {}): 'canSerializeFMUState' is true but 'canGetAndSetFMUState' is false. You "
+                            "cannot serialize state you cannot get/set.",
+                            interface_name, node->line));
+        }
+
+        if (!providesDirectionalDerivatives && providesAdjointDerivatives)
+        {
+            if (test.getStatus() != TestStatus::FAIL)
+                test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back(std::format(
+                "{} (line {}): 'providesAdjointDerivatives' is true but 'providesDirectionalDerivatives' is false. "
+                "Adjoint derivatives require directional derivative infrastructure in practice.",
+                interface_name, node->line));
+        }
+
+        if (interface_name == "CoSimulation")
+        {
+            const bool hasEventMode = get_bool("hasEventMode", false);
+            const bool canReturnEarlyAfterIntermediateUpdate = get_bool("canReturnEarlyAfterIntermediateUpdate", false);
+            const bool providesIntermediateUpdate = get_bool("providesIntermediateUpdate", false);
+            const bool mightReturnEarlyFromDoStep = get_bool("mightReturnEarlyFromDoStep", false);
+            const bool canHandleVariableCommunicationStepSize = get_bool("canHandleVariableCommunicationStepSize", false);
+
+            if (!hasEventMode && canReturnEarlyAfterIntermediateUpdate)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format("CoSimulation (line {}): 'canReturnEarlyAfterIntermediateUpdate' is true but "
+                                "'hasEventMode' is false.",
+                                node->line));
+            }
+
+            if (!providesIntermediateUpdate && mightReturnEarlyFromDoStep)
+            {
+                if (test.getStatus() != TestStatus::FAIL)
+                    test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back(
+                    std::format("CoSimulation (line {}): 'mightReturnEarlyFromDoStep' is true but "
+                                "'providesIntermediateUpdate' is false.",
+                                node->line));
+            }
+
+            if (canReturnEarlyAfterIntermediateUpdate && !providesIntermediateUpdate)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format("CoSimulation (line {}): 'canReturnEarlyAfterIntermediateUpdate' is true but "
+                                "'providesIntermediateUpdate' is false.",
+                                node->line));
+            }
+
+            if (!hasEventMode && !canHandleVariableCommunicationStepSize)
+            {
+                if (test.getStatus() != TestStatus::FAIL)
+                    test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back(
+                    std::format("CoSimulation (line {}): This FMU has neither event mode nor variable communication "
+                                "step size, which indicates very limited co-simulation capability.",
+                                node->line));
+            }
+        }
+        else if (interface_name == "ScheduledExecution")
+        {
+            auto hasEventModeAttr = getXmlAttribute(node, "hasEventMode");
+            if (hasEventModeAttr && (*hasEventModeAttr == "false" || *hasEventModeAttr == "0"))
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format("ScheduledExecution (line {}): 'hasEventMode' must be true for Scheduled Execution.",
+                                node->line));
+            }
+        }
+    };
+
+    const std::vector<std::string> interfaces = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
+    for (const auto& iface : interfaces)
+    {
+        xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//" + iface);
+        if (xpath_obj != nullptr && xpath_obj->nodesetval != nullptr)
+        {
+            for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+            {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+                check_interface(node, iface);
+            }
+        }
+        if (xpath_obj != nullptr)
+            xmlXPathFreeObject(xpath_obj);
     }
 
     cert.printTestResult(test);
@@ -1784,11 +2155,11 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
 {
     TestResult test{"Dimension References", TestStatus::PASS, {}};
 
-    // Build a map of value_reference -> Variable for structural parameters
-    std::map<uint32_t, const Variable*> structural_params_by_vr;
+    // Build a map of all variables by valueReference
+    std::map<uint32_t, const Variable*> vars_by_vr;
     for (const auto& var : variables)
-        if (var.causality == "structuralParameter" && var.value_reference.has_value())
-            structural_params_by_vr[*var.value_reference] = &var;
+        if (var.value_reference.has_value())
+            vars_by_vr[*var.value_reference] = &var;
 
     // Check each variable with dimensions
     for (const auto& var : variables)
@@ -1824,31 +2195,53 @@ void Fmi3ModelDescriptionChecker::checkDimensionReferences(const std::vector<Var
                 if (has_vr)
                 {
                     const uint32_t vr = *dim.value_reference;
-                    auto it = structural_params_by_vr.find(vr);
+                    auto it = vars_by_vr.find(vr);
 
-                    if (it == structural_params_by_vr.end())
+                    if (it == vars_by_vr.end())
                     {
                         test.setStatus(TestStatus::FAIL);
                         test.getMessages().emplace_back(std::format(
                             "Variable '{}' (line {}), Dimension {} (line {}): references value reference {} "
-                            "which is not a structural parameter.",
+                            "which does not exist.",
                             var.name, var.sourceline, i + 1, dim.sourceline, vr));
                     }
                     else
                     {
                         const Variable* sp = it->second;
 
-                        // Check that the structural parameter is of type UInt64
+                        // Rule: resolve it to a variable. That variable must have causality="structuralParameter"
+                        if (sp->causality != "structuralParameter")
+                        {
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(std::format(
+                                "Variable '{}' (line {}), Dimension {} (line {}): references variable '{}' (VR {}) "
+                                "which has causality='{}' (must be 'structuralParameter').",
+                                var.name, var.sourceline, i + 1, dim.sourceline, sp->name, vr, sp->causality));
+                        }
+
+                        // Rule: the referenced variable must be of type UInt64
                         if (sp->type != "UInt64")
                         {
                             test.setStatus(TestStatus::FAIL);
                             test.getMessages().emplace_back(
                                 std::format("Variable '{}' (line {}), Dimension {} (line {}): references structural "
-                                            "parameter '{}' which has type '{}' (expected UInt64).",
-                                            var.name, var.sourceline, i + 1, dim.sourceline, sp->name, sp->type));
+                                            "parameter '{}' (VR {}) which has type '{}' (must be 'UInt64').",
+                                            var.name, var.sourceline, i + 1, dim.sourceline, sp->name, vr, sp->type));
                         }
 
-                        // Check that the structural parameter has start > 0
+                        // Rule: only scalar variables (no <Dimension> children) can be dimension references
+                        if (sp->has_dimension)
+                        {
+                            test.setStatus(TestStatus::FAIL);
+                            test.getMessages().emplace_back(std::format(
+                                "Variable '{}' (line {}), Dimension {} (line {}): references structural parameter '{}' "
+                                "(VR {}) which is itself an array. Only scalar structural parameters can be used as "
+                                "dimension references.",
+                                var.name, var.sourceline, i + 1, dim.sourceline, sp->name, vr));
+                        }
+
+                        // Rule: If a <Dimension> uses valueReference and the referenced structural parameter has
+                        // variability="fixed", but its start is 0 → FAIL
                         if (sp->start.has_value())
                         {
                             if (const auto start_val_opt = parseNumber<uint64_t>(*sp->start))

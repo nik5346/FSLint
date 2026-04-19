@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmi3ModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a01-54d2-4c0d-b108-e16790433735}">
+  <UnitDefinitions>
+    <Unit name="m">
+        <DisplayUnit name="cm" factor="100"/>
+    </Unit>
+  </UnitDefinitions>
+  <CoSimulation modelIdentifier="Test" canGetAndSetFMUState="true" canSerializeFMUState="true" hasEventMode="true" providesIntermediateUpdate="true" canReturnEarlyAfterIntermediateUpdate="true"/>
+  <ScheduledExecution modelIdentifier="TestSE" hasEventMode="true"/>
+  <ModelVariables>
+    <Float64 name="x" valueReference="1" causality="output" variability="continuous" unit="m">
+        <Alias valueReference="2" displayUnit="cm"/>
+    </Float64>
+    <Float64 name="y" valueReference="2" causality="local" variability="continuous" unit="m"/>
+    <Clock name="c" valueReference="3" clockType="periodic" intervalVariability="constant"/>
+    <Clock name="c_in" valueReference="4" clockType="countdown" causality="input"/>
+    <Float64 name="arr" valueReference="5" causality="output">
+        <Dimension valueReference="6"/>
+    </Float64>
+    <UInt64 name="dim" valueReference="6" causality="structuralParameter" variability="fixed" start="10"/>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="1"/>
+    <Output valueReference="5"/>
+    <InitialUnknown valueReference="1"/>
+    <InitialUnknown valueReference="5"/>
+  </ModelStructure>
+</fmi3ModelDescription>

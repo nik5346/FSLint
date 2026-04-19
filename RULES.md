@@ -324,9 +324,20 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - Having a `derivative` attribute alone does not make a variable (or its target) a continuous-time state unless it is listed in `ContinuousStateDerivative`.
   - Dimensions of a derivative **must** match dimensions of the state.
 - **Structural Parameters**: **Must** be of type `UInt64`; if used in `<Dimension>`, the `start` value **must** be `> 0`.
+- **Alias Variable Elements**:
+  - The `valueReference` on `<Alias>` **must** point to an existing variable.
+  - The type of the alias variable **must** match the type of the aliased variable.
+  - If `displayUnit` is specified, it **must** exist in the appropriate `Unit` definition.
+  - If `displayUnit` is specified on an `<Alias>` whose parent variable has no `unit`, a **WARNING** is issued.
+  - Circular alias chains **must not** exist.
 - **Dimensions**:
   - **Must** have either `start` or `valueReference`, but not both.
   - Fixed dimensions (`start`) **must** be `> 0`.
+  - If `valueReference` is used:
+    - The referenced variable **must** have `causality="structuralParameter"`.
+    - The referenced variable **must** be of type `UInt64`.
+    - The referenced variable **must** be a scalar (not an array itself).
+    - If the referenced structural parameter is `variability="fixed"`, its `start` **must** be `> 0`.
 - **Array Start Values**: The number of values **must** match the total array size or be exactly 1 (for broadcast).
 - **Clocks**:
   - Clock references **must** exist and point to variables of type `Clock`.
@@ -342,6 +353,21 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - `ClockedState`: Must list all variables that have a `previous` attribute.
   - `EventIndicator` elements **must** be complete and unique.
 - **Variable Dependencies**: `dependenciesKind` **must** be restricted to allowed types and is **not allowed** for `InitialUnknown`.
+- **Capability Flag Consistency**:
+  - `canSerializeFMUState="true"` **must** only be set if `canGetAndSetFMUState="true"`.
+  - `providesAdjointDerivatives="true"` **should** only be set if `providesDirectionalDerivatives="true"`.
+  - For `CoSimulation`:
+    - `canReturnEarlyAfterIntermediateUpdate="true"` **must** only be set if `hasEventMode="true"` and `providesIntermediateUpdate="true"`.
+    - `mightReturnEarlyFromDoStep="true"` **should** only be set if `providesIntermediateUpdate="true"`.
+    - An FMU **should** provide either `hasEventMode="true"` or `canHandleVariableCommunicationStepSize="true"` to avoid very limited capability.
+  - For `ScheduledExecution`: `hasEventMode` **must not** be "false" (it is mandatory for SE).
+- **Clock Attribute Consistency**:
+  - If `clockType` is "periodic" (or default): `intervalVariability` **must** be "constant" or "fixed".
+  - If `clockType` is "aperiodic" or "triggered": `period`, `intervalCounter`, `shiftDecimal`, and `shiftFraction` **must not** be present.
+  - If `clockType` is "triggered": `causality` **must not** be "output".
+  - If `shiftDecimal` and `period` are both present: `0 <= shiftDecimal < period` **must** hold.
+  - If `intervalCounter` and `resolution` are both present: `resolution` **must** be `> 0`.
+  - If `clockType` is "countdown": `causality` **must** be "input".
 
 ### Variable Consistency
 

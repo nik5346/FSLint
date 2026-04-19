@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmiModelDescription fmiVersion="3.0" modelName="ParamDiscrete" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+<fmi3ModelDescription fmiVersion="3.0" modelName="ParamDiscrete" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <ModelExchange modelIdentifier="ParamDiscrete" />
   <ModelVariables>
     <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
     <Float64 name="p" valueReference="1" causality="parameter" variability="discrete" start="1.0" />
   </ModelVariables>
   <ModelStructure />
-</fmiModelDescription>
+</fmi3ModelDescription>

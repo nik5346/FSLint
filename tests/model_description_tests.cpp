@@ -619,6 +619,10 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     {
         validate_fail("interface_none", "At least one interface must be implemented");
         validate_fail("model_identifier_invalid", "cannot start with a digit");
+        validate_fail("capability_serialize", "serialize state you cannot get/set");
+        validate_fail("capability_cs_early_event", "is true but 'hasEventMode' is false");
+        validate_fail("capability_cs_early_intermediate", "is true but 'providesIntermediateUpdate' is false");
+        validate_fail("capability_se_event", "'hasEventMode' must be true for Scheduled Execution");
     }
 
     SECTION("Unit definitions")
@@ -674,6 +678,13 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("clocked_var_causality", "Clocked variables must have causality 'input', 'output', or 'local'");
         validate_fail("clocked_var_variability", "Continuous variables cannot have a clocks attribute");
 
+        validate_fail("clock_periodic_variability", "is 'periodic' but has intervalVariability='changing'");
+        validate_fail("clock_aperiodic_period", "attribute 'period' must not be present for clockType='aperiodic'");
+        validate_fail("clock_triggered_output", "triggered clocks cannot be outputs");
+        validate_fail("clock_shift_period", "shiftDecimal (0.2) must satisfy 0 <= shiftDecimal < period (0.1)");
+        validate_fail("clock_resolution_zero", "resolution must be > 0 when intervalCounter is present");
+        validate_fail("clock_countdown_causality", "clockType='countdown' requires causality='input' (found 'output')");
+
         validate_fail("array_start_count", "Expected either 3 values or 1 scalar value");
         validate_fail("array_start_count_string", "Expected either 3 values or 1 scalar value");
     }
@@ -683,6 +694,10 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail(
             "alias_multiple_non_local",
             "All variables in an alias set (VR 0) must have at most one variable with causality other than 'local'");
+        validate_fail("alias_ref_missing", "references non-existent valueReference 999");
+        validate_fail("alias_type_mismatch", "type mismatch");
+        validate_fail("alias_unit_missing", "specifies displayUnit 'nonexistent' which is not defined for unit 'm'");
+        validate_fail("alias_cycle", "Circular alias chain detected");
     }
 
     SECTION("References")
@@ -703,6 +718,10 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
     SECTION("Structure")
     {
         validate_fail("dim_sp_zero", "must be > 0");
+        validate_fail("dim_ref_causality", "must be 'structuralParameter'");
+        validate_fail("dim_ref_type", "must be 'UInt64'");
+        validate_fail("dim_ref_array", "itself an array");
+        validate_fail("dim_ref_zero", "has start=0 (must be > 0)");
         validate_fail("dim_both_start_vr", "must have either 'start' OR 'valueReference', not both");
         validate_fail("dim_none", "must have either 'start' or 'valueReference' attribute");
         validate_fail("dim_vr_undef", "references value reference 999 which is not a structural parameter");
@@ -809,6 +828,18 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
     SECTION("DefaultExperiment")
     {
     }
+
+    SECTION("Capability Flags")
+    {
+        validate_warning("capability_adjoint", "'providesAdjointDerivatives' is true but 'providesDirectionalDerivatives' is false");
+        validate_warning("capability_cs_might_return", "'mightReturnEarlyFromDoStep' is true but 'providesIntermediateUpdate' is false");
+        validate_warning("capability_cs_limited", "very limited co-simulation capability");
+    }
+
+    SECTION("Aliases")
+    {
+        validate_warning("alias_no_unit", "specifies displayUnit='cm' but parent variable has no unit attribute");
+    }
 }
 
 TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
@@ -863,6 +894,12 @@ TEST_CASE("FMI 3.0 Model Description Passing Cases", "[fmi3][pass]")
     SECTION("Unit Offset INF")
     {
         checker.validate("tests/data/fmi3/pass/unit_offset_inf", cert);
+        CHECK_FALSE(has_fail(cert));
+    }
+
+    SECTION("FMI 3.0 New Rules OK")
+    {
+        checker.validate("tests/data/fmi3/pass/new_rules_ok", cert);
         CHECK_FALSE(has_fail(cert));
     }
 }
