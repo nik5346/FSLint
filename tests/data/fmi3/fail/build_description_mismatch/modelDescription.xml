@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmi3ModelDescription fmiVersion="3.0.1" modelName="TestFMI3" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+<fmiModelDescription fmiVersion="3.0.1" modelName="TestFMI3" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <CoSimulation modelIdentifier="TestFMI3" />
   <ModelVariables>
     <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
     <Float64 name="v" valueReference="0" causality="input" variability="discrete" start="0.0" />
   </ModelVariables>
   <ModelStructure />
-</fmi3ModelDescription>
+</fmiModelDescription>

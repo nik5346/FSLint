@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fmi3ModelDescription fmiVersion="3.0" modelName="test" instantiationToken="123" />
+<fmiModelDescription fmiVersion="3.0" modelName="test" instantiationToken="123" />

@@ -705,8 +705,8 @@ void Fmi3ModelDescriptionChecker::checkReinitAttribute(xmlDocPtr doc, const std:
 }
 
 void Fmi3ModelDescriptionChecker::checkAliasElements(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                                       const std::map<std::string, UnitDefinition>& units,
-                                                       Certificate& cert) const
+                                                     const std::map<std::string, UnitDefinition>& units,
+                                                     Certificate& cert) const
 {
     TestResult test{"Alias Elements", TestStatus::PASS, {}};
 
@@ -772,9 +772,10 @@ void Fmi3ModelDescriptionChecker::checkAliasElements(xmlDocPtr doc, const std::v
                     if (var_type != aliased_var->type)
                     {
                         test.setStatus(TestStatus::FAIL);
-                        test.getMessages().emplace_back(std::format(
-                            "Variable '{}' (line {}): <Alias> type mismatch. Parent is {}, aliased variable '{}' is {}.",
-                            var_name, child->line, var_type, aliased_var->name, aliased_var->type));
+                        test.getMessages().emplace_back(std::format("Variable '{}' (line {}): <Alias> type mismatch. "
+                                                                    "Parent is {}, aliased variable '{}' is {}.",
+                                                                    var_name, child->line, var_type, aliased_var->name,
+                                                                    aliased_var->type));
                     }
 
                     // For cycle detection
@@ -796,8 +797,8 @@ void Fmi3ModelDescriptionChecker::checkAliasElements(xmlDocPtr doc, const std::v
                         else
                         {
                             auto unit_it = units.find(*var_unit);
-                            if (unit_it == units.end() || unit_it->second.display_units.find(*displayUnit) ==
-                                                              unit_it->second.display_units.end())
+                            if (unit_it == units.end() ||
+                                unit_it->second.display_units.find(*displayUnit) == unit_it->second.display_units.end())
                             {
                                 test.setStatus(TestStatus::FAIL);
                                 test.getMessages().emplace_back(std::format(
@@ -823,7 +824,8 @@ void Fmi3ModelDescriptionChecker::checkAliasElements(xmlDocPtr doc, const std::v
             if (visited.contains(current))
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(std::format("Circular alias chain detected starting from '{}'.", alias));
+                test.getMessages().emplace_back(
+                    std::format("Circular alias chain detected starting from '{}'.", alias));
                 break;
             }
             visited.insert(current);
@@ -990,8 +992,9 @@ void Fmi3ModelDescriptionChecker::checkAliases(const std::vector<Variable>& vari
     cert.printTestResult(test);
 }
 
-void Fmi3ModelDescriptionChecker::checkClockAttributeConsistency(xmlDocPtr doc, const std::vector<Variable>& /*variables*/,
-                                                                   Certificate& cert) const
+void Fmi3ModelDescriptionChecker::checkClockAttributeConsistency(xmlDocPtr doc,
+                                                                 const std::vector<Variable>& /*variables*/,
+                                                                 Certificate& cert) const
 {
     TestResult test{"Clock Attribute Consistency", TestStatus::PASS, {}};
 
@@ -1016,7 +1019,6 @@ void Fmi3ModelDescriptionChecker::checkClockAttributeConsistency(xmlDocPtr doc, 
             continue;
 
         auto name = getXmlAttribute(node, "name").value_or("unnamed");
-        auto clockType = getXmlAttribute(node, "clockType").value_or("periodic");
         auto intervalVariability = getXmlAttribute(node, "intervalVariability").value_or("");
 
         auto period = getXmlAttribute(node, "period");
@@ -1025,44 +1027,42 @@ void Fmi3ModelDescriptionChecker::checkClockAttributeConsistency(xmlDocPtr doc, 
         auto shiftFraction = getXmlAttribute(node, "shiftFraction");
         auto resolution = getXmlAttribute(node, "resolution");
 
-        // Rule: If clockType="periodic" or unspecified (default is periodic):
-        // intervalVariability must be "constant" or "fixed" → FAIL if it is "changing" or "countdown".
-        if (clockType == "periodic")
+        const bool is_triggered = (intervalVariability == "triggered");
+        const bool is_countdown = (intervalVariability == "countdown");
+        const bool is_periodic = !is_triggered && !is_countdown;
+
+        // Rule: If periodic (intervalVariability is constant, fixed, tunable, or changing):
+        // intervalVariability must be "constant" or "fixed" → FAIL if it is "changing" (countdown is handled
+        // separately).
+        if (is_periodic)
         {
-            if (intervalVariability == "changing" || intervalVariability == "countdown")
+            if (intervalVariability == "changing")
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(std::format(
-                    "Clock variable '{}' (line {}): is 'periodic' but has intervalVariability='{}'.",
-                    name, node->line, intervalVariability));
+                test.getMessages().emplace_back(
+                    std::format("Clock variable '{}' (line {}): is 'periodic' but has intervalVariability='{}'.", name,
+                                node->line, intervalVariability));
             }
         }
 
-        // Rule: If clockType="aperiodic" or clockType="triggered":
+        // Rule: If aperiodic or triggered (note: aperiodic isn't a variability, but triggered is):
         // the attributes period, intervalCounter, shiftDecimal, and shiftFraction must not be present
-        if (clockType == "aperiodic" || clockType == "triggered")
+        if (is_triggered)
         {
-            auto check_not_present = [&](const std::optional<std::string>& attr_val, const std::string& attr_name) {
-                if (attr_val) {
+            auto check_not_present = [&](const std::optional<std::string>& attr_val, const std::string& attr_name)
+            {
+                if (attr_val)
+                {
                     test.setStatus(TestStatus::FAIL);
                     test.getMessages().emplace_back(std::format(
-                        "Clock variable '{}' (line {}): attribute '{}' must not be present for clockType='{}'.",
-                        name, node->line, attr_name, clockType));
+                        "Clock variable '{}' (line {}): attribute '{}' must not be present for triggered clocks.", name,
+                        node->line, attr_name));
                 }
             };
             check_not_present(period, "period");
             check_not_present(intervalCounter, "intervalCounter");
             check_not_present(shiftDecimal, "shiftDecimal");
             check_not_present(shiftFraction, "shiftFraction");
-        }
-
-        // Rule: If clockType="triggered" and causality="output" → FAIL
-        if (clockType == "triggered" && causality == "output")
-        {
-            test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(
-                "Clock variable '{}' (line {}): triggered clocks cannot be outputs.",
-                name, node->line));
         }
 
         // Rule: If shiftDecimal is present and period is also declared as a plain numeric attribute:
@@ -1076,9 +1076,9 @@ void Fmi3ModelDescriptionChecker::checkClockAttributeConsistency(xmlDocPtr doc, 
                 if (*sd_val < 0 || *sd_val >= *p_val)
                 {
                     test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back(std::format(
-                        "Clock variable '{}' (line {}): shiftDecimal ({}) must satisfy 0 <= shiftDecimal < period ({}).",
-                        name, node->line, *shiftDecimal, *period));
+                    test.getMessages().emplace_back(std::format("Clock variable '{}' (line {}): shiftDecimal ({}) must "
+                                                                "satisfy 0 <= shiftDecimal < period ({}).",
+                                                                name, node->line, *shiftDecimal, *period));
                 }
             }
         }
@@ -1091,18 +1091,18 @@ void Fmi3ModelDescriptionChecker::checkClockAttributeConsistency(xmlDocPtr doc, 
             {
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back(std::format(
-                    "Clock variable '{}' (line {}): resolution must be > 0 when intervalCounter is present.",
-                    name, node->line));
+                    "Clock variable '{}' (line {}): resolution must be > 0 when intervalCounter is present.", name,
+                    node->line));
             }
         }
 
-        // Rule: If clockType="countdown": causality must be "input" → FAIL if not.
-        if (clockType == "countdown" && causality != "input")
+        // Rule: If countdown: causality must be "input" → FAIL if not.
+        if (is_countdown && causality != "input")
         {
             test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(
-                "Clock variable '{}' (line {}): clockType='countdown' requires causality='input' (found '{}').",
-                name, node->line, causality));
+            test.getMessages().emplace_back(
+                std::format("Clock variable '{}' (line {}): countdown clocks require causality='input' (found '{}').",
+                            name, node->line, causality));
         }
     }
 
@@ -1154,7 +1154,8 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
             const bool canReturnEarlyAfterIntermediateUpdate = get_bool("canReturnEarlyAfterIntermediateUpdate", false);
             const bool providesIntermediateUpdate = get_bool("providesIntermediateUpdate", false);
             const bool mightReturnEarlyFromDoStep = get_bool("mightReturnEarlyFromDoStep", false);
-            const bool canHandleVariableCommunicationStepSize = get_bool("canHandleVariableCommunicationStepSize", false);
+            const bool canHandleVariableCommunicationStepSize =
+                get_bool("canHandleVariableCommunicationStepSize", false);
 
             if (!hasEventMode && canReturnEarlyAfterIntermediateUpdate)
             {
@@ -1200,9 +1201,8 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
             if (hasEventModeAttr && (*hasEventModeAttr == "false" || *hasEventModeAttr == "0"))
             {
                 test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back(
-                    std::format("ScheduledExecution (line {}): 'hasEventMode' must be true for Scheduled Execution.",
-                                node->line));
+                test.getMessages().emplace_back(std::format(
+                    "ScheduledExecution (line {}): 'hasEventMode' must be true for Scheduled Execution.", node->line));
             }
         }
     };

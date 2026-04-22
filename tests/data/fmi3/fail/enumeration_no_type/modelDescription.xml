@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmi3ModelDescription fmiVersion="3.0" modelName="EnumNoType" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+<fmiModelDescription fmiVersion="3.0" modelName="EnumNoType" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
   <ModelExchange modelIdentifier="EnumNoType" />
   <TypeDefinitions>
     <EnumerationType name="MyEnum">
@@ -11,4 +11,4 @@
     <Enumeration name="v" valueReference="1" causality="local" variability="discrete" />
   </ModelVariables>
   <ModelStructure />
-</fmi3ModelDescription>
+</fmiModelDescription>

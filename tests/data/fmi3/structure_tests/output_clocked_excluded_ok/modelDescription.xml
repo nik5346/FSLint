@@ -7,7 +7,7 @@
     <Float64 name="y_clocked" valueReference="2" causality="output" variability="discrete" clocks="10" previous="2" />
   </ModelVariables>
   <ModelStructure>
-    <Output />
+    <Output valueReference="2" />
     <ClockedState valueReference="2" />
   </ModelStructure>
 </fmiModelDescription>

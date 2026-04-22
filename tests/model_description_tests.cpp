@@ -679,11 +679,11 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("clocked_var_variability", "Continuous variables cannot have a clocks attribute");
 
         validate_fail("clock_periodic_variability", "is 'periodic' but has intervalVariability='changing'");
-        validate_fail("clock_aperiodic_period", "attribute 'period' must not be present for clockType='aperiodic'");
+        validate_fail("clock_aperiodic_period", "attribute 'period' must not be present for triggered clocks");
         validate_fail("clock_triggered_output", "triggered clocks cannot be outputs");
         validate_fail("clock_shift_period", "shiftDecimal (0.2) must satisfy 0 <= shiftDecimal < period (0.1)");
         validate_fail("clock_resolution_zero", "resolution must be > 0 when intervalCounter is present");
-        validate_fail("clock_countdown_causality", "clockType='countdown' requires causality='input' (found 'output')");
+        validate_fail("clock_countdown_causality", "countdown clocks require causality='input' (found 'output')");
 
         validate_fail("array_start_count", "Expected either 3 values or 1 scalar value");
         validate_fail("array_start_count_string", "Expected either 3 values or 1 scalar value");
@@ -724,7 +724,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("dim_ref_zero", "has start=0 (must be > 0)");
         validate_fail("dim_both_start_vr", "must have either 'start' OR 'valueReference', not both");
         validate_fail("dim_none", "must have either 'start' or 'valueReference' attribute");
-        validate_fail("dim_vr_undef", "references value reference 999 which is not a structural parameter");
+        validate_fail("dim_vr_undef", "references value reference 999 which does not exist");
         validate_fail("sp_type_invalid", "must be of type UInt64");
 
         validate_fail("structure_output_missing", "is missing a representative in 'ModelStructure/Output'.");
@@ -831,8 +831,10 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("Capability Flags")
     {
-        validate_warning("capability_adjoint", "'providesAdjointDerivatives' is true but 'providesDirectionalDerivatives' is false");
-        validate_warning("capability_cs_might_return", "'mightReturnEarlyFromDoStep' is true but 'providesIntermediateUpdate' is false");
+        validate_warning("capability_adjoint",
+                         "'providesAdjointDerivatives' is true but 'providesDirectionalDerivatives' is false");
+        validate_warning("capability_cs_might_return",
+                         "'mightReturnEarlyFromDoStep' is true but 'providesIntermediateUpdate' is false");
         validate_warning("capability_cs_limited", "very limited co-simulation capability");
     }
 
@@ -1019,13 +1021,13 @@ TEST_CASE("FMI 3.0 ModelStructure Alias and Partial Validation", "[fmi3][structu
 
     SECTION("Output with clocked variables")
     {
-        // Now output_clocked_excluded_ok should FAIL because y_clocked (output) is missing from ModelStructure/Output
-        Certificate cert = validate("output_clocked_excluded_ok");
+        // Now output_clocked_fail should FAIL because y_clocked (output) is missing from ModelStructure/Output
+        Certificate cert = validate("output_clocked_fail");
         CHECK(has_fail(cert));
         CHECK(has_error_with_text(cert, "missing a representative in 'ModelStructure/Output'"));
 
-        // Now output_clocked_fail (which correctly lists y_clocked in Output) should PASS
-        cert = validate("output_clocked_fail");
+        // Now output_clocked_excluded_ok (which correctly lists y_clocked in Output) should PASS
+        cert = validate("output_clocked_excluded_ok");
         CHECK_FALSE(has_fail(cert));
     }
 

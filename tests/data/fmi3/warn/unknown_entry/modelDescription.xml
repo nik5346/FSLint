@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmi3ModelDescription fmiVersion="3.0" modelName="test" instantiationToken="{...}">
+<fmiModelDescription fmiVersion="3.0" modelName="test" instantiationToken="{...}">
   <CoSimulation modelIdentifier="test" />
-</fmi3ModelDescription>
+</fmiModelDescription>

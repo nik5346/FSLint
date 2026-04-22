@@ -70,8 +70,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkUniqueValueReferences(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkStructuralParameter(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkCapabilityFlags(xmlDocPtr doc, Certificate& cert) const;
-    void checkClockAttributeConsistency(xmlDocPtr doc, const std::vector<Variable>& variables,
-                                        Certificate& cert) const;
+    void checkClockAttributeConsistency(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
 
     void checkDimensionReferences(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkArrayStartValues(const std::vector<Variable>& variables, Certificate& cert) const;

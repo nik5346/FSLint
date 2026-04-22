@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmi3ModelDescription fmiVersion="3.0" modelName="ArrayParse" instantiationToken="{123}" generationTool="Handwritten">
+<fmiModelDescription fmiVersion="3.0" modelName="ArrayParse" instantiationToken="{123}" generationTool="Handwritten">
   <ModelExchange modelIdentifier="ArrayParse" />
   <ModelVariables>
     <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
@@ -9,4 +9,4 @@
   </ModelVariables>
   <ModelStructure>
   </ModelStructure>
-</fmi3ModelDescription>
+</fmiModelDescription>

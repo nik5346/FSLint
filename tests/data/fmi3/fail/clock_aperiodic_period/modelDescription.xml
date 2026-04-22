@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmi3ModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a01-54d2-4c0d-b108-e16790433735}">
-  <CoSimulation modelIdentifier="Test"/>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <CoSimulation modelIdentifier="Test" hasEventMode="true" />
   <ModelVariables>
-    <Clock name="c" valueReference="1" clockType="aperiodic" period="0.1"/>
-    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+    <Clock name="c" valueReference="1" intervalVariability="triggered" period="0.1"/>
   </ModelVariables>
-  <ModelStructure/>
-</fmi3ModelDescription>
+  <ModelStructure />
+</fmiModelDescription>

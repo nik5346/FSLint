@@ -362,12 +362,11 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
     - An FMU **should** provide either `hasEventMode="true"` or `canHandleVariableCommunicationStepSize="true"` to avoid very limited capability.
   - For `ScheduledExecution`: `hasEventMode` **must not** be "false" (it is mandatory for SE).
 - **Clock Attribute Consistency**:
-  - If `clockType` is "periodic" (or default): `intervalVariability` **must** be "constant" or "fixed".
-  - If `clockType` is "aperiodic" or "triggered": `period`, `intervalCounter`, `shiftDecimal`, and `shiftFraction` **must not** be present.
-  - If `clockType` is "triggered": `causality` **must not** be "output".
+  - If a clock is periodic (based on `intervalVariability`): `intervalVariability` **must** be "constant" or "fixed" → FAIL if it is "changing".
+  - If a clock is triggered: `period`, `intervalCounter`, `shiftDecimal`, and `shiftFraction` **must not** be present.
   - If `shiftDecimal` and `period` are both present: `0 <= shiftDecimal < period` **must** hold.
   - If `intervalCounter` and `resolution` are both present: `resolution` **must** be `> 0`.
-  - If `clockType` is "countdown": `causality` **must** be "input".
+  - If a clock is countdown: `causality` **must** be "input".
 
 ### Variable Consistency
 

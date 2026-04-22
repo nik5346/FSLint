@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fmi3ModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="123">
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="123">
   <CoSimulation modelIdentifier="Test" needsExecutionTool="true" />
   <ModelStructure />
-</fmi3ModelDescription>
+</fmiModelDescription>
