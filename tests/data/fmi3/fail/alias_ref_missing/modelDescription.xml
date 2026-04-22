@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a01-54d2-4c0d-b108-e16790433735}">
+  <CoSimulation modelIdentifier="Test"/>
+  <ModelVariables>
+    <Float64 name="x" valueReference="1" causality="output">
+        <Alias valueReference="999"/>
+    </Float64>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="1"/>
+  </ModelStructure>
+</fmiModelDescription>

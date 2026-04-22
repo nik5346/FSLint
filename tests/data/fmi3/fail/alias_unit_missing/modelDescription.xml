@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a01-54d2-4c0d-b108-e16790433735}">
+  <UnitDefinitions>
+    <Unit name="m">
+        <DisplayUnit name="cm" factor="100"/>
+    </Unit>
+  </UnitDefinitions>
+  <CoSimulation modelIdentifier="Test"/>
+  <ModelVariables>
+    <Float64 name="x" valueReference="1" causality="output" unit="m">
+        <Alias valueReference="2" displayUnit="nonexistent"/>
+    </Float64>
+    <Float64 name="y" valueReference="2" causality="local" unit="m"/>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous"/>
+  </ModelVariables>
+  <ModelStructure>
+    <Output valueReference="1"/>
+  </ModelStructure>
+</fmiModelDescription>

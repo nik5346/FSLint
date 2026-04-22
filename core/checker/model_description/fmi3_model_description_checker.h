@@ -69,6 +69,8 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkIndependentVariable(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkUniqueValueReferences(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkStructuralParameter(const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkCapabilityFlags(xmlDocPtr doc, Certificate& cert) const;
+    void checkClockAttributeConsistency(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
 
     void checkDimensionReferences(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkArrayStartValues(const std::vector<Variable>& variables, Certificate& cert) const;
@@ -77,6 +79,8 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkClockedVariables(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkAliases(const std::vector<Variable>& variables,
                       const std::map<std::string, TypeDefinition>& type_definitions, Certificate& cert) const;
+    void checkAliasElements(xmlDocPtr doc, const std::vector<Variable>& variables,
+                            const std::map<std::string, UnitDefinition>& units, Certificate& cert) const;
     void checkReinitAttribute(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void checkDerivativeConsistency(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void checkCanHandleMultipleSet(const std::vector<Variable>& variables, Certificate& cert) const;
