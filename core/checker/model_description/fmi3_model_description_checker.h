@@ -96,4 +96,5 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void validateInitialUnknowns(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void validateEventIndicators(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void checkVariableDependencies(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
+    void checkCapabilityFlags(xmlDocPtr doc, Certificate& cert) const;
 };

@@ -44,6 +44,7 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     checkClockTypes(doc, cert);
     checkStructuralParameter(variables, cert);
     checkDerivativeDimensions(variables, cert);
+    checkCapabilityFlags(doc, cert);
     checkModelStructure(doc, variables, cert);
 }
 
@@ -2596,4 +2597,119 @@ void Fmi3ModelDescriptionChecker::validateFmiVersionValue(const std::string& ver
             test.getMessages().emplace_back(std::format("version '{}' is invalid (must be exactly '3.0').", version));
         }
     }
+}
+
+void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificate& cert) const
+{
+    TestResult test{"Capability Flag Consistency", TestStatus::PASS, {}};
+
+    auto parse_bool = [](const std::optional<std::string>& s, bool default_val) -> bool
+    {
+        if (!s)
+            return default_val;
+        std::string val = *s;
+        val.erase(std::ranges::remove_if(val, ::isspace).begin(), val.end());
+        if (val == "true" || val == "1")
+            return true;
+        if (val == "false" || val == "0")
+            return false;
+        return default_val;
+    };
+
+    auto check_interface = [&](xmlNodePtr node, const std::string& interface_name)
+    {
+        bool canGetAndSetFMUState = parse_bool(getXmlAttribute(node, "canGetAndSetFMUState"), false);
+        bool canSerializeFMUState = parse_bool(getXmlAttribute(node, "canSerializeFMUState"), false);
+        bool providesDirectionalDerivatives = parse_bool(getXmlAttribute(node, "providesDirectionalDerivatives"), false);
+        bool providesAdjointDerivatives = parse_bool(getXmlAttribute(node, "providesAdjointDerivatives"), false);
+
+        if (!canGetAndSetFMUState && canSerializeFMUState)
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(
+                "{} capability flag 'canSerializeFMUState' is true but 'canGetAndSetFMUState' is false. You cannot "
+                "serialize state you cannot get/set.",
+                interface_name));
+        }
+
+        if (!providesDirectionalDerivatives && providesAdjointDerivatives)
+        {
+            if (test.getStatus() != TestStatus::FAIL)
+                test.setStatus(TestStatus::WARNING);
+            test.getMessages().emplace_back(std::format(
+                "{} capability flag 'providesAdjointDerivatives' is true but 'providesDirectionalDerivatives' is "
+                "false. Adjoint derivatives require directional derivative infrastructure in practice.",
+                interface_name));
+        }
+
+        if (interface_name == "CoSimulation")
+        {
+            bool hasEventMode = parse_bool(getXmlAttribute(node, "hasEventMode"), false);
+            bool canReturnEarlyAfterIntermediateUpdate =
+                parse_bool(getXmlAttribute(node, "canReturnEarlyAfterIntermediateUpdate"), false);
+            bool providesIntermediateUpdate = parse_bool(getXmlAttribute(node, "providesIntermediateUpdate"), false);
+            bool mightReturnEarlyFromDoStep = parse_bool(getXmlAttribute(node, "mightReturnEarlyFromDoStep"), false);
+            bool canHandleVariableCommunicationStepSize =
+                parse_bool(getXmlAttribute(node, "canHandleVariableCommunicationStepSize"), false);
+
+            if (!hasEventMode && canReturnEarlyAfterIntermediateUpdate)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("CoSimulation capability flag 'canReturnEarlyAfterIntermediateUpdate' "
+                                                "is true but 'hasEventMode' is false.");
+            }
+
+            if (!providesIntermediateUpdate && mightReturnEarlyFromDoStep)
+            {
+                if (test.getStatus() != TestStatus::FAIL)
+                    test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("CoSimulation capability flag 'mightReturnEarlyFromDoStep' is true but "
+                                                "'providesIntermediateUpdate' is false.");
+            }
+
+            if (canReturnEarlyAfterIntermediateUpdate && !providesIntermediateUpdate)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back("CoSimulation capability flag 'canReturnEarlyAfterIntermediateUpdate' "
+                                                "is true but 'providesIntermediateUpdate' is false.");
+            }
+
+            if (!hasEventMode && !canHandleVariableCommunicationStepSize)
+            {
+                if (test.getStatus() != TestStatus::FAIL)
+                    test.setStatus(TestStatus::WARNING);
+                test.getMessages().emplace_back("This FMU has very limited co-simulation capability (both "
+                                                "'hasEventMode' and 'canHandleVariableCommunicationStepSize' are "
+                                                "false).");
+            }
+        }
+        else if (interface_name == "ScheduledExecution")
+        {
+            auto hasEventModeAttr = getXmlAttribute(node, "hasEventMode");
+            if (hasEventModeAttr)
+            {
+                bool hasEventMode = parse_bool(hasEventModeAttr, true);
+                if (!hasEventMode)
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back("ScheduledExecution capability flag 'hasEventMode' must be true.");
+                }
+            }
+        }
+    };
+
+    const std::vector<std::string> interfaces = {"CoSimulation", "ModelExchange", "ScheduledExecution"};
+    for (const auto& iface : interfaces)
+    {
+        xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//" + iface);
+        if (xpath_obj && xpath_obj->nodesetval && xpath_obj->nodesetval->nodeNr > 0)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            check_interface(xpath_obj->nodesetval->nodeTab[0], iface);
+        }
+        if (xpath_obj)
+            xmlXPathFreeObject(xpath_obj);
+    }
+
+    cert.printTestResult(test);
 }
