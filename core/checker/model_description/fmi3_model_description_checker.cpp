@@ -2618,16 +2618,19 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
 
     auto check_interface = [&](xmlNodePtr node, const std::string& interface_name)
     {
-        bool canGetAndSetFMUState = parse_bool(getXmlAttribute(node, "canGetAndSetFMUState"), false);
-        bool canSerializeFMUState = parse_bool(getXmlAttribute(node, "canSerializeFMUState"), false);
-
-        if (!canGetAndSetFMUState && canSerializeFMUState)
+        if (interface_name == "CoSimulation" || interface_name == "ModelExchange")
         {
-            test.setStatus(TestStatus::FAIL);
-            test.getMessages().emplace_back(std::format(
-                "{} capability flag 'canSerializeFMUState' is true but 'canGetAndSetFMUState' is false. You cannot "
-                "serialize state you cannot get/set.",
-                interface_name));
+            bool canGetAndSetFMUState = parse_bool(getXmlAttribute(node, "canGetAndSetFMUState"), false);
+            bool canSerializeFMUState = parse_bool(getXmlAttribute(node, "canSerializeFMUState"), false);
+
+            if (!canGetAndSetFMUState && canSerializeFMUState)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "{} capability flag 'canSerializeFMUState' is true but 'canGetAndSetFMUState' is false. You cannot "
+                    "serialize state you cannot get/set.",
+                    interface_name));
+            }
         }
 
         if (interface_name == "CoSimulation")
@@ -2637,19 +2640,23 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
             bool providesIntermediateUpdate = parse_bool(getXmlAttribute(node, "providesIntermediateUpdate"), false);
             bool mightReturnEarlyFromDoStep = parse_bool(getXmlAttribute(node, "mightReturnEarlyFromDoStep"), false);
 
-            if (!providesIntermediateUpdate && mightReturnEarlyFromDoStep)
+            if (!providesIntermediateUpdate)
             {
-                if (test.getStatus() != TestStatus::FAIL)
-                    test.setStatus(TestStatus::WARNING);
-                test.getMessages().emplace_back("CoSimulation capability flag 'mightReturnEarlyFromDoStep' is true but "
-                                                "'providesIntermediateUpdate' is false.");
-            }
-
-            if (canReturnEarlyAfterIntermediateUpdate && !providesIntermediateUpdate)
-            {
-                test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("CoSimulation capability flag 'canReturnEarlyAfterIntermediateUpdate' "
-                                                "is true but 'providesIntermediateUpdate' is false.");
+                if (canReturnEarlyAfterIntermediateUpdate)
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(
+                        "CoSimulation capability flag 'canReturnEarlyAfterIntermediateUpdate' "
+                        "is true but 'providesIntermediateUpdate' is false.");
+                }
+                else if (mightReturnEarlyFromDoStep)
+                {
+                    if (test.getStatus() != TestStatus::FAIL)
+                        test.setStatus(TestStatus::WARNING);
+                    test.getMessages().emplace_back(
+                        "CoSimulation capability flag 'mightReturnEarlyFromDoStep' is true but "
+                        "'providesIntermediateUpdate' is false.");
+                }
             }
         }
     };
