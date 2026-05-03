@@ -342,6 +342,15 @@ The binary file **must** be a shared library (dynamic library). Its format, exte
   - `ClockedState`: Must list all variables that have a `previous` attribute.
   - `EventIndicator` elements **must** be complete and unique.
 - **Variable Dependencies**: `dependenciesKind` **must** be restricted to allowed types and is **not allowed** for `InitialUnknown`.
+- **Capability Flags**:
+  - `canSerializeFMUState="true"` **must** have `canGetAndSetFMUState="true"`.
+  - `providesAdjointDerivatives="true"` **should** have `providesDirectionalDerivatives="true"` (**WARN**).
+  - **Co-Simulation**:
+    - `canReturnEarlyAfterIntermediateUpdate="true"` **must** have `hasEventMode="true"` and `providesIntermediateUpdate="true"`.
+    - `mightReturnEarlyFromDoStep="true"` **should** have `providesIntermediateUpdate="true"` (**WARN**).
+    - `hasEventMode="false"` and `canHandleVariableCommunicationStepSize="false"` **should** be avoided as it indicates very limited capability (**WARN**).
+  - **Scheduled Execution**:
+    - `hasEventMode` **must** be true.
 
 ### Variable Consistency
 
