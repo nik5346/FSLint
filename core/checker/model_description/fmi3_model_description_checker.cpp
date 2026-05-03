@@ -2620,8 +2620,8 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
     {
         if (interface_name == "CoSimulation" || interface_name == "ModelExchange")
         {
-            bool canGetAndSetFMUState = parse_bool(getXmlAttribute(node, "canGetAndSetFMUState"), false);
-            bool canSerializeFMUState = parse_bool(getXmlAttribute(node, "canSerializeFMUState"), false);
+            const bool canGetAndSetFMUState = parse_bool(getXmlAttribute(node, "canGetAndSetFMUState"), false);
+            const bool canSerializeFMUState = parse_bool(getXmlAttribute(node, "canSerializeFMUState"), false);
 
             if (!canGetAndSetFMUState && canSerializeFMUState)
             {
@@ -2635,10 +2635,12 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
 
         if (interface_name == "CoSimulation")
         {
-            bool canReturnEarlyAfterIntermediateUpdate =
+            const bool canReturnEarlyAfterIntermediateUpdate =
                 parse_bool(getXmlAttribute(node, "canReturnEarlyAfterIntermediateUpdate"), false);
-            bool providesIntermediateUpdate = parse_bool(getXmlAttribute(node, "providesIntermediateUpdate"), false);
-            bool mightReturnEarlyFromDoStep = parse_bool(getXmlAttribute(node, "mightReturnEarlyFromDoStep"), false);
+            const bool providesIntermediateUpdate =
+                parse_bool(getXmlAttribute(node, "providesIntermediateUpdate"), false);
+            const bool mightReturnEarlyFromDoStep =
+                parse_bool(getXmlAttribute(node, "mightReturnEarlyFromDoStep"), false);
 
             if (!providesIntermediateUpdate)
             {
