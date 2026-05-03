@@ -736,8 +736,7 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("structure_dependencies_kind_mismatch", "has different number of elements in 'dependencies'");
         validate_fail("structure_dependencies_kind_invalid_initial", "has illegal dependencyKind 'fixed'");
 
-        validate_fail("capability_flags_cs_event", "CoSimulation capability flag 'canReturnEarlyAfterIntermediateUpdate' is true but 'hasEventMode' is false.");
-        validate_fail("capability_flags_se_event", "ScheduledExecution capability flag 'hasEventMode' must be true.");
+        validate_fail("capability_flags_cs_event", "CoSimulation capability flag 'canReturnEarlyAfterIntermediateUpdate' is true but 'providesIntermediateUpdate' is false.");
         validate_fail("capability_flags_state", "capability flag 'canSerializeFMUState' is true but 'canGetAndSetFMUState' is false.");
     }
 }
@@ -812,6 +811,11 @@ TEST_CASE("FMI 3.0 Model Description Warning Cases", "[fmi3][warn]")
 
     SECTION("DefaultExperiment")
     {
+    }
+
+    SECTION("Capability Flags")
+    {
+        validate_warning("capability_flags_cs_early", "CoSimulation capability flag 'mightReturnEarlyFromDoStep' is true but 'providesIntermediateUpdate' is false.");
     }
 }
 

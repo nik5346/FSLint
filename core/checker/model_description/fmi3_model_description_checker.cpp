@@ -2620,8 +2620,6 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
     {
         bool canGetAndSetFMUState = parse_bool(getXmlAttribute(node, "canGetAndSetFMUState"), false);
         bool canSerializeFMUState = parse_bool(getXmlAttribute(node, "canSerializeFMUState"), false);
-        bool providesDirectionalDerivatives = parse_bool(getXmlAttribute(node, "providesDirectionalDerivatives"), false);
-        bool providesAdjointDerivatives = parse_bool(getXmlAttribute(node, "providesAdjointDerivatives"), false);
 
         if (!canGetAndSetFMUState && canSerializeFMUState)
         {
@@ -2632,32 +2630,12 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
                 interface_name));
         }
 
-        if (!providesDirectionalDerivatives && providesAdjointDerivatives)
-        {
-            if (test.getStatus() != TestStatus::FAIL)
-                test.setStatus(TestStatus::WARNING);
-            test.getMessages().emplace_back(std::format(
-                "{} capability flag 'providesAdjointDerivatives' is true but 'providesDirectionalDerivatives' is "
-                "false. Adjoint derivatives require directional derivative infrastructure in practice.",
-                interface_name));
-        }
-
         if (interface_name == "CoSimulation")
         {
-            bool hasEventMode = parse_bool(getXmlAttribute(node, "hasEventMode"), false);
             bool canReturnEarlyAfterIntermediateUpdate =
                 parse_bool(getXmlAttribute(node, "canReturnEarlyAfterIntermediateUpdate"), false);
             bool providesIntermediateUpdate = parse_bool(getXmlAttribute(node, "providesIntermediateUpdate"), false);
             bool mightReturnEarlyFromDoStep = parse_bool(getXmlAttribute(node, "mightReturnEarlyFromDoStep"), false);
-            bool canHandleVariableCommunicationStepSize =
-                parse_bool(getXmlAttribute(node, "canHandleVariableCommunicationStepSize"), false);
-
-            if (!hasEventMode && canReturnEarlyAfterIntermediateUpdate)
-            {
-                test.setStatus(TestStatus::FAIL);
-                test.getMessages().emplace_back("CoSimulation capability flag 'canReturnEarlyAfterIntermediateUpdate' "
-                                                "is true but 'hasEventMode' is false.");
-            }
 
             if (!providesIntermediateUpdate && mightReturnEarlyFromDoStep)
             {
@@ -2672,28 +2650,6 @@ void Fmi3ModelDescriptionChecker::checkCapabilityFlags(xmlDocPtr doc, Certificat
                 test.setStatus(TestStatus::FAIL);
                 test.getMessages().emplace_back("CoSimulation capability flag 'canReturnEarlyAfterIntermediateUpdate' "
                                                 "is true but 'providesIntermediateUpdate' is false.");
-            }
-
-            if (!hasEventMode && !canHandleVariableCommunicationStepSize)
-            {
-                if (test.getStatus() != TestStatus::FAIL)
-                    test.setStatus(TestStatus::WARNING);
-                test.getMessages().emplace_back("This FMU has very limited co-simulation capability (both "
-                                                "'hasEventMode' and 'canHandleVariableCommunicationStepSize' are "
-                                                "false).");
-            }
-        }
-        else if (interface_name == "ScheduledExecution")
-        {
-            auto hasEventModeAttr = getXmlAttribute(node, "hasEventMode");
-            if (hasEventModeAttr)
-            {
-                bool hasEventMode = parse_bool(hasEventModeAttr, true);
-                if (!hasEventMode)
-                {
-                    test.setStatus(TestStatus::FAIL);
-                    test.getMessages().emplace_back("ScheduledExecution capability flag 'hasEventMode' must be true.");
-                }
             }
         }
     };
