@@ -45,6 +45,7 @@ void Fmi3ModelDescriptionChecker::performVersionSpecificChecks(
     checkStructuralParameter(variables, cert);
     checkDerivativeDimensions(variables, cert);
     checkCapabilityFlags(doc, cert);
+    checkClockVariableAttributes(doc, cert);
     checkModelStructure(doc, variables, cert);
 }
 
@@ -280,6 +281,139 @@ void Fmi3ModelDescriptionChecker::checkClockTypes(xmlDocPtr doc, Certificate& ce
                     std::format("ClockType '{}' (line {}) has intervalVariability='{}' but missing 'intervalDecimal' "
                                 "or 'intervalCounter'.",
                                 name, node->line, iv));
+            }
+        }
+    }
+
+    xmlXPathFreeObject(xpath_obj);
+    cert.printTestResult(test);
+}
+
+void Fmi3ModelDescriptionChecker::checkClockVariableAttributes(xmlDocPtr doc, Certificate& cert) const
+{
+    TestResult test{"Clock Attribute Consistency", TestStatus::PASS, {}};
+
+    xmlXPathObjectPtr xpath_obj = getXPathNodes(doc, "//ModelVariables/Clock | //ModelVariables/*[@causality='clock']");
+    if (xpath_obj == nullptr || xpath_obj->nodesetval == nullptr)
+    {
+        if (xpath_obj != nullptr)
+            xmlXPathFreeObject(xpath_obj);
+        cert.printTestResult(test);
+        return;
+    }
+
+    for (int32_t i = 0; i < xpath_obj->nodesetval->nodeNr; ++i)
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+        auto name = getXmlAttribute(node, "name").value_or("unnamed");
+
+        auto clockType = getXmlAttribute(node, "clockType").value_or("periodic");
+        auto intervalVariability = getXmlAttribute(node, "intervalVariability").value_or("");
+        auto causality = getXmlAttribute(node, "causality").value_or("local");
+
+        auto period_attr = getXmlAttribute(node, "period");
+        auto intervalCounter_attr = getXmlAttribute(node, "intervalCounter");
+        auto shiftDecimal_attr = getXmlAttribute(node, "shiftDecimal");
+        auto shiftFraction_attr = getXmlAttribute(node, "shiftFraction");
+        auto resolution_attr = getXmlAttribute(node, "resolution");
+
+        // 1. If clockType="periodic" or unspecified (default is periodic):
+        // intervalVariability must be "constant" or "fixed" -> FAIL if it is "changing" or "countdown".
+        if (clockType == "periodic")
+        {
+            if (intervalVariability == "changing" || intervalVariability == "countdown")
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Clock '{}' (line {}) has clockType='periodic' but intervalVariability='{}'. "
+                    "Periodic clocks must be 'constant' or 'fixed'.",
+                    name, node->line, intervalVariability));
+            }
+        }
+
+        // 2. If clockType="aperiodic" or clockType="triggered":
+        // the attributes period, intervalCounter, shiftDecimal, and shiftFraction must not be present
+        // -> FAIL for each one that is present.
+        if (clockType == "aperiodic" || clockType == "triggered")
+        {
+            if (period_attr)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format("Clock '{}' (line {}) has clockType='{}' but defines 'period'.",
+                                                            name, node->line, clockType));
+            }
+            if (intervalCounter_attr)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format("Clock '{}' (line {}) has clockType='{}' but defines 'intervalCounter'.", name,
+                                node->line, clockType));
+            }
+            if (shiftDecimal_attr)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format("Clock '{}' (line {}) has clockType='{}' but defines 'shiftDecimal'.",
+                                                            name, node->line, clockType));
+            }
+            if (shiftFraction_attr)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Clock '{}' (line {}) has clockType='{}' but defines 'shiftFraction'.", name, node->line, clockType));
+            }
+        }
+
+        // 3. If clockType="triggered" and causality="output" -> FAIL (triggered clocks cannot be outputs per spec).
+        if (clockType == "triggered" && causality == "output")
+        {
+            test.setStatus(TestStatus::FAIL);
+            test.getMessages().emplace_back(std::format(
+                "Clock '{}' (line {}) has clockType='triggered' and causality='output', which is not allowed.", name,
+                node->line));
+        }
+
+        // 4. If shiftDecimal is present and period is also declared as a plain numeric attribute:
+        // shiftDecimal must satisfy 0 <= shiftDecimal < period -> FAIL if violated.
+        if (shiftDecimal_attr && period_attr)
+        {
+            auto sd = parseNumber<double>(*shiftDecimal_attr);
+            auto p = parseNumber<double>(*period_attr);
+            if (sd && p)
+            {
+                if (*sd < 0 || *sd >= *p)
+                {
+                    test.setStatus(TestStatus::FAIL);
+                    test.getMessages().emplace_back(std::format(
+                        "Clock '{}' (line {}): shiftDecimal ({}) must satisfy 0 <= shiftDecimal < period ({}).", name,
+                        node->line, *shiftDecimal_attr, *period_attr));
+                }
+            }
+        }
+
+        // 5. If both intervalCounter and resolution are present: resolution must be > 0 -> FAIL if zero or negative.
+        if (intervalCounter_attr && resolution_attr)
+        {
+            auto res = parseNumber<double>(*resolution_attr);
+            if (res && *res <= 0)
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(
+                    std::format("Clock '{}' (line {}): resolution ({}) must be greater than zero when intervalCounter is "
+                                "present.",
+                                name, node->line, *resolution_attr));
+            }
+        }
+
+        // 6. If clockType="countdown": causality must be "input" -> FAIL if not.
+        if (clockType == "countdown")
+        {
+            if (causality != "input")
+            {
+                test.setStatus(TestStatus::FAIL);
+                test.getMessages().emplace_back(std::format(
+                    "Clock '{}' (line {}) has clockType='countdown' but causality='{}' (must be 'input').", name,
+                    node->line, causality));
             }
         }
     }

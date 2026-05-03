@@ -674,6 +674,13 @@ TEST_CASE("FMI 3.0 Model Description Failure Cases", "[fmi3][fail]")
         validate_fail("clocked_var_causality", "Clocked variables must have causality 'input', 'output', or 'local'");
         validate_fail("clocked_var_variability", "Continuous variables cannot have a clocks attribute");
 
+        validate_fail("clocks/periodic_changing_variability", "Periodic clocks must be 'constant' or 'fixed'");
+        validate_fail("clocks/aperiodic_with_period", "has clockType='aperiodic' but defines 'period'");
+        validate_fail("clocks/triggered_output", "has clockType='triggered' and causality='output'");
+        validate_fail("clocks/shift_decimal_ge_period", "shiftDecimal (1.5) must satisfy 0 <= shiftDecimal < period (1.0)");
+        validate_fail("clocks/resolution_zero", "resolution (0) must be greater than zero");
+        validate_fail("clocks/countdown_output", "has clockType='countdown' but causality='output' (must be 'input')");
+
         validate_fail("array_start_count", "Expected either 3 values or 1 scalar value");
         validate_fail("array_start_count_string", "Expected either 3 values or 1 scalar value");
     }

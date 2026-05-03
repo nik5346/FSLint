@@ -81,6 +81,7 @@ class Fmi3ModelDescriptionChecker : public ModelDescriptionCheckerBase
     void checkDerivativeConsistency(xmlDocPtr doc, const std::vector<Variable>& variables, Certificate& cert) const;
     void checkCanHandleMultipleSet(const std::vector<Variable>& variables, Certificate& cert) const;
     void checkClockTypes(xmlDocPtr doc, Certificate& cert) const;
+    void checkClockVariableAttributes(xmlDocPtr doc, Certificate& cert) const;
 
     void checkDerivativeDimensions(const std::vector<Variable>& variables, Certificate& cert) const;
     bool compareDimensions(const Variable& var1, const Variable& var2) const;
