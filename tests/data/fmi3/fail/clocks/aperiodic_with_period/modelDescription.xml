@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription fmiVersion="3.0" modelName="Test" instantiationToken="{8c4e7a0f-5da3-424b-8e99-46747d95368a}">
+  <ModelExchange modelIdentifier="Test" />
+  <TypeDefinitions>
+    <ClockType name="AperiodicClock" intervalVariability="changing" />
+  </TypeDefinitions>
+  <ModelVariables>
+    <Float64 name="time" valueReference="0" causality="independent" variability="continuous" />
+    <Clock name="c" valueReference="1" causality="input" declaredType="AperiodicClock" clockType="aperiodic" period="1.0" />
+  </ModelVariables>
+  <ModelStructure />
+</fmiModelDescription>
